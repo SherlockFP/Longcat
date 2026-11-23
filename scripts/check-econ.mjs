@@ -608,6 +608,129 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   console.log('  café pacing: residents after ' + Object.entries(arrive).map(([r, n]) => `L${n} ${r}`).join(', ') + '; areas done after L' + areaEnd.join(', L'));
 }
 
+// ---------------- R10 shop: packs, deal of the day, ad gifts, Extra Cushion, cosmetics, 120-day coin sinks ----------------
+{
+  const SH = await import('../src/game/shop.js');
+  const { levelKind } = await import('../src/core/generate.js');
+  const day0 = E.dayOf(T0);
+  // booster packs: the big pack is cheaper per piece than the small one, both cheaper than paying in a level, never a giveaway
+  for (const k of SH.BOOSTERS) {
+    const per = SH.PACKS.map((p) => SH.packPrice(k, p) / p.n);
+    ok(per[0] < SH.UNIT[k] && per[1] < per[0] && per[1] >= SH.UNIT[k] * 0.6, `${k} packs: ${per.map((x) => x.toFixed(1)).join(' / ')} per piece vs ${SH.UNIT[k]}`);
+  }
+  // deal of the day: deterministic, never the same bundle two days running, every bundle shows up, a real but sane discount
+  const seen = new Set();
+  for (let dd = 0; dd < 400; dd++) {
+    const a = SH.dealOf(day0 + dd);
+    ok(JSON.stringify(a) === JSON.stringify(SH.dealOf(day0 + dd)), 'the deal is the same all day');
+    if (dd) ok(SH.dealIndex(day0 + dd) !== SH.dealIndex(day0 + dd - 1), `deal repeats on day ${dd}`);
+    ok(a.price % 5 === 0 && a.price < a.was && a.price >= a.was * 0.45 && a.price <= a.was * 0.75, `deal ${a.id}: ${a.price} for ${a.was}`);
+    if (dd < 60) seen.add(a.id);
+  }
+  eq(seen.size, SH.DEALS.length, 'every deal shows up within 60 days');
+  {
+    const d = fresh();
+    const x = SH.dealOf(day0);
+    d.coins = x.price - 1;
+    ok(!SH.dealBuy(d, day0) && d.coins === x.price - 1, 'deal: no coins, no sale');
+    d.coins = x.price + 10;
+    const b0 = { ...d.boosters };
+    ok(SH.dealBuy(d, day0) && d.coins === 10, 'deal bought');
+    for (const [k, n] of Object.entries(x.items)) ok(SH.have(d, k) === (k === 'cushion' ? n : b0[k] + n), `deal pays ${k} x${n}`);
+    d.coins = 9999;
+    ok(!SH.dealBuy(d, day0) && d.coins === 9999, 'deal: once a day');
+    ok(!!SH.dealBuy(d, day0 + 1), 'deal: a new one tomorrow');
+  }
+  // rewarded-ad gifts: capped per day, refilled the next day
+  {
+    const d = fresh();
+    const c0 = d.coins;
+    const G = SH.AD_GIFTS.find((g) => g.id === 'coins');
+    let n = 0;
+    while (SH.adClaim(d, 'coins', day0)) n++;
+    eq(n, G.per, 'ad coins: daily cap');
+    eq(d.coins, c0 + n * G.give.coins, 'ad coins paid');
+    ok(SH.adClaim(d, 'hint', day0) && !SH.adClaim(d, 'hint', day0), 'ad hint: once a day');
+    ok(SH.adLeft(d, 'coins', day0 + 1) === G.per && !!SH.adClaim(d, 'coins', day0 + 1), 'ad gifts refill the next day');
+  }
+  // Extra Cushion: one is spent on the next new level and kept for its retries; replays and empty stock take none
+  {
+    const d = fresh();
+    d.level = 20;
+    ok(!SH.cushionAt(d, 20), 'no cushion in stock: no seat');
+    d.coins = 1000;
+    ok(SH.buyPack(d, 'cushion', 0) === SH.packPrice('cushion', SH.PACKS[0]) && SH.have(d, 'cushion') === 3, 'cushion pack bought');
+    ok(SH.cushionAt(d, 20) && SH.have(d, 'cushion') === 2, 'the next level takes one');
+    ok(SH.cushionAt(d, 20) && SH.have(d, 'cushion') === 2, 'a retry keeps the same seat for free');
+    ok(!SH.cushionAt(d, 7) && SH.have(d, 'cushion') === 2, 'an old level replay takes none');
+    d.level = 21;
+    ok(SH.cushionAt(d, 21) && SH.have(d, 'cushion') === 1, 'the level after takes the next');
+  }
+  // cosmetics: buy once, it goes on at once; switch between owned ones; a broken save is repaired
+  {
+    const d = fresh();
+    d.coins = 500;
+    eq([SH.equipped(d, 'hat'), SH.equipped(d, 'car'), SH.equipped(d, 'room')], ['hat_none', 'car_none', 'room_sunny'], 'the free looks are on by default');
+    ok(!SH.cosBuy(d, 'room_night') && d.coins === 500, 'cosmetic: no coins, no sale');
+    ok(SH.cosBuy(d, 'hat_bow') === 300 && d.coins === 200 && SH.equipped(d, 'hat') === 'hat_bow', 'a bought outfit goes on');
+    ok(!SH.cosBuy(d, 'hat_bow') && d.coins === 200, 'never paid twice');
+    ok(SH.equip(d, 'hat_none') && SH.equipped(d, 'hat') === 'hat_none' && SH.equip(d, 'hat_bow'), 'switch between owned looks');
+    ok(!SH.equip(d, 'hat_crown') && SH.equipped(d, 'hat') === 'hat_bow', 'an unowned look cannot go on');
+    d.shop.eq.room = 'room_night'; d.shop.own.bogus = 1; d.shop.cush = -3;
+    SH.ensure(d);
+    ok(d.shop.eq.room === 'room_sunny' && !d.shop.own.bogus && d.shop.cush === 0, 'ensure() repairs a broken shop save');
+  }
+  // the shop keys survive a reload (save.js keeps d.shop's extra keys)
+  {
+    const d = fresh();
+    d.coins = 2000; d.level = 9;
+    SH.cosBuy(d, 'car_stars'); SH.buyPack(d, 'cushion', 0); SH.dealBuy(d, day0);
+    save.commit();
+    const mod = await import('../src/kit/save.js?shop=' + Math.random());
+    const r = mod.save.data;
+    ok(r.shop.own.car_stars === 1 && r.shop.eq.car === 'car_stars' && r.shop.cush >= 3 && r.shop.deal.day === day0, `shop state survives a reload: ${JSON.stringify(r.shop)}`);
+    ok(r.shop.starterShown === false && r.shop.offerDay === -1, 'the older shop keys keep their defaults');
+  }
+  // 120 days of coins: a steady player (10 levels on day 1, 6 a day in week 1, then 4; tasks, chest, login), with and
+  // without the ad gifts, spending a quarter of the day's pay in levels, buying the deal of the day and the cosmetics in
+  // price order while a 300-coin reserve stays. The cosmetics are a real sink (not all in the first two weeks) yet a
+  // steady player owns them all by day 120; the ad gifts never become the main income.
+  for (const adsOn of [false, true]) {
+    const d = fresh();
+    d.level = 1;
+    let income = 0, adIncome = 0, spent = 0, deals = 0, allAt = -1, firstCos = -1;
+    const order = SH.COSMETICS.filter((x) => x.cost).sort((a, b) => a.cost - b.cost);
+    for (let dd = 0; dd < 120; dd++) {
+      const dy = day0 + dd;
+      const c0 = d.coins;
+      for (let k = 0; k < (dd === 0 ? 10 : dd < 7 ? 6 : 4); k++) {
+        const kind = levelKind(d.level);
+        d.coins += 20 + Math.floor(d.level / 5) + 5 + (kind === 'super' ? 20 : kind === 'hard' ? 10 : 0) + Math.min(15, Math.floor(dd / 6)); // base, tidy, hard bonus, café perks / love
+        d.level++;
+      }
+      d.coins += 15 + 15 + 20 + E.CHEST.coins + (E.LOGIN_REWARDS[dd % 7].coins || 0); // three daily tasks, the chest, the login day
+      income += d.coins - c0;
+      const lv = Math.round((d.coins - c0) * 0.25); d.coins -= lv; spent += lv; // boosters and seats bought in levels
+      if (adsOn) { const a0 = d.coins; while (SH.adClaim(d, 'coins', dy)); adIncome += d.coins - a0; }
+      for (const it of order) if (!SH.owns(d, it.id) && d.coins - it.cost >= 300) { spent += SH.cosBuy(d, it.id); if (firstCos < 0) firstCos = dd; }
+      const x = SH.dealOf(dy);
+      if (d.coins - x.price >= 300 && SH.dealBuy(d, dy)) { deals++; spent += x.price; }
+      if (allAt < 0 && order.every((it) => SH.owns(d, it.id))) allAt = dd;
+      ok(d.coins >= 0, `day ${dd + 1}: coins never go negative`);
+    }
+    const perDay = income / 120;
+    const tag = adsOn ? 'ads' : 'no ads';
+    ok(SH.cosTotal() >= 5000, `the cosmetics are a real sink (${SH.cosTotal()} coins)`);
+    ok(allAt > 14, `${tag}: not every cosmetic in the first two weeks (all on day ${allAt + 1})`);
+    ok(allAt >= 0 && allAt < 120, `${tag}: a steady player owns every cosmetic by day 120 (day ${allAt + 1})`);
+    ok(firstCos >= 0 && firstCos <= 7, `${tag}: a first cosmetic within the first week (day ${firstCos + 1})`);
+    ok(adIncome <= income * 0.35, `${tag}: ad gifts stay a side income (${adIncome} vs ${income})`);
+    ok(SH.DEALS.every((_, i) => SH.dealOf(day0 + i).price <= perDay * 1.5), `a deal costs at most 1.5 days of play (${Math.round(perDay)} coins a day)`);
+    ok(deals >= 30, `${tag}: the deal of the day is bought regularly (${deals} of 120 days)`);
+    console.log(`  shop 120 days (${adsOn ? 'with' : 'no'} ad gifts): ${Math.round(perDay)} coins/day from play, +${Math.round(adIncome / 120)}/day from ads, ${deals} deals, all cosmetics on day ${allAt + 1}, spent ${spent}, left ${d.coins}`);
+  }
+}
+
 if (failures) {
   console.error(`\n${failures} econ check(s) failed`);
   process.exit(1);

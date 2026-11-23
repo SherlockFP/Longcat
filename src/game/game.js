@@ -6,6 +6,7 @@ import { hint as solverHint } from '../core/solver.js';
 import { DIRS } from '../core/board.js';
 import { IMG } from './assets.js';
 import { COLOR_PAL, COLLARS, NAVY, MYSTERY_PAL } from './breeds.js';
+import { roomImage as shopRoom, drawHat as shopHat, drawCarrierSkin as shopSkin } from './shop-look.js';
 import { makePath, sample, drawBody, drawHead, drawArrow, drawChevron, drawPaw, drawPatBadge, drawPaws, disc, FONT, drawDog, drawYarn, drawIce, drawQuestion, drawBadge, head7, shade } from './render.js';
 
 const FACE = { U: -Math.PI / 2, R: 0, D: Math.PI / 2, L: Math.PI };
@@ -1428,7 +1429,7 @@ export class Game {
 
   drawBg(ctx) {
     const { W, H } = this;
-    const room = IMG['r7/bg_play_room'];
+    const room = shopRoom() || IMG['r7/bg_play_room']; // a shop room theme, else the sunny room
     if (room) {
       // the sunny boarding room: one painted layer, cover-fit, never tiled
       const sc = Math.max(W / room.width, H / room.height);
@@ -1924,6 +1925,7 @@ export class Game {
       ctx.drawImage(art, 0, 0, iw, art.height, -cw * hx, -ch, cw * hx, ch);
       ctx.restore();
     } else ctx.drawImage(art, -cw / 2, -ch, cw, ch);
+    shopSkin(ctx, cw, ch); // the shop carrier skin
     if (!vc.closed && vc.fill > 0) { // the last cat in peeks out of the mouth
       const q = this.clock - vc.popT;
       const pop = q < 0.35 ? 0.45 + 0.55 * easeBack(q / 0.35) : 1;
@@ -2019,6 +2021,7 @@ export class Game {
     }
     // face stays upright (small lean only) and sits a bit forward so the exit side reads
     drawHead(ctx, this.mv.hidden[cat.id] ? -1 : cat.color, hx, hy, lean, hs, o.alpha ?? 1, face);
+    if (!this.mv.hidden[cat.id]) shopHat(ctx, hx, hy, lean, hs, o.alpha ?? 1); // the shop cat outfit
     if (hs > c * 0.5 && !head7(cat.color)) drawPaws(ctx, hx, hy, ux, uy, hs, o.alpha ?? 1);
     if (o.chevron) drawChevron(ctx, p1.x + ux * (hs * 0.5 + c * 0.12), p1.y + uy * (hs * 0.5 + c * 0.12), ang, c * 0.17, 0.95);
   }

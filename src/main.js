@@ -30,6 +30,9 @@ import * as rui from './ui/r10.js';
 import { notify } from './kit/notify.js';
 import './i18n-live.js';
 import './i18n-r10.js';
+import './i18n-shop.js';
+import * as shopRules from './game/shop.js';
+import { shopActions } from './ui/shop.js';
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -551,6 +554,7 @@ function startLevel(n, daily = false, show = false) {
     save.commit();
     perks.push(t('perkScoopToast', { name: cafe.perkOwner('scoop').name }));
   }
+  if (!special && shopRules.cushionAt(save.data, n)) { board.meta.benchSize++; save.commit(); perks.push(t('shCushOn')); } // shop Extra Cushion (src/game/shop.js)
   // a bench of a different size than last level is announced once (hard levels bring a smaller one)
   const bs = board.meta.benchSize;
   if (!special && n > 3 && S.lastBench && S.lastBench !== bs) perks.push(t('benchSeats', { n: bs }));
@@ -1686,6 +1690,7 @@ async function boot() {
   };
   game.on.combo = (text) => { if (S.mode === 'play') ui.combo(text); };
   game.on.demoReset = () => game.load(generate(1), { demo: true, top: 146, bottom: 246 });
+  Object.assign(actions, shopActions(syncCoins)); // R10 shop tabs, packs, deal, ad gifts, cosmetics (src/ui/shop.js)
   ui.init(actions);
   initPwa();
   pwa.onChange(() => { if (ui.screen === 'settings') ui.settings(settingsInfo()); });
