@@ -10,6 +10,7 @@ import { railHtml as liveRail, goalsHtml } from './live.js';
 import { OUTFITS } from '../game/live.js';
 import { drecHas, cardsOwned, WEEKS } from '../game/r10.js';
 import { house as streetHouse, SHOPS } from '../game/street.js';
+import { hubAfter } from './hub.js'; // hub lane: level map, resident layout, wide-screen panels, keys
 
 const root = document.getElementById('ui');
 let actions = {};
@@ -398,6 +399,7 @@ export const ui = {
     </div>
   </div>
 </div>`);
+    hubAfter('home', info);
   },
 
   // ---- gameplay HUD ----
@@ -416,6 +418,7 @@ export const ui = {
   ${info.show ? (info.rush ? `<div class="rushclock" id="rushclock" aria-live="off">0.0s</div>` : `<div class="goalpill" id="goalpill" hidden>${r7('hud_medal')}<b></b></div>`) : `<div class="boosters">${bst('hint')}${bst('scoop')}${bst('undo')}</div>`}
 </div>`);
     ui.setHud(info);
+    hubAfter('play', info);
   },
 
   setHud(info) {
@@ -658,11 +661,11 @@ export const ui = {
         const bst = `left:${Math.min(66, Math.max(34, s[0] * 100))}%;top:${(s[1] - s[2] * 1.02) * 100}%`;
         const rw = (r) => `<i class="rqrw">${r7('hud_coin')}+${r.coins} ${r7('hud_heart')}+${r.hearts}</i>`; // the reward, in sight before the tap
         const ask = !rq && L && L.reqs.find((x) => x.who === g.id && x.fresh && !x.ready);
-        if (rq) bubbles.push(`<button class="rqbub ${sp.k === 'req' && sp.i === rq.i ? 'spot' : ''}" data-act="reqtap" data-i="${rq.i}" style="${bst}">${r7('res7_' + g.id + '_' + (rq.outfit || 'idle'), 'rqo')}<span class="rqt"><b>${rq.outfit ? t('helpEarn', { name: g.name, o: t('o_' + rq.outfit) }) : t('reqTreat', { name: g.name })}</b>${rw(rq)}</span><em>${t('claim')}</em></button>`);
+        if (rq) bubbles.push(`<button data-who="${g.id}" class="rqbub ${sp.k === 'req' && sp.i === rq.i ? 'spot' : ''}" data-act="reqtap" data-i="${rq.i}" style="${bst}">${r7('res7_' + g.id + '_' + (rq.outfit || 'idle'), 'rqo')}<span class="rqt"><b>${rq.outfit ? t('helpEarn', { name: g.name, o: t('o_' + rq.outfit) }) : t('reqTreat', { name: g.name })}</b>${rw(rq)}</span><em>${t('claim')}</em></button>`);
         // a newcomer's first ask, over the cat itself: what, how far, and what it pays (a tap opens the request list)
-        else if (ask) bubbles.push(`<button class="rqbub ask" data-act="reqtap" data-i="${ask.i}" style="${bst}"><span class="rqt"><b>${escHtml(t('reqFirst', { name: g.name, what: ask.task }))}</b><i class="rqp"><i style="width:${Math.round((ask.p / ask.need) * 100)}%"></i></i><small>${ask.p}/${ask.need}</small>${rw(ask)}</span></button>`);
+        else if (ask) bubbles.push(`<button data-who="${g.id}" class="rqbub ask" data-act="reqtap" data-i="${ask.i}" style="${bst}"><span class="rqt"><b>${escHtml(t('reqFirst', { name: g.name, what: ask.task }))}</b><i class="rqp"><i style="width:${Math.round((ask.p / ask.need) * 100)}%"></i></i><small>${ask.p}/${ask.need}</small>${rw(ask)}</span></button>`);
         // just thanked: the resident names the next reason to come back
-        else if (L && L.after && L.after.who === g.id) bubbles.push(`<div class="rqbub next" style="${bst}"><span class="rqt"><b>${escHtml(L.after.text)}</b></span></div>`);
+        else if (L && L.after && L.after.who === g.id) bubbles.push(`<div data-who="${g.id}" class="rqbub next" style="${bst}"><span class="rqt"><b>${escHtml(L.after.text)}</b></span></div>`);
         return `<button class="guest g7 ${fresh ? 'fresh' : ''}" data-act="pet" data-id="${g.id}" aria-label="${g.name}" style="left:${s[0] * 100}%;top:${s[1] * 100}%;width:${s[2] * 100}%;z-index:${Math.round(s[1] * 100) + 1};--d:${(-i * 3.7).toFixed(1)}s">${L && L.wear[g.id] ? r7c(`res7_${g.id}_${L.wear[g.id]}`, 'gimg') : `${r7c(`res7_${g.id}_idle`, 'gimg')}${r7c(`res7_${g.id}_job`, 'gimg job')}`}${L && L.pet[g.id] ? '<i class="pheart">&#9829;</i>' : ''}<i class="gbub ${s[0] > 0.62 ? 'l' : s[0] < 0.3 ? 'r' : ''}">${loc(line)}</i></button>`;
       }).join('');
       const ros = (info.rosettes || []).length ? `<div class="rosettes">${info.rosettes.map((r) => ribbonSvg.replace('class="rib"', `class="rib" style="--rc:${r.color}" aria-label="${r.name}"`)).join('')}</div>` : '';
@@ -780,6 +783,7 @@ export const ui = {
   <nav class="tabbar">${tab('cafeview', 'icon_home', t('home'), '', true, 'room')}${tab('residents', 'icon_paw', t('residents'))}${tab('shop', 'icon_shop', t('shop'), info.offer ? `<i class="otag">${t('offerBadge')}</i>` : '')}${tab('show', 'icon_trophy', t('events'), dot(info.dots && info.dots.show) + (spk === 'rush' ? `<em class="sptag">${t('spotClaim')}</em>` : ''))}</nav>
 </div>`);
     if (floorQ) waitFloor();
+    hubAfter('cafe', info);
   },
 
   // a petted resident hops, shows a heart and says its line

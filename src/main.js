@@ -30,6 +30,8 @@ import * as rui from './ui/r10.js';
 import { notify } from './kit/notify.js';
 import './i18n-live.js';
 import './i18n-r10.js';
+import './i18n-hub.js';
+import * as hub from './ui/hub.js';
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -485,6 +487,7 @@ function startHome() {
   if (clip) clip.clear();
   if (S.mode === 'play' && game.state && !game.over && !game.demo && game.state.aliveCount > 0) track('level_quit', { n: S.n });
   S.mode = 'home';
+  hub.home(); // the hub opens on the level map
   game.autoHint = false;
   game.load(generate(1), { demo: true, top: 146, bottom: 246 }); // the hero shows the real move: cats run into their carrier
   if (save.data.level >= CAFE_FROM) {
