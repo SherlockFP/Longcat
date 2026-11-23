@@ -27,10 +27,11 @@ export function coinLand(pill, i, n) {
   if (i % 2 === 0 || i === n - 1) audio.tick();
   if (!pill || i !== n - 1 || reduced()) return;
   const r = pill.getBoundingClientRect();
+  const o = document.body.getBoundingClientRect(); // the wide-screen body (translateZ) is the containing block
   const box = document.createElement('i');
   box.className = 'r11j-burst';
-  box.style.left = r.left + r.width * 0.28 + 'px';
-  box.style.top = r.top + r.height / 2 + 'px';
+  box.style.left = r.left - o.left + r.width * 0.28 + 'px';
+  box.style.top = r.top - o.top + r.height / 2 + 'px';
   for (let k = 0; k < 8; k++) {
     const s = document.createElement('b');
     s.style.setProperty('--a', (k * 45) + 'deg');

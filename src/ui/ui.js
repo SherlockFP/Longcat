@@ -172,12 +172,13 @@ function flyCoins(from, to) {
     const dx = b.left - a.left - 8;
     const dy = b.top - a.top - 6;
     const n = coinCount(to - from);
+    const o = document.body.getBoundingClientRect(); // the wide-screen body (translateZ) is the fixed coins' containing block
     for (let i = 0; i < n; i++) {
       const c = document.createElement('img');
       c.src = src.src;
       c.className = 'flycoin';
-      c.style.left = a.left + 'px';
-      c.style.top = a.top + 'px';
+      c.style.left = a.left - o.left + 'px';
+      c.style.top = a.top - o.top + 'px';
       document.body.appendChild(c);
       const k = c.animate([
         { transform: 'translate(0,0) scale(1)' },
@@ -210,8 +211,9 @@ function flyStar(cn, n) {
     const s = document.createElement('img');
     s.src = assetUrl('r7/hud_star.webp');
     s.className = 'flycoin flystar';
-    s.style.left = a.left + a.width / 2 - 18 + 'px';
-    s.style.top = a.top + a.height / 2 - 18 + 'px';
+    const o = document.body.getBoundingClientRect(); // the wide-screen body is the containing block
+    s.style.left = a.left - o.left + a.width / 2 - 18 + 'px';
+    s.style.top = a.top - o.top + a.height / 2 - 18 + 'px';
     document.body.appendChild(s);
     const dx = b.left + (b.width * to) / 100 - (a.left + a.width / 2);
     const dy = b.top + b.height / 2 - (a.top + a.height / 2);

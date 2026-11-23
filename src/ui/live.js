@@ -232,8 +232,9 @@ export function coinBurst(fromEl, from, to) {
     const c = document.createElement('img');
     c.src = assetUrl('r7/hud_coin.webp');
     c.className = 'flycoin';
-    c.style.left = a.left + a.width / 2 - 14 + 'px';
-    c.style.top = a.top + a.height / 2 - 14 + 'px';
+    const o = document.body.getBoundingClientRect(); // the wide-screen body is the containing block
+    c.style.left = a.left - o.left + a.width / 2 - 14 + 'px';
+    c.style.top = a.top - o.top + a.height / 2 - 14 + 'px';
     document.body.appendChild(c);
     const dx = b.left - a.left - a.width / 2 + 6;
     const dy = b.top - a.top - a.height / 2 + 4;
