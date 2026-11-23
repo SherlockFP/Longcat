@@ -365,11 +365,13 @@ try {
   await tapSel('.cafe-top .tr [data-act=shop]'); await sleep(600);
   await shot('21e-shop');
   const coinsBefore = (await lsave()).coins;
+  await tapSel('[data-act=stab4][data-tab=coins]'); await sleep(300); // R10 shop: bundles live on the Coins tab
   await tapSel('[data-id=coins500]'); await sleep(1300);
   if ((await lsave()).coins !== coinsBefore + 500) throw new Error('coin pack did not pay');
   await ev('document.querySelector("#sheet .pbody").scrollTop = 9999'); await sleep(300);
   await shot('21f-shop-bottom');
   await ev('document.querySelector("#sheet .pbody").scrollTop = 0');
+  await tapSel('[data-act=stab4][data-tab=offers]'); await sleep(300); // R10 shop: the Starter pack is on the Offers tab
   await tapSel('[data-id=starter]'); await sleep(1300);
   sv2 = await lsave();
   if (!sv2.ads.removeAds || !sv2.iap.owned.starter) throw new Error('starter bundle did not set No Ads');
@@ -1897,6 +1899,75 @@ try {
     if (!(await ev('window.__iq.state().data.run.best === 85000'))) throw new Error('iq: run best should be 85000, got ' + JSON.stringify(await ev('window.__iq.state().data.run')));
     await shot('r10-iq-run-end');
     await qa('home()'); await sleep(400);
+  }
+  // ---- R10 shop: four tabs at 375x667 (no page scroll, nothing cut), the deal of the day, a booster pack, a cosmetic
+  // bought from its preview and worn on the board, the Extra Cushion seat, TR, desktop ----
+  if (!process.env.QA_SKIPSHOP) {
+    const lsave = () => ev('JSON.parse(localStorage.getItem("lco_save"))');
+    const click = (sel) => ev(`document.querySelector(${JSON.stringify(sel)}).click()`);
+    const tabTo = async (tab) => { await click(`[data-act=stab4][data-tab=${tab}]`); await sleep(450); };
+    // every label, price and name inside the shop stays in its box (no clipped TR words)
+    const shopFits = () => ev(`[...document.querySelectorAll('#sheet .shop4 .stab, #sheet .shop4 .s4h, #sheet .shop4 .s4nm, #sheet .shop4 .s4buy, #sheet .shop4 .s4pk, #sheet .shop4 .s4cat, #sheet .shop4 .s4soon, #sheet .shop4 .s4watch, #sheet .shop4 .s4tmr')].filter((e) => e.offsetParent && e.scrollWidth > e.clientWidth + 1).map((e) => e.className + ': ' + e.textContent.trim().slice(0, 30))`);
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await ev('localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 30, coins: 5000, meta: { sessions: 3 }, cafe: { stars: 4, built: { counter_counter: 1, counter_pastry: 1 } } }))');
+    await boot(); await qa('lang("en")');
+    await qa('screen("shop")'); await sleep(700);
+    for (const tab of ['offers', 'coins', 'boosters', 'style']) {
+      await tabTo(tab);
+      const bad = await shopFits();
+      if (bad.length) throw new Error(`shop ${tab}: text overflows ${bad.join(' | ')}`);
+      await shot('r10-shop-' + tab);
+    }
+    // the deal of the day: bought once, then it shows the next deal's timer
+    await tabTo('offers');
+    let sv = await lsave();
+    const c0 = sv.coins;
+    await click('[data-act=shopdeal]'); await sleep(600);
+    sv = await lsave();
+    if (!(sv.coins < c0 && sv.shop.deal.got === 1) || (await ev('!!document.querySelector("[data-act=shopdeal]")'))) throw new Error('deal of the day did not sell once');
+    await shot('r10-shop-deal-bought');
+    // a booster pack: 3 Extra Cushions
+    await tabTo('boosters');
+    const cush0 = sv.shop.cush || 0;
+    await click('[data-act=shoppack][data-k=cushion][data-i="0"]'); await sleep(600);
+    sv = await lsave();
+    if (sv.shop.cush !== cush0 + 3) throw new Error('cushion pack did not pay: ' + JSON.stringify(sv.shop));
+    // cosmetics: preview, buy and wear a party hat, a gift-bow carrier and the starry room
+    await tabTo('style');
+    for (const id of ['hat_party', 'car_bow', 'room_night']) {
+      await click(`[data-act=shopcat][data-k=${id.split('_')[0]}]`); await sleep(300);
+      await click(`[data-act=shopsel][data-id=${id}]`); await sleep(350);
+      if (!(await ev(`document.querySelector('.s4item.sel')?.dataset.id === '${id}'`))) throw new Error('preview did not select ' + id);
+      await click('[data-act=shopcos]'); await sleep(500);
+    }
+    sv = await lsave();
+    if (sv.shop.eq.hat !== 'hat_party' || sv.shop.eq.car !== 'car_bow' || sv.shop.eq.room !== 'room_night') throw new Error('cosmetics not worn: ' + JSON.stringify(sv.shop.eq));
+    await sleep(500);
+    await shot('r10-shop-style-bought');
+    // on the board: the outfit, the carrier skin, the room theme and the extra cushion seat
+    await click('[data-act=closesheet]'); await sleep(300);
+    await qa('level(30)'); await sleep(1500);
+    const st = await qa('state()');
+    sv = await lsave();
+    if (sv.shop.cushLv !== 30 || sv.shop.cush !== cush0 + 2) throw new Error('the Extra Cushion was not used on the next level: ' + JSON.stringify(sv.shop));
+    await shot('r10-shop-board');
+    console.log('  shop board bench ' + JSON.stringify(st.bench));
+    // TR: every tab fits
+    await qa('home()'); await sleep(500); await qa('lang("tr")');
+    await qa('screen("shop")'); await sleep(600);
+    for (const tab of ['offers', 'coins', 'boosters', 'style']) {
+      await tabTo(tab);
+      const bad = await shopFits();
+      if (bad.length) throw new Error(`TR shop ${tab}: text overflows ${bad.join(' | ')}`);
+      if (tab === 'offers' || tab === 'style') await shot('r10-shop-tr-' + tab);
+    }
+    await qa('lang("en")');
+    // desktop: the shop sits in the phone column
+    await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+    await qa('home()'); await sleep(500); await qa('screen("shop")'); await sleep(600);
+    await tabTo('coins');
+    await shot('r10-shop-desktop');
+    await click('[data-act=closesheet]'); await sleep(300);
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
   }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }

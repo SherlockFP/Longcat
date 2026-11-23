@@ -235,6 +235,7 @@ function load() {
       for (const [o, ks] of [['pop', ['daily', 'paid']], ['album', ['cards', 'hung']]]) if (isObj(m[o])) for (const k of ks) if (isObj(m[o][k])) d[o][k] = m[o][k];
       if (isObj(m.rush) && isObj(m.rush.cups)) d.rush.cups = m.rush.cups;
       if (isObj(m.iap) && isObj(m.iap.owned)) d.iap.owned = m.iap.owned;
+      if (isObj(m.shop)) d.shop = { ...m.shop, ...d.shop }; // R10 shop keys (own, eq, deal, ad, cush): checked by src/game/shop.js ensure()
       if (isObj(m.show) && isObj(m.show.decor)) d.show.decor = m.show.decor;
       if (isObj(m.meta)) { if (isObj(m.meta.funnel)) d.meta.funnel = m.meta.funnel; if (isObj(m.meta.ret)) d.meta.ret = m.meta.ret; }
     }

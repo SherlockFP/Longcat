@@ -8,6 +8,7 @@ import { IMG } from './assets.js';
 import * as content from './content.js'; // spring cats, swivel beds, pack themes (content lane)
 import { COLOR_PAL, COLLARS, NAVY, MYSTERY_PAL } from './breeds.js';
 import { attach as perfAttach, DPR_CAP } from './perf.js';
+import { roomImage as shopRoom, drawHat as shopHat, drawCarrierSkin as shopSkin } from './shop-look.js';
 import { makePath, sample, drawBody, drawHead, drawArrow, drawChevron, drawPaw, drawPatBadge, drawPaws, disc, FONT, drawDog, drawYarn, drawIce, drawQuestion, drawBadge, head7, shade } from './render.js';
 
 const FACE = { U: -Math.PI / 2, R: 0, D: Math.PI / 2, L: Math.PI };
@@ -1440,14 +1441,20 @@ export class Game {
     ctx.restore();
   }
 
-  // the room behind the board (the perf underlay bakes it): a pack theme (content lane) or the sunny room
-  roomArt() { return content.room(this) || { img: IMG['r7/bg_play_room'], key: 'play' }; }
+  // the room behind the board (the perf underlay bakes it): a bought room (shop lane) beats a pack theme (content lane),
+  // else the sunny room
+  roomArt() {
+    const bought = shopRoom();
+    if (bought) return { img: bought, key: 'shop:' + bought.src };
+    return content.room(this) || { img: IMG['r7/bg_play_room'], key: 'play' };
+  }
 
   drawBg(ctx) {
-    if (this.pf && this.pf.bg(ctx)) { content.ambient(this, ctx); return; } // baked room: clear, then only the pack's live rain/petals
+    if (this.pf && this.pf.bg(ctx)) { if (!shopRoom()) content.ambient(this, ctx); return; } // baked room: clear, then only the pack's live rain/petals
     const { W, H } = this;
-    if (content.bg(this, ctx)) return; // a themed pack room (content lane)
-    const room = IMG['r7/bg_play_room'];
+    const bought = shopRoom();
+    if (!bought && content.bg(this, ctx)) return; // a themed pack room (content lane); a bought room wins
+    const room = bought || IMG['r7/bg_play_room']; // a shop room theme, else the sunny room
     if (room) {
       // the sunny boarding room: one painted layer, cover-fit, never tiled
       const sc = Math.max(W / room.width, H / room.height);
@@ -1947,6 +1954,7 @@ export class Game {
       ctx.drawImage(art, 0, 0, iw, art.height, -cw * hx, -ch, cw * hx, ch);
       ctx.restore();
     } else ctx.drawImage(art, -cw / 2, -ch, cw, ch);
+    shopSkin(ctx, cw, ch); // the shop carrier skin
     if (!vc.closed && vc.fill > 0) { // the last cat in peeks out of the mouth
       const q = this.clock - vc.popT;
       const pop = q < 0.35 ? 0.45 + 0.55 * easeBack(q / 0.35) : 1;
@@ -2042,6 +2050,7 @@ export class Game {
     }
     // face stays upright (small lean only) and sits a bit forward so the exit side reads
     drawHead(ctx, this.mv.hidden[cat.id] ? -1 : cat.color, hx, hy, lean, hs, o.alpha ?? 1, face);
+    if (!this.mv.hidden[cat.id]) shopHat(ctx, hx, hy, lean, hs, o.alpha ?? 1); // the shop cat outfit
     if (hs > c * 0.5 && !head7(cat.color)) drawPaws(ctx, hx, hy, ux, uy, hs, o.alpha ?? 1);
     if (o.chevron) drawChevron(ctx, p1.x + ux * (hs * 0.5 + c * 0.12), p1.y + uy * (hs * 0.5 + c * 0.12), ang, c * 0.17, 0.95);
   }
