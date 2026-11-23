@@ -30,6 +30,8 @@ import * as rui from './ui/r10.js';
 import { notify } from './kit/notify.js';
 import './i18n-live.js';
 import './i18n-r10.js';
+import './i18n-iq.js';
+import * as iqui from './ui/iq.js'; // R10 iq lane: level clocks + time medals, Record Run, Records sheet
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -1687,6 +1689,7 @@ async function boot() {
   game.on.combo = (text) => { if (S.mode === 'play') ui.combo(text); };
   game.on.demoReset = () => game.load(generate(1), { demo: true, top: 146, bottom: 246 });
   ui.init(actions);
+  iqui.init({ game, S, actions, ui, tryStart, startLevel, streak }); // R10 iq lane: wraps game.load/on.free/on.win, adds its actions
   initPwa();
   pwa.onChange(() => { if (ui.screen === 'settings') ui.settings(settingsInfo()); });
   document.documentElement.lang = save.data.settings.lang;

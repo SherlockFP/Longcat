@@ -1713,6 +1713,53 @@ try {
     await shot('30h-667-fail-more');
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
   }
+  // ---- R10 iq lane: level clock + time medals, replay from the Records sheet, Record Run, Stats (Cat IQ), Rank list ----
+  if (!process.env.QA_SKIP_IQ) {
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await ev('localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 24, coins: 300, meta: { sessions: 3, bestChain: 3 }, cafe: { stars: 4, built: { counter_counter: 1, counter_pastry: 1 } }, iq: { t: { 4: 9000, 5: 30000, 6: 61000, 12: 14000 }, p: { 4: 5, 5: 12, 6: 14, 12: 16 }, cats: 210, perfect: 3, clears: 30, play: 2400000 } }))');
+    await boot(); await qa('lang("en")'); await qa('home()'); await sleep(500);
+    // the café rail carries Records; the sheet's four tabs fit 375x667 without scrolling
+    if (!(await ev('!!document.querySelector("#cafe .rrail .iqrr")'))) throw new Error('iq: the Records button is missing from the café rail');
+    await shot('r10-iq-hub');
+    for (const k of ['levels', 'run', 'stats', 'rank']) { await ev(`window.__iq.open("${k}")`); await sleep(500); await shot('r10-iq-' + k); }
+    await ev('window.__iq.open("stats")'); await sleep(300);
+    const iqv = await ev('+document.querySelector(".iqhero .iqnum").textContent');
+    if (!(iqv >= 80 && iqv <= 160)) throw new Error('iq: Cat IQ out of range ' + iqv);
+    await ev('window.__iq.open("rank")'); await sleep(300);
+    if (!(await ev('[...document.querySelectorAll(".iqrow.bot")].every((r) => /BOT/.test(r.textContent))'))) throw new Error('iq: every bot row must say BOT');
+    // a level replayed from the Levels grid runs the clock; the win card names the time and the medal
+    await ev('window.__iq.open("levels")'); await sleep(300); await qa('act("iqpage", { p: 0 })'); await sleep(300);
+    await ev('document.querySelector(".iqlv[data-n=\\"7\\"]").click()'); await sleep(700);
+    if ((await qa('state()')).level !== 7) throw new Error('iq: tapping level 7 should replay it');
+    if (!(await ev('!!document.getElementById("iqclk")'))) throw new Error('iq: the HUD clock is missing');
+    await shot('r10-iq-clock');
+    await qa('winNow()'); await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1200);
+    if (!(await ev(`!!document.querySelector("#modal .iqwin, #modal .iqchip")`))) throw new Error("iq: the win card has no time row");
+    if (!(await ev('window.__iq.state().data.t[7] > 0'))) throw new Error('iq: level 7 best time not saved');
+    await shot('r10-iq-win');
+    // a second, faster clear of the same level is a new best (the compact card or the chip beside the stars says so)
+    await qa('act("retry")'); await sleep(700); await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1200);
+    if (!(await ev('!!document.querySelector("#modal .iqwin, #modal .iqchip")'))) throw new Error('iq: the replay win card has no time');
+    await shot('r10-iq-win2');
+    await qa('lang("tr")'); await ev('window.__iq.open("stats")'); await sleep(400); await shot('r10-iq-stats-tr');
+    await qa('lang("en")'); await qa('home()'); await sleep(500);
+    // Record Run: 5 boards on one clock, then the result card with splits and a saved personal best
+    await ev('window.__iq.run()'); await sleep(800);
+    if (!(await ev('!!document.getElementById("iqrunclk")'))) throw new Error('iq: the run clock is missing');
+    await shot('r10-iq-run-board');
+    for (let i = 0; i < 5; i++) {
+      await waitFor('window.__qa.state().mode === "play" && !!window.__iq.state().run', 15000);
+      await ev('window.__iq.runWin(15000 + ' + i + ' * 1000)');
+      if (i === 0) { await sleep(300); await shot('r10-iq-run-mid'); }
+      await sleep(1700);
+    }
+    await waitFor('!!document.querySelector("#modal .iqrunend")', 10000); await sleep(600);
+    if (!(await ev('window.__iq.state().data.run.best === 85000'))) throw new Error('iq: run best should be 85000, got ' + JSON.stringify(await ev('window.__iq.state().data.run')));
+    await shot('r10-iq-run-end');
+    await qa('home()'); await sleep(400);
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 
