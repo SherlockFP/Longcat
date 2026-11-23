@@ -20,7 +20,10 @@ export const PALETTE = {
 
 export const COLLARS = ['red', 'blue', 'green', 'purple'];
 export const COLLAR = { red: '#e53935', blue: '#1e88e5', green: '#43a047', purple: '#8e44ad' };
-export const assetUrl = (name) => `assets/${name}`;
+// absolute in the browser: a relative url() set in a CSS custom property resolves against the built stylesheet
+// in /assets/ (gave /assets/assets/... and missing art on the deployed build)
+export const assetUrl = (name) =>
+  typeof document !== 'undefined' ? new URL(`assets/${name}`, document.baseURI).href : `assets/${name}`;
 
 // v2: one fur color per carrier color (index = COLORS in core/board.js). pat: stripes | zigzag | dots | hearts | stars | clouds | spots | plain
 export const COLOR_PAL = [

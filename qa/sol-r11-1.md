@@ -1,0 +1,24 @@
+## Long Cat Out! R10 scorecard
+
+**Overall 8/10, unchanged. Appeal moves from 8 to 9.** The adoption loop gives the game its biggest gain: the cat you just freed becomes Cupcake at the Library, with a place in the album. The core puzzle still earns its score when a risky cushion choice pays off in a chain. R10 adds more reasons to care about that moment, while the flow around it gets busier.
+
+| Dimension | Score | Judgment |
+|---|---:|---|
+| Presentation | **8/10** | The map, House, board, and shop share a cohesive visual style. On narrow phones, the keeper, clock, carrier count, and pack label compete for space. Desktop repeats Play and several goals across panels. |
+| Appeal | **9/10** | The plush cats, patterned bodies, tiny carriers, and expressive keepers give the game a recognizable identity. The Library delivery and the adopted-cat album carry that charm from the board into progression. |
+| Juice | **8/10** | The paws-first send and landing-by-landing chain count give the payoff a strong rhythm. In the 4× CPU software-raster proxy, the hub reached 16.7 ms p95, while the chain and win card still hit 100 ms p95. Those are the moments where smoothness matters most. [Performance report](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/r10-perf.md>) |
+| Fun | **8/10** | Deciding which cat can afford to wait is still the best puzzle decision. Spring cats and swivel beds add distinct choices at L61 and L81. The first 60 boards are unchanged, and the first full-bench recovery still leans on text. |
+| Retention | **8/10** | Adoptions, resident jobs, and visible room and street upgrades give players clear reasons to return. The postcard print can still be weeks away, and the hub gives several goals similar prominence. |
+| Virality | **8/10** | The exact-board link, match-or-beat goals, and counter-dare thread give friends a reason to reply. A clip forwarded without its caption still asks the viewer to type a URL, and real phone delivery remains unverified. |
+| Overall | **8/10** | Solid top-100 quality on this rubric. The next step toward 9 is making the first ten clears as easy to read, rewarding, and quick to replay as the best chain. |
+
+## Highest-priority fixes below 9
+
+1. **Presentation.** Give the mobile board one compact order row with the keeper portrait, delivery count, and clock. Put the pack name in the level plaque and tuck ordinary order intros into the keeper row so the bench and top cats stay visible. Check 375×667 in English and Turkish. On desktop, keep one primary Play button and use the side panels for chapter and goal context.
+2. **Juice.** Show the peak still immediately on the win card and start recording only when the player chooses to make a clip. Give landings a short carrier dip and cushions a rebound as cats launch, within the existing timing. Profile rapid taps, a three-chain, and the win transition on a low-end Android before adding more effects.
+3. **Fun.** Make the first full-bench loss teach through play. Highlight the needed carrier and show how many departures away it is. After **Take back**, mark the restored cushion and briefly point out a cat that can board immediately when one is available. In a fresh-player test, watch whether the player changes their next move without prompting.
+4. **Retention.** Feature one claimable or nearly complete goal on the hub, with its reward and a direct route to earn it. Make the first framed print completable within four event weeks by grouping early postcards and letting the weekly archive claim cover any already-released card.
+5. **Virality.** Put a scannable QR for the public HTTPS dare on the clip end card and fallback PNG. Keep the short code visible for same-phone viewers and make sure it survives a round trip through iMessage and WhatsApp. Test from the received message through the first move and counter-dare, including a clip whose caption was stripped.
+6. **Overall.** Shorten the ordinary first-clear flow. Credit the adoption immediately and show it on the win card with one obvious route to the next board. Keep the full ceremony for the first adoption, set completions, and Urgent or VIP deliveries. Ship this before adding another progression system.
+
+I scored from the supplied captures, R10 notes, and performance report. I reran `npm run check` on the current checkout. It passed with zero search misses across 600 levels and a 44.3 ms worst generation time. Player retention, physical-phone performance, and real chat delivery remain unmeasured in this review. [Previous review](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/sol-r10-1.md>) · [R10 change notes](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/r9-notes.md>)
