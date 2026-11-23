@@ -81,8 +81,47 @@ function strokeTaper(ctx, path, a, b, c) {
   ctx.lineWidth = lw;
 }
 
+// R11 fix 2 (appeal): the orange tabby at board scale is a cat, not a striped tube: shoulders just behind the head, a
+// rounder belly in between, the rump tapering to 72%. The profile follows the body (distance from the rump and from
+// the head), never the cell path, so a long straight run and a tight bend read the same. shaped(pal) picks the breeds
+// that get it (the tabby first; the others keep the round stroke until it has been judged on the board).
+export const shaped = (pal) => !!pal && pal.pat === 'stripes';
+// radius factor at arc length s of the window a..b (1 = the plain stroke): rump taper + shoulder and belly swell
+function prof(s, a, b, c) {
+  const r = s - a, h = b - s;
+  const u = Math.min(1, r / (c * 0.85));
+  const taper = 0.72 + 0.28 * u * u * (3 - 2 * u);
+  const g = (x, m, sd) => Math.exp(-((x - m) * (x - m)) / (sd * sd));
+  const shoulder = b - a > c * 1.1 ? 0.14 * g(h, c * 0.58, c * 0.28) : 0;
+  const hips = a + c * 0.7, sh = b - c * 0.58;
+  const gap = sh - hips;
+  const belly = gap > c * 0.35 ? 0.1 * g(s, (hips + sh) / 2, Math.max(c * 0.3, gap * 0.4)) : 0;
+  return taper + shoulder + belly;
+}
+// the shaped silhouette at the current stroke width, filled with the current stroke style: a union of discs along
+// the window (one fill, so translucent layers never double up where discs overlap, and bends stay round)
+function fillShape(ctx, path, a, b, c) {
+  const hw = ctx.lineWidth / 2;
+  const step = Math.max(1.2, hw * 0.32);
+  ctx.save();
+  ctx.fillStyle = ctx.strokeStyle;
+  ctx.beginPath();
+  for (let s = a; ; s += step) {
+    const q = Math.min(s, b);
+    const p = sample(path, q);
+    const r = hw * prof(q, a, b, c);
+    ctx.moveTo(p.x + r, p.y);
+    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    if (q >= b) break;
+  }
+  ctx.fill();
+  ctx.restore();
+}
+// half-width of the shaped body at s (stripes wrap to it)
+const shapeHw = (w, s, a, b, c) => (w / 2) * prof(s, a, b, c);
+
 // a body window's silhouette with the current stroke style and width (perf bakes: shadows, rim light)
-export function bodyShape(ctx, path, a, b, c) { strokeTaper(ctx, path, a, b, c); }
+export function bodyShape(ctx, path, a, b, c, pal) { if (shaped(pal)) fillShape(ctx, path, a, b, c); else strokeTaper(ctx, path, a, b, c); }
 
 // ---- shapes ----
 function heart(ctx, x, y, r) {
@@ -228,6 +267,9 @@ export function drawBody(ctx, path, a, b, o) {
   const { pal, w, c } = o;
   const al = o.alpha ?? 1;
   const len = b - a;
+  const shp = shaped(pal) && len > c * 0.5;
+  const fill = shp ? fillShape : strokeTaper; // the body's own silhouette (shaped tabby, else the tapered stroke)
+  const lite = !!o.lite; // R11 fix 2 (juice): a cat in flight skips the fabric composites (overlay, soft-light, stitches)
   ctx.save();
   ctx.globalAlpha = al;
   ctx.lineCap = 'round';
@@ -246,7 +288,7 @@ export function drawBody(ctx, path, a, b, o) {
     ctx.translate(-c * 0.05, c * 0.07);
     ctx.strokeStyle = felt ? 'rgba(60,30,10,0.25)' : 'rgba(20,40,70,0.22)';
     ctx.lineWidth = w + 6;
-    strokeTaper(ctx, path, a, b, c);
+    fill(ctx, path, a, b, c);
     ctx.restore();
   }
 
@@ -281,18 +323,18 @@ export function drawBody(ctx, path, a, b, o) {
   // rim, belly shade, fur lit from above; the rump tapers to 80% so the body reads as a cat, not a tube
   ctx.strokeStyle = rim;
   ctx.lineWidth = w + (felt ? 3 : 6);
-  strokeTaper(ctx, path, a, b, c);
+  fill(ctx, path, a, b, c);
   ctx.strokeStyle = shade(pal.base, -0.16);
   ctx.lineWidth = w;
-  strokeTaper(ctx, path, a, b, c);
+  fill(ctx, path, a, b, c);
   ctx.save();
   ctx.translate(-w * 0.04, -w * 0.08);
   ctx.strokeStyle = pal.base;
   ctx.lineWidth = w * 0.8;
-  strokeTaper(ctx, path, a, b, c);
+  fill(ctx, path, a, b, c);
   ctx.restore();
   // felt: a soft fabric grain over the fur
-  if (felt && len > c * 0.2) {
+  if (felt && len > c * 0.2 && !lite) {
     if (!feltPat) feltPat = ctx.createPattern(IMG['r7/tex_felt'], 'repeat');
     if (feltPat) {
       ctx.save();
@@ -300,7 +342,7 @@ export function drawBody(ctx, path, a, b, o) {
       ctx.globalAlpha = al * 0.5;
       ctx.strokeStyle = feltPat;
       ctx.lineWidth = w;
-      strokeTaper(ctx, path, a, b, c);
+      fill(ctx, path, a, b, c);
       ctx.restore();
     }
   }
@@ -322,7 +364,7 @@ export function drawBody(ctx, path, a, b, o) {
     strokeSlice(ctx, path, a + c * 0.1, Math.max(a + c * 0.15, b - c * 0.5));
   }
   ctx.restore();
-  if (felt && len > c * 0.4) {
+  if (felt && len > c * 0.4 && !lite) {
     // knit: fine yarn grain over the fur
     const kp = knitPattern(ctx);
     if (kp) {
@@ -331,7 +373,7 @@ export function drawBody(ctx, path, a, b, o) {
       ctx.globalAlpha = al * 0.9;
       ctx.strokeStyle = kp;
       ctx.lineWidth = w;
-      strokeTaper(ctx, path, a, b, c);
+      fill(ctx, path, a, b, c);
       ctx.restore();
     }
     // inner shadow along the belly edge, then running stitches just inside both edges: a sewn plush seam
@@ -344,7 +386,7 @@ export function drawBody(ctx, path, a, b, o) {
     ctx.restore();
     seam(ctx, path, a, b, w, c, al);
   }
-  if (felt) {
+  if (felt && !lite) {
     ctx.save();
     ctx.translate(w * 0.3, -w * 0.3);
     ctx.strokeStyle = 'rgba(255,240,200,0.6)';
@@ -368,6 +410,19 @@ export function drawBody(ctx, path, a, b, o) {
     const side = i % 2 ? 1 : -1;
     switch (pal.pat) {
       case 'stripes': {
+        if (shp) {
+          // wrapped to the shaped body: a crescent across the local width, thick on the spine, tapering to the flanks,
+          // bowed toward the head so it reads as going round the back; every third one is a short flank mark
+          const hw = shapeHw(w, s, a, b, c) * (i % 3 === 2 ? 0.62 : 0.9);
+          const bow = hw * 0.5, th = w * 0.1;
+          const lx = p.x - nx * hw, ly = p.y - ny * hw, rx = p.x + nx * hw, ry = p.y + ny * hw;
+          ctx.beginPath();
+          ctx.moveTo(lx, ly);
+          ctx.quadraticCurveTo(p.x + p.tx * (bow + th), p.y + p.ty * (bow + th), rx, ry);
+          ctx.quadraticCurveTo(p.x + p.tx * (bow - th), p.y + p.ty * (bow - th), lx, ly);
+          ctx.fill();
+          break;
+        }
         ctx.lineWidth = w * 0.2;
         const hw = w * 0.36;
         ctx.beginPath();

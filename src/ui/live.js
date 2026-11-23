@@ -60,7 +60,13 @@ function goalParts(g) {
   else if (g.k === 'daily') { icon = r7('hud_medal'); label = t('g_daily'); act = 'dailysheet'; }
   else if (g.k === 'show') { icon = r7('icon_trophy'); label = t('goalShow'); act = 'events'; extra = 'data-tab="show"'; }
   else if (g.k === 'party') { icon = r7('hud_star'); label = t('goalParty'); }
+  else if (g.k === 'thread') { icon = resImg(g.who); label = threadLine(g); act = g.have >= g.need ? 'cafeview' : 'play'; }
   return { icon, label, act, extra };
+}
+// the next resident's exact remaining action: "Pip moves in after 2 more wins" / "Build the Bookshelf for Pip"
+export function threadLine(g) {
+  if (g.have >= g.need) return t('thrBuild', { name: g.name, task: g.task });
+  return t(g.wins === 1 ? 'thrWin1' : 'thrWin', { name: g.name, w: g.wins });
 }
 export function goalsHtml(list) {
   if (!list || !list.length) return '';
@@ -81,6 +87,8 @@ export function featGoal(list) {
   if (ready) return ready;
   const fresh = list.find((g) => g.fresh); // a newcomer's first ask is a moment of its own
   if (fresh) return fresh;
+  const th = list.find((g) => g.k === 'thread'); // R11 fix 2: early on, the next resident is THE goal (map, win card, room)
+  if (th) return th;
   const near = list.filter((g) => g.pct >= 0.5).sort((a, b) => b.pct - a.pct)[0];
   return near || list[0];
 }
@@ -95,6 +103,7 @@ export function featGoalHtml(list) {
   if (g.k === 'req') { act = ready ? 'cafesheet' : 'play'; extra = ''; cta = ready ? t('claim') : t('play'); }
   else if (g.k === 'job') { act = ready ? 'jobclaim' : 'play'; cta = ready ? t('claim') : t('play'); }
   else if (g.k === 'daily') { act = 'daily'; cta = t('play'); }
+  else if (g.k === 'thread') { act = ready ? 'cafeview' : 'play'; cta = ready ? t('build') : t('play'); }
   else if (ready) cta = t('claim');
   const icon = g.k === 'job' ? resImg(g.who) : p.icon; // the reward chip carries the coins
   return `<div class="goals feat"><button class="goal feat ${ready ? 'ready' : ''} ${g.fresh ? 'fresh' : ''}" data-act="${act}" ${extra} ${act === 'cafeview' ? 'data-view="room"' : ''}><span class="gi">${icon}</span><span class="gt"><b>${p.label}</b>${bar(g.have, g.need)}</span>${g.rw ? chips(g.rw) : ''}<i class="gcta">${cta}</i></button></div>`;

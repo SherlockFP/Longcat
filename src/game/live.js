@@ -102,7 +102,14 @@ export function reqTick(d, now, res) { // -> true when a request was added
 // a full list keeps its requests and the newcomer asks with the next one
 export function reqArrive(d, id) { // -> the new request or null
   const R = d.req;
-  if (R.list.length >= REQ_MAX || R.list.some((x) => x.who === id)) return null;
+  if (R.list.some((x) => x.who === id)) return null;
+  // R11 fix 2: a newcomer always arrives with its first ask (the arrival card shows it): with the list full, it takes the
+  // place of the oldest request nobody has started
+  if (R.list.length >= REQ_MAX) {
+    const k = R.list.findIndex((x) => x.p === 0 && R.fresh !== x.who);
+    if (k < 0) return null;
+    R.list.splice(k, 1);
+  }
   R.n++;
   // an easy first ask the next levels fill on their own: win two, else fill carriers
   const kd = REQ_KINDS.find((k) => (k.k === 'win' || k.k === 'carrier') && !R.list.some((x) => x.k === k.k)) || REQ_KINDS[0];
@@ -297,6 +304,7 @@ export function goals(d, now, c) {
   const add = (g, pin = 9) => { if (g.need > 0) out.push({ ...g, pct: Math.min(1, g.have / g.need), pin }); };
   d.req.list.forEach((x, i) => add({ k: 'req', i, have: x.p, need: x.need, who: x.who, req: x, fresh: d.req.fresh === x.who }, d.req.fresh === x.who ? 0 : 9));
   if (!c.dailyDone) add({ k: 'daily', have: Math.min(7, c.streak || 0), need: 7 }, 1);
+  if (c.thread) add({ k: 'thread', have: c.thread.have, need: c.thread.need, who: c.thread.who, name: c.thread.name, wins: c.thread.wins, task: c.thread.task }, 0.5); // R11: the early resident thread
   if (c.job) add({ k: 'job', have: c.job.p, need: c.job.need, who: c.job.who, job: c.job }, c.job.done ? 0 : 1.5); // R10: today's resident job
   if (c.show && c.show.have < c.show.need) add({ k: 'show', have: c.show.have, need: c.show.need }, 2);
   const o = nextOutfit(d, c.res);

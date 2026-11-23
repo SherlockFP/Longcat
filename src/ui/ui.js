@@ -6,7 +6,7 @@ import { PRODUCTS } from '../kit/iap.js';
 import { AREAS, TEASER, RESIDENTS, loc, isBuilt, pending, canAfford, nextResident, perkKind, perkValue, loveOf, treatCost, LOVE_COSTS, guestsFor, clutterLevel } from '../game/cafe.js';
 import './r7.css';
 import './dare.css';
-import { railHtml as liveRail, featGoalHtml } from './live.js';
+import { railHtml as liveRail, featGoalHtml, threadLine } from './live.js';
 import { OUTFITS } from '../game/live.js';
 import { drecHas, cardsOwned, WEEKS } from '../game/r10.js';
 import { house as streetHouse, SHOPS } from '../game/street.js';
@@ -25,7 +25,9 @@ const r7 = (name, cls = '') => img(`r7/${name}.webp`, cls);
 const SHARE_SVG = '<svg class="shi" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke-width="3" stroke-linecap="round"/></svg>';
 // Share clip: sits on the clip preview (main.js reveals it with the peak still); the first tap records the clip, the
 // next one sends it (R11: nothing records until the player asks)
-const CLIP_BTN = () => `<button class="clipshare" data-act="shareclip" hidden aria-label="${t('shareClipBtn')}">${SHARE_SVG}<span>${t('shareClipBtn')}</span></button>`;
+// R11 fix 2: the clip button names what the first tap does (makes the video, a few seconds), not "Share"; Dare a friend
+// stays the one-tap link
+const CLIP_BTN = (rec) => `<button class="clipshare" data-act="shareclip" hidden aria-label="${t(rec ? 'clipMake' : 'shareClipBtn')}">${SHARE_SVG}<span>${t(rec ? 'clipMake' : 'shareClipBtn')}</span></button>`;
 const SHARE_ROUND = () => `<button class="round share" data-act="share" aria-label="${t('share')}">${SHARE_SVG.replace(' class="shi"', '')}</button>`;
 const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const r7c = (name, cls = '') => `<img class="${cls} cfb" src="${assetUrl('r7/' + name + '.webp')}" alt="" draggable="false">`;
@@ -193,8 +195,9 @@ function flyStar(cn, n) {
   const bar = document.querySelector('#modal .cafebar .bar i');
   const src = document.querySelector('#modal .stars .star:last-child') || document.querySelector('#modal .reward.st img');
   if (!bar) return;
-  const to = Math.min(100, Math.round((cn.stars / cn.cost) * 100));
-  const from = Math.min(100, Math.round((Math.max(0, cn.stars - n) / cn.cost) * 100));
+  const have = cn.thread ? cn.thread.have : cn.stars, need = Math.max(1, cn.thread ? cn.thread.need : cn.cost); // R11: the thread's bar
+  const to = Math.min(100, Math.round((have / need) * 100));
+  const from = Math.min(100, Math.round((Math.max(0, have - n) / need) * 100));
   if (reduced() || !src) return;
   bar.style.width = from + '%';
   setTimeout(() => {
@@ -475,10 +478,23 @@ export const ui = {
       : r7c('cat_head_' + info.peek + '_happy', 'peek');
     const cn = info.cafeNext;
     const nr = cn && cn.res;
+    const th = cn && cn.thread; // R11 fix 2: the early resident thread (main.js threadInfo)
     const cnTask = cn && AREAS.flatMap((a) => a.tasks).find((x) => x.sprite === cn.sprite);
     const resChip = nr ? `<span class="nres">${r7c('res7_' + nr.id + '_idle')}<b>${nr.left > 0 ? t('resIn', { name: nr.name, n: nr.left }) : t('resReady', { name: nr.name })}</b></span>` : '';
-    // the level's best bench chain loops here as the share preview (main.js starts it), with what the player pulled off
-    const rrow = `<div class="rrow">${info.coins ? `<div class="reward cn">${img('ui_coin.webp')}<b>+${info.coins}</b></div>` : ''}${info.cafeStars ? `<div class="reward st">${img('ui_star.webp')}<b>+${info.cafeStars}</b></div>` : ''}${info.ribbons ? `<div class="reward st rb">${ribbonSvg}<b>+${info.ribbons}</b></div>` : ''}</div>`;
+    // the café bar: with a thread it is that resident (portrait, the exact remaining action, the stars toward them),
+    // else the next build; a build the stars already cover makes it a button (Build! on it), and Next never moves
+    const cafeBar = (slim) => {
+      if (!cn) return '';
+      const go = !!info.canBuild;
+      const tag = go ? 'button data-act="cafe"' : 'div';
+      const icon = th ? r7c('res7_' + th.who + '_idle') : cnTask ? r7c('decor_' + cnTask.id) : cimg(cn.sprite);
+      const have = th ? th.have : Math.min(cn.stars, cn.cost);
+      const need = th ? th.need : cn.cost;
+      return `<${tag} class="cafebar${slim ? ' slim' : ''}${go ? ' go' : ''}${th ? ' thr' : ''}"><span class="ticon">${icon}</span><div class="cbtxt"><small>${th ? threadLine(th) : t('cafeNext', { name: cn.name })}</small><div class="bar"><i style="width:${Math.min(100, Math.round((have / Math.max(1, need)) * 100))}%"></i><em>${img('ui_star.webp')}${have}/${need}</em></div>${!slim && !th ? resChip : ''}</div>${go ? `<i class="cbgo">${t('build')}</i>` : ''}</${go ? 'button' : 'div'}>`;
+    };
+    // R11 fix 2: ONE main reward row under the header: the cat adopted on this clear, else a build that is ready
+    const barMain = !info.adopt && !!info.canBuild && !!cn;
+    const rrow = `<div class="rrow${info.adopt || barMain ? ' mini' : ''}"${info.pay ? ` title="${escHtml(info.pay)}"` : ''}>${info.coins ? `<div class="reward cn">${img('ui_coin.webp')}<b>+${info.coins}</b></div>` : ''}${info.cafeStars ? `<div class="reward st">${img('ui_star.webp')}<b>+${info.cafeStars}</b></div>` : ''}${info.ribbons ? `<div class="reward st rb">${ribbonSvg}<b>+${info.ribbons}</b></div>` : ''}</div>`;
     const ach = (info.ach || []).map((a) => `<li class="a-${a.k}">${a.text}</li>`).join('');
     // where the coins came from (base, tidy bench, hard level, café perks): a low payout explains itself
     const pay = info.pay ? `<div class="paybd">${info.pay}</div>` : '';
@@ -486,51 +502,53 @@ export const ui = {
     const dres = info.friend ? `<div class="dres ${info.friend.res}">${info.friend.line}${info.friend.vs ? `<small class="dvs">${info.friend.round > 1 ? `<i class="drd">${t('dareRound', { n: info.friend.round })}</i>` : ''}<span class="${info.friend.res === 'miss' ? 'win' : ''}">${escHtml(info.friend.vs[0])}</span><span class="me ${info.friend.res !== 'miss' ? 'win' : ''}">${escHtml(info.friend.vs[1])}</span></small>` : ''}</div>` : '';
     // a share moment (first chain x3, a new best, a clean sweep, today's Daily, Show gold, Rush top 3): its own headline
     const moment = info.moment ? `<div class="moment">${escHtml(info.moment)}</div>` : '';
+    // the replay card keeps its story ON the thumbnail (the moment's headline, else what the player pulled off) and the
+    // café bar in the column beside it, so the card is header, main reward row, replay row, buttons
+    const clipDet = info.moment ? `<div class="clipdet"><i class="mom">${escHtml(info.moment)}</i></div>` : ach ? `<div class="clipdet">${(info.ach || []).map((a) => `<i class="a-${a.k}">${a.text}</i>`).join('')}</div>` : '';
     const hilite = info.chain
-      ? `<div class="hilite"><div class="chainclip"><canvas width="180" height="320" aria-hidden="true"></canvas>${CLIP_BTN()}</div><div class="hcol">${dres}${rrow}${pay}${ach ? `<ul class="ach">${ach}</ul>` : ''}${info.adopt || ''}</div></div>`
+      ? `<div class="hilite"><div class="chainclip"><canvas width="180" height="320" aria-hidden="true"></canvas>${clipDet}${CLIP_BTN(info.rec)}</div><div class="hcol">${dres}${rrow}${info.payHi ? `<div class="ordpay">${info.payHi}</div>` : ''}${barMain ? '' : cafeBar(true)}</div></div>`
       : `${pay}${ach ? `<ul class="ach inline">${ach}</ul>` : ''}`;
-    // an ordinary clear gets a compact result low on the screen: one thumb action (Next / Build); the big card is kept
-    // for hard levels, a chain replay, a resident ready to move in, the daily and the Show / Rush boards
+    const homeRound = `<button class="round" data-act="home" aria-label="${t('home')}"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button>`;
+    // an ordinary clear gets a compact result low on the screen: one thumb action (Next); the big card is kept for hard
+    // levels, a chain replay, a resident ready to move in, the daily and the Show / Rush boards
     const compact = !info.show && !info.again && info.stars < 2 && !(nr && nr.left <= 0); // a chain loops as a thumbnail in it
     if (compact) {
-      // R11: an ordinary first clear names its adopted cat here (no ceremony before the card) and keeps ONE big route,
-      // Next; a build that is ready rides on the café bar (a tap there builds) instead of replacing Next
-      const quick = !!info.adopt;
-      const cbar = cn ? `<${quick && info.canBuild ? 'button data-act="cafe"' : 'div'} class="cafebar slim${quick && info.canBuild ? ' go' : ''}"><span class="ticon">${cnTask ? r7c('decor_' + cnTask.id) : cimg(cn.sprite)}</span><div class="cbtxt"><small>${t('cafeNext', { name: cn.name })}</small><div class="bar"><i style="width:${Math.min(100, Math.round((cn.stars / cn.cost) * 100))}%"></i><em>${img('ui_star.webp')}${Math.min(cn.stars, cn.cost)}/${cn.cost}</em></div></div>${quick && info.canBuild ? `<i class="cbgo">${t('build')}</i>` : ''}</${quick && info.canBuild ? 'button' : 'div'}>` : '';
-      const head = info.chain ? `<div class="chainclip mini"><canvas width="180" height="320" aria-hidden="true"></canvas>${CLIP_BTN()}</div>` : info.res ? r7c('res7_' + info.res + '_idle', 'cpeek') : r7c('cat_head_' + info.peek + '_happy', 'cpeek');
+      const main = info.adopt || (barMain ? cafeBar(true) : '');
+      const head = info.chain ? `<div class="chainclip mini"><canvas width="180" height="320" aria-hidden="true"></canvas>${CLIP_BTN(info.rec)}</div>` : info.res ? r7c('res7_' + info.res + '_idle', 'cpeek') : r7c('cat_head_' + info.peek + '_happy', 'cpeek');
       root.insertAdjacentHTML('beforeend', `
 <div class="backdrop winb" id="modal"><div class="card teal win compact ${info.chain ? 'haschain' : ''}">
-  <div class="cwtop">${head}<div class="cwt"><h2 class="title yellow">${t(info.title)}</h2>${moment}${info.pay ? `<div class="paybd">${info.pay}</div>` : ''}</div><div class="stars n${info.stars}">${stars}</div></div>
+  <div class="cwtop">${head}<div class="cwt"><h2 class="title yellow">${t(info.title)}</h2>${moment}${info.pay && !main ? `<div class="paybd">${info.pay}</div>` : ''}</div><div class="stars n${info.stars}">${stars}</div></div>
+  ${main ? `<div class="mainrew">${main}</div>` : ''}
   ${rrow}
-  ${info.adopt || ''}
   ${ach ? `<ul class="ach inline">${ach}</ul>` : ''}
-  ${cbar}
+  ${barMain ? '' : cafeBar(true)}
   ${drecRow(info.drec)}
   ${info.purr ? `<div class="purr">${info.purr}</div>` : ''}
-  <div class="row r7row">${info.canBuild && !quick ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${t('next')}</button>`}${info.dare ? '' : `<button class="round" data-act="home" aria-label="${t('home')}"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button>`}${shareBtn}</div>
+  <div class="row r7row nextrow"><button class="btn" data-act="next">${t('next')}</button>${info.dare ? '' : homeRound}${shareBtn}</div>
 </div></div>`);
       if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);
       if (cn && info.cafeStars) flyStar(cn, info.cafeStars);
       return;
     }
-    // R11: Next stays the one big route (the bar builds); a replay card with an adoption drops the Purr Streak line
-    const bgo = !!info.adopt && info.canBuild;
-    const cafeBar = cn ? `<${bgo ? 'button data-act="cafe"' : 'div'} class="cafebar${bgo ? ' go' : ''}"><span class="ticon">${cnTask ? r7c('decor_' + cnTask.id) : cimg(cn.sprite)}</span><div class="cbtxt"><small>${t('cafeNext', { name: cn.name })}</small><div class="bar"><i style="width:${Math.min(100, Math.round((cn.stars / cn.cost) * 100))}%"></i><em>${img('ui_star.webp')}${Math.min(cn.stars, cn.cost)}/${cn.cost}</em></div>${resChip}</div>${bgo ? `<i class="cbgo">${t('build')}</i>` : ''}</${bgo ? 'button' : 'div'}>` : '';
+    // the big card: Next (or the friend's reply) is the last row, at the same height as on the compact card; Home and
+    // Share sit above it
+    const main = info.adopt || (barMain ? cafeBar(false) : '');
+    const primary = info.friend ? (info.friend.res === 'miss' ? `<button class="btn" data-act="retry">${t('retry')}</button>` : `<button class="btn pink dback" data-act="share">${SHARE_SVG}<span>${t(info.friend.res === 'tie' ? 'dareTieBtn' : 'dareBack')}</span></button>`) : info.again ? `<button class="btn" data-act="retry">${t('runAgain')}</button>` : `<button class="btn" data-act="next">${info.show ? t('show') : t('next')}</button>`;
     root.insertAdjacentHTML('beforeend', `
-<div class="backdrop" id="modal"><div class="card teal win ${info.chain ? 'withclip' : (info.ach || []).length || info.pay ? 'tight' : ''}">
+<div class="backdrop winb wbig" id="modal"><div class="card teal win ${info.chain ? 'withclip' : (info.ach || []).length || info.pay ? 'tight' : ''}">
   ${peek}
   <h2 class="title yellow">${t(info.title)}</h2>
-  ${moment}
+  ${info.chain ? '' : moment}
   ${info.show ? `<div class="purr showtag">${ribbonSvg}${info.showTag || t('showBoard')}</div>` : `<div class="stars n${info.stars}">${stars}</div>`}
+  ${main ? `<div class="mainrew">${main}</div>` : ''}
   ${info.chain ? '' : rrow}
   ${hilite}
-  ${info.chain ? '' : info.adopt || ''}
-  ${cafeBar}
+  ${barMain || info.chain ? '' : cafeBar(false)}
   ${drecRow(info.drec)}
-  ${info.purr && !(info.chain && info.adopt) ? `<div class="purr">${info.purr}</div>` : ''}
+  ${info.purr && !(info.chain && main) ? `<div class="purr">${info.purr}</div>` : ''}
   ${info.chain ? '' : dres}
-  ${info.friend ? (info.friend.res === 'miss' ? `<button class="btn" data-act="retry">${t('retry')}</button>` : `<button class="btn pink dback" data-act="share">${SHARE_SVG}<span>${t(info.friend.res === 'tie' ? 'dareTieBtn' : 'dareBack')}</span></button>`) : info.again ? `<button class="btn" data-act="retry">${t('runAgain')}</button>` : info.canBuild && !bgo ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${info.show ? t('show') : t('next')}</button>`}
   <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? `<button class="btn pink sm sharebtn dsend" data-act="share">${SHARE_SVG}<span>${t('dareSendResult')}</span></button>` : ''}` : `<button class="btn teal sm" data-act="home">${t('home')}</button>${shareBtn}`}</div>
+  ${primary}
 </div></div>`);
     if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);
     if (cn && info.cafeStars) flyStar(cn, info.cafeStars);
@@ -754,7 +772,7 @@ export const ui = {
       // the hub's thread: this piece brings a resident, or the card names the next one and the stars still to go
       const nx = L && L.nextRes;
       const sub = x.resident ? `<small class="thread">${r7c('res7_' + x.resident.id + '_idle', 'mini-res')}${t('movesIn', { name: x.resident.name })}</small>`
-        : nx ? `<small class="thread">${r7c('res7_' + nx.id + '_idle', 'mini-res')}${t('resThread', { name: nx.name, n: nx.left })}</small>` : `<small>${floorName(ai)} · ${loc(area.name)}</small>`;
+        : nx ? `<small class="thread">${r7c('res7_' + nx.id + '_idle', 'mini-res')}${L.thread && L.thread.who === nx.id ? threadLine(L.thread) : t('resThread', { name: nx.name, n: nx.left })}</small>` : `<small>${floorName(ai)} · ${loc(area.name)}</small>`;
       card = `<button class="trow ${canAfford(x) ? 'ok' : 'dim'} ${L && L.spot && L.spot.k === 'build' ? 'spot' : ''}" data-act="build" data-id="${x.id}">
   <span class="ticon">${r7c('decor_' + x.id)}</span>
   <span class="tname"><b>${loc(x.name)}</b>${sub}${segs}</span>

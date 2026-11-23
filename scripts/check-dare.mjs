@@ -25,14 +25,19 @@ const hx = decode(raw({ v: 1, n: 5, m: 'seats', g: 2, x: 1, i: '<script>' }), ba
 must(hx && !('x' in hx) && !('i' in hx), 'match flag only on chain, hostile id dropped ' + JSON.stringify(hx));
 // v2: the short typeable core (what the clip burns in) + the extras (names, reply, thread, round)
 const s2 = shortCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, i: 'ab12cd' });
-must(s2 === '2l13-5-c3-ab12cd', 'short code ' + s2);
-must(JSON.stringify(decode(s2, base)) === JSON.stringify({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, nm: '', i: 'ab12cd' }), 'core alone plays the board ' + JSON.stringify(decode(s2, base)));
+must(s2 === '3l13-5-c3-ab12cd', 'short code ' + s2);
+must(JSON.stringify(decode(s2, base)) === JSON.stringify({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, nm: '', i: 'ab12cd', rev: 3 }), 'core alone plays the board ' + JSON.stringify(decode(s2, base)));
+// R11 fix 2: a link of the older token (2) still decodes, without rev: it opens the generated board it was made on
+must(JSON.stringify(decode('2l6-5-c3-ab12cd', base)) === JSON.stringify({ n: 6, b: 5, k: 'l', m: 'chain', g: 3, nm: '', i: 'ab12cd' }), 'a token-2 link keeps its board');
+let seenRev = null;
+decode('3l6-5-c3', (n, rev) => { seenRev = rev; return 5; });
+must(seenRev === 3, 'baseBench sees the link revision');
 must(decode(s2.toUpperCase(), base)?.i === 'ab12cd', 'a typed (capitalised) core still decodes');
 must(decode('2d4-5-s0', base)?.m === 'seats' && decode('2d4-5-s0', base).g === 0 && decode('2d4-5-s0', base).k === 'd', 'daily no-park core');
 must(decode('2r9-5-t123', base)?.g === 123, 'time core');
 must(decode('2l2-5-c2m', base)?.x === 1, 'match flag on the core');
 const full = encode({ n: 13, b: 5, k: 'l', m: 'chain', g: 4, nm: 'Deniz', i: 'qq11', r: 'ab12cd', pg: 3, th: [{ nm: 'Ana', v: 3 }], rd: 2 });
-must(full.startsWith('2l13-5-c4-qq11.') && full.length < 160 && /^[A-Za-z0-9_.-]+$/.test(full), 'full v2 link ' + full);
+must(full.startsWith('3l13-5-c4-qq11.') && full.length < 160 && /^[A-Za-z0-9_.-]+$/.test(full), 'full v2 link ' + full);
 const fd = decode(full, base);
 must(fd && fd.nm === 'Deniz' && fd.r === 'ab12cd' && fd.pg === 3 && fd.rd === 2 && fd.th.length === 1 && fd.th[0].nm === 'Ana' && fd.th[0].v === 3, 'v2 round trip ' + JSON.stringify(fd));
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');

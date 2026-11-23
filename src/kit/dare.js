@@ -1,8 +1,10 @@
 // Friend challenge links: ?c=<code> names one exact board and one goal. No accounts, no backend: the link is all there
 // is, so decode() trusts nothing in it (shape, numbers, names) and clamps every field.
 // v2 (current): a short, typeable core, then optional extras after a dot:
-//   2<k><n>-<b>-<m><g>[m][-<i>][.<base64url JSON extras>]      e.g. 2l13-5-c3-ab12cd
-//   the leading 2 is the token version and pins the board generator revision (bump it when generate() changes);
+//   3<k><n>-<b>-<m><g>[m][-<i>][.<base64url JSON extras>]      e.g. 3l13-5-c3-ab12cd
+//   the leading digit is the token version and pins the board revision (bump it when a campaign board changes):
+//   2 = the generated boards, 3 (current) = the curated L6 / L9 / L11 (src/core/curated.js); decode() returns rev: 3 for
+//   a 3 token and no rev for older links, which keep opening the board they were made on;
 //   k: l level | d daily | s Cat Show | r Café Rush; m: c chain | s seats | t time (tenths of a second); a trailing m on
 //   the goal = match (the chain is already the board's best); i: share id. The core alone plays the exact board and goal
 //   (it is what the clip burns in, so a friend can type it); the extras carry the names and the reply thread:
@@ -10,6 +12,14 @@
 //     earlier runs on this board (oldest first, at most 3), rd: round of the back-and-forth (1 = the first dare) }
 // v1 (still decoded): base64url JSON { v: 1, n, b, k, m: 'chain'|'seats'|'time', g, nm?, x?, i?, r?, pg? }.
 export const MODES = ['chain', 'seats', 'time'];
+
+// R11 fix 2: ONE address for every share: the full link, the typed code on the clip and the QR all start with it. The
+// public https address when the build names one (VITE_PUBLIC_URL, RELEASE.md), else this page
+const PUBLIC_URL = (import.meta.env && import.meta.env.VITE_PUBLIC_URL) || '';
+export function publicBase() {
+  if (PUBLIC_URL) return /\/$/.test(PUBLIC_URL) || /\.html?$/.test(PUBLIC_URL) ? PUBLIC_URL : PUBLIC_URL + '/';
+  return location.origin + location.pathname;
+}
 const KINDS = ['l', 'd', 's', 'r'];
 const MAX_LEN = 400;
 const MCH = { chain: 'c', seats: 's', time: 't' };
@@ -48,7 +58,7 @@ export function encodeV1(d) {
 
 // the typeable part: board, seats, goal, share id (lower case; what the clip shows)
 export function shortCode(d) {
-  return `2${KINDS.includes(d.k) ? d.k : 'l'}${d.n}-${d.b}-${MCH[d.m]}${d.g}${d.m === 'chain' && d.x ? 'm' : ''}${d.i && ID.test(d.i) ? '-' + d.i : ''}`;
+  return `${d.rev && d.rev < 3 ? 2 : 3}${KINDS.includes(d.k) ? d.k : 'l'}${d.n}-${d.b}-${MCH[d.m]}${d.g}${d.m === 'chain' && d.x ? 'm' : ''}${d.i && ID.test(d.i) ? '-' + d.i : ''}`;
 }
 export function encode(d) {
   const ex = {};
@@ -60,21 +70,23 @@ export function encode(d) {
   if (Number.isFinite(d.rd) && d.rd > 1) ex.rd = Math.min(99, Math.round(d.rd));
   return shortCode(d) + (Object.keys(ex).length ? '.' + b64url(JSON.stringify(ex)) : '');
 }
-const V2 = /^2([ldsr])(\d{1,3})-(\d{1,2})-([cst])(\d{1,4})(m?)(?:-([a-z0-9]{1,8}))?$/;
+const V2 = /^([23])([ldsr])(\d{1,3})-(\d{1,2})-([cst])(\d{1,4})(m?)(?:-([a-z0-9]{1,8}))?$/;
 const goalRange = (m, b) => (m === 'chain' ? [2, 8] : m === 'seats' ? [0, b] : [30, 9000]); // time: 3 s .. 15 min, in tenths
 function decodeV2(code, baseBench) {
   const dot = code.indexOf('.');
   const core = (dot < 0 ? code : code.slice(0, dot)).toLowerCase(); // typed from a video: the phone may capitalise it
   const mm = V2.exec(core);
   if (!mm) return null;
-  const n = int(mm[2], 1, 999);
-  const m = CHM[mm[4]];
-  const base = baseBench(n);
-  const b = int(mm[3], base, base + 2) ?? base;
-  const g = int(mm[5], ...goalRange(m, b));
-  const out = { n, b, k: mm[1], m, g, nm: '' };
-  if (m === 'chain' && mm[6]) out.x = 1;
-  if (mm[7]) out.i = mm[7];
+  const rev = +mm[1];
+  const n = int(mm[3], 1, 999);
+  const m = CHM[mm[5]];
+  const base = baseBench(n, rev);
+  const b = int(mm[4], base, base + 2) ?? base;
+  const g = int(mm[6], ...goalRange(m, b));
+  const out = { n, b, k: mm[2], m, g, nm: '' };
+  if (m === 'chain' && mm[7]) out.x = 1;
+  if (mm[8]) out.i = mm[8];
+  if (rev >= 3) out.rev = rev;
   if (dot < 0) return out;
   let ex;
   try { ex = JSON.parse(unb64url(code.slice(dot + 1))); } catch { return out; } // a mangled tail still plays the board
@@ -93,10 +105,10 @@ function decodeV2(code, baseBench) {
   return out;
 }
 
-// baseBench(n): the board's own seat count; a link may add at most two seats (the sender's perk seats), never remove any
+// baseBench(n, rev): the board's own seat count; a link may add at most two seats (the sender's perk seats), never remove any
 export function decode(code, baseBench) {
   if (typeof code !== 'string' || !code || code.length > MAX_LEN || !/^[A-Za-z0-9_.-]+$/.test(code)) return null;
-  if (code[0] === '2') return decodeV2(code, baseBench);
+  if (code[0] === '2' || code[0] === '3') return decodeV2(code, baseBench);
   if (code.includes('.')) return null;
   let o;
   try { o = JSON.parse(unb64url(code)); } catch { return null; }

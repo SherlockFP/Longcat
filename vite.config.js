@@ -43,7 +43,21 @@ self.addEventListener('fetch', (e) => {
   };
 }
 
+// R11 fix 2: the share link, the code typed off a clip and its QR all use VITE_PUBLIC_URL; a release build without it
+// falls back to whatever address serves the page, so say so once
+function publicUrlNote() {
+  return {
+    name: 'lco-public-url',
+    apply: 'build',
+    configResolved(c) {
+      const u = c.env && c.env.VITE_PUBLIC_URL;
+      if (!u) c.logger.warn('[lco] VITE_PUBLIC_URL is not set: share links and QR codes will use the address the page is served from (RELEASE.md section 3).');
+      else if (!/^https:\/\//.test(u)) c.logger.warn('[lco] VITE_PUBLIC_URL should be an https address: ' + u);
+    },
+  };
+}
+
 export default defineConfig({
   base: './',
-  plugins: [offlineSw()],
+  plugins: [offlineSw(), publicUrlNote()],
 });

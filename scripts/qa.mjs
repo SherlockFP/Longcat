@@ -22,7 +22,9 @@ const bye = (code) => { kill(); setTimeout(() => { try { rmSync(profile, { recur
 setTimeout(() => { console.log('hard timeout'); bye(2); }, 150 * 60 * 1000).unref();
 
 try {
-  const vite = spawn(process.execPath, [join(ROOT, 'node_modules/vite/bin/vite.js'), '--port', String(PORT), '--strictPort'], { cwd: ROOT, stdio: 'ignore' });
+  // R11 fix 2: frames show the public address form (link, typed code and QR share it); QA_LOCAL_URL=1 keeps localhost
+  if (!process.env.VITE_PUBLIC_URL && !process.env.QA_LOCAL_URL) process.env.VITE_PUBLIC_URL = 'https://example.github.io/long-cat-out/';
+  const vite = spawn(process.execPath, [join(ROOT, 'node_modules/vite/bin/vite.js'), '--port', String(PORT), '--strictPort'], { cwd: ROOT, stdio: 'ignore', env: process.env });
   procs.push(vite.pid);
   const origin = `http://localhost:${PORT}`;
   for (let i = 0; ; i++) { try { if ((await fetch(origin + '/')).ok) break; } catch { /* not yet */ } if (i > 150) throw new Error('vite did not start'); await sleep(200); }
@@ -901,7 +903,7 @@ try {
     }
     if (lvc >= 40) throw new Error('no ordinary clear in L30-39 showed the compact win card');
     console.log('  compact win on L' + lvc);
-    const nb = await ev('(() => { const b = document.querySelector("#modal .card.win.compact [data-act=next], #modal .card.win.compact [data-act=cafe]").getBoundingClientRect(); return b.top > innerHeight * 0.6 && b.height >= 48; })()');
+    const nb = await ev('(() => { const b = document.querySelector("#modal .card.win.compact .nextrow [data-act=next]").getBoundingClientRect(); return b.top > innerHeight * 0.6 && b.height >= 48; })()');
     if (!nb) throw new Error('compact win: the one action should sit low (thumb) and be >= 48px tall');
     await shot('50b-win-compact');
     await qa('lang("tr")');
@@ -1554,7 +1556,7 @@ try {
     const dl = await qa('dareLink()');
     const cl = await qa('clip()');
     console.log('  dare', JSON.stringify(dl.d), dl.short, '| clip url', cl.url, '|', cl.goal);
-    if (!cl.url || cl.url !== dl.short || !/\?c=2l13-5-c3-[a-z0-9]{6}$/.test(cl.url)) throw new Error('the clip should burn in the short link of this dare: ' + cl.url + ' vs ' + dl.short);
+    if (!cl.url || cl.url !== dl.short || !/\?c=3l13-5-c3-[a-z0-9]{6}$/.test(cl.url)) throw new Error('the clip should burn in the short link of this dare: ' + cl.url + ' vs ' + dl.short);
     const dec = await qa(`dareDecode(${JSON.stringify(cl.url.split('?c=')[1])})`);
     if (!dec || dec.n !== 13 || dec.b !== dl.d.b || dec.m !== dl.d.m || dec.g !== dl.d.g || dec.i !== dl.d.i) throw new Error('the burned-in code should decode to the same board, seats and goal: ' + JSON.stringify(dec));
     if (!/Beat a chain x3 · Level 13 · 5 seats/.test(cl.goal)) throw new Error('clip end card goal line: ' + cl.goal);
@@ -1567,7 +1569,7 @@ try {
     const c0 = await qa('counters()');
     await ev('document.querySelector("#modal [data-act=share]").click()'); await sleep(900);
     if (!(await ev('!!document.querySelector("#linkbar.sharesheet .ssst.ok")'))) throw new Error('the sheet should say the link was copied');
-    if (!/\?c=2l13-/.test(await ev('window.__clipText'))) throw new Error('the copied text should carry the dare link: ' + (await ev('window.__clipText')));
+    if (!/\?c=3l13-/.test(await ev('window.__clipText'))) throw new Error('the copied text should carry the dare link: ' + (await ev('window.__clipText')));
     if (!(await ev('!!document.querySelector("#linkbar .ssimg") && !!document.querySelector("#linkbar [data-save]")'))) throw new Error('the sheet should preview the end card and offer Save clip');
     if (!(await fitsIn('#linkbar .sscard, #linkbar .btn, #linkbar .sst'))) throw new Error('share sheet does not fit');
     await shot('105d-share-sheet');
@@ -1579,7 +1581,7 @@ try {
     await qa('clipEncode()'); await sleep(700);
     await ev('window.__clipText = ""; const b = document.querySelector("#modal [data-act=shareclip]"); b.hidden = false; b.click()'); await sleep(900);
     if (!(await ev('[...document.querySelectorAll(".toast")].some((t) => /Clip saved and link copied/.test(t.textContent))'))) throw new Error('clip fallback should toast "Clip saved and link copied"');
-    if (!/\?c=2l13-/.test(await ev('window.__clipText'))) throw new Error('clip fallback should copy the link');
+    if (!/\?c=3l13-/.test(await ev('window.__clipText'))) throw new Error('clip fallback should copy the link');
     await shot('105e-clip-saved-link-copied');
     // TR share sheet at 375x667
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
@@ -2103,7 +2105,7 @@ try {
     if (w0.encoding || w0.ready) throw new Error('r11: the win card must not record before the player asks ' + JSON.stringify(w0));
     if (!(await ev('(() => { const c = document.querySelector("#modal .chainclip canvas"); return !!c && c.height === 320; })()'))) throw new Error('r11: the peak still should be on the win card at once');
     if (await ev('document.querySelector("#modal [data-act=shareclip]").hidden')) throw new Error('r11: Share clip should be offered at once');
-    if (!/^https?:\/\/.+\?c=2l13-\d+-c\d+m?-[a-z0-9]+$/.test(w0.qr || '')) throw new Error('r11: QR link ' + w0.qr);
+    if (!/^https?:\/\/.+\?c=3l13-\d+-c\d+m?-[a-z0-9]+$/.test(w0.qr || '')) throw new Error('r11: QR link ' + w0.qr);
     await shot('r11-win-still');
     await ev('document.querySelector("#modal [data-act=shareclip]").click()'); await sleep(300);
     const w1 = await qa('clip()');
@@ -2181,6 +2183,125 @@ try {
     if (!(await ev('!!document.querySelector("#hubL .goal.feat")'))) throw new Error('r11 desktop: the featured goal belongs in the left panel');
     if (await ev('(() => { const g = document.querySelector("#cafe .goals"); return !!g && g.getClientRects().length > 0; })()')) throw new Error('r11 desktop: the column should not repeat the goals');
     await shot('r11-hub-desk');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+  }
+  // ---- R11 fix round 2 (sol-r11-2): Next at one height on every win card (375x667, EN + TR), one time badge, the main
+  // reward row, the replay details on the thumbnail, Make video, one public address for link / code / QR, the curated
+  // L6 / L9 / L11, the early resident thread, the shaped tabby. QA_SKIP_R12=1 skips it. ----
+  if (!process.env.QA_SKIP_R12) {
+    const lib2 = (named) => ({ last: 14 + named, shops: { library: { cats: 15 * named, named, sets: 0, cur: Array.from({ length: named }, (_, i) => [15 + i, 3 + i, i % 8]), done: [] } } });
+    const idle2 = async () => { await waitFor('!window.__qa.state().busy', 10000); await sleep(150); };
+    const cfg = (lg) => `settings: { lang: '${lg}', sound: false, music: false, haptics: false }`;
+    const saveImg2 = (name, url) => writeFileSync(join(OUT, name), Buffer.from(url.split(',')[1], 'base64'));
+    // the adoption ceremony (first adoption, Urgent / VIP) plays before the card: wait for the card itself
+    const winCard = async () => { await waitFor('window.__qa.state().screen === "win"', 30000); await waitFor('!!document.querySelector("#modal .card.win")', 15000); await sleep(1000); };
+    const nextAt = () => ev('(() => { const b = document.querySelector("#modal .card.win [data-act=next], #modal .card.win > [data-act=retry]"); if (!b) return null; const r = b.getBoundingClientRect(); return Math.round(r.bottom); })()');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    for (const lg of ['en', 'tr']) {
+      const at = {};
+      // a compact first clear with an adoption: the adopted cat is the main reward row, coins shrink under it
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 16, coins: 500, meta: { sessions: 3 }, cafe: { stars: 4, built: { counter_counter: 1 } }, orders: ${JSON.stringify(lib2(1))}, ${cfg(lg)} }))`);
+      await boot(); await qa('level(16)'); await sleep(600); await qa('winNow()');
+      await winCard();
+      if (!(await ev('!!document.querySelector("#modal .card.win .mainrew .ordwin")'))) throw new Error(`r12 ${lg}: the adoption should be the main reward row`);
+      if ((await ev('document.querySelectorAll("#modal .iqwin").length')) > 0) throw new Error(`r12 ${lg}: time and medal should be one badge, not a row`);
+      at.adopt = await nextAt();
+      await shot(`r12-win-adopt-${lg}`);
+      // a hard level (big card, no replay)
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 15, coins: 500, meta: { sessions: 3 }, orders: ${JSON.stringify(lib2(1))}, ${cfg(lg)} }))`);
+      await boot(); await qa('level(15)'); await sleep(600); await qa('winNow()');
+      await winCard();
+      at.hard = await nextAt();
+      await shot(`r12-win-hard-${lg}`);
+      // the chain replay card: the details ride on the thumbnail, the clip button says what it does
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 60, coins: 500, meta: { sessions: 3, shareNudge: 1, bestChain: 5 }, ${cfg(lg)} }))`);
+      await boot(); await qa('slow(1)'); await qa('level(13)'); await sleep(700);
+      for (const id of await qa('order()')) { await idle2(); if (await qa(`alive(${id})`)) await qa(`tap(${id})`); }
+      await winCard();
+      if (await ev('!!document.querySelector("#modal .card.win .chainclip")')) {
+        if (await ev('!!document.querySelector("#modal .hcol .ach, #modal .hcol .paybd")')) throw new Error(`r12 ${lg}: the replay details belong on the thumbnail`);
+        const lab = await ev('document.querySelector("#modal [data-act=shareclip]")?.getAttribute("aria-label") || ""');
+        const cr = (await qa('clip()')).canRecord;
+        if (cr && lab !== (lg === 'en' ? 'Make video' : 'Video yap')) throw new Error(`r12 ${lg}: the clip button should say it makes the video: ${lab}`);
+        if (!(await ev('[...document.querySelectorAll("#modal .clipdet i, #modal [data-act=shareclip] span")].every((e) => e.getBoundingClientRect().right <= e.closest(".chainclip").getBoundingClientRect().right + 1)'))) console.log(`  note: r12 ${lg} a thumbnail label runs past the thumbnail`);
+        at.clip = await nextAt();
+        await shot(`r12-win-clip-${lg}`);
+        if (cr && lg === 'en') {
+          await ev('document.querySelector("#modal [data-act=shareclip]").click()'); await sleep(900);
+          const mk = await ev('document.querySelector("#modal [data-act=shareclip]")?.getAttribute("aria-label") || ""');
+          if (!/^Making \d+%$/.test(mk)) throw new Error('r12: the clip button should count up while the video is made: ' + mk);
+          await shot('r12-clip-making');
+          await waitFor('window.__qa.clip().ready', 20000); await sleep(300);
+          const rd = await ev('document.querySelector("#modal [data-act=shareclip]")?.getAttribute("aria-label") || ""');
+          if (rd !== 'Send video') throw new Error('r12: a made video should say Send video: ' + rd);
+          await shot('r12-clip-ready');
+        }
+        const c = await qa('clip()');
+        const dl = await qa('dareLink()');
+        const base = (u) => u.split('?c=')[0].replace(/^https?:\/\//, '');
+        if (base(c.qr) !== base(dl.url) || base(dl.short) !== base(dl.url)) throw new Error(`r12 ${lg}: link, code and QR should share one address: ${dl.url} | ${dl.short} | ${c.qr}`);
+        if (process.env.VITE_PUBLIC_URL && !c.qr.startsWith(process.env.VITE_PUBLIC_URL)) throw new Error('r12: the QR should use VITE_PUBLIC_URL: ' + c.qr);
+        console.log(`  r12 share address ${lg}: ${dl.short}`);
+        if (lg === 'en') { const qf = await qa('clipFrames(["end"])'); saveImg2('r12-clip-end-qr.jpg', qf[0].url); }
+      } else console.log(`  note: r12 ${lg} L13 line gave no replay`);
+      const vals = Object.values(at).filter((v) => v != null);
+      console.log(`  r12 Next bottom ${lg}: ${JSON.stringify(at)}`);
+      if (vals.length < 2 || Math.max(...vals) - Math.min(...vals) > 3) throw new Error(`r12 ${lg}: Next should sit at one height on every win card: ${JSON.stringify(at)}`);
+    }
+    // the early resident thread: the hub features the next resident with the exact wins, the win card carries it, the
+    // room's build card names it
+    for (const lg of ['en', 'tr']) {
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 6, coins: 100, meta: { sessions: 2 }, cafe: { stars: 0, built: {} }, ${cfg(lg)} }))`);
+      await boot(); await qa('home()'); await sleep(800);
+      const fg = await ev('document.querySelector("#cafe .goal.feat")?.textContent || ""');
+      if (!(lg === 'en' ? /moves in after \d+ more win/ : /galibiyet daha, .+ taşınıyor/).test(fg)) throw new Error(`r12 ${lg}: the hub should feature the resident thread: ${fg}`);
+      if (!(await ev('[...document.querySelectorAll("#cafe .goal.feat .gt b, #cafe .goal.feat .gcta")].every((e) => e.scrollWidth <= e.clientWidth + 1)'))) throw new Error(`r12 ${lg}: thread goal text clipped`);
+      await shot(`r12-thread-hub-${lg}`);
+      await qa('level(6)'); await sleep(600); await qa('winNow()');
+      await winCard();
+      const cb = await ev('document.querySelector("#modal .cafebar.thr")?.textContent || ""');
+      if (!(lg === 'en' ? /moves in after|Build the/ : /taşınıyor| için /).test(cb)) throw new Error(`r12 ${lg}: the win card should carry the thread: ${cb}`);
+      await shot(`r12-thread-win-${lg}`);
+    }
+    // curated boards: L6 needs every seat and pays a chain; L9's pair park is named the moment it happens; L11 stacks
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 6, coins: 100, meta: { sessions: 3 }, cafe: { stars: 0, built: {} }, ${cfg('en')} }))`);
+    await boot(); await qa('slow(1)'); await qa('level(6)'); await sleep(700);
+    if ((await qa('meta()')).cur !== 'cushion') throw new Error('r12: L6 should play the curated board');
+    if (!/five cats/.test(await qa('tut()'))) throw new Error('r12: L6 should name its idea: ' + (await qa('tut()')));
+    await shot('r12-l6-start');
+    let full = false, chain = 0;
+    for (const id of await qa('order()')) {
+      await idle2();
+      if (!(await qa(`alive(${id})`))) continue;
+      if (id === 2) { await sleep(400); full = /Every seat is full/.test(await qa('tut()')); await shot('r12-l6-full'); }
+      await qa(`tap(${id})`);
+      if (id === 2) { for (let k = 0; k < 80 && (((await qa('chainFx()')) || {}).k || 0) < 4; k++) await sleep(50); await sleep(250); chain = ((await qa('chainFx()')) || {}).k || 0; await shot('r12-l6-chain'); }
+    }
+    if (!full) throw new Error('r12: the full bench on L6 should say a cat the front carrier takes is the way');
+    console.log(`  r12 L6 chain ${chain}`);
+    await waitFor('window.__qa.state().screen === "win"', 30000);
+    await qa('level(9)'); await sleep(700);
+    if (await qa('tut()')) throw new Error('r12: L9 has 8 rows: its lines are toasts, never the card over the bottom row');
+    for (const id of [5, 6]) { await idle2(); await qa(`tap(${id})`); }
+    await idle2(); await qa('tap(9)');
+    let pairT = '';
+    for (let k = 0; k < 30 && !/took 2 seats/.test(pairT); k++) { await sleep(100); pairT = await ev('[...document.querySelectorAll(".toast")].map((e) => e.textContent).join(" | ")'); }
+    if (!/took 2 seats/.test(pairT)) throw new Error('r12: L9 should name the pair park at once: ' + pairT);
+    await shot('r12-l9-pair');
+    await qa('failNow()');
+    await waitFor('window.__qa.state().screen === "fail"', 30000); await sleep(900);
+    if (!/big pair for last/.test(await ev('document.querySelector("#modal .tip")?.textContent || ""'))) throw new Error('r12: the L9 loss should give its own tip');
+    await shot('r12-l9-fail');
+    await qa('lang("tr")');
+    await qa('level(11)'); await sleep(700);
+    if (!/en üstteki/.test(await qa('tut()'))) throw new Error('r12: L11 should name its idea (TR): ' + (await qa('tut()')));
+    await shot('r12-l11-start-tr');
+    // the shaped tabby on the live board: a long straight run, a tight zigzag, an L bend
+    await qa('lang("en")');
+    await qa('level(5)'); await sleep(500);
+    await qa('tabbyBoard()'); await sleep(700);
+    await shot('r12-tabby-board');
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }

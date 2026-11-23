@@ -10,6 +10,7 @@ import { audio } from '../kit/audio.js';
 import { haptics } from '../kit/haptics.js';
 import { track } from '../kit/analytics.js';
 import { now } from '../kit/clock.js';
+import { publicBase } from '../kit/dare.js';
 import { levelKind } from '../core/generate.js';
 import { isWon } from '../core/rules.js';
 import { dayOf, weekOf } from '../game/econ.js';
@@ -177,15 +178,16 @@ function winRow(rec, tries = 0) {
   if (card.querySelector('.iqwin, .iqchip')) return;
   const tt = iq.fmt(rec.ms, true);
   const fresh = rec.best && rec.prev;
-  const line = fresh ? t('iqNewBest', { t: tt }) : !rec.prev ? t('iqFirstTime', { t: tt }) : t('iqTimeVs', { t: tt, b: iq.fmt(rec.prev, true) });
   const sub = t('iqMedal' + rec.medal) + (rec.cut ? ' · ' + t('iqNextCut', { m: t('iqM' + rec.cut.m), t: iq.fmt(rec.cut.ms) }) : '');
   const calm = reduced() ? 'calm' : '';
-  const top = card.querySelector('.cwtop');
+  // R11 fix 2: time and medal are ONE badge (medal art, the time, best / last / medal name under it) in the card's
+  // header: beside the title on the compact card, beside the stars on the big one; the next cut is its tooltip
+  const chip = `<div class="iqchip ${fresh ? 'best' : ''} ${calm}" title="${esc(sub)}">${medalImg(rec.medal, 'iqwm')}<span><b>${tt}</b><small>${esc(fresh ? t('iqChipBest') : rec.prev ? t('iqRunPrev', { t: iq.fmt(rec.prev, true) }) : t('iqMedal' + rec.medal))}</small></span></div>`;
+  const cwt = card.querySelector('.cwtop .cwt');
   const stars = card.querySelector('.stars');
-  if (top) top.insertAdjacentHTML('afterend', `<div class="iqwin ${fresh ? 'best' : ''} ${calm}">${medalImg(rec.medal, 'iqwm')}<span><b>${esc(line)}</b><small>${esc(sub)}</small></span></div>`);
-  else if (card.classList.contains('withclip') && stars) // the chain-replay card has no height to spare: a chip beside the stars
-    stars.insertAdjacentHTML('beforeend', `<div class="iqchip ${fresh ? 'best' : ''} ${calm}">${medalImg(rec.medal, 'iqwm')}<span><b>${tt}</b><small>${esc(fresh ? t('iqChipBest') : rec.prev ? t('iqRunPrev', { t: iq.fmt(rec.prev, true) }) : t('iqMedal' + rec.medal))}</small></span></div>`);
-  else (stars || card.querySelector('h2.title') || card.firstElementChild).insertAdjacentHTML('afterend', `<div class="iqwin ${fresh ? 'best' : ''} ${calm}">${medalImg(rec.medal, 'iqwm')}<span><b>${esc(line)}</b><small>${esc(sub)}</small></span></div>`);
+  if (cwt) cwt.querySelector('h2.title').insertAdjacentHTML('afterend', chip);
+  else if (stars) stars.insertAdjacentHTML('beforeend', chip);
+  else (card.querySelector('h2.title') || card.firstElementChild).insertAdjacentHTML('afterend', chip);
 }
 
 // ---- Record Run ----
@@ -241,7 +243,7 @@ async function shareRun() {
   const ms = (last && last.ms) || iq.ensure(save.data).run.best;
   if (!ms) return;
   const text = t('iqShareRun', { t: iq.fmt(ms, true) });
-  const url = location.origin + location.pathname;
+  const url = publicBase();
   track('iq_share');
   try { if (navigator.share) { await navigator.share({ text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
   try { await navigator.clipboard.writeText(text + ' ' + url); C.ui.toast(t('iqCopied')); } catch { C.ui.toast(text); }

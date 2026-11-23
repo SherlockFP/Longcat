@@ -102,6 +102,10 @@ try {
     res.L60 = await measure(); await shot(`r10-perf-l60-${LABEL}`);
     await ev('(() => { let k = 0; const go = () => { if (k++ > 5) return; window.__qa.solveStep(); setTimeout(go, 380); }; go(); })()');
     res.L60run = await measure(2400);
+    // R11 fix 2: six rapid sends (a tap every 130 ms, the way a sure player clears a run of free cats)
+    await qa('level(60)'); await sleep(1500);
+    await ev('(() => { let k = 0; const go = () => { if (k++ > 5) return; window.__qa.solveStep(); setTimeout(go, 130); }; go(); })()');
+    res.rapid6 = await measure(2000);
     // chain slow-mo: the L13 winning line holds a 3-chain
     await qa('level(13)'); await sleep(1000);
     let chain = null;

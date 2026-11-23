@@ -9,6 +9,8 @@ import {
 import { analyze, hint, replay, solve, solveFrom, freeCats } from '../src/core/solver.js';
 import { edgeNeighbours } from '../src/core/rules.js';
 import { springHop, swivelSeq, swivelOpen, packOf, packPlan } from '../src/core/content-mech.js';
+import { CURATED, boardOf, BOARD_REV } from '../src/core/curated.js';
+import { searchWin, maxChain } from '../src/core/search.js';
 
 // Independent check that every mechanic piece MATTERS on the winning line, on the real rules state: a dog or yarn is,
 // at some step while it is there, the only thing in an unfrozen cat's lane; a frozen cat's lane is clear while the
@@ -708,6 +710,34 @@ DRANGES.forEach(([lo, hi], i) => {
     console.log(`  L${lo}-${hi} ${kk.padEnd(6)} n=${String(arr.length).padEnd(4)} traps ${avg(arr, 'traps').toFixed(2)}  late ${avg(arr, 'late').toFixed(2)}  chains ${avg(arr, 'chains').toFixed(2)}  3-chains ${avg(arr, 'chain3').toFixed(2)}  dead ${avg(arr, 'deadRatio').toFixed(3)}  free ${avg(arr, 'freeAvg').toFixed(2)}  startSafe ${avg(arr, 'startSafe').toFixed(1)}  fill ${avg(arr, 'fill').toFixed(2)}  long ${avg(arr, 'long').toFixed(2)}  colours ${avg(arr, 'colors').toFixed(1)}  cats ${avg(arr, 'cats').toFixed(1)}`);
   }
 });
+// R11 fix 2: the curated L6 / L9 / L11 are valid, their stored line wins, they keep their idea, and a link of the older
+// board revision still opens the generated board
+{
+  const winsWith = (b, seats) => searchWin(new Sim(compile(b), seats), 200000, false) === 1;
+  for (const n of Object.keys(CURATED).map(Number)) {
+    const b = CURATED[n]();
+    const e = validateBoard(b);
+    ok(!e.length, `curated L${n} invalid: ${e.join('; ')}`);
+    const rp = replay(b, b.meta.order);
+    ok(rp.won, `curated L${n} line does not win`);
+    ok(JSON.stringify(boardOf(n, 2)) === JSON.stringify(generate(n)), `curated L${n}: rev 2 must keep the generated board`);
+    ok(JSON.stringify(boardOf(n, BOARD_REV)) === JSON.stringify(b), `curated L${n}: rev ${BOARD_REV} plays the curated board`);
+  }
+  const b6 = CURATED[6]();
+  ok(!winsWith(b6, 4) && winsWith(b6, 5) && maxChain(new Sim(compile(b6), 5), 400000).best >= 5, 'curated L6: needs every seat and pays a chain of 5');
+  const b9 = CURATED[9]();
+  { // parking the green pair first (after the two free blues) is a proven loss; the small orange first still wins
+    const C = compile(b9);
+    const sim = new Sim(C, 5);
+    for (const id of [5, 6]) sim.apply(C.unitOf[id]);
+    const pair = sim.apply(C.unitOf[9]) ? searchWin(sim, 200000, false) : 0;
+    sim.undo();
+    const orange = sim.apply(C.unitOf[0]) ? searchWin(sim, 200000, false) : 0;
+    ok(pair === 0 && orange === 1, `curated L9: the pair park must lose (${pair}) and orange win (${orange})`);
+  }
+  const b11 = CURATED[11]();
+  ok(winsWith(b11, 4) && !winsWith(b11, 3), 'curated L11: four seats win, three do not');
+}
 console.log(`levels missing the full band (floor still held): ${bandMiss}; normal levels from L10 with a delayed trap: ${lateOk}/${lateN}`);
 console.log(`search misses ${searchMiss} (avg ${(searchNodes / 200).toFixed(0)} nodes)`);
 console.log(`gen avg ${avgMs.toFixed(2)}ms, worst ${maxMs.toFixed(1)}ms (level ${maxMsN}), total ${totalMs.toFixed(0)}ms for ${MAXN} levels`);

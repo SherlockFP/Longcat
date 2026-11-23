@@ -307,6 +307,8 @@ export function clipPlayer(src) {
     },
     draw() { g.draw(); overlay(); },
     get t() { return t; },
+    // R11 fix 2: the clip's expected length (seconds), for the "Making video" progress: exact once the end is known
+    get est() { return endAt != null ? endAt + END : peakAt + 2.4 + END; },
     get done() { return endAt != null && t >= endAt + END; },
     get peak() { return peakSeen; },
     get endAt() { return endAt; },
@@ -350,7 +352,7 @@ async function record(src, onFrame, alive) {
       if (!alive()) { rec.stop(); await stopped; return null; }
       p.step();
       p.draw();
-      if (onFrame) onFrame(p.canvas);
+      if (onFrame) onFrame(p.canvas, Math.min(0.99, p.t / p.est));
       const wait = t0 + ((i + 1) * 1000) / FPS - performance.now();
       await new Promise((r) => setTimeout(r, Math.max(0, wait)));
     }
@@ -389,11 +391,12 @@ export function makeShareClip() {
     // the encode, only when the player asks for the clip (R11): real time through MediaRecorder, the frames play in the
     // preview canvas while it records (not under reduced motion), then the finished video loops in its place.
     // Resolves to the video ({ blob, ext }) or null.
-    record(cv, still) {
+    // onProg(0..1): how far the real-time encode is (the button counts up while the video is made)
+    record(cv, still, onProg) {
       if (!src || !canRecord()) return Promise.resolve(null);
       if (job) return job;
       const mine = gen;
-      const copy = (frame) => { if (!still && cv && cv.isConnected) cv.getContext('2d').drawImage(frame, 0, 0, cv.width, cv.height); };
+      const copy = (frame, f) => { if (!still && cv && cv.isConnected) cv.getContext('2d').drawImage(frame, 0, 0, cv.width, cv.height); if (onProg) onProg(f); };
       busy = true;
       job = record(src, copy, () => mine === gen).catch(() => null).then((r) => {
         if (mine !== gen) return null;

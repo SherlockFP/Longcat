@@ -1,0 +1,40 @@
+/* R11 fix round 2 (sol-r11-2): one-badge time, one main reward row, Next at one height, thread bar, video progress */
+
+/* ---- win card: both cards sit low and end on the Next row, so Next is at the same height on every clear ---- */
+.backdrop.winb.wbig { background: linear-gradient(rgba(48,26,10,.18), rgba(48,26,10,.5)); }
+#modal .card.win { padding-bottom: 12px; }
+#modal .card.win > .btn[data-act], #modal .card.win .nextrow .btn[data-act=next] { min-height: 54px; }
+#modal .card.win > .row.r7row .btn { min-height: 42px; }
+/* the main reward row: the cat adopted on this clear, else the build that is ready */
+.card.win .mainrew { align-self: stretch; display: flex; flex-direction: column; }
+.card.win .mainrew .ordwin { margin: 0; padding: 5px 10px 5px 5px; border-color: var(--honey, #f2b544); background: #fff3cf; }
+.card.win .mainrew .ordwin .owcat { width: 42px; height: 42px; }
+.card.win .mainrew .ordwin b { font-size: 14.5px; }
+.card.win .mainrew .ordwin small { font-size: 11.5px; }
+.card.win .mainrew .cafebar { border-color: #3e9f6a; }
+.card.win .rrow.mini { justify-content: center; gap: 6px; }
+.card.win .rrow.mini .reward { font-size: 16px; padding: 0 10px 0 4px; min-height: 28px; border-width: 2.5px; }
+.card.win .rrow.mini .reward img, .card.win .rrow.mini .reward .rib { width: 20px; height: 20px; }
+/* time + medal: one badge under the title (compact) or beside the stars (big card) */
+.card.win.compact .cwt .iqchip { margin: 1px 0 0; align-self: flex-start; padding: 1px 8px 1px 2px; }
+.card.win.compact .cwt .iqchip .iqwm { width: 24px; height: 24px; }
+.card.win.compact .cwt .iqchip b { font-size: 14px; }
+/* the replay's details ride on the thumbnail */
+.chainclip .clipdet { position: absolute; left: 3px; right: 3px; top: 4px; z-index: 1; display: flex; flex-wrap: wrap; justify-content: center; gap: 2px; pointer-events: none; }
+.chainclip .clipdet i { font: 700 9.5px/1.3 var(--font); font-style: normal; color: #fff; background: rgba(29,43,83,.8); padding: 0 5px; border-radius: 999px; white-space: nowrap; }
+/* the thread: the resident's portrait leads the café bar */
+.cafebar.thr .ticon img { object-fit: contain; }
+.cafebar.thr small { white-space: normal; line-height: 1.15; }
+
+/* ---- the clip button: Make video, then a filling pill while it is made (in real time), then Send video ---- */
+.clipshare.making::before { background: linear-gradient(90deg, #5aa9f0 var(--p, 0%), #bfe3ff var(--p, 0%)); }
+.clipshare.making span { font-size: 10px; color: #12305e; text-shadow: none; }
+/* the replay card: the moment line stays above the stars (they used to ride up over it), the order bonus in words */
+.card.win.withclip .moment { position: relative; z-index: 1; margin-bottom: 4px; }
+.card.win.withclip .moment + .stars { margin-top: 0; }
+.hcol .ordpay { align-self: flex-start; font: 700 12px/1.2 var(--font); color: #8e5530; background: #fff3cf; border: 2px solid var(--honey, #f2b544); border-radius: 10px; padding: 1px 7px; }
+.chainclip .clipdet i.mom { white-space: normal; text-align: center; line-height: 1.15; padding: 2px 6px; background: linear-gradient(#ff9fbf, #ff5d8f); border: 1.5px solid var(--ink, #1d2b53); }
+.hcol .cafebar { margin: 0; padding: 3px 6px; gap: 5px; }
+.hcol .cafebar .ticon { width: 30px; height: 30px; }
+.hcol .cafebar small { font-size: 11px; }
+.hcol .cafebar .cbgo { padding: 2px 7px; font-size: 11px; }

@@ -270,7 +270,7 @@ class Perf {
     slk.strokeStyle = '#000';
     slk.lineCap = slk.lineJoin = 'round';
     slk.lineWidth = w + 4;
-    bodyShape(slk, path, a, b, c);
+    bodyShape(slk, path, a, b, c, st.pal);
     const [sh, sk] = mk();
     const OFF = 4000;
     sk.setTransform(1, 0, 0, 1, 0, 0);
@@ -295,10 +295,10 @@ class Perf {
     rk.lineCap = rk.lineJoin = 'round';
     rk.strokeStyle = '#fff';
     rk.lineWidth = w + 3;
-    bodyShape(rk, path, a, b, c);
+    bodyShape(rk, path, a, b, c, st.pal);
     rk.globalCompositeOperation = 'destination-out';
     rk.translate(-Math.max(1.2, w * 0.07), Math.max(1.2, w * 0.07));
-    bodyShape(rk, path, a, b, c);
+    bodyShape(rk, path, a, b, c, st.pal);
     rk.setTransform(1, 0, 0, 1, 0, 0);
     rk.globalCompositeOperation = 'source-in';
     rk.fillStyle = 'rgba(255,246,222,0.55)';

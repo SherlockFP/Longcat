@@ -2092,6 +2092,7 @@ export class Game {
     if (!(o.still && this.pf && this.pf.body(ctx, cat, path, a, b, st, o))) drawBody(ctx, path, a, b, {
       pal: st.pal, c, w: st.w * (o.wScale || 1), alpha: o.alpha, glow: o.glow, collar: st.collar, seed: cat.id * 3 + 1,
       run: o.run, wag: o.wag ?? this.wagOf(cat.id),
+      lite: o.lite,
     });
     if (o.noHead) return;
     const p1 = sample(path, b);
@@ -2431,6 +2432,7 @@ export class Game {
         headScale: (1 + 0.3 * h) * (1 - 0.55 * fold) * (t < ANT ? 0.94 : 1),
         run: t > ANT && !arrived ? d / (c * 0.28) : null,
         wag: 0.5,
+        lite: t > ANT && !arrived, // R11 fix 2: mid-leap the fabric composites are invisible; skipping them keeps busy sends smooth
       });
     }
     // speed streaks behind the lead head
