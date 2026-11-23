@@ -1583,8 +1583,8 @@ const actions = {
     const mark = S.teach && rw.proven && rw.id >= 0; // a teaching level: point at the tap that cost the win instead
     if (mark) fun.markCulprit(game, rw.id);
     else game.cueBack(seat, now0 ?? -1);
-    if (mark) ui.toast(t('funTapLine'));
-    else if (rw.proven) ui.toast(rw.k > 1 ? t('funBackN', { n: rw.k }) : t('funBack1'));
+    if (mark) ui.toast(t('funTapLine'), 'funtoast'); // over the booster bar: the marked cat sits low on the board
+    else if (rw.proven) ui.toast(rw.k > 1 ? t('funBackN', { n: rw.k }) : t('funBack1'), 'funtoast');
     track('takeback_cue', { seat: seat >= 0 ? 1 : 0, cat: now0 != null ? 1 : 0 });
     track('fun_rewind', { n: S.n, k: rw.k, proven: rw.proven ? 1 : 0, teach: S.teach ? 1 : 0 });
     S.freeBack[triesKey()] = true;

@@ -1008,9 +1008,9 @@ ${info.ad === false ? '' : `<button class="btn green sm" data-act="adlife">${adS
     if (cur.screen === 'settings') cur = cur.prev || { screen: 'none', info: null }; // a closed Settings card is not the screen any more
   },
 
-  toast(text) {
+  toast(text, cls = '') {
     const el = document.createElement('div');
-    el.className = cur.screen === 'play' ? 'toast inplay' : 'toast';
+    el.className = (cur.screen === 'play' ? 'toast inplay' : 'toast') + (cls ? ' ' + cls : '');
     el.textContent = text;
     // one lane for the hint card and status lines: the hint card steps aside while a toast speaks
     const tut = cur.screen === 'play' ? document.getElementById('tut') : null;
