@@ -6,3 +6,5 @@ art-src/**/*.log
 qa/*.png
 qa/*.jpg
 !art-src/mockups/_*.jpg
+qa/**/*.png
+qa/**/*.jpg

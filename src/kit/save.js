@@ -2,27 +2,33 @@
 import { TASK_POOL } from '../game/econ.js';
 
 const KEY = 'lco_save';
-const VERSION = 7;
+const VERSION = 8;
 
 const defaults = () => ({
   v: VERSION,
   level: 1,
   coins: 50,
   bestStars: {},
-  settings: { sound: true, haptics: true, lang: guessLang() },
+  settings: { sound: true, music: true, haptics: true, lang: guessLang(), notify: false }, // music: older saves get it on through the defaults merge
   daily: { last: '', streak: 0, doneDay: '' },
   ads: { wins: 0, lastInterstitial: 0, removeAds: false },
   counters: {},
   boosters: { hint: 3, scoop: 2, undo: 3 },
-  cafe: { stars: 0, built: {}, hintDay: '', hintN: 0, scoopLevel: 0, love: {}, party: 0 }, // hintN: free perk hints used on hintDay; love: resident id -> affection level 0..3 (treats)
+  cafe: { stars: 0, built: {}, hintDay: '', hintN: 0, scoopLevel: 0, love: {}, party: 0, hearts: {}, wear: {}, petDay: {} }, // hintN: free perk hints used on hintDay; love: resident id -> affection level 0..3 (treats)
   lives: { n: 5, t: 0 }, // t = when the next life regen started (0 while full)
   purr: { n: 0, pend: 0, lost: 0, seatLv: 0 }, // Purr Streak count + the bonus waiting for the next level (0/1/2) + the level last lost (so a restart cannot fake a first try) + the level whose bonus bench seat is still owed
   quests: { day: 0, list: [], chest: 0 }, // 3 daily tasks: { id, p: progress, c: claimed }
   login: { last: 0, idx: 0 }, // 7-day calendar: last claimed day number, claims in this cycle
-  show: { week: 0, ribbons: 0, claimed: [], decor: {}, best: -1, ch: 0, mark: 0, markWeek: 0 }, // weekly Cat Show (+ the Show board: best seats used, cleared/gold bits, the judges' mark and its week)
+  show: { week: 0, decor: {}, marks: {}, goals: {}, from: 0 }, // weekly Cat Show: decor = rosettes won (theme id), marks = board key ('<week>a|b') -> medal bits (1 bronze, 2 gold), goals = computed board goals, from = first Show week (archive start)
   shop: { starterShown: false },
   iap: { owned: {}, tx: [] }, // non-consumables owned + recent transaction ids (no double grants)
   clock: { max: 0 }, // highest time ever seen: the rollback guard
+  // v8 retention (src/game/live.js): tip jar fill start, resident requests, Café Rush, season stamps/claims, visiting cats
+  jar: { t: 0, total: 0 },
+  req: { list: [], next: 0, n: 0, done: 0 },
+  rush: { week: 0, best: 0, cats: 0, pend: null, cups: {} },
+  season: { daily: {}, claim: {}, visDay: 0 },
+  vis: {},
   meta: { firstOpen: 0, sessions: 0, funnel: {}, ret: {} },
 });
 
@@ -66,6 +72,14 @@ function migrate(raw) {
   }
   // v7 adds the Cat Show board (show.best/ch/mark/markWeek), purr.seatLv and cafe.party: all take their defaults.
   if (raw.v < 7) raw.v = 7;
+  // v8: Cat Show mastery (show.marks: board key -> medal bits) replaces the ribbon track (show.ribbons/claimed/best/ch/
+  // mark/markWeek are dropped). A player who won that week's old Show board keeps it as a bronze (gold with the judges'
+  // mark) on board A of that week. The retention systems take their defaults.
+  if (raw.v < 8) {
+    const w = isObj(raw.show) ? raw.show : null;
+    if (w && Number.isInteger(w.ch) && w.ch > 0 && Number.isInteger(w.week) && w.week > 0) w.marks = { [w.week + 'a']: w.ch & 3 };
+    raw.v = 8;
+  }
   return raw;
 }
 
@@ -81,6 +95,7 @@ function validate(d) {
   if (!isObj(d.counters)) d.counters = {};
   const s = d.settings;
   s.sound = !!s.sound;
+  s.music = !!s.music;
   s.haptics = !!s.haptics;
   if (s.lang !== 'en' && s.lang !== 'tr') s.lang = guessLang();
   d.daily.last = String(d.daily.last ?? '');
@@ -113,13 +128,37 @@ function validate(d) {
   d.login.idx = Number.isInteger(d.login.idx) && d.login.idx >= 0 && d.login.idx <= 7 ? d.login.idx : 0;
   const w = d.show;
   w.week = num(w.week, 0, 0);
-  w.ribbons = num(w.ribbons, 0, 0);
-  w.claimed = Array.isArray(w.claimed) ? w.claimed.filter((i) => Number.isInteger(i) && i >= 0 && i < 10) : [];
   if (!isObj(w.decor)) w.decor = {};
-  w.best = Number.isInteger(w.best) && w.best >= -1 && w.best < 20 ? w.best : -1;
-  w.ch = Number.isInteger(w.ch) && w.ch >= 0 && w.ch <= 3 ? w.ch : 0;
-  w.mark = Number.isInteger(w.mark) && w.mark >= 0 && w.mark < 20 ? w.mark : 0;
-  w.markWeek = num(w.markWeek, 0, 0);
+  const intMap = (o, max) => { for (const k of Object.keys(o)) if (!(Number.isInteger(o[k]) && o[k] >= 0 && o[k] <= max)) delete o[k]; return o; };
+  w.marks = intMap(isObj(w.marks) ? w.marks : {}, 3);
+  for (const k of Object.keys(w.marks)) if (!/^\d+[ab]$/.test(k)) delete w.marks[k];
+  if (!isObj(w.goals)) w.goals = {};
+  for (const k of Object.keys(w.goals)) { const g = w.goals[k]; if (!isObj(g) || (g.kind !== 'seats' && g.kind !== 'chain') || !Number.isInteger(g.n) || g.n < 0 || g.n > 9) delete w.goals[k]; }
+  const gk = Object.keys(w.goals).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+  for (const k of gk.slice(12)) delete w.goals[k]; // computed goal cache: recent weeks only
+  w.from = num(w.from, 0, 0);
+  s.notify = !!s.notify;
+  for (const k of ['hearts', 'petDay']) c[k] = intMap(isObj(c[k]) ? c[k] : {}, 1e7);
+  if (!isObj(c.wear)) c.wear = {};
+  for (const k of Object.keys(c.wear)) if (!['hat', 'scarf', 'crown'].includes(c.wear[k])) delete c.wear[k];
+  d.jar.t = num(d.jar.t, 0, 0);
+  d.jar.total = num(d.jar.total, 0, 0);
+  const R = d.req;
+  R.next = num(R.next, 0, 0);
+  R.n = Number.isInteger(R.n) && R.n >= 0 ? R.n : 0;
+  R.done = Number.isInteger(R.done) && R.done >= 0 ? R.done : 0;
+  R.list = Array.isArray(R.list) ? R.list.filter((x) => isObj(x) && typeof x.k === 'string' && typeof x.who === 'string' && Number.isInteger(x.need) && x.need > 0).slice(0, 2).map((x) => ({ k: x.k, who: x.who, need: x.need, p: Math.min(x.need, num(x.p, 0, 0)), c: Number.isInteger(x.c) && x.c >= 0 && x.c < 8 ? x.c : 0, s: num(x.s, 0, 0) })) : [];
+  const ru = d.rush;
+  ru.week = num(ru.week, 0, 0);
+  ru.best = num(ru.best, 0, 0);
+  ru.cats = num(ru.cats, 0, 0);
+  ru.pend = isObj(ru.pend) && Number.isInteger(ru.pend.rank) && ru.pend.rank > 0 ? { week: num(ru.pend.week, 0, 0), rank: ru.pend.rank } : null;
+  ru.cups = intMap(isObj(ru.cups) ? ru.cups : {}, 1e4);
+  const se = d.season;
+  se.daily = intMap(isObj(se.daily) ? se.daily : {}, 1e4);
+  se.claim = intMap(isObj(se.claim) ? se.claim : {}, 1e3);
+  se.visDay = num(se.visDay, 0, 0);
+  if (!isObj(d.vis)) d.vis = {};
   d.shop.starterShown = !!d.shop.starterShown;
   if (!isObj(d.iap.owned)) d.iap.owned = {};
   d.iap.tx = Array.isArray(d.iap.tx) ? d.iap.tx.filter((x) => typeof x === 'string').slice(-30) : [];
@@ -147,6 +186,12 @@ function load() {
       if (isObj(m.counters)) d.counters = m.counters;
       if (isObj(m.cafe) && isObj(m.cafe.built)) d.cafe.built = m.cafe.built;
       if (isObj(m.cafe) && isObj(m.cafe.love)) d.cafe.love = m.cafe.love;
+      for (const k of ['hearts', 'wear', 'petDay']) if (isObj(m.cafe) && isObj(m.cafe[k])) d.cafe[k] = m.cafe[k];
+      if (isObj(m.show) && isObj(m.show.marks)) d.show.marks = m.show.marks;
+      if (isObj(m.show) && isObj(m.show.goals)) d.show.goals = m.show.goals;
+      if (isObj(m.season)) for (const k of ['daily', 'claim']) if (isObj(m.season[k])) d.season[k] = m.season[k];
+      if (isObj(m.vis)) d.vis = m.vis;
+      if (isObj(m.rush) && isObj(m.rush.cups)) d.rush.cups = m.rush.cups;
       if (isObj(m.iap) && isObj(m.iap.owned)) d.iap.owned = m.iap.owned;
       if (isObj(m.show) && isObj(m.show.decor)) d.show.decor = m.show.decor;
       if (isObj(m.meta)) { if (isObj(m.meta.funnel)) d.meta.funnel = m.meta.funnel; if (isObj(m.meta.ret)) d.meta.ret = m.meta.ret; }

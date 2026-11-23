@@ -1,6 +1,9 @@
 // Image loader. A missing file resolves to null and the renderer falls back to a procedural shape.
 import { assetUrl, COLOR_PAL } from './breeds.js';
 
+// r7 head variants: one per cat id so heads on a board are never all the same face
+export const FACES = ['happy', 'sleepy', 'cheeky'];
+
 const NAMES = [
   'head_orange.webp', 'head_black.webp', 'head_white.webp', 'head_calico.webp', 'head_gray.webp', 'head_siamese.webp',
   'kitten_red.webp', 'kitten_blue.webp', 'stars.webp',
@@ -8,6 +11,10 @@ const NAMES = [
   'bg_teal.webp', 'logo_b.webp',
   'v2/obst_puppy.webp', 'v2/obst_yarn.webp', 'v2/obst_ice.webp', 'v2/carrier_open.webp', 'v2/carrier_closed.webp', 'v2/cushion.webp',
   ...COLOR_PAL.map((c) => `v2/head_${c.name}.webp`),
+  // round 7: the sunny boarding room (art-src/r7/assets.md)
+  ...['bg_play_room', 'table_top', 'tile_ivory', 'tex_felt', 'belt_wood', 'bench_plank', 'cushion'].map((n) => `r7/${n}.webp`),
+  ...COLOR_PAL.flatMap((c) => [`r7/carrier_${c.name}.webp`, `r7/carrier_${c.name}_shut.webp`, `r7/cat_curl_${c.name}.webp`,
+    ...FACES.map((f) => `r7/cat_head_${c.name}_${f}.webp`)]),
 ];
 
 export const IMG = {};
@@ -47,6 +54,7 @@ export function loadAssets() {
     makeMystery();
     makeCarriers();
     makeCushionAlt();
+    makeMystery7();
     sampleTones();
   });
 }
@@ -86,6 +94,13 @@ function makeMystery() {
     g.fillRect(0, 0, c.width, c.height);
   }
   IMG.head_mystery = c;
+}
+
+// r7 mystery head: the happy orange head in plain grey
+function makeMystery7() {
+  const src = IMG['r7/cat_head_orange_happy'];
+  const c = src && filtered(src, 'grayscale(1) brightness(1.12) contrast(0.9)');
+  if (c) IMG.head7_mystery = c;
 }
 
 // A blue cushion for yellow cats, so a yellow cat never melts into the yellow cushion.

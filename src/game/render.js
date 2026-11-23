@@ -1,5 +1,5 @@
 // Drawing primitives: arc-length paths, patterned cat bodies, head sprites.
-import { IMG, TONE } from './assets.js';
+import { IMG, TONE, FACES } from './assets.js';
 import { NAVY, COLOR_PAL, MYSTERY_PAL } from './breeds.js';
 
 export function shade(hex, f) {
@@ -66,6 +66,21 @@ function strokeSlice(ctx, path, a, b) {
   ctx.stroke();
 }
 
+// stroke a body window with the current width, narrowing to 80% over the last cell at the rump (path start)
+let feltPat = null;
+function strokeTaper(ctx, path, a, b, c) {
+  const lw = ctx.lineWidth;
+  const t = Math.min(b - a, c * 0.7);
+  if (t < c * 0.2) { strokeSlice(ctx, path, a, b); return; }
+  strokeSlice(ctx, path, a + t, b);
+  const N = 4;
+  for (let k = 0; k < N; k++) {
+    ctx.lineWidth = lw * (0.8 + 0.2 * ((k + 1) / N));
+    strokeSlice(ctx, path, a + (t * k) / N, a + (t * (k + 1)) / N + 0.5);
+  }
+  ctx.lineWidth = lw;
+}
+
 // ---- shapes ----
 function heart(ctx, x, y, r) {
   ctx.beginPath();
@@ -115,7 +130,7 @@ function patGap(kind) {
 // ---- body ----
 // Tail behind the rump: a tapering curve that bends to one side, white tip at the far end. Drawn before the
 // body so its root hides under the round rump (never a knot over the fur).
-function drawTail(ctx, path, a, o) {
+function drawTail(ctx, path, a, o, rim = NAVY) {
   const { pal, w, c } = o;
   const p = sample(path, a);
   const bx = -p.tx, by = -p.ty; // backward along the body
@@ -138,8 +153,8 @@ function drawTail(ctx, path, a, o) {
       const u0 = k / N, u1 = (k + 1) / N;
       if (pass === 2 && u0 < 0.7) continue;
       const [ax, ay] = pt(u0), [qx, qy] = pt(u1);
-      ctx.strokeStyle = pass === 0 ? NAVY : pass === 1 ? pal.base : '#ffffff';
-      ctx.lineWidth = wid(u1) + (pass === 0 ? 6 : 0);
+      ctx.strokeStyle = pass === 0 ? rim : pass === 1 ? pal.base : '#ffffff';
+      ctx.lineWidth = wid(u1) + (pass === 0 ? (rim === NAVY ? 6 : 3) : 0);
       ctx.beginPath();
       ctx.moveTo(ax, ay);
       ctx.lineTo(qx, qy);
@@ -163,15 +178,17 @@ export function drawBody(ctx, path, a, b, o) {
     ctx.lineWidth = w + c * (0.35 + 0.2 * o.glow);
     strokeSlice(ctx, path, a, b);
   }
-  // soft ground shadow
+  // soft contact shadow down-left (one warm light from the upper right)
+  const felt = !!IMG['r7/tex_felt'];
+  const rim = felt ? shade(pal.base, -0.32) : NAVY;
   ctx.save();
-  ctx.translate(0, c * 0.08);
-  ctx.strokeStyle = 'rgba(20,40,70,0.22)';
+  ctx.translate(-c * 0.05, c * 0.07);
+  ctx.strokeStyle = felt ? 'rgba(60,30,10,0.25)' : 'rgba(20,40,70,0.22)';
   ctx.lineWidth = w + 6;
-  strokeSlice(ctx, path, a, b);
+  strokeTaper(ctx, path, a, b, c);
   ctx.restore();
 
-  if (len > c * 0.3) drawTail(ctx, path, a, o);
+  if (len > c * 0.3) drawTail(ctx, path, a, o, rim);
 
   // little legs (behind the body) while sprinting: they stick out past the fur and swing
   if (o.run != null && len > c * 0.6) {
@@ -184,7 +201,7 @@ export function drawBody(ctx, path, a, b, o) {
         const ph = Math.sin(o.run + k * 1.7 + (sg > 0 ? Math.PI : 0));
         const fx = p.x + nx * sg * w * 0.78 + p.tx * ph * c * 0.22;
         const fy = p.y + ny * sg * w * 0.78 + p.ty * ph * c * 0.22;
-        for (const [col, lw] of [[NAVY, w * 0.3 + 5], [pal.base, w * 0.3]]) {
+        for (const [col, lw] of [[rim, w * 0.3 + 4], [pal.base, w * 0.3]]) {
           ctx.strokeStyle = col;
           ctx.lineWidth = lw;
           ctx.beginPath();
@@ -198,20 +215,33 @@ export function drawBody(ctx, path, a, b, o) {
     }
   }
 
-  // outline, belly shade, fur lit from above
-  ctx.strokeStyle = NAVY;
-  ctx.lineWidth = w + 6;
-  strokeSlice(ctx, path, a, b);
-  ctx.strokeStyle = shade(pal.base, -0.2);
+  // rim, belly shade, fur lit from above; the rump tapers to 80% so the body reads as a cat, not a tube
+  ctx.strokeStyle = rim;
+  ctx.lineWidth = w + (felt ? 3 : 6);
+  strokeTaper(ctx, path, a, b, c);
+  ctx.strokeStyle = shade(pal.base, -0.16);
   ctx.lineWidth = w;
-  strokeSlice(ctx, path, a, b);
+  strokeTaper(ctx, path, a, b, c);
   ctx.save();
-  ctx.translate(0, -w * 0.08);
+  ctx.translate(-w * 0.04, -w * 0.08);
   ctx.strokeStyle = pal.base;
   ctx.lineWidth = w * 0.8;
-  strokeSlice(ctx, path, a, b);
+  strokeTaper(ctx, path, a, b, c);
   ctx.restore();
-  // top highlight for a chunky look
+  // felt: a soft fabric grain over the fur
+  if (felt && len > c * 0.2) {
+    if (!feltPat) feltPat = ctx.createPattern(IMG['r7/tex_felt'], 'repeat');
+    if (feltPat) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'overlay';
+      ctx.globalAlpha = al * 0.5;
+      ctx.strokeStyle = feltPat;
+      ctx.lineWidth = w;
+      strokeTaper(ctx, path, a, b, c);
+      ctx.restore();
+    }
+  }
+  // top highlight for a chunky look, plus a warm rim light on the upper-right edge
   ctx.save();
   ctx.translate(-w * 0.12, -w * 0.2);
   ctx.strokeStyle = pal.light;
@@ -219,6 +249,15 @@ export function drawBody(ctx, path, a, b, o) {
   ctx.lineWidth = w * 0.2;
   strokeSlice(ctx, path, a + c * 0.1, Math.max(a + c * 0.15, b - c * 0.5));
   ctx.restore();
+  if (felt) {
+    ctx.save();
+    ctx.translate(w * 0.3, -w * 0.3);
+    ctx.strokeStyle = 'rgba(255,240,200,0.6)';
+    ctx.globalAlpha = al;
+    ctx.lineWidth = Math.max(1.2, w * 0.08);
+    strokeSlice(ctx, path, a + c * 0.25, Math.max(a + c * 0.3, b - c * 0.3));
+    ctx.restore();
+  }
 
   // pattern, anchored to the body (offset from the tail), not to the path; bold so it reads at a glance
   ctx.fillStyle = pal.mark;
@@ -444,8 +483,32 @@ function drawMood(ctx, size, mood, tone, wink) {
 }
 
 // Head sprite of a carrier color, upright (small lean only). o: { blink 0..1, twitch radians, mood 0..3, wink }
+// r7 felt heads (happy / sleepy / cheeky, paws baked in): the variant comes from the cat id, a blink shows the sleepy face
+export function head7(colorIdx, v = 0, blink = 0) {
+  if (colorIdx < 0) return IMG.head7_mystery || null;
+  const pal = COLOR_PAL[colorIdx];
+  if (!pal) return null;
+  const f = blink > 0.5 ? 'sleepy' : FACES[((v % 3) + 3) % 3];
+  return IMG[`r7/cat_head_${pal.name}_${f}`] || null;
+}
+
 export function drawHead(ctx, colorIdx, x, y, ang, size, alpha = 1, o = null) {
   const pal = colorIdx < 0 ? MYSTERY_PAL : COLOR_PAL[colorIdx];
+  const h7 = head7(colorIdx, o && o.v != null ? o.v : 0, o && o.blink);
+  if (h7) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    ctx.rotate(ang + (o && o.twitch ? o.twitch : 0));
+    const d = size * 1.16; // the felt heads carry their paws: a hair bigger than the v2 heads
+    ctx.fillStyle = 'rgba(60,30,10,0.22)';
+    ctx.beginPath();
+    ctx.ellipse(-size * 0.06, size * 0.18, size * 0.46, size * 0.36, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.drawImage(h7, -d / 2, -d / 2, d, d);
+    ctx.restore();
+    return;
+  }
   const im = colorIdx < 0 ? IMG.head_mystery : IMG['v2/head_' + pal.name];
   ctx.save();
   ctx.globalAlpha = alpha;

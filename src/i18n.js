@@ -52,6 +52,8 @@ const S = {
     adPlaying: 'Ad playing...',
     locked: 'Lv {n}',
     sound: 'Sound',
+    music: 'Music',
+    credits: 'Sounds & music',
     haptics: 'Haptics',
     installApp: 'Install app',
     install: 'Install',
@@ -174,6 +176,8 @@ const S = {
     getCoins: 'Get coins',
     stuckWhy: 'No seat left!',
     offerWhy: '{n} seats full and the {c} carrier is not here yet.',
+    offerWhyNext: 'Bench full ({n} seats). The {c} carrier is next in line.',
+    offerWhyK: 'Bench full ({n} seats). The {c} carrier is {k} away.',
     cheer1: 'That was close!',
     cheer2: 'Nice one!',
     cheer3: 'You are amazing!',
@@ -193,6 +197,10 @@ const S = {
     failTip: 'Tip: park only cats whose carrier comes soon.',
     failTip2: 'Tip: free a cat of the front carrier’s colour first.',
     col_orange: 'orange', col_blue: 'blue', col_pink: 'pink', col_green: 'green', col_purple: 'purple', col_mint: 'mint', col_yellow: 'yellow', col_red: 'red',
+    // round 7: growing house, tabs, fail sheet
+    events: 'Events', groundFloor: 'Ground floor', floorN: 'Floor {n}', houseView: 'House', roomView: 'Room', houseTitle: 'Your cat house',
+    floorDone: 'Floor complete!', nextFloorSoon: 'Next floor soon', newFloor: 'New floor: {name}!', nextResidentIs: '{name} is moving in up here.',
+    letsGo: "Let's go!", moreHelp: 'More help', tabCoins: 'Coins', tabBoosters: 'Boosters',
   },
   tr: {
     title: 'Uzun Kedi Kaçış!',
@@ -244,6 +252,8 @@ const S = {
     adPlaying: 'Reklam oynuyor...',
     locked: 'Sv. {n}',
     sound: 'Ses',
+    music: 'Müzik',
+    credits: 'Sesler ve müzik',
     haptics: 'Titreşim',
     installApp: 'Uygulamayı yükle',
     install: 'Yükle',
@@ -366,6 +376,8 @@ const S = {
     getCoins: 'Altın al',
     stuckWhy: 'Yer kalmadı!',
     offerWhy: '{n} minder dolu, {c} taşıyıcı henüz gelmedi.',
+    offerWhyNext: '{n} minder dolu. {c} taşıyıcı sıradaki.',
+    offerWhyK: '{n} minder dolu. {c} taşıyıcının önünde {k} taşıyıcı var.',
     cheer1: 'Kıl payı kurtardık!',
     cheer2: 'Güzel iş!',
     cheer3: 'Harikasın!',
@@ -385,8 +397,15 @@ const S = {
     failTip: 'İpucu: Sadece taşıyıcısı yakında gelen kedileri park et.',
     failTip2: 'İpucu: Önce öndeki taşıyıcının renginde bir kediyi gönder.',
     col_orange: 'turuncu', col_blue: 'mavi', col_pink: 'pembe', col_green: 'yeşil', col_purple: 'mor', col_mint: 'nane yeşili', col_yellow: 'sarı', col_red: 'kırmızı',
+    // round 7: büyüyen ev, sekmeler, kayıp ekranı
+    events: 'Etkinlikler', groundFloor: 'Zemin kat', floorN: '{n}. kat', houseView: 'Ev', roomView: 'Oda', houseTitle: 'Kedi evin',
+    floorDone: 'Kat tamamlandı!', nextFloorSoon: 'Yeni kat yakında', newFloor: 'Yeni kat: {name}!', nextResidentIs: '{name} buraya taşınıyor.',
+    letsGo: 'Hadi gidelim!', moreHelp: 'Daha fazla yardım', tabCoins: 'Altın', tabBoosters: 'Güçlendiriciler',
   },
 };
+
+// feature modules add their own string tables (src/i18n-live.js: retention systems)
+export function addStrings(o) { for (const l of Object.keys(o)) Object.assign(S[l] || (S[l] = {}), o[l]); }
 
 export const LANGS = ['en', 'tr'];
 export const lang = () => (S[save.data.settings.lang] ? save.data.settings.lang : 'en');

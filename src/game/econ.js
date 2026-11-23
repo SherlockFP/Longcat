@@ -112,9 +112,9 @@ export function chestClaim(d) {
   return CHEST;
 }
 
-// ---- 7-day login calendar (a missed day restarts it) ----
+// ---- 7-day login calendar (a missed day restarts it); day 7 unlocks the nearest resident outfit (main.js, live.giftOutfit) ----
 export const LOGIN_REWARDS = [
-  { coins: 20 }, { coins: 10, hint: 1 }, { coins: 40 }, { scoop: 1 }, { coins: 60, undo: 1 }, { coins: 30, hint: 1, scoop: 1 }, { coins: 150, scoop: 2, hint: 2 },
+  { coins: 20 }, { coins: 10, hint: 1 }, { coins: 40 }, { scoop: 1 }, { coins: 60, undo: 1 }, { coins: 30, hint: 1, scoop: 1 }, { coins: 100, scoop: 1, outfit: 1 },
 ];
 export function loginState(d, day) { // -> { avail, idx }: idx = today's reward when avail, else the count already claimed this cycle
   const g = d.login;
@@ -132,11 +132,7 @@ export function loginClaim(d, day) {
   return r;
 }
 
-// ---- weekly Cat Show ----
-export const SHOW_STEPS = [3, 6, 9, 13, 17, 21, 26, 31, 37, 44]; // cumulative ribbons
-export const SHOW_REWARDS = [
-  { coins: 30 }, { hint: 1 }, { coins: 50 }, { undo: 1 }, { scoop: 1 }, { coins: 80 }, { hint: 2 }, { scoop: 1, coins: 50 }, { coins: 120 }, { coins: 100, scoop: 2, decor: true },
-];
+// ---- weekly Cat Show: the week clock and its theme (the boards, medals and stamps live in live.js) ----
 export const THEMES = EVENT_THEMES;
 export const weekOf = (day) => Math.floor((day + 3) / 7); // weeks start Monday
 export const themeOf = (week) => EVENT_THEMES[((week % EVENT_THEMES.length) + EVENT_THEMES.length) % EVENT_THEMES.length];
@@ -144,47 +140,10 @@ export function showRoll(d, day) {
   const w = weekOf(day);
   if (d.show.week >= w) return false; // same week, or the clock went back
   d.show.week = w;
-  d.show.ribbons = 0;
-  d.show.claimed = [];
-  d.show.best = -1;
-  d.show.ch = 0;
   return true;
 }
-
-// the week's Show board (practice is free and unlimited): the first clear pays SHOW_CLEAR ribbons, clearing it within
-// the judges' mark (the fewest seats it can be done with) pays SHOW_MARK more. Score = most seats used at once.
-export const SHOW_CLEAR = 3;
-export const SHOW_MARK = 5;
-export function showBoardResult(d, peak, mark) {
-  const s = d.show;
-  let ribbons = 0;
-  const best = s.best < 0 || peak < s.best;
-  if (best) s.best = peak;
-  if (!(s.ch & 1)) { s.ch |= 1; ribbons += SHOW_CLEAR; }
-  if (peak <= mark && !(s.ch & 2)) { s.ch |= 2; ribbons += SHOW_MARK; }
-  return { ribbons, best };
-}
-export function showAdd(d, n, day) {
-  showRoll(d, day);
-  d.show.ribbons += n;
-}
-export const showReady = (d, i) => d.show.ribbons >= SHOW_STEPS[i] && !d.show.claimed.includes(i);
-export const showAnyReady = (d) => SHOW_STEPS.some((_, i) => showReady(d, i));
-export function showClaim(d, day) { // claims every reached step; -> list of rewards (empty when none)
-  showRoll(d, day);
-  const out = [];
-  SHOW_STEPS.forEach((_, i) => {
-    if (!showReady(d, i)) return;
-    d.show.claimed.push(i);
-    const r = SHOW_REWARDS[i];
-    grant(d, r);
-    if (r.decor) d.show.decor[themeOf(d.show.week).id] = 1;
-    out.push(r);
-  });
-  return out;
-}
 export const showEndsMs = (day, now) => Math.max(0, dayStart((weekOf(day) + 1) * 7 - 3) - now);
-export const earnedDecor = (d) => Object.keys(d.show.decor); // theme ids: the café hangs one rosette per theme on its wall
+export const earnedDecor = (d) => Object.keys(d.show.decor); // theme ids: the café hangs one rosette per theme on its wall (gold on both Show boards of a week)
 
 // A session on a wrong device date can leave day / week stamps in the future. The clock guard (kit/clock.js) only
 // pins now() to at most 2 days ahead, so once the date is fixed these stamps would freeze the login calendar, the
@@ -195,7 +154,6 @@ export function clampAhead(d, day) {
   if (d.quests.day > day) { d.quests.day = day; hit = true; }
   const w = weekOf(day);
   if (d.show.week > w) { d.show.week = w; hit = true; }
-  if (d.show.markWeek > w) { d.show.markWeek = 0; hit = true; }
   for (const k of ['last', 'doneDay']) if (d.daily[k] && +d.daily[k] > day) { d.daily[k] = String(day); hit = true; }
   if (+d.cafe.hintDay > day) { d.cafe.hintDay = String(day); hit = true; }
   return hit;
@@ -218,6 +176,5 @@ export function dots(d, now) {
   showRoll(d, day);
   return {
     quests: loginState(d, day).avail || chestReady(d) || d.quests.list.some((x) => !x.c && taskDone(x)),
-    show: showAnyReady(d),
   };
 }

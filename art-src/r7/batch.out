@@ -1,0 +1,78 @@
+gen bg_play_room
+2126312
+gen table_top
+863040
+gen tile_ivory
+1498837
+gen tex_felt
+1015390
+gen belt_wood
+478686
+gen carriers_open
+1002491
+gen carriers_shut
+1447666
+gen bench_plank
+841515
+gen cushion
+915844
+gen heads_happy
+1787680
+gen heads_sleepy
+2273299
+gen heads_cheeky
+2590237
+gen curls
+1893819
+gen btns
+1080941
+gen ui_kit
+385890
+gen tab_icons
+981607
+gen room_counter_bare
+2235004
+gen room_cushion_bare
+2062165
+gen room_window_bare
+1995100
+gen room_patio_bare
+2258747
+gen room_rooftop_bare
+2217157
+gen room_counter_shell
+1898188
+gen room_cushion_shell
+2151709
+gen room_window_shell
+808266
+gen room_patio_shell
+1030581
+gen room_rooftop_shell
+1482033
+gen building_base
+2129523
+gen building_floors
+2271244
+gen building_roof
+923741
+gen crane
+1047006
+gen decor_counter
+1451870
+gen decor_window
+1518820
+gen decor_cushion
+1698157
+gen decor_patio
+745847
+gen decor_rooftop
+940092
+gen res_idle
+2455753
+gen res_job
+2325398
+gen tipjars
+1406537
+gen guest
+1867481

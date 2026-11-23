@@ -30,3 +30,6 @@ R4: see art-src/v2/r4/r4-notes.md (new shells, resident full-body sprites, floor
 - Renovation clutter (unbuilt state only): cafe_clutter_{cushion,patio,rooftop}.webp, referenced as areas[i].clutter {sprite,x,y,w}.
 - Residents (384): res_{noodle,pepper,clover,captain}.webp portrait + _sit / _loaf full body. Noodle=cushion t3 (extra_undo), Pepper=patio t3 (coins_bonus), Clover=patio t6 (hint_discount), Captain=rooftop t6 (star_bonus); each has value:2.
 - Pipeline: art-src/v2/r6/{batch.sh,proc6.py,mkcafe6.py,comp6.py}; preview art-src/v2/r6/_comp6.png.
+
+## R7 art (public/assets/r7/)
+Soft painterly 3D set from the chosen mockups (play-a, hub-room/building): backdrops, board kit, carriers x16, bench/cushion, 24 heads + 8 curled cats, boosters, UI kit, HUD/tab icons, 5 bare rooms + 5 shells, stackable building modules + roofs + street + crane, 30 restyled decor, 16 resident poses, tip jar, guest. Manifest with sizes and 9-slice insets: `art-src/r7/assets.md`. Previews: `art-src/r7/_comp_play.png`, `_comp_hub.png`.

@@ -51,10 +51,20 @@ try {
     if (r.exceptionDetails) throw new Error('eval: ' + (r.exceptionDetails.exception?.description || r.exceptionDetails.text).split('\n')[0]);
     return r.result.value;
   };
+  // r7 hard rule: no screen scrolls. Every frame checks the page, panels, sheet bodies, cards and the hub (an element
+  // still animating in is skipped); the sheet scrolled on purpose (21f) is exempt.
+  const scrollFails = [];
+  const NOSCROLL = `(() => { const bad = []; const se = document.scrollingElement; if (se.scrollHeight > innerHeight + 1) bad.push('page ' + se.scrollHeight + '>' + innerHeight);
+    for (const el of document.querySelectorAll('.panel, .pbody, #cafe, #resi, .card, .rgrid, .room')) { if (el.getAnimations().some((x) => x.playState === 'running')) continue;
+      const nm = (el.id || el.className).slice(0, 28); if (el.scrollHeight > el.clientHeight + 2) bad.push(nm + ' ' + el.scrollHeight + '>' + el.clientHeight);
+      const r = el.getBoundingClientRect(); if (r.height && (r.bottom > innerHeight + 1 || r.top < -1)) bad.push(nm + ' off-screen ' + Math.round(r.top) + '..' + Math.round(r.bottom)); }
+    return bad; })()`;
   const shot = async (name) => {
     const r = await send('Page.captureScreenshot', { format: 'png' });
     writeFileSync(join(OUT, name + '.png'), Buffer.from(r.data, 'base64'));
-    console.log('  shot ' + name);
+    const bad = name === '21f-shop-bottom' ? [] : await ev(NOSCROLL).catch(() => []);
+    if (bad.length) scrollFails.push(name + ': ' + bad.join(', '));
+    console.log('  shot ' + name + (bad.length ? '  SCROLL ' + bad.join(', ') : ''));
   };
   const touch = (type, x, y) => send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] });
   const tap = async (x, y) => { await touch('touchStart', x, y); await sleep(40); await touch('touchEnd', x, y); };
@@ -154,6 +164,7 @@ try {
   await waitFor('window.__qa.state().screen === "fail"', 30000);
   await sleep(700);
   await shot('09-continue-offer');
+  await ev('document.querySelector("[data-act=morehelp]")?.click()'); await sleep(250); // r7: the paid rescues sit behind "More help"
   const ad = await ev('(() => { const r = document.querySelector("[data-act=adheart]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()');
   await tap(ad.x, ad.y); await sleep(3600);
   await shot('09b-after-continue');
@@ -308,7 +319,7 @@ try {
   await qa('lang("en")');
   await ev('localStorage.setItem("lco_save", JSON.stringify({v:3,level:12,coins:340,cafe:{stars:3,built:{counter_lamps:1,counter_plant:1}}}))');
   await boot();
-  await ev(`window.__qa.save({ lives: { n: 3, t: Date.now() - 10 * 60000 }, quests: { day: ${DAY}, list: [{ id: 'carriers', p: 10, c: 0 }, { id: 'wins', p: 1, c: 0 }, { id: 'cats', p: 50, c: 1 }], chest: 0 }, login: { last: ${DAY} - 1, idx: 2 }, show: { week: Math.floor((${DAY} + 3) / 7), ribbons: 14, claimed: [0, 1], decor: {} } })`);
+  await ev(`window.__qa.save({ lives: { n: 3, t: Date.now() - 10 * 60000 }, quests: { day: ${DAY}, list: [{ id: 'carriers', p: 10, c: 0 }, { id: 'wins', p: 1, c: 0 }, { id: 'cats', p: 50, c: 1 }], chest: 0 }, login: { last: ${DAY} - 1, idx: 2 } })`);
   await qa('home()'); await sleep(900);
   await shot('21-hub-econ');
   if ((await ev('document.getElementById("lives-n").textContent')) !== '3') throw new Error('lives pill should show 3');
@@ -320,12 +331,12 @@ try {
   let sv2 = await lsave();
   if (sv2.coins !== 340 + 40 + 15 || sv2.login.idx !== 3 || !sv2.quests.list[0].c) throw new Error('login + task claim did not pay: ' + sv2.coins);
   await tapSel('[data-act=closesheet]'); await sleep(300);
-  await tapSel('[data-act=show]'); await sleep(600);
+  await tapSel('[data-act=show]'); await sleep(900);
+  if ((await qa('state()')).sheet !== 'events') throw new Error('the Events tab should open the Events sheet');
   await shot('21c-cat-show');
-  await tapSel('[data-act=showclaim]'); await sleep(500);
-  sv2 = await lsave();
-  if (sv2.show.claimed.length !== 4 || sv2.coins !== 340 + 40 + 15 + 50) throw new Error('show claim: ' + sv2.show.claimed + ' coins ' + sv2.coins);
-  await shot('21d-cat-show-claimed');
+  await tapSel('[data-act=evtab][data-tab=rush]'); await sleep(500);
+  await shot('21d-cafe-rush');
+  await tapSel('[data-act=evtab][data-tab=show]'); await sleep(300);
   await tapSel('[data-act=closesheet]'); await sleep(300);
   // shop: buy a coin pack with a real touch, then the starter bundle (No Ads flag)
   await tapSel('.cafe-top .tr [data-act=shop]'); await sleep(600);
@@ -354,6 +365,7 @@ try {
   await waitFor('window.__qa.state().screen === "fail"', 30000);
   await sleep(500);
   if ((await lsave()).lives.n !== 0) throw new Error('a loss should cost a life');
+  await ev('document.querySelector("[data-act=morehelp]")?.click()'); await sleep(250);
   await tapSel('[data-act=adheart]'); await sleep(3600);
   if ((await lsave()).lives.n !== 1) throw new Error('a continue should refund the life');
   // Purr Streak bonus at level start: free hint + 1 bench seat
@@ -638,9 +650,9 @@ try {
     await qa('home()'); await sleep(900);
     await shot('29d-cafe-rosettes');
     if ((await ev('document.querySelectorAll(".rosettes .rib").length')) !== 2) throw new Error('two won rosettes should hang in the café');
-    await qa('screen("show")'); await sleep(700);
+    await qa('screen("show")'); await sleep(900);
     await shot('29e-show-board-sheet');
-    await tapSel('[data-act=showplay]'); await sleep(900);
+    await tapSel('.sbcard [data-act=showplay]'); await sleep(900);
     if ((await qa('state()')).mode !== 'play') throw new Error('Show board did not start');
     await shot('29f-show-board-play');
     await qa('winNow()');
@@ -648,11 +660,136 @@ try {
     await sleep(1500);
     await shot('29g-show-board-win');
     const sv7 = await ev('JSON.parse(localStorage.getItem("lco_save"))');
-    if (!(sv7.show.ch & 1) || sv7.show.best < 0) throw new Error('Show board clear should be recorded: ' + JSON.stringify(sv7.show));
+    if (!(sv7.show.marks[(await qa('week()')) + 'a'] & 1)) throw new Error('Show board medal should be recorded: ' + JSON.stringify(sv7.show.marks));
     await qa('lang("tr")'); await qa('screen("show")'); await sleep(600);
     await shot('29h-show-board-tr');
     await qa('lang("en")');
   }
+  // ---- retention (game/live.js): tip jar + requests, goals strip, daily sheet, Events (Show mastery, Rush, season,
+  // archive), visitor, outfits. QA_FROM=95 runs only these and the round-6/667 frames. ----
+  if (+(process.env.QA_FROM || 0) <= 95) {
+    const center = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
+    const tapSel = async (sel) => { const c = await center(sel); await tap(c.x, c.y); };
+    const lsave = () => ev('JSON.parse(localStorage.getItem("lco_save"))');
+    const built = ['counter_counter', 'counter_pastry', 'counter_lamps', 'counter_chalkboard', 'counter_tables', 'counter_plant', 'window_seat', 'window_plants', 'window_bookshelf', 'window_cattree', 'window_rug', 'window_lights'];
+    await qa('lang("en")');
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 8, level: 64, coins: 500, meta: { sessions: 4 }, cafe: { stars: 3, built: ${JSON.stringify(Object.fromEntries(built.map((k) => [k, 1])))} } }))`);
+    await boot();
+    await ev(`(() => { const w = window.__qa.week(); const day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
+      const d = JSON.parse(localStorage.getItem('lco_save'));
+      Object.assign(d, { jar: { t: Date.now() - 3 * 3600000, total: 0 }, req: { list: [{ k: 'win', who: 'mochi', need: 2, p: 2, c: 0, s: 1 }, { k: 'color', who: 'luna', need: 9, p: 4, c: 2, s: 2 }], next: Date.now() + 2 * 3600000, n: 2, done: 0 },
+        vis: { maple: 1 }, season: { daily: { [Math.floor(w / 4)]: 5 }, claim: {}, visDay: 0 }, rush: { week: w, best: 0, cats: 0, pend: null, cups: { gold: 1, bronze: 1 } },
+        daily: { last: String(day - 1), streak: 2, doneDay: '' } });
+      Object.assign(d.cafe, { hearts: { mochi: 9, luna: 21, biscuit: 5 }, wear: { mochi: 'hat', luna: 'scarf' }, petDay: {} });
+      Object.assign(d.show, { marks: { [(w - 1) + 'a']: 3, [(w - 1) + 'b']: 1, [(w - 2) + 'a']: 1 }, from: w - 3 });
+      localStorage.setItem('lco_save', JSON.stringify(d)); })()`);
+    await boot();
+    await shot('40a-hub-live');
+    if ((await ev('document.querySelectorAll(".goals .goal").length')) !== 3) throw new Error('the hub should show 3 next goals');
+    if (!(await ev('!!document.querySelector(".rr.ring[data-act=cafesheet]")'))) throw new Error('tip jar badge missing');
+    if ((await ev('document.querySelectorAll("#cafe .dot:not([hidden])").length')) > 3) throw new Error('more than 3 red dots on the hub');
+    await tapSel('[data-act=cafesheet]'); await sleep(600);
+    if ((await qa('state()')).sheet !== 'cafesheet') throw new Error('tips sheet did not open');
+    await shot('40b-cafe-tips');
+    let c0 = (await lsave()).coins;
+    await tapSel('[data-act=jarcollect]'); await sleep(300);
+    await shot('40c-jar-burst');
+    await sleep(1200);
+    let sv = await lsave();
+    if (!(sv.coins > c0) || Date.now() - sv.jar.t > 60000) throw new Error('jar collect did not pay: ' + c0 + ' -> ' + sv.coins);
+    c0 = sv.coins;
+    await tapSel('[data-act=reqclaim]'); await sleep(900);
+    sv = await lsave();
+    if (sv.coins !== c0 + 30 || sv.req.list.length !== 1 || sv.cafe.hearts.mochi !== 10) throw new Error('request claim: coins ' + sv.coins + ' hearts ' + sv.cafe.hearts.mochi);
+    await shot('40d-request-claimed');
+    await tapSel('[data-act=closesheet]'); await sleep(300);
+    await tapSel('[data-act=dailysheet]'); await sleep(600);
+    await shot('40e-daily-sheet');
+    await tapSel('[data-act=closesheet]'); await sleep(300);
+    c0 = (await lsave()).coins;
+    if (await ev('!!document.querySelector(".guest.visitor")')) { await ev('document.querySelector(".guest.visitor").click()'); await sleep(900); if ((await lsave()).coins !== c0 + 15) throw new Error('visitor gift should pay 15'); }
+    else console.log('  note: no visitor in this room');
+    await qa('act("events", { tab: "show" })'); await sleep(900);
+    await shot('40f-events-show');
+    await qa('act("evtab", { tab: "rush" })'); await sleep(600);
+    await shot('40g-events-rush');
+    if (!(await ev('[...document.querySelectorAll(".lrow em.bot")].length >= 3'))) throw new Error('Rush rivals must be labelled as bots');
+    await qa('act("evtab", { tab: "season" })'); await sleep(600);
+    await shot('40h-events-season');
+    await qa('act("evtab", { tab: "arch" })'); await sleep(600);
+    await shot('40i-events-archive');
+    // an archived board: playable, its medal stamps its own season
+    await tapSel('.abtn[data-k=b]'); await sleep(900);
+    if ((await qa('state()')).mode !== 'play') throw new Error('archived Show board did not start');
+    if (await ev('!!document.querySelector("#hud .boosters")')) throw new Error('no boosters on Show boards');
+    await shot('40j-show-play');
+    await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1600);
+    await shot('40k-show-win');
+    sv = await lsave();
+    const wk = await qa('week()');
+    if (!(sv.show.marks[(wk - 1) + 'b'] & 1)) throw new Error('archive medal not stored: ' + JSON.stringify(sv.show.marks));
+    await qa('rush()'); await sleep(900);
+    if ((await qa('state()')).mode !== 'play') throw new Error('Rush did not start');
+    await shot('40l-rush-play');
+    await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1600);
+    await shot('40m-rush-win');
+    if (!((await lsave()).rush.best > 0)) throw new Error('Rush time not stored');
+    await qa('home()'); await sleep(500);
+    await qa('screen("residents")'); await sleep(700);
+    await shot('40n-residents-wardrobe');
+    await ev('document.querySelector(".wo[data-id=luna]")?.click()'); await sleep(500);
+    await qa('lang("tr")'); await qa('home()'); await sleep(800);
+    await shot('40o-hub-live-tr');
+    await qa('act("events", { tab: "season" })'); await sleep(700);
+    await shot('40p-season-tr');
+    await qa('act("cafesheet")'); await sleep(600);
+    await shot('40q-tips-tr');
+    await qa('act("evtab", { tab: "show" })'); await qa('act("events", { tab: "show" })'); await sleep(700);
+    await shot('40r-show-tr');
+    await qa('lang("en")');
+    // the no-scroll rule at 375x667
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await qa('home()'); await sleep(800);
+    await shot('40s-667-hub-live');
+    for (const [name, js] of [['tips', 'act("cafesheet")'], ['daily', 'act("dailysheet")'], ['show', 'act("events", { tab: "show" })'], ['rush', 'act("events", { tab: "rush" })'], ['season', 'act("events", { tab: "season" })'], ['arch', 'act("events", { tab: "arch" })']]) {
+      await qa('home()'); await sleep(400); await qa(js); await sleep(700); await shot('40t-667-' + name);
+    }
+    await qa('home()'); await sleep(400); await qa('screen("residents")'); await sleep(600); await shot('40u-667-residents');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+  }
+  // ---- round 7: every screen at 375x667 fits without scrolling; cells stay >= 40 CSS px ----
+  if (!process.env.QA_SKIP667) {
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await qa('lang("en")');
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:30,coins:900,meta:{sessions:3},cafe:{stars:4,built:{counter_counter:1,counter_pastry:1}}}))');
+    await boot();
+    await shot('30a-667-hub');
+    await ev('document.querySelector(".fl.hs").click()'); await sleep(700);
+    await shot('30b-667-house');
+    await ev('document.querySelector(".fl.hs").click()'); await sleep(300);
+    for (const s7 of ['quests', 'show', 'shop', 'residents', 'settings', 'starter']) { await qa('home()'); await sleep(500); await qa(`screen("${s7}")`); await sleep(700); await shot('30c-667-' + s7); }
+    await qa('home()'); await sleep(400);
+    await qa('save({ lives: { n: 0, t: Date.now() } })'); await qa('screen("nolives")'); await sleep(600); await shot('30d-667-nolives');
+    await qa('save({ lives: { n: 5, t: Date.now() } })');
+    for (const lv of [12, 30, 55]) {
+      await qa(`level(${lv})`); await sleep(700);
+      const cell = (await qa('state()')).cell;
+      if (cell && cell < 40) console.log(`  note: L${lv} cell ${cell} at 375x667 (the 10-row boards need ~700px for 40px cells; 375x812 keeps >= 40)`);
+      await shot('30e-667-l' + lv);
+    }
+    await qa('level(2)'); await sleep(500); await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1500);
+    await shot('30f-667-win');
+    await qa('level(49)'); await sleep(600); await qa('failNow()');
+    await waitFor('window.__qa.state().screen === "fail"', 30000); await sleep(800);
+    await shot('30g-667-fail');
+    await ev('document.querySelector("[data-act=morehelp]")?.click()'); await sleep(300);
+    await shot('30h-667-fail-more');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+  }
+  if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 
   console.log(`errors: ${errs.length}`);

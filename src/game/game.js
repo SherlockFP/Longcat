@@ -6,7 +6,7 @@ import { hint as solverHint } from '../core/solver.js';
 import { DIRS } from '../core/board.js';
 import { IMG } from './assets.js';
 import { COLOR_PAL, COLLARS, NAVY, MYSTERY_PAL } from './breeds.js';
-import { makePath, sample, drawBody, drawHead, drawArrow, drawChevron, drawPaw, drawPatBadge, drawPaws, disc, FONT, drawDog, drawYarn, drawIce, drawQuestion, drawBadge } from './render.js';
+import { makePath, sample, drawBody, drawHead, drawArrow, drawChevron, drawPaw, drawPatBadge, drawPaws, disc, FONT, drawDog, drawYarn, drawIce, drawQuestion, drawBadge, head7 } from './render.js';
 
 const FACE = { U: -Math.PI / 2, R: 0, D: Math.PI / 2, L: Math.PI };
 const MOODS = [0, 1, 2, 3, 1, 0, 3, 2]; // per-cat resting face: excited, content, smug, sleepy
@@ -102,24 +102,26 @@ export class Game {
     const k = clamp(H / 812, 0.8, 1.1);
     let top = this.top;
     let bottom = this.bottom;
-    const padOut = 10 + 6 + 3; // rug ring + fringe + a hair of air
+    const r7 = !!IMG['r7/table_top'];
+    this.rugR = r7 ? Math.round(clamp(15 * k, 13, 18)) : 0; // stitched rug rim around the tiles (r7 table_top 9-slice)
+    const padOut = r7 ? this.rugR + 5 : 10 + 6 + 3; // rug ring + fringe + a hair of air
     const availW = W - 2 * (padOut + 3);
     // tall boards: shrink the bench cushions and the air around them (down to 70%) until cells reach 40 CSS px; the
     // carriers keep their size (they carry the colour queue the whole level is planned around)
     for (let f = 1; ; f -= 0.05) {
       { // the home demo gets a compact belt + bench under the logo so it shows the real move (cat -> carrier)
         if (this.demo) f = 0.74;
-        const hdr = this.demo ? this.top : this.safeT + 62 * k;
+        const hdr = this.demo ? this.top : this.safeT + (r7 ? 54 : 62) * k;
         const cf = this.demo ? f : Math.max(0.94, f); // carrier art: fixed in play (a hair smaller on the tallest boards)
         this.cs = Math.min(92, (W - 24) / 3.25) * Math.min(1, k + 0.08) * 0.9 * cf; // carrier art size
         this.sw = Math.min((this.cs / cf) * 1.05, (W - 16) / 3); // slots keep their spacing when the art shrinks
         this.beltY = hdr + this.cs * 1.08; // room for the big front carrier
         this.bw = Math.min(64, (W - 20) / 5.2) * Math.max(0.7, f);
-        this.benchY = this.beltY + 18 * f + this.bw * 0.46; // clear air between the belt and the cushions
-        top = this.benchY + this.bw * 0.4 + 6;
+        this.benchY = this.beltY + (r7 ? 28 : 18) * f + this.bw * 0.46; // clear air between the belt and the cushions
+        top = this.benchY + this.bw * (r7 ? 0.5 : 0.4) + (r7 ? 2 : 6);
         this.boardTop = top;
-        this.laneB = 84 * k + this.safeB + (this.extraBottom || 0) + 2; // CSS bottom of the toast lane above the booster bar (and the hint card)
-        bottom = this.demo ? this.bottom : this.laneB + LANE;
+        this.laneB = (r7 ? 80 : 84) * k + this.safeB + (this.extraBottom || 0) * (r7 ? 0.55 : 1) + 2; // r7: the hint is a bubble that may overlap the rug's bottom edge // CSS bottom of the toast lane above the booster bar (and the hint card)
+        bottom = this.demo ? this.bottom : this.laneB + (r7 ? 12 : LANE); // r7: toasts may sit over the rug's bottom edge
       }
       const availH = H - top - bottom - 2 * padOut;
       this.cell = Math.max(16, Math.floor(Math.min(availW / w, availH / h, 74)));
@@ -178,6 +180,7 @@ export class Game {
     this.chainFx = null;
     this.seatNew = null;
     this.popIn = {};
+    this.freedT = {}; // cat id -> clock when a tap just opened its way out (its exit arrow pulses once)
     this.prevAlive = null;
     this.demoAt = this.clock + 1.4;
     this.inputAt = this.clock + 0.25; // swallow the second half of a double tap
@@ -501,8 +504,15 @@ export class Game {
     if (!this.state || this.over) return null;
     if (this.anims.some((a) => a.type === 'bonk' && a.id === id)) return null;
     if (this.state.alive[id] === 0) return null;
+    const n = this.board.cats.length;
+    const was = this.demo ? null : this.board.cats.map((c) => this.state.alive[c.id] && canExit(this.state, c.id));
     const r = tap(this.state, id);
     if (r.gone || r.over) return r;
+    if (was && r.ok) { // one or two cats whose way out this tap just opened: point at them once the runner is gone
+      const opened = [];
+      for (let i = 0; i < n; i++) if (!was[i] && i !== id && this.state.alive[i] && canExit(this.state, i)) opened.push(i);
+      if (opened.length && opened.length <= 2) for (const i of opened) this.freedT[i] = this.clock + 0.35;
+    }
     if (!this.demo) {
       const hp = this.cellPos(id);
       this.look = { id, x: hp.x, y: hp.y, t: this.clock };
@@ -689,7 +699,7 @@ export class Game {
         hops = 0;
         this.pending.push({ at: cur, vis: true, fn: () => this.visDepart(e) });
       } else if (e.type === 'board') {
-        const at = cur + (hops ? 0.12 : 0.32); // staggered hops, one every 0.42 s
+        const at = cur + (hops ? 0.12 : this.calm ? 0.32 : 0.5); // staggered hops, one every 0.42 s; the first waits a wake beat (parked cats sit up)
         hops++;
         this.pending.push({ at, vis: true, seat: e.seat, cat: e.id, fn: () => this.visBoard(e, fx) });
         if (fx) { fx.t0 = fx.t0 || at; fx.t1 = at + 0.3; }
@@ -1034,18 +1044,23 @@ export class Game {
     if (end > 1.5) return;
     const al = end > 1.1 ? 1 - (end - 1.1) / 0.4 : 1;
     const pop = this.calm ? 1 : t < 0.3 ? easeBack(t / 0.3) : 1;
-    const size = Math.round(clamp(this.W * 0.115, 34, 50) * (f.k >= 3 ? 1.15 : 1));
+    const r7 = !!IMG['r7/carrier_orange'];
+    const size = Math.round(clamp(this.W * (r7 ? 0.075 : 0.115), r7 ? 24 : 34, r7 ? 34 : 50) * (f.k >= 3 ? 1.15 : 1));
     ctx.save();
     ctx.globalAlpha = clamp(al, 0, 1);
-    ctx.translate(this.W / 2, this.stampY + size * 0.2);
+    ctx.font = `700 ${size}px ${FONT}`;
+    const text = this.chainText(f.k);
+    const tw = ctx.measureText(text).width;
+    if (r7) { // beside the front carrier: the badge starts past its right rim, so the mouth and the landing stay in view
+      const half = tw / 2 + 18;
+      const fx = this.carrierMouth().x;
+      ctx.translate(Math.min(this.W - half - 6, fx + this.cs * 0.95 + half), this.beltY - this.cs * 0.42);
+    } else ctx.translate(this.W / 2, this.stampY + size * 0.2);
     ctx.rotate(-0.07);
     ctx.scale(pop, pop);
-    ctx.font = `700 ${size}px ${FONT}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
-    const text = this.chainText(f.k);
-    const tw = ctx.measureText(text).width;
     // a ribbon badge behind the words
     ctx.fillStyle = '#ff6b9a';
     ctx.strokeStyle = NAVY;
@@ -1104,6 +1119,22 @@ export class Game {
 
   drawBg(ctx) {
     const { W, H } = this;
+    const room = IMG['r7/bg_play_room'];
+    if (room) {
+      // the sunny boarding room: one painted layer, cover-fit, never tiled
+      const sc = Math.max(W / room.width, H / room.height);
+      const dw = room.width * sc, dh = room.height * sc;
+      ctx.drawImage(room, (W - dw) / 2, (H - dh) / 2, dw, dh);
+      if (!this.calm) { // the window light drifts by a few percent (cheap: one gradient)
+        const a = 0.05 + 0.03 * Math.sin(this.clock * (Math.PI / 3));
+        const g = ctx.createLinearGradient(W, 0, W * 0.35, H * 0.55);
+        g.addColorStop(0, `rgba(255,214,140,${a * 2})`);
+        g.addColorStop(1, 'rgba(255,214,140,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, W, H);
+      }
+      return;
+    }
     ctx.fillStyle = '#1fb5ad';
     ctx.fillRect(0, 0, W, H);
     const tile = IMG.bg_teal;
@@ -1140,8 +1171,52 @@ export class Game {
     ctx.closePath();
   }
 
+  // 9-slice: src insets si (px), dest insets di
+  nine(ctx, im, x, y, w, h, si, di) {
+    const sw = im.width, sh = im.height;
+    const xs = [0, si, sw - si, sw], ys = [0, si, sh - si, sh];
+    const xd = [x, x + di, x + w - di, x + w], yd = [y, y + di, y + h - di, y + h];
+    for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) {
+      const dw = xd[i + 1] - xd[i], dh = yd[j + 1] - yd[j];
+      if (dw > 0 && dh > 0) ctx.drawImage(im, xs[i], ys[j], xs[i + 1] - xs[i], ys[j + 1] - ys[j], xd[i], yd[j], dw + 0.5, dh + 0.5);
+    }
+  }
+
+  // r7: stitched rust rug (table_top 9-slice) with a soft contact shadow, ivory tiles with hairline seams
+  drawBoard7(ctx) {
+    const { w, h } = this.board;
+    const c = this.cell;
+    const gx = this.ox, gy = this.oy, gw = c * w, gh = c * h;
+    const R = this.rugR;
+    const x0 = gx - R - 3, y0 = gy - R - 3, rw = gw + 2 * (R + 3), rh = gh + 2 * (R + 3);
+    ctx.save();
+    ctx.shadowColor = 'rgba(60,30,10,0.28)';
+    ctx.shadowBlur = 14;
+    ctx.shadowOffsetX = -6;
+    ctx.shadowOffsetY = 8;
+    this.rr(ctx, x0 + 4, y0 + 4, rw - 8, rh - 8, R);
+    ctx.fillStyle = '#BD582F';
+    ctx.fill();
+    ctx.restore();
+    this.nine(ctx, IMG['r7/table_top'], x0, y0, rw, rh, 84, R * 1.55);
+    ctx.fillStyle = '#E8D5B0';
+    ctx.fillRect(gx - 1, gy - 1, gw + 2, gh + 2);
+    const tile = IMG['r7/tile_ivory'];
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      if (tile) ctx.drawImage(tile, gx + x * c + 0.75, gy + y * c + 0.75, c - 1.5, c - 1.5);
+      else { ctx.fillStyle = '#FFF0D3'; ctx.fillRect(gx + x * c + 0.75, gy + y * c + 0.75, c - 1.5, c - 1.5); }
+    }
+    // a whisper of the window light across the tiles (evenly lit: just enough to feel the sun)
+    const g = ctx.createLinearGradient(gx + gw, gy, gx, gy + gh);
+    g.addColorStop(0, 'rgba(255,236,190,0.18)');
+    g.addColorStop(1, 'rgba(120,70,30,0.06)');
+    ctx.fillStyle = g;
+    ctx.fillRect(gx, gy, gw, gh);
+  }
+
   // orange fringed rug with a cream grid
   drawBoard(ctx) {
+    if (IMG['r7/table_top']) { this.drawBoard7(ctx); return; }
     const { w, h } = this.board;
     const c = this.cell;
     const gx = this.ox, gy = this.oy, gw = c * w, gh = c * h;
@@ -1191,6 +1266,20 @@ export class Game {
   drawBelt(ctx) {
     const { W } = this;
     const y = this.beltY;
+    const belt = IMG['r7/belt_wood'];
+    if (belt) {
+      // wooden toy belt with brass end rollers; the carriers stand on its top face
+      const bw = W * 0.96, bh = bw * (belt.height / belt.width) * 0.72;
+      const kick = this.calm ? 0 : this.beltKick();
+      ctx.save();
+      ctx.shadowColor = 'rgba(60,30,10,0.25)';
+      ctx.shadowBlur = 8;
+      ctx.shadowOffsetX = -3;
+      ctx.shadowOffsetY = 4;
+      ctx.drawImage(belt, (W - bw) / 2 + kick, y - bh * 0.3, bw, bh);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.shadowColor = 'rgba(0,50,60,0.3)';
     ctx.shadowBlur = 6;
@@ -1217,9 +1306,42 @@ export class Game {
     ctx.restore();
   }
 
+  // the belt "stop-click": a carrier just left, the belt overshoots one notch and settles
+  beltKick() {
+    const l = this.vis.leaving[this.vis.leaving.length - 1];
+    if (!l || l.leaveT == null) return 0;
+    const t = this.clock - l.leaveT - 0.2;
+    return t > 0 && t < 0.5 ? -Math.sin(t * 26) * Math.exp(-t * 9) * 3 : 0;
+  }
+
+  // r7: one oak plank cut into seat cells (any seat count keeps a hollow under every cushion)
+  drawPlank(ctx, n) {
+    const im = IMG['r7/bench_plank'];
+    if (!im || !n) return;
+    const { step } = this.benchGeom(n);
+    const cellS = im.width * 0.1865, cap = im.width * 0.127 - cellS / 2;
+    const sc = step / cellS;
+    const sh = im.height * 0.8; // the plank without its legs: the bench sits on the table edge
+    const h = sh * sc;
+    const x0 = this.benchPos(0, n).x - step / 2;
+    const y0 = this.benchY - im.height * 0.43 * sc;
+    ctx.save();
+    ctx.shadowColor = 'rgba(60,30,10,0.28)';
+    ctx.shadowBlur = 8;
+    ctx.shadowOffsetX = -3;
+    ctx.shadowOffsetY = 5;
+    ctx.drawImage(im, 0, 0, cap, sh, x0 - cap * sc, y0, cap * sc + 0.5, h);
+    for (let i = 0; i < n; i++) ctx.drawImage(im, cap, 0, cellS, sh, x0 + i * step, y0, step + 0.6, h);
+    ctx.drawImage(im, im.width - cap, 0, cap, sh, x0 + n * step, y0, cap * sc, h);
+    ctx.restore();
+  }
+
   drawBench(ctx) {
     const n = this.vis.bench.length;
-    const cush = IMG['v2/cushion'];
+    const r7 = !!IMG['r7/cushion'];
+    const cush = r7 ? IMG['r7/cushion'] : IMG['v2/cushion'];
+    if (r7) this.drawPlank(ctx, n);
+    const free = this.vis.bench.filter((x) => x < 0).length;
     for (let i = 0; i < n; i++) {
       const { x, y, bw } = this.benchPos(i, n);
       const sn = this.seatNew && this.seatNew.i === i ? this.clock - this.seatNew.t0 : 99;
@@ -1237,9 +1359,22 @@ export class Game {
         ctx.stroke();
         ctx.restore();
       }
-      const yel = this.vis.bench[i] >= 0 && COLOR_PAL[this.board.cats[this.vis.bench[i]].color].name === 'yellow';
-      const art = yel && IMG.cushion_alt ? IMG.cushion_alt : cush; // a yellow cat never melts into a yellow cushion
-      if (art) ctx.drawImage(art, x - bw * 0.5, y - bw * 0.5, bw, bw);
+      const yel = !r7 && this.vis.bench[i] >= 0 && COLOR_PAL[this.board.cats[this.vis.bench[i]].color].name === 'yellow';
+      const art = yel && IMG.cushion_alt ? IMG.cushion_alt : cush; // a yellow cat never melts into a yellow cushion (v2: yellow cushion)
+      if (r7 && art) {
+        const cw = bw * 0.92, ch = cw * (art.height / art.width);
+        ctx.drawImage(art, x - cw / 2, y - ch * 0.52, cw, ch);
+        if (free === 1 && this.vis.bench[i] < 0 && !this.demo) { // the last free seat pulses
+          const u = this.calm ? 0.6 : 0.5 + 0.5 * Math.sin(this.clock * 6);
+          ctx.save();
+          ctx.strokeStyle = `rgba(229,57,53,${0.45 + 0.4 * u})`;
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.ellipse(x, y, cw * (0.5 + 0.04 * u), ch * 0.46, 0, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+      } else if (art) ctx.drawImage(art, x - bw * 0.5, y - bw * 0.5, bw, bw);
       else {
         ctx.fillStyle = '#ffd51f';
         ctx.beginPath();
@@ -1250,7 +1385,12 @@ export class Game {
       if (id >= 0) {
         const t = this.clock - (this.vis.benchT[i] ?? -9);
         const pop = t < 0.35 ? 1 + 0.18 * Math.sin((t / 0.35) * Math.PI) * (1 - t / 0.35 * 0.4) : 1;
-        this.drawCurled(ctx, x, y - bw * 0.04, bw * pop, this.board.cats[id].color, id);
+        // its carrier is at the front: the parked cat wakes (sits up with a "!") just before it hops in
+        const fc = this.vis.carriers[0];
+        const woke = !this.demo && fc && !fc.closed && fc.fill < fc.cap && fc.color === this.board.cats[id].color;
+        const lift = woke && !this.calm ? bw * (0.1 + 0.05 * Math.abs(Math.sin(this.clock * 12))) : 0;
+        this.drawCurled(ctx, x, y - bw * 0.04 - lift, bw * pop, this.board.cats[id].color, id);
+        if (woke) drawBadge(ctx, x + bw * 0.3, y - bw * 0.5 - lift, bw * 0.15, '!', COLOR_PAL[fc.color].base);
       }
     }
     // cats waiting for a seat (bench full)
@@ -1279,6 +1419,21 @@ export class Game {
   // a small curled-up cat (bench seat, hop-in flight)
   drawCurled(ctx, x, y, bw, color, id = 0) {
     const pal = COLOR_PAL[color];
+    const curl = pal && IMG[`r7/cat_curl_${pal.name}`];
+    if (curl) {
+      const cw = bw * 0.98, ch = cw * (curl.height / curl.width);
+      ctx.save();
+      ctx.fillStyle = 'rgba(60,30,10,0.22)';
+      ctx.beginPath();
+      ctx.ellipse(x - cw * 0.04, y + ch * 0.3, cw * 0.4, ch * 0.16, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const br = this.calm ? 1 : 1 + 0.025 * Math.sin(this.clock * 2.2 + id); // sleepy breathing
+      ctx.translate(x, y + ch * 0.36);
+      ctx.scale(1, br);
+      ctx.drawImage(curl, -cw / 2, -ch, cw, ch);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     ctx.translate(x, y);
     ctx.fillStyle = NAVY;
@@ -1353,6 +1508,7 @@ export class Game {
   }
 
   drawCarrier(ctx, vc, x, sc, front, rot = 0, dy = 0) {
+    if (IMG['r7/carrier_orange']) { this.drawCarrier7(ctx, vc, x, sc, front, rot, dy); return; }
     const cs = this.cs;
     const art = IMG[`carrier_${vc.closed ? 'closed' : 'open'}_${vc.color}`];
     const t = this.clock - vc.sqT;
@@ -1404,6 +1560,69 @@ export class Game {
     }
   }
 
+  // r7 molded carrier (door hinged left, dark mouth), its fill count on a honey tag on the roof
+  drawCarrier7(ctx, vc, x, sc, front, rot = 0, dy = 0) {
+    const cs = this.cs;
+    const pal = COLOR_PAL[vc.color];
+    const art = IMG[`r7/carrier_${pal.name}${vc.closed ? '_shut' : ''}`] || IMG['r7/carrier_orange'];
+    const cw = cs * 1.3, ch = cw * (art.height / art.width);
+    const t = this.clock - vc.sqT;
+    let sx = 1, sy = 1;
+    if (t < 0.5) {
+      const k = Math.exp(-t * 9) * Math.cos(t * 24) * 0.14;
+      sy = 1 - k;
+      sx = 1 + k * 0.7;
+    }
+    if (vc.closed && vc.leaveT != null) {
+      const q = this.clock - vc.leaveT;
+      if (q < 0.25) { const k = Math.exp(-q * 14) * Math.cos(q * 34) * 0.12; sy *= 1 - k; sx *= 1 + k * 0.8; }
+    }
+    ctx.save();
+    ctx.translate(x, this.beltY + 2 + dy);
+    ctx.rotate(rot);
+    ctx.scale(sc * sx, sc * sy);
+    ctx.fillStyle = 'rgba(60,30,10,0.25)';
+    ctx.beginPath();
+    ctx.ellipse(-cw * 0.04, -ch * 0.03, cw * 0.4, ch * 0.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const hc = this.hintId != null && this.board && this.board.cats[this.hintId];
+    if (front && !vc.closed && hc && hc.color === vc.color && !this.demo) { // the hinted cat's carrier glows in step with its arrow
+      const u = this.calm ? 0.7 : 0.5 + 0.5 * Math.sin(this.clock * 8);
+      ctx.save();
+      ctx.shadowColor = `rgba(255,214,90,${0.5 + 0.4 * u})`;
+      ctx.shadowBlur = 10 + 10 * u;
+      ctx.drawImage(art, -cw / 2, -ch, cw, ch);
+      ctx.restore();
+    }
+    ctx.drawImage(art, -cw / 2, -ch, cw, ch);
+    if (!vc.closed && vc.fill > 0) { // the last cat in peeks out of the mouth
+      const q = this.clock - vc.popT;
+      const pop = q < 0.35 ? 0.45 + 0.55 * easeBack(q / 0.35) : 1;
+      drawHead(ctx, vc.color, cw * 0.06, -ch * 0.42, 0, cw * 0.36 * pop, 1, { v: vc.fill });
+    }
+    if (!vc.closed) drawPatBadge(ctx, pal, cw * 0.36, -ch * 0.2, cs * 0.11); // the fur pattern: colour is never the only cue
+    if ((front || vc.fill > 0) && !vc.closed) {
+      // count tag on the roof: honey pill with an oak rim, it pops on every cat in
+      const r = cs * 0.2;
+      const q = this.clock - (vc.popT ?? -9);
+      const pp = this.calm ? 1 : q < 0.3 ? 1 + 0.25 * Math.sin((q / 0.3) * Math.PI) : 1;
+      ctx.translate(cw * 0.08, -ch * 0.8);
+      ctx.scale(pp, pp);
+      this.rr(ctx, -r * 1.15, -r * 0.72, r * 2.3, r * 1.44, r * 0.72);
+      ctx.fillStyle = '#F2B544';
+      ctx.fill();
+      ctx.lineWidth = 2.5;
+      ctx.strokeStyle = '#8E5530';
+      ctx.stroke();
+      ctx.fillStyle = '#3c2314';
+      ctx.font = `700 ${Math.round(r * 0.95)}px ${FONT}`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(`${vc.fill}/${vc.cap}`, 0, 1);
+    }
+    ctx.restore();
+  }
+
   catStyle(cat) {
     const c = this.cell;
     const pal = this.mv.hidden[cat.id] ? MYSTERY_PAL : COLOR_PAL[cat.color];
@@ -1411,7 +1630,7 @@ export class Game {
       // a kitten is a smaller copy of its parent, same collar
       return { pal, w: c * 0.5, head: c * 0.76, collar: null }; // the pair reads by the heart leash (drawTether)
     }
-    return { pal, w: c * 0.66, head: c * 0.92, collar: null };
+    return { pal, w: c * (IMG['r7/tex_felt'] ? 0.7 : 0.66), head: c * 0.92, collar: null };
   }
 
   // idle life: blink every few seconds, ear twitch, tail wag
@@ -1449,7 +1668,7 @@ export class Game {
     const ux = Math.cos(ang), uy = Math.sin(ang);
     const hs = st.head * (o.headScale || 1);
     let hx = p1.x + ux * c * 0.04, hy = p1.y + uy * c * 0.04, lean = ux * 0.3;
-    let face = o.frozen ? { blink: 1 } : o.run != null ? null : { mood: MOODS[cat.id % MOODS.length] };
+    let face = o.frozen ? { blink: 1, v: cat.id } : o.run != null ? { v: cat.id } : { mood: MOODS[cat.id % MOODS.length], v: cat.id };
     if (o.idle) {
       face.blink = this.blinkOf(cat.id);
       face.twitch = this.twitchOf(cat.id);
@@ -1471,7 +1690,7 @@ export class Game {
     }
     // face stays upright (small lean only) and sits a bit forward so the exit side reads
     drawHead(ctx, this.mv.hidden[cat.id] ? -1 : cat.color, hx, hy, lean, hs, o.alpha ?? 1, face);
-    if (hs > c * 0.5) drawPaws(ctx, hx, hy, ux, uy, hs, o.alpha ?? 1);
+    if (hs > c * 0.5 && !head7(cat.color)) drawPaws(ctx, hx, hy, ux, uy, hs, o.alpha ?? 1);
     if (o.chevron) drawChevron(ctx, p1.x + ux * (hs * 0.5 + c * 0.12), p1.y + uy * (hs * 0.5 + c * 0.12), ang, c * 0.17, 0.95);
   }
 
@@ -1501,7 +1720,8 @@ export class Game {
     this.paintCat(ctx, cat, path, 0, hb, { glow, chevron: !frozen, idle: !frozen, frozen });
     this.mechOver(ctx, cat, path, hb);
     ctx.restore();
-    if (hinted) {
+    const fr = this.freedT[id] != null ? this.clock - this.freedT[id] : -1;
+    if (hinted || (fr >= 0 && fr < 1.4)) {
       const head = cat.cells.at(-1);
       const [dx, dy] = DIRS[cat.dir];
       const [hx, hy] = this.center(head[0], head[1]);

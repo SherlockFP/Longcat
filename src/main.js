@@ -1,5 +1,5 @@
 import './ui/ui.css';
-import { generate } from './core/generate.js';
+import { generate, levelKind } from './core/generate.js';
 import { COLORS } from './core/board.js';
 import { freeCats, hint as solverHint, solveFrom } from './core/solver.js';
 import { compile, Sim, searchWin } from './core/search.js';
@@ -19,13 +19,17 @@ import { pwa, initPwa } from './kit/pwa.js';
 import * as econ from './game/econ.js';
 import * as cafe from './game/cafe.js';
 import { makeClip, shareFile } from './kit/clip.js';
+import * as live from './game/live.js';
+import * as lui from './ui/live.js';
+import { notify } from './kit/notify.js';
+import './i18n-live.js';
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
 const SCOOP_COST = 150;
 const seatCost = () => econ.SEAT_COSTS[Math.min(S.seatBuys || 0, econ.SEAT_COSTS.length - 1)]; // 120 / 200 / 300 within one level
 const CAFE_FROM = 4; // the café hub is home from this level; levels 1-3 go straight to play
-const S = { mode: 'home', n: 1, daily: false, show: false, area: 0, tries: {}, freeBack: {} };
+const S = { mode: 'home', n: 1, daily: false, show: false, area: 0, tries: {}, freeBack: {} }; // show: false | { kind: 'show', w, k, goal } | { kind: 'rush', w }
 let game;
 let busy = false; // guards async actions (ads) against double taps
 let busyTok = null;
@@ -52,7 +56,7 @@ function streak(today = dayNum()) {
   return d.last && (+d.last === +today || +d.last === today - 1) ? d.streak : 0;
 }
 // attempts, seat prices and the Purr "lost" flag are per level; the daily puzzle reuses a level number, so it gets its own key
-const triesKey = () => (S.show ? 's' : S.daily ? 'd' : '') + S.n;
+const triesKey = () => (S.show ? S.show.kind + (S.show.w || '') + (S.show.k || '') : S.daily ? 'd' : '') + S.n;
 
 const homeInfo = () => ({
   coins: save.data.coins,
@@ -97,7 +101,7 @@ const canPayBooster = (k, cost) => save.data.boosters[k] > 0 || save.data.coins 
 // ---- economy glue (rules live in game/econ.js; this file only wires them to the screens) ----
 const lifeGate = () => cafe.RESIDENTS.some((r) => cafe.isBuilt(r.task.id)); // lives only matter once the first resident has moved in
 const livesInfo = () => ({ n: econ.lives(save.data, now()), ms: econ.livesMs(save.data, now()) });
-const dots = () => econ.dots(save.data, now());
+const dots = () => liveHub().dots; // the hub's badge budget (max 3 dots), see liveHub
 const syncCoins = () => { ui.setCoins(save.data.coins); if (S.mode === 'play' && game.state) ui.setHud(hudInfo()); };
 // roll the day/week/life timers forward (clock-guarded), persist when something changed
 function econTick() {
@@ -108,10 +112,21 @@ function econTick() {
   const b = econ.showRoll(d, day);
   const before = d.lives.n;
   econ.livesTick(d, now());
-  if (a || b || d.lives.n !== before) save.commit();
+  // retention timers: tip jar, resident requests, the Café Rush week, the first Show week (archive start)
+  const res = resOwned();
+  const z2 = live.clampAheadLive(d, now());
+  const jt = d.jar.t;
+  live.jarTick(d, now(), res.length);
+  const r = live.reqTick(d, now(), res);
+  const ru = live.eventsOpen(d) && live.rushRoll(d, econ.weekOf(day), 0);
+  let f = false;
+  if (live.eventsOpen(d) && !d.show.from) { d.show.from = econ.weekOf(day); f = true; }
+  if (a || b || d.lives.n !== before || z2 || jt !== d.jar.t || r || ru || f) save.commit();
+  if ((r || ru) && S.mode === 'cafe' && !ui.sheet && ui.screen === 'cafe') ui.cafe(cafeInfo());
 }
 function quest(ev, n = 1) {
   if (S.noQuest && S.mode === 'play') return; // a replayed daily puzzle farms no task progress
+  if (ev === 'win' || ev === 'carrier') live.reqEvent(save.data, ev, n); // resident requests count the same moments
   if (econ.questEvent(save.data, ev, dayNum(), n)) {
     save.commit();
     if (S.mode === 'cafe') ui.setDots(dots());
@@ -128,36 +143,141 @@ function questsInfo() {
     chestReward: econ.CHEST,
   };
 }
-// the week's Cat Show board: one fixed generated board per week (the same for every player), and the judges' mark,
-// the fewest bench seats it can be cleared with (searched once per week, then kept in the save)
-const showLevel = () => 120 + (econ.weekOf(dayNum()) % 380);
-function showMark() {
-  const d = save.data;
-  const w = econ.weekOf(dayNum());
-  if (d.show.markWeek === w && d.show.mark > 0) return d.show.mark;
-  const board = generate(showLevel());
+// ---- Cat Show mastery: two fixed boards a week (the same for everyone), each with one published goal ----
+// Board A: the fewest seats it can be cleared with (searched). Board B: the biggest bench chain on the generator's own
+// winning line (so it is always possible), else a seats goal. Goals are computed once per board and kept in the save.
+const weekNum = () => econ.weekOf(dayNum());
+const showLevelOf = (w, k) => 120 + ((w * 2 + (k === 'b' ? 1 : 0)) % 380);
+function seatsGoal(board) {
   const C = compile(board);
   let mark = board.meta.benchSize - 1; // the generator's own line never needs more
   for (let k = 1; k < mark; k++) if (searchWin(new Sim(C, k), 6000, false) === 1) { mark = k; break; }
-  d.show.mark = mark;
-  d.show.markWeek = w;
-  save.commit();
-  return mark;
+  return { kind: 'seats', n: mark };
 }
-function showInfo() {
+function chainGoal(board) { // the biggest bench chain (parked cats hopping in on one tap) along the generator's line
+  const C = compile(board);
+  const sim = new Sim(C, board.meta.benchSize);
+  let best = 0;
+  for (const id of board.meta.order || []) {
+    const u = C.unitOf[id];
+    if (u == null || !sim.free().includes(u) || !sim.apply(u)) break;
+    best = Math.max(best, sim.boards.reduce((a, k) => a + k, 0));
+  }
+  return best >= 2 ? { kind: 'chain', n: Math.min(4, best) } : null;
+}
+function showGoal(w, k) {
   const d = save.data;
-  econ.showRoll(d, dayNum());
-  const th = econ.themeOf(d.show.week);
+  const key = live.boardKey(w, k);
+  if (d.show.goals[key]) return d.show.goals[key];
+  const board = generate(showLevelOf(w, k));
+  const g = (k === 'b' && chainGoal(board)) || seatsGoal(board);
+  d.show.goals[key] = g;
+  save.commit();
+  return g;
+}
+const goalText = (g) => (g.kind === 'chain' ? t('goalChain', { n: g.n }) : t('goalSeats', { n: g.n }));
+// ---- Café Rush: one normal board a week, timed, ranked against 19 practice bots ----
+function rushLevel(w) {
+  let n = 20 + ((w * 7) % 40);
+  while (levelKind(n) !== 'normal') n++;
+  return n;
+}
+const resOwned = () => cafe.RESIDENTS.filter((r) => cafe.isBuilt(r.task.id)).map((r) => r.id);
+const resName = (id) => (cafe.RESIDENTS.find((r) => r.id === id) || {}).name || '';
+const visName = (id) => (live.VISITORS[id] || {}).name || '';
+const jarNow = () => live.jarState(save.data, now(), resOwned().length, cafe.love());
+function eventsInfo() {
+  const d = save.data;
+  const w = weekNum();
+  const open = live.eventsOpen(d);
+  if (!open) return { open, from: live.EVENTS_FROM };
+  const th = econ.themeOf(w);
+  const boards = ['a', 'b'].map((k) => ({ w, k, medal: live.medalOf(d, w, k), goal: showGoal(w, k) }));
+  const arch = live.archiveWeeks(d, w).map((x) => ({ w: x, ago: w - x, name: cafe.loc(econ.themeOf(x).name), boards: ['a', 'b'].map((k) => ({ k, medal: live.medalOf(d, x, k) })) }));
+  // Rush: the board's cat count sets the bots' simulated times; the table shows the top 3 and you
+  if (!(d.rush.week === w && d.rush.cats)) { d.rush.cats = generate(rushLevel(w)).cats.length; save.commit(); }
+  const bots = live.rushBots(w, d.rush.cats);
+  const all = [...bots, ...(d.rush.best ? [{ me: true, ms: d.rush.best }] : [])].sort((x, y) => x.ms - y.ms).map((e, i) => ({ ...e, rank: i + 1 }));
+  const mine = all.find((e) => e.me);
+  const rank = mine ? mine.rank : 0;
+  const rows = all.slice(0, 3);
+  if (!mine) rows.push({ me: true, ms: 0, rank: '-' });
+  else if (rank > 3) rows.push(mine);
+  const s = live.seasonOf(w);
+  const sd = live.seasonDef(s);
+  const stamps = live.stampsOf(d, s);
+  const steps = live.seasonSteps(s, stamps).slice(0, 3);
+  const done = d.season.claim[s] || 0;
+  const ready = live.seasonsReady(d);
+  let claim = null;
+  if (ready.length) { const st = live.seasonSteps(ready[0], live.stampsOf(d, ready[0]))[d.season.claim[ready[0]] || 0]; claim = st && { visitor: st.visitor || '', name: st.visitor ? visName(st.visitor) : '' }; }
+  const showDot = boards.some((b) => !b.medal) && econ.showEndsMs(dayNum(), now()) < econ.DAY_MS;
   return {
-    board: { mark: showMark(), best: d.show.best, cleared: !!(d.show.ch & 1), gold: !!(d.show.ch & 2), clearRibbons: econ.SHOW_CLEAR, markRibbons: econ.SHOW_MARK },
-    name: cafe.loc(th.name),
-    color: th.color,
-    endsMs: econ.showEndsMs(dayNum(), now()),
-    ribbons: d.show.ribbons,
-    max: econ.SHOW_STEPS[econ.SHOW_STEPS.length - 1],
-    ready: econ.showAnyReady(d),
-    steps: econ.SHOW_STEPS.map((need, i) => ({ need, reward: econ.SHOW_REWARDS[i], state: d.show.claimed.includes(i) ? 'claimed' : d.show.ribbons >= need ? 'ready' : 'locked' })),
+    open,
+    show: { name: cafe.loc(th.name), color: th.color, endsMs: econ.showEndsMs(dayNum(), now()), boards, bronze: live.SHOW_BRONZE_COINS, gold: live.SHOW_GOLD_COINS, rosette: !!d.show.decor[th.id], archN: arch.length, dot: showDot },
+    arch: { weeks: arch },
+    rush: { endsMs: econ.showEndsMs(dayNum(), now()), best: d.rush.best, rank, rows, pend: d.rush.pend && { rank: d.rush.pend.rank, prize: live.rushPrize(d.rush.pend.rank) }, dot: !!d.rush.pend },
+    season: { name: cafe.loc(sd.name), color: sd.color, endsMs: live.seasonEndsMs(s, now()), stamps, max: steps[steps.length - 1].at, steps: steps.map((x, i) => ({ ...x, state: i < done ? 'done' : stamps >= x.at ? 'ready' : '' })), claim, dot: ready.length > 0, owned: live.visitorsOwned(d).length, all: Object.keys(live.VISITORS).map((id) => ({ id, name: visName(id), own: !!d.vis[id], cur: sd.visitors.includes(id) })) },
   };
+}
+function cafeSheetInfo() {
+  const d = save.data;
+  return {
+    jar: jarNow(),
+    resN: resOwned().length,
+    wear: d.cafe.wear,
+    reqs: d.req.list.map((x) => { const def = live.reqDef(x.k); return { x, name: resName(x.who), snack: lui.snack(x.s), reward: { coins: def.coins, hearts: def.hearts }, ready: x.p >= x.need }; }),
+    nextMs: Math.max(0, d.req.next - now()),
+  };
+}
+const msToMidnight = () => Math.max(0, econ.dayStart(dayNum() + 1) - now());
+const dailyInfo = () => ({ streak: streak(), done: save.data.daily.doneDay === todayKey(), ms: msToMidnight(), chests: Array.from({ length: 7 }, (_, i) => live.streakChest(i + 1)), stamp: live.eventsOpen(save.data) });
+// the hub's retention layer: rail badges, the goals strip, pets due, outfits, today's visitor, Rush cups (max 3 dots)
+function liveHub() {
+  const d = save.data;
+  const day = dayNum();
+  const w = weekNum();
+  const res = resOwned();
+  const jar = jarNow();
+  const open = live.eventsOpen(d);
+  const dailyDone = d.daily.doneDay === todayKey();
+  const nr = cafe.nextResident();
+  const need = nr ? cafe.starsToResident(nr) : 0;
+  const goals = live.goals(d, now(), { stars: cafe.stars(), resident: nr && { id: nr.id, name: nr.name, need, left: Math.max(0, need - cafe.stars()) }, res, week: w, streak: streak(), dailyDone, party: cafe.partyOpen() ? cafe.PARTY_COST : 0 })
+    .map((g) => ({ ...g, name: g.k === 'outfit' ? resName(g.who) : g.name, vname: g.visitor ? visName(g.visitor) : '' }));
+  // badge budget: at most 3 red dots, claimable rewards first, then an event ending within a day, then the daily puzzle
+  const want = [
+    ['quests', econ.dots(d, now()).quests],
+    ['jar', jar.pct >= 0.5 || live.reqReady(d)],
+    ['season', open && live.seasonsReady(d).length > 0],
+    ['show', open && (!!d.rush.pend || (['a', 'b'].some((k) => !live.medalOf(d, w, k)) && econ.showEndsMs(day, now()) < econ.DAY_MS))],
+    ['daily', !dailyDone],
+  ];
+  const on = {};
+  let n = 0;
+  for (const [k, v] of want) { on[k] = !!v && n < 3; if (on[k]) n++; }
+  const vid = live.visitorToday(d, day);
+  return {
+    jar,
+    daily: { streak: streak(), done: dailyDone, ms: msToMidnight() },
+    season: open ? { stamps: live.stampsOf(d, live.seasonOf(w)) } : null,
+    dots: on,
+    goals,
+    wear: d.cafe.wear,
+    pet: Object.fromEntries(res.filter((id) => live.petReady(d, id, day)).map((id) => [id, 1])),
+    visitor: vid && { id: vid, name: visName(vid), line: live.VISITORS[vid].line, gift: d.season.visDay < day },
+    cups: lui.cupsHtml(d.rush.cups),
+  };
+}
+// reminders while the page sits in the background (opt-in, kit/notify.js)
+function planNotify() {
+  const d = save.data;
+  const list = [];
+  const j = jarNow();
+  if (j.on && j.fullMs > 0) list.push({ tag: 'jar', ms: j.fullMs, title: t('nJarTitle'), body: t('nJarBody') });
+  if (lifeGate() && d.lives.n < econ.MAX_LIVES) list.push({ tag: 'lives', ms: econ.livesMs(d, now()) + (econ.MAX_LIVES - d.lives.n - 1) * econ.REGEN_MS, title: t('nLivesTitle'), body: t('nLivesBody') });
+  if (live.eventsOpen(d)) list.push({ tag: 'show', ms: econ.showEndsMs(dayNum(), now()) + 60000, title: t('nShowTitle'), body: t('nShowBody') });
+  notify.plan(list);
 }
 const shopInfo = () => ({ owned: save.data.iap.owned, noAds: iap.noAds(), store: iap.available() });
 // the Starter Bundle: a badge on the hub rail once it is due (never a pop-up on café entry) and one offer card on a
@@ -172,7 +292,7 @@ function continued(kind) {
 }
 // start a level unless the life gate is shut
 function tryStart(n, daily = false, show = false) {
-  if (show) { startLevel(n, false, true); return true; } // Cat Show practice is free and unlimited: no life is spent
+  if (show) { startLevel(n, false, show); return true; } // Cat Show / Café Rush retries are free and unlimited: no life is spent
   if (lifeGate() && econ.lives(save.data, now()) <= 0) {
     ui.noLives({ ms: econ.livesMs(save.data, now()), coins: save.data.coins, cost: econ.LIFE_REFILL_COST, ad: ads.available() });
     track('no_lives_gate', { n });
@@ -185,7 +305,7 @@ function tryStart(n, daily = false, show = false) {
 // ---- flow ----
 // the Cat Show rosettes the player has won hang on the café wall (one per theme, in its colour)
 const rosettes = () => econ.earnedDecor(save.data).map((id) => econ.THEMES.find((x) => x.id === id)).filter(Boolean).map((x) => ({ id: x.id, color: x.color, name: cafe.loc(x.name) }));
-const cafeInfo = (justBuilt) => ({ stars: cafe.stars(), level: save.data.level, area: S.area, justBuilt, coins: save.data.coins, lives: livesInfo(), dots: dots(), day: dayNum(), offer: starterOpen(), rosettes: rosettes(), party: cafe.partyOpen() ? { n: cafe.parties(), cost: cafe.PARTY_COST, ok: cafe.stars() >= cafe.PARTY_COST, coins: cafe.PARTY_REWARD.coins } : null });
+const cafeInfo = (justBuilt, L = liveHub()) => ({ live: L, stars: cafe.stars(), level: save.data.level, area: S.area, justBuilt, coins: save.data.coins, lives: livesInfo(), dots: L.dots, day: dayNum(), offer: starterOpen(), rosettes: rosettes(), party: cafe.partyOpen() ? { n: cafe.parties(), cost: cafe.PARTY_COST, ok: cafe.stars() >= cafe.PARTY_COST, coins: cafe.PARTY_REWARD.coins } : null });
 
 function startHome() {
   if (S.mode === 'play' && game) {
@@ -218,6 +338,8 @@ function startLevel(n, daily = false, show = false) {
   S.n = n;
   S.daily = daily;
   S.show = show;
+  S.chainBest = 0; // the biggest bench chain of this attempt (Show board goal)
+  S.rushT0 = 0; // Café Rush: the clock starts on the first cat out
   S.winToken = (S.winToken || 0) + 1; // a pending win-card job (clip preview) of an older attempt is dropped
   clearTimeout(S.clipTimer);
   game.autoHint = !daily && !show && n <= 3; // L3's arrow points past the tempting pink pair; L4 is a real choice now: no tap-by-tap guide, only a nudge after a costly park
@@ -274,16 +396,23 @@ function startLevel(n, daily = false, show = false) {
   game.load(board, { extraBottom: tut ? 64 : 0 });
   clipReset();
   ui.none();
-  ui.play({ ...hudInfo(), level: n, daily, show, tut });
+  ui.play({ ...hudInfo(), level: n, daily, show: show ? (show.kind === 'rush' ? t('rush') : t('showBoardN', { k: show.k.toUpperCase() })) : false, rush: !!show && show.kind === 'rush', tut });
   track('level_start', { n, daily });
   if (perks.length) setTimeout(() => { if (S.mode === 'play' && S.n === n) perks.forEach((p, i) => setTimeout(() => ui.toast(p), i * 1500)); }, 500);
 }
 
+// Café Rush: the run clock under the board (starts on the first cat out, freezes on the win card)
+setInterval(() => {
+  const el = S.mode === 'play' && S.show && S.show.kind === 'rush' && ui.screen === 'play' ? document.getElementById('rushclock') : null;
+  if (el) el.textContent = ((S.rushT0 ? performance.now() - S.rushT0 : 0) / 1000).toFixed(1) + 's';
+}, 100);
+
 function onFree({ ids, step, purrfect }) {
   if (game.demo) return;
   if (!S.undid) quest('cat', ids.length); // replays after a paid undo do not count twice
+  if (!S.undid && !(S.noQuest && S.mode === 'play')) for (const id of ids) live.reqEvent(save.data, 'cat', 1, game.board.cats[id].color);
+  if (S.show && S.show.kind === 'rush' && !S.rushT0) S.rushT0 = performance.now();
   audio.mrrp(step);
-  haptics.light();
   if (purrfect) audio.pop();
 }
 
@@ -295,20 +424,39 @@ function onBonk(r) {
   track('bonk', { n: S.n });
 }
 
-// Cat Show board won: the score is the most seats used at once (lower is better); the first clear of the week pays
-// ribbons, matching the judges' mark (the fewest seats the board can be cleared with) pays more and the gold rosette
+// Cat Show board won: bronze for the clear, gold when the published goal was met (seats peak or bench chain). Each new
+// medal is a season stamp and pays coins; gold on both boards of a week hangs that theme's rosette in the café.
+// Café Rush won: the time from the first cat out to the clear; the best of the week is ranked against practice bots.
 function onShowWin() {
   const d = save.data;
-  econ.showRoll(d, dayNum());
-  const peak = game.state ? game.state.benchPeak : 0;
-  const mark = showMark();
-  const r = econ.showBoardResult(d, peak, mark);
-  if (r.ribbons) econ.showAdd(d, r.ribbons, dayNum());
-  save.commit();
-  track('show_board_win', { peak, mark, ribbons: r.ribbons });
+  const sh = S.show;
+  const peek = peekColor();
   audio.clear();
   haptics.success();
-  ui.win({ stars: 1, title: peak <= mark ? 'winTitle' : 'winTitle2', coins: 0, peek: peekColor(), ribbons: r.ribbons, purr: t('showScore', { n: peak, m: mark }) + (r.best ? ' · ' + t('showBest') : ''), ach: [], show: true });
+  if (sh.kind === 'rush') {
+    const ms = S.rushT0 ? performance.now() - S.rushT0 : 0;
+    econTick(); // a week that turned over mid-run pays last week's prize first
+    const prev = sh.w === weekNum() ? d.rush.best || 0 : 0;
+    const best = sh.w === weekNum() && live.rushResult(d, ms);
+    // the split against the personal best: the number a second run is trying to beat
+    const split = prev && ms > 0 ? ' · ' + t(best ? 'rushFaster' : 'rushSlower', { d: (Math.abs(ms - prev) / 1000).toFixed(1) }) : '';
+    const bots = live.rushBots(sh.w, d.rush.cats || game.board.cats.length);
+    const rank = live.rushRank(bots, Math.min(ms, d.rush.best || ms));
+    save.commit();
+    track('rush_win', { ms: Math.round(ms), rank, best });
+    ui.win({ stars: 1, title: best ? 'winTitle' : 'winTitle2', coins: 0, peek, purr: t('rushTime', { t: (ms / 1000).toFixed(1), n: rank }) + (best ? ' · ' + t('showBest') : '') + split, ach: [], show: true, again: true, showTag: t('rush') });
+    return;
+  }
+  const goal = sh.goal;
+  const peak = game.state ? game.state.benchPeak : 0;
+  const gold = goal.kind === 'chain' ? S.chainBest >= goal.n : peak <= goal.n;
+  const r = live.showMedal(d, sh.w, sh.k, gold);
+  let rosette = false;
+  if (r.gold && live.bothGold(d, sh.w) && !d.show.decor[econ.themeOf(sh.w).id]) { d.show.decor[econ.themeOf(sh.w).id] = 1; rosette = true; }
+  save.commit();
+  track('show_board_win', { w: sh.w, k: sh.k, gold, peak, chain: S.chainBest, stamps: r.stamps });
+  const line = gold ? t('medalGoldWon') : t('medalBronzeWon', { goal: goalText(goal) });
+  ui.win({ stars: 1, title: gold ? 'winTitle' : 'winTitle2', coins: r.coins, coinsBefore: d.coins - r.coins, peek, ribbons: r.stamps, purr: line + (rosette ? ' · ' + t('rosetteWon') : ''), ach: [], show: true, showTag: t('showBoardN', { k: sh.k.toUpperCase() }) });
 }
 
 function onWin(stars) {
@@ -333,6 +481,7 @@ function onWin(stars) {
     if (tidy) parts.push({ k: 'payTidy', n: tidy, v: peakUsed });
     if (stars >= 2) parts.push({ k: stars === 3 ? 'paySuper' : 'payHard', n: stars === 3 ? 20 : 10 });
     if (S.daily) parts.push({ k: 'payDaily', n: 25 });
+    if (S.daily) parts.push({ k: 'payStreak', n: live.streakChest(streak(+dayKey) + 1).coins }); // the streak chest (its boosters below)
     const perk = 5 * cafe.perkLevel('coins') + cafe.love();
     if (perk) parts.push({ k: 'payCafe', n: perk });
   }
@@ -344,22 +493,25 @@ function onWin(stars) {
     cafe.addStars(cafeStars);
   }
   if (!S.daily) d.bestStars[S.n] = Math.max(d.bestStars[S.n] || 0, stars);
+  let chest = null;
   if (S.daily && d.daily.doneDay !== dayKey) {
     d.daily.streak = streak(+dayKey) + 1; // one day snapshot (taken at level start) for the whole daily bookkeeping
+    chest = live.streakChest(d.daily.streak);
+    econ.grant(d, { ...chest, coins: 0 }); // the chest's coins are in the pay breakdown
+    if (live.eventsOpen(d)) live.addDailyStamp(d, econ.weekOf(+dayKey));
+    live.reqEvent(d, 'daily');
     d.daily.last = dayKey;
     d.daily.doneDay = dayKey;
   }
   d.coins += reward;
-  // economy: Purr Streak, daily tasks, Cat Show ribbons (a replayed daily puzzle pays no ribbons)
+  // economy: Purr Streak, daily tasks, resident requests (a replayed daily puzzle pays nothing)
   const firstTry = first && S.tries[triesKey()] === 1 && !S.continued && d.purr.lost !== S.n;
   if (first) econ.purrWin(d, firstTry); // a replay of an old level never touches the streak
   if (!S.daily && d.purr.lost === S.n) d.purr.lost = 0;
   if (first && d.purr.seatLv === S.n) d.purr.seatLv = 0; // the streak's bench seat is used up once its level is cleared
-  // Cat Show ribbons: a first clear pays its stars, +1 for a clean first try (so ~3-4 wins a day can finish the track in a week)
-  const ribbons = dailyRepeat || !full ? 0 : stars + (firstTry ? 1 : 0);
   quest('win');
   if (game.board.meta.kind !== 'normal') quest('hard');
-  if (ribbons) econ.showAdd(d, ribbons, dayNum());
+  if (full && !dailyRepeat && game.state && game.state.benchPeak <= 2) live.reqEvent(d, 'tidy');
   const purr = S.daily ? '' : d.purr.pend ? t('purrReady') : d.purr.n > 0 ? t('purrProg', { n: d.purr.n, g: econ.purrGoal(d) }) : '';
   save.commit();
   track('level_win', { n: S.n, stars, firstTry });
@@ -381,7 +533,7 @@ function onWin(stars) {
   if (peak === 0) ach.push({ k: 'nobench', text: t('achNoBench') });
   // the win card is the payoff moment: never an upsell on it (the Starter Bundle shows once, on a lost bench instead)
   const pay = parts.length > 1 || (parts[0] && parts[0].k === 'payReplay') ? parts.map((p) => `${t(p.k, { n: p.v })} +${p.n}`).join(' · ') : '';
-  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, peek: peekColor(), cafeStars, canBuild, cafeNext, ribbons, purr, ach, chain: clip.has() && clip.score >= 2 });
+  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, peek: peekColor(), cafeStars, canBuild, cafeNext, purr: chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, ach, chain: clip.has() && clip.score >= 2 });
   S.shareTitle = title;
   for (let i = 0; i < stars; i++) setTimeout(() => audio.star(i), 300 + i * 300);
   // the chain loops on the card at once (the frames are already there); the video for Share is encoded behind it
@@ -417,9 +569,13 @@ function failInfo() {
   const sid = st && st.pending && st.pending.length ? st.pending[0] : null;
   const color = sid != null ? COLORS[game.board.cats[sid].color] : peekColor();
   const sp = sid != null && game.vis.stuck.length ? game.stuckPos(0) : null;
+  // how far down the belt the stuck cat's carrier is: the loss names the distance, not just "not here yet"
+  const away = st && sid != null ? st.carriers.findIndex((c) => c.color === game.board.cats[sid].color) : -1;
+  const why = !st ? '' : away === 1 ? t('offerWhyNext', { n: st.benchSize, c: t('col_' + color) }) : away > 1 ? t('offerWhyK', { n: st.benchSize, c: t('col_' + color), k: away }) : t('offerWhy', { n: st.benchSize, c: t('col_' + color) });
   return {
     peek: color,
-    why: st ? t('offerWhy', { n: st.benchSize, c: t('col_' + color) }) : '',
+    why,
+    lifeLost: !!S.lifeLost,
     stuckAt: sp && { x: Math.round(Math.min(game.W - 72, Math.max(72, sp.x))), y: Math.round(sp.y - game.bw * 0.62) },
     coins: save.data.coins,
     seatCost: seatCost(),
@@ -457,7 +613,6 @@ function onFail(silent = false) {
     save.commit();
     track('starter_shown', { at: 'fail' });
   }
-  if (S.lifeLost) ui.toast(t('lifeLost'));
 }
 
 // ---- actions ----
@@ -473,6 +628,12 @@ const actions = {
     if (S.mode !== 'cafe' || !ui.pet(id)) return;
     audio.mrrp(0);
     haptics.light();
+    if (live.pet(save.data, id, dayNum())) { // the day's first pet: +1 affection heart
+      save.commit();
+      const h = document.querySelector(`.guest[data-id="${id}"] .pheart`);
+      if (h) h.remove();
+      ui.toast(t('petHeart', { name: resName(id), n: live.heartsOf(save.data, id) }));
+    }
     track('pet', { id });
   },
   treat({ id }) {
@@ -482,6 +643,8 @@ const actions = {
     if (!cafe.treat(id)) return ui.toast(t('needCoins', { n: cafe.treatCost(id) }));
     audio.star(1);
     haptics.success();
+    live.addHearts(save.data, id, 3); // a treat is also 3 affection hearts toward the outfits
+    save.commit();
     track('treat', { id });
     ui.residents();
     ui.toast(t('loveToast', { name: r.name }));
@@ -568,6 +731,11 @@ const actions = {
   loginclaim() {
     const r = econ.loginClaim(save.data, dayNum());
     if (!r) return;
+    if (r.outfit) { // calendar day 7: the nearest resident outfit unlocks (no resident yet: 100 coins instead)
+      const g = live.giftOutfit(save.data, resOwned());
+      if (g) ui.toast(t('outfitGift', { name: resName(g.id), o: t('outfit_' + g.outfit) }));
+      else save.data.coins += 100;
+    }
     save.commit();
     track('login_claim', { idx: save.data.login.idx });
     audio.star(1);
@@ -575,17 +743,96 @@ const actions = {
     syncCoins();
     if (S.mode === 'cafe') ui.setDots(dots());
   },
-  show() { ui.show(showInfo()); track('show_open'); },
-  showclaim() {
-    const out = econ.showClaim(save.data, dayNum());
-    if (!out.length) return;
+  show() { lui.eventsSheet(eventsInfo()); track('show_open'); },
+  events({ tab }) { lui.eventsTab(tab); lui.eventsSheet(eventsInfo()); track('events_open', { tab: lui.eventsTab() }); },
+  evtab({ tab }) { lui.eventsTab(tab); lui.eventsSheet(eventsInfo()); },
+  archpage({ p }) { lui.setArchPage(p); lui.eventsSheet(eventsInfo()); },
+  rushplay() {
+    if (!live.eventsOpen(save.data)) return;
+    ui.hideSheet();
+    const w = weekNum();
+    tryStart(rushLevel(w), false, { kind: 'rush', w });
+    if (save.data.rush.week === w) { save.data.rush.cats = game.board.cats.length; save.commit(); }
+    track('rush_play');
+  },
+  rushclaim() {
+    const r = live.rushClaim(save.data);
+    if (!r) return;
     save.commit();
-    track('show_claim', { n: out.length });
     audio.clear();
     haptics.success();
-    ui.show(showInfo());
+    track('rush_claim', { rank: r.rank });
+    ui.toast(t(r.cup ? 'rushCupToast' : 'rushPrizeToast', { n: r.rank, c: r.coins }));
+    lui.eventsSheet(eventsInfo());
     syncCoins();
-    if (S.mode === 'cafe') ui.setDots(dots());
+  },
+  seasonclaim() {
+    const d = save.data;
+    const s = live.seasonsReady(d)[0];
+    if (s == null) return;
+    const r = live.seasonClaim(d, s, dayNum());
+    if (!r) return;
+    save.commit();
+    audio.star(2);
+    haptics.success();
+    track('season_claim', { s, visitor: r.visitor || '', repeat: !!r.repeat });
+    ui.toast(r.visitor && !r.repeat ? t('visitorJoined', { name: visName(r.visitor) }) : t('seasonGiftToast'));
+    if (S.mode === 'cafe') ui.cafe(cafeInfo());
+    lui.eventsTab('season');
+    lui.eventsSheet(eventsInfo());
+  },
+  cafesheet() { lui.cafeSheet(cafeSheetInfo()); track('cafe_sheet'); },
+  jarcollect() {
+    if (S.mode !== 'cafe') return;
+    const d = save.data;
+    const before = d.coins;
+    const n = live.jarCollect(d, now(), resOwned().length, cafe.love());
+    if (!n) return;
+    save.commit();
+    audio.star(0);
+    haptics.success();
+    track('jar_collect', { n });
+    ui.cafe(cafeInfo());
+    lui.cafeSheet(cafeSheetInfo());
+    lui.coinBurst(document.querySelector('#sheet .jbig'), before, d.coins);
+  },
+  reqclaim({ i }) {
+    if (S.mode !== 'cafe') return;
+    const d = save.data;
+    const before = d.coins;
+    const r = live.reqClaim(d, +i, now());
+    if (!r) return;
+    save.commit();
+    audio.star(1);
+    haptics.success();
+    track('request_done', { who: r.who });
+    ui.cafe(cafeInfo());
+    lui.cafeSheet(cafeSheetInfo());
+    ui.toast(t('reqThanks', { name: resName(r.who), h: r.hearts }));
+    lui.coinBurst(document.querySelector('#sheet .jbig'), before, d.coins);
+  },
+  dailysheet() { lui.dailySheet(dailyInfo()); track('daily_sheet'); },
+  dailyplay() { ui.hideSheet(); tryStart(dailyLevel(), true); },
+  visitor({ id }) {
+    if (S.mode !== 'cafe') return;
+    const before = save.data.coins;
+    ui.pet(id);
+    audio.mrrp(1);
+    const n = live.visitorGift(save.data, id, dayNum());
+    if (!n) return;
+    save.commit();
+    track('visitor_gift', { id });
+    const el = document.querySelector(`.guest.visitor[data-id="${id}"]`);
+    const g = el && el.querySelector('.pheart');
+    if (g) g.remove();
+    lui.coinBurst(el, before, save.data.coins);
+  },
+  wear({ id, o }) {
+    if (!live.wear(save.data, id, o || '')) return;
+    save.commit();
+    audio.tick();
+    track('wear', { id, o: o || '' });
+    ui.residents();
   },
   adlife: guarded(async () => {
     if (ui.sheet !== 'nolives' || !ads.available()) return;
@@ -621,7 +868,13 @@ const actions = {
     track('free_takeback', { n: S.n });
     continued('takeback');
   },
-  showplay() { ui.hideSheet(); tryStart(showLevel(), false, true); track('show_board_play'); },
+  showplay({ w, k }) {
+    if (!live.eventsOpen(save.data)) return;
+    const wk = Math.min(+w || weekNum(), weekNum()); // archived boards stay playable; never a future week
+    ui.hideSheet();
+    tryStart(showLevelOf(wk, k === 'b' ? 'b' : 'a'), false, { kind: 'show', w: wk, k: k === 'b' ? 'b' : 'a', goal: showGoal(wk, k === 'b' ? 'b' : 'a') });
+    track('show_board_play', { w: wk, k });
+  },
   home: () => startHome(),
   retry: () => tryStart(S.n, S.daily, S.show),
   adheart: guarded(async () => {
@@ -669,7 +922,7 @@ const actions = {
     continued('scoop');
   },
   undo() {
-    if (S.mode !== 'play' || game.demo) return;
+    if (S.mode !== 'play' || game.demo || S.show) return;
     if (game.busy() || !canUndo(game.state)) return ui.toast(t('noUndo'));
     if (!payBooster('undo', UNDO_COST)) return ui.toast(t('noCoins'));
     if (game.undoMove()) S.undid = true;
@@ -677,7 +930,7 @@ const actions = {
     track('undo');
   },
   scoop() {
-    if (S.mode !== 'play' || game.demo || game.over) return;
+    if (S.mode !== 'play' || game.demo || game.over || S.show) return;
     if (game.scoopMode) game.scoopMode = false;
     else if (!canPayBooster('scoop', SCOOP_COST)) return ui.toast(t('noCoins'));
     else game.scoopMode = true;
@@ -685,7 +938,7 @@ const actions = {
     ui.setHud(hudInfo());
   },
   next: guarded(async () => {
-    if (S.show) { startHome(); return actions.show(); } // back to the Show sheet: try for a better score
+    if (S.show) { startHome(); lui.eventsTab(S.show.kind === 'rush' ? 'rush' : S.show.w < weekNum() ? 'arch' : 'show'); return actions.show(); } // back to the Events sheet: try for gold or a better time
     if (S.daily) return startHome();
     const n = S.n;
     const token = S.winToken;
@@ -694,7 +947,7 @@ const actions = {
     tryStart(n + 1);
   }),
   hint: guarded(async () => {
-    const ok = () => S.mode === 'play' && game.state && !game.over && !isFailed(game.state) && game.state.aliveCount > 0 && game.hintId == null;
+    const ok = () => S.mode === 'play' && !S.show && game.state && !game.over && !isFailed(game.state) && game.state.aliveCount > 0 && game.hintId == null;
     if (!ok()) return;
     const id = solverHint(game.state); // nothing is paid for a hint that cannot point at a cat
     if (id == null) return ui.toast(t('noHint'));
@@ -726,9 +979,14 @@ const actions = {
   async install() {
     await pwa.install();
   },
-  toggle({ k }) {
+  async toggle({ k }) {
+    if (k === 'notify' && !save.data.settings.notify) {
+      if (!(await notify.enable())) { ui.toast(t('notifyDenied')); return; }
+      track('notify_on');
+    }
     save.data.settings[k] = !save.data.settings[k];
     save.commit();
+    if (k === 'music' || k === 'sound') audio.sync();
     ui.settings(settingsInfo());
   },
   lang({ l }) {
@@ -768,7 +1026,7 @@ async function doShare() {
   }
 }
 
-const settingsInfo = () => ({ settings: save.data.settings, removeAds: ads.isRemoved(), canInstall: pwa.canInstall() });
+const settingsInfo = () => ({ notifyOk: live.eventsOpen(save.data) && notify.supported(), settings: save.data.settings, removeAds: ads.isRemoved(), canInstall: pwa.canInstall() });
 
 // ---- boot ----
 async function boot() {
@@ -782,9 +1040,9 @@ async function boot() {
   game.on.fail = onFail;
   game.on.depart = ({ chain }) => { if (game.demo) return; audio.depart(chain - 1); haptics.success(); if (!game.demo && !S.undid) quest('carrier'); };
   // a bench chain (2+ parked cats hop in from one tap): the share clip keeps the best one of the level
-  game.on.chain = ({ n }) => { if (game.demo) return; clip.mark(n); track('chain', { n, lv: S.n }); };
+  game.on.chain = ({ n }) => { if (game.demo) return; S.chainBest = Math.max(S.chainBest || 0, n); clip.mark(n); track('chain', { n, lv: S.n }); };
   game.on.hop = ({ k }) => { if (game.demo) return; audio.chain(k - 1); haptics.light(); };
-  game.on.land = () => { if (!game.demo) audio.land(); };
+  game.on.land = (e) => { if (game.demo) return; audio.land(); if (e && e.kind === 'carrier') haptics.light(); }; // the tick lands with the cat, not the tap
   game.on.scoopCan = () => canPayBooster('scoop', SCOOP_COST) || (ui.toast(t('noCoins')), false);
   game.on.scoop = () => { payBooster('scoop', SCOOP_COST); ui.setTut(''); ui.setHud(hudInfo()); track('scoop'); };
   game.on.scoopFull = () => ui.toast(t('offerSub'));
@@ -845,10 +1103,17 @@ async function boot() {
   setInterval(() => { if (S.mode === 'play' && game.state && !game.demo && ((!game.over && ui.screen === 'play') || clip.recording)) clip.tick(); }, 100);
   setInterval(() => {
     econTick();
+    if (S.mode === 'cafe' && ui.screen === 'cafe' && !ui.sheet && !document.getElementById('modal')) { // the jar filled a stage, a dot or a goal moved: redraw the hub
+      const L = liveHub();
+      const key = JSON.stringify([L.jar.stage, L.dots, L.goals.map((g) => [g.k, g.have]), L.daily.done]);
+      if (S.hubKey && key !== S.hubKey) ui.cafe(cafeInfo());
+      S.hubKey = key;
+    }
     const l = livesInfo();
     ui.setLives(l);
     if (ui.sheet === 'nolives' && l.n > 0) ui.hideSheet();
   }, 1000);
+  document.addEventListener('visibilitychange', () => { if (document.hidden) planNotify(); else notify.clear(); });
   save.data.meta.sessions++;
   save.commit();
   track('app_open', { session: save.data.meta.sessions });
@@ -858,8 +1123,11 @@ async function boot() {
     const blocked = () => game.board.cats.filter((c) => game.state.alive[c.id] && findBlocker(game.state, c.id)).map((c) => c.id);
     window.__qa = {
       level: (n) => startLevel(n),
-      showBoard: () => startLevel(showLevel(), false, true),
-      showMark: () => showMark(),
+      showBoard: (k = 'a') => { const w = weekNum(); startLevel(showLevelOf(w, k), false, { kind: 'show', w, k, goal: showGoal(w, k) }); },
+      showGoal: (k = 'a') => showGoal(weekNum(), k),
+      rush: () => actions.rushplay(),
+      week: () => weekNum(),
+      live: () => liveHub(),
       daily: () => startLevel(dailyLevel(), true),
       home: () => startHome(),
       cafe: () => { startHome(); },
