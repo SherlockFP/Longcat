@@ -212,3 +212,48 @@
 - Not verified: iMessage / WhatsApp delivery, caption-stripped receipt through first move and counter-dare, scanning on a real phone.
 ### Checks
 - `npm run build` and `npm run check` pass (core including the curated boards and the old-rev board, econ, web, sfx, dare). One check run right after perf.mjs hit the 60 ms generation limit once (L16 116.8 ms, machine load); the rerun passed (worst 47.2 ms). QA ran the touched sections: R11 + a new R12 section (`QA_FROM=999 QA_SKIP667 QA_SKIP_CONTENT QA_SKIPPERF QA_SKIPSHOP QA_NOGPU`; QA_SKIP_R12 skips the new one), 0 errors, no scroll failures. QA_STRIPS reran (leap + chain strips). perf.mjs reran (label r12). The 90s-105 hub and dare sections were not rerun. The thread goal only shows up to L24, so their saves at L27+ are untouched, but section 17 (an L5 hub) was not checked.
+
+## R11 (sol-r11-3: six parallel lanes merged on main: juice, appeal, fun, vir, ret, pres)
+Merged in that order from main d204fce. The only textual conflicts were the appended QA sections in scripts/qa.mjs (every section kept, in merge order) and the import lines in src/main.js and src/ui/ui.js (both sides kept). game.js combined cleanly: the juice split-frame routing, pres' header clamp, fun's drawUnder/drawTop hooks and appeal's render.js changes all coexist. fun's marks draw on #game, which sits over the still-board layer, so the ghosts and lines stay crisp during a split frame.
+### Presentation (fix 1)
+- One Play on the map: the current node is a level marker (number, pulse ring, cat; still tappable, its name in aria-label). The featured goal drops a Play-only button, so its line fits on one row. The build card's resident line wraps to 2 lines (11.5 px) instead of cutting.
+- The front carrier's n/3 tag clears the LEVEL plaque by 7 px at 360x640 and 375x667, in EN and TR. This uses `PLAQUE_B = 47` in game.js layout(), and the board sits about 11 px lower at 667.
+- Shared card radii (24 / 16 px) and shadows across the build card, featured goal, win café bar and adoption row. The shop balance and close button share a centre line. At 1600x900 the side panels start at one height. Frames: r11-pres-*.
+### Appeal (fix 2)
+- Every breed (and the mystery cat) now uses the tabby's shaped body: shoulder swell, belly and a rump tapered to 72%. Markings are clipped to the outline, sized to the local width and wrapped around bends, with a side mark per row. Zigzag width, highlights and seams follow the profile. A soft shade joins the head to the shoulders. The still-cat sprite cache already used bodyShape. Frames: r11-appeal-board, r11-appeal-late (375x812 @3x).
+- Open for Sol / owner: hearts point toward the head, so they are sideways or upside down on cats facing left or down (visible in r11-juice-chain-split). Yellow's side spots read as dashes at 1x. Mystery question marks stay upright.
+### Juice (fix 3)
+- Split frames while cats move. The still board sits on its own crisp layer (#pf-board) and redraws only on change. Moving cats and effects draw on a 0.65x layer (#pf-fx). The belt, resting carriers and the counter ribbon are baked. The edge glow, flash and ring are DOM layers.
+- Result: the x3 chain went from 83.4 to 33.4 ms p95 at 6x CPU with software raster (qa/r10-perf.md R11 table). Nothing was measured on a physical phone.
+- Final-landing beat: camera punch, warm flash + gold ring, a bigger springy "Chain xN!" and a 22 ms buzz (follows haptics; off with reduced motion). The lid now slams with squash and stretch. Win coins scale 6-12 with the payout and land with ticks and a burst. Frames: r11-juice-*.
+### Fun (fixes 4 + 7)
+- Bench preview: holding a cat that would park shows ringed cushions with dashed lines to the carrier it waits for and a "how many ahead" badge. Ghost cushions hold the seats until the cats land. It shows on L1-20, teaching levels and dares, and not on the Daily, Show or Rush.
+- Take back rewinds to the latest position the solver proves winnable (toast "Rewound {n} moves to a winnable spot"). If nothing is proven, it takes back 1 move and promises nothing.
+- Teaching levels (L1-4, 6, 8, 9, 11, 12): the first loss offers "Back to that tap" / "O hamleye dön". It rewinds to the tap that made the loss certain and marks that cat ("!", lane, orange ghost cushions).
+- L1-12 losses cost no life. The first-session bot (scripts/r11-fun-session.mjs, qa/r11-fun.md) found L9 a wall (18% first-try) and lives running out in 81% of runs. With the fixes, stalled runs fall from 243/300 to 13/300, but that number models player responses rather than measuring them. Frames: r11-fun-*.
+### Retention (fix 5)
+- After the early resident thread, the map strip becomes the nearest album reward. It shows the postcard, the page line, the exact step ("3 stamps: clear Show board A") and one button straight there (Board A/B, Daily, Claim, Get). A goal ready to claim keeps the strip. On wide screens the same card sits in the left panel under Album.
+- A completed page opens its print's room with a "Hang the print" card (Hang focused, Later). From the 3rd win of a day, the win card names tomorrow ("3 wins today! Tomorrow: ...").
+- Save key `save.data.ret = { wd, wn, hang }`. check-econ now asserts a concrete goal on every visit of the 120-day sim, and that the album card is the goal on 238/238 visits with a reward open. Frames: r11-ret-*.
+### Virality (fix 6)
+- Dare a friend shares the text + production https link at once. `.env.production` sets VITE_PUBLIC_URL=https://longcat-746.pages.dev/; the dev and QA frames still show example.github.io.
+- A new round QR button beside it shares a 720x860 PNG card with a 176 px QR.
+- The video now records in the background about 0.7 s after the win card opens. It uses 360x640 on weak or lagging devices. The end-card QR grew to 168 px and holds 2.8 s; the module probe at 360 px wide reads 4.1-4.3 px per module with 0 errors.
+- The received path (landing, name, first move, counter-dare round 2, thread) was checked headlessly. Frames: r11-vir-*.
+### Integration fixes (on main after the merges)
+- The hub QA expected "27. Seviye" in the current node's text. pres moved the name to aria-label, so the assertion now reads aria-label.
+- The rewind toasts fired while the fail card was still up, so they used the big modal toast: 4 lines over L9's marked bottom-row cat. They now use `ui.toast(text, 'funtoast')`: over the booster bar, wrapping to 2 lines, never over the board (r11-fun-culprit-en/tr).
+- On wide screens, win coins, the win star, the juice burst and the resident coin burst flew about 500 px to the right, into the side panel. The translateZ body is the fixed elements' containing block, so positions now subtract the body rect (ui.js flyCoins/flyStar, r11-juice.js coinLand, live.js). This bug predates R11; juice's bigger coin flight made it obvious.
+- The wide-screen album card cut "Next postcard · Dress-up Days 0/4" with an ellipsis. Its page line and title now wrap in the side panel.
+### Checks
+- `npm run build` and `npm run check` pass: core (gen worst 46.8 ms, search misses 0), econ incl. the ret additions, web, sfx and dare.
+- QA ran `PORT=5193 QA_NOGPU=1 QA_FROM=106` with CONTENT, PERF, ORDERS, IQ, R11 and R12 skipped. That covers the 667 pass, shop, hub and all six R11 lane sections: 0 errors, no scroll failures. The pass was rerun after the fixes (667, shop and appeal skipped on the rerun).
+- Another session committed acdabe8 (r7.css, hub resident pose) on main during integration.
+### Weak / open for Sol
+- Hearts orientation and pink busyness on the shaped body (appeal). Shaped bodies in flight cost more per frame and have not been measured on a low-end phone.
+- The split frames add six full-screen canvases (about 5 MB each at DPR 2), with memory unmeasured. Big late boards still idle at 50-66 ms p95 at 6x software raster. In themed packs, rain and petals draw over still cats during a split.
+- TR "O hamleye dön" wraps to 2 lines in the fail card's green button (readable, crowded). L7 is a third difficulty spike (54% first try) and was not retuned.
+- The catch-up board is almost always offered ("2 boards: clear board A of <old week>"), which can feel like a chore. The tomorrow line is thin with no residents. The room hang card does not say how to change rooms. The ret strip is unchecked at 360x640.
+- Background recording now runs on every chain or clean win card. The older r11 assertion "the win card must not record before the player asks" passes only because it reads at 350 ms, before the 760 ms start, so it should be reworded. The friend-win thumbnail says "Share clip" for about 0.7 s.
+- Nothing was tested on real phones: QR scanning, iMessage / WhatsApp delivery, haptics, perf.
+- The map's locked top nodes are partly under the top bar (pre-existing). The L6 teaching card covers part of the bottom row, a little more now that the board sits 11 px lower.
