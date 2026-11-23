@@ -1763,6 +1763,30 @@ try {
     if (!(await ev('!!document.querySelector(\'[data-act=visitor][data-id=drizzle]\')'))) console.log('  note: Drizzle not in view in this room');
     await shot('r10-content-cafe');
   }
+  // ---- r10 perf: DPR capped at 2, baked underlay under the board, frame gate on the hub, opt-in PixiJS renderer ----
+  if (!process.env.QA_SKIPPERF) {
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 3, mobile: true });
+    await qa('lang("en")'); await boot(); await qa('level(60)'); await sleep(900);
+    const pf = await ev('(() => { const c = document.getElementById("game"); return { ratio: c.width / c.clientWidth, far: !!document.getElementById("pf-far"), near: !!document.getElementById("pf-near"), r: window.__perf.renderer }; })()');
+    if (pf.ratio > 2.01) throw new Error('perf: the board canvas should render at DPR <= 2, got ' + pf.ratio);
+    if (!pf.far || !pf.near || pf.r !== 'canvas') throw new Error('perf: the baked underlay should be on: ' + JSON.stringify(pf));
+    await shot('r10-perf-l60');
+    await qa('home()'); await sleep(900);
+    const d0 = await ev('window.__perf.drawn'); await sleep(1000);
+    if (await ev('window.__perf.covered') && (await ev('window.__perf.drawn')) - d0 > 2) throw new Error('perf: the board should not draw under the café hub');
+    await qa('screen("settings")'); await sleep(600);
+    if (!(await ev('!!document.querySelector("[data-act=perfgpu]")'))) throw new Error('perf: Settings should offer the GPU mode toggle');
+    await shot('r10-perf-settings');
+    await send('Page.navigate', { url: origin + '/?r=pixi' }); await sleep(500);
+    await waitFor('!!window.__qa && !!document.querySelector("#menu.on, #cafe.on, #hud.on")', 20000);
+    await qa('level(13)'); await sleep(1500);
+    const pr = await ev('window.__perf.renderer');
+    console.log('  pixi renderer: ' + pr);
+    if (!/^pixi-|canvas \(pixi failed\)/.test(pr)) throw new Error('perf: ?r=pixi should start the Pixi layer or fall back, got ' + pr);
+    await shot('r10-perf-pixi-l13');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await boot();
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

@@ -32,6 +32,8 @@ import { notify } from './kit/notify.js';
 import './i18n-live.js';
 import './i18n-r10.js';
 import './i18n-content.js';
+import './i18n-perf.js';
+import { toggleGpu } from './ui/perf.js';
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -1027,6 +1029,7 @@ function onFail(silent = false) {
 
 // ---- actions ----
 const actions = {
+  perfgpu() { toggleGpu(); ui.settings(settingsInfo()); }, // r10 perf: the opt-in PixiJS board renderer
   click: () => audio.tick(),
   play: () => tryStart(save.data.level),
   daily: () => tryStart(dailyLevel(), true),

@@ -1,0 +1,70 @@
+{
+ "label": "after-x6b",
+ "query": "",
+ "dpr": 3,
+ "size": "375x812",
+ "out": {
+  "x6": {
+   "hub": {
+    "frames": 180,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 16.8,
+    "cost50": 0,
+    "cost95": 0,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":3,\"skipped\":313,\"covered\":true,\"layers\":1,\"sprites\":0}"
+   },
+   "L1": {
+    "frames": 180,
+    "p50": 16.7,
+    "p95": 16.7,
+    "max": 16.8,
+    "cost50": 3.4,
+    "cost95": 6.2,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":130,\"skipped\":439,\"covered\":false,\"layers\":2,\"sprites\":2}"
+   },
+   "L60": {
+    "frames": 181,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 16.8,
+    "cost50": 2.4,
+    "cost95": 10.9,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":260,\"skipped\":567,\"covered\":false,\"layers\":3,\"sprites\":20}"
+   },
+   "L60run": {
+    "frames": 134,
+    "p50": 16.7,
+    "p95": 33.3,
+    "max": 183.3,
+    "cost50": 9.6,
+    "cost95": 16.3,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":397,\"skipped\":568,\"covered\":false,\"layers\":3,\"sprites\":20}"
+   },
+   "chain": {
+    "frames": 100,
+    "p50": 16.7,
+    "p95": 33.4,
+    "max": 50,
+    "cost50": 6.7,
+    "cost95": 10.4,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":807,\"skipped\":571,\"covered\":false,\"layers\":4,\"sprites\":32}"
+   },
+   "win": {
+    "frames": 150,
+    "p50": 16.7,
+    "p95": 33.4,
+    "max": 50,
+    "cost50": 6.7,
+    "cost95": 10.9,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":1233,\"skipped\":658,\"covered\":false,\"layers\":4,\"sprites\":32}"
+   }
+  }
+ }
+}

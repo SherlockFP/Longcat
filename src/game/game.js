@@ -7,6 +7,7 @@ import { DIRS } from '../core/board.js';
 import { IMG } from './assets.js';
 import * as content from './content.js'; // spring cats, swivel beds, pack themes (content lane)
 import { COLOR_PAL, COLLARS, NAVY, MYSTERY_PAL } from './breeds.js';
+import { attach as perfAttach, DPR_CAP } from './perf.js';
 import { makePath, sample, drawBody, drawHead, drawArrow, drawChevron, drawPaw, drawPatBadge, drawPaws, disc, FONT, drawDog, drawYarn, drawIce, drawQuestion, drawBadge, head7, shade } from './render.js';
 
 const FACE = { U: -Math.PI / 2, R: 0, D: Math.PI / 2, L: Math.PI };
@@ -75,14 +76,17 @@ export class Game {
     canvas.addEventListener('pointercancel', (e) => this.onRelease(e, true));
     window.addEventListener('resize', () => this.resize());
     this.resize();
+    this.pf = perfAttach(this); // r10 perf: frame gate, baked underlay layers and sprites (src/game/perf.js)
     const loop = (now) => {
+      const gate = this.pf ? this.pf.gate(now) : 0; // 1: skip this frame (dt carries over), 2: covered board, no draw
+      if (gate === 1) { requestAnimationFrame(loop); return; }
       const rush = this.state && !this.demo && !this.calm && this.state.aliveCount === 0 && !this.over ? 1.8 : 1; // nothing left to tap: the carriers wrap up faster
       const dt = Math.min(0.05, (now - this.last) / 1000) * this.timeScale * rush * (this.chainSlow() ? 0.6 : 1); // a bench chain plays in slow motion
       this.last = now;
       this.clock += dt;
       try {
         this.update(dt);
-        this.draw();
+        if (gate !== 2) { this.draw(); if (this.pf) this.pf.end(); }
       } catch (err) {
         console.error(err);
       }
@@ -105,7 +109,7 @@ export class Game {
       this.layout();
       return;
     }
-    this.dpr = Math.min(window.devicePixelRatio || 1, 3);
+    this.dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP); // r10 perf: DPR 3 phones fill 2.25x the pixels for no visible gain
     this.W = document.body.clientWidth || window.innerWidth; // wide screens: the centred phone column (index.html)
     this.H = window.innerHeight;
     const cs = getComputedStyle(this.probe);
@@ -1236,9 +1240,11 @@ export class Game {
         ctx.translate(-this.W / 2, -fy);
       }
     }
+    if (this.pf) this.pf.camera(ctx); // the baked underlay follows the camera
     {
       this.drawBelt(ctx);
       this.drawBench(ctx);
+      if (this.pf) this.pf.carriers(ctx); // soft baked shadows under the carriers
       this.drawCarriers(ctx);
       this.drawPress(ctx);
     }
@@ -1435,6 +1441,7 @@ export class Game {
   }
 
   drawBg(ctx) {
+    if (this.pf && this.pf.bg(ctx)) return; // the room is on the baked underlay: clear only
     const { W, H } = this;
     if (content.bg(this, ctx)) return; // a themed pack room (content lane)
     const room = IMG['r7/bg_play_room'];
@@ -1534,6 +1541,7 @@ export class Game {
 
   // orange fringed rug with a cream grid
   drawBoard(ctx) {
+    if (this.pf && this.pf.owns(ctx)) return; // baked on the underlay
     if (IMG['r7/table_top']) { this.drawBoard7(ctx); return; }
     const { w, h } = this.board;
     const c = this.cell;
@@ -1589,6 +1597,7 @@ export class Game {
       // wooden toy belt with brass end rollers; the carriers stand on its top face
       const bw = W * 0.96, bh = bw * (belt.height / belt.width) * 0.72;
       const kick = this.calm ? 0 : this.beltKick();
+      if (this.pf && this.pf.shadowImage(ctx, belt, (W - bw) / 2 + kick, y - bh * 0.3, bw, bh, ['rgba(60,30,10,0.25)', 8, -3, 4])) return; // shadow baked once
       ctx.save();
       ctx.shadowColor = 'rgba(60,30,10,0.25)';
       ctx.shadowBlur = 8;
@@ -1635,7 +1644,7 @@ export class Game {
   // r7: one oak plank cut into seat cells (any seat count keeps a hollow under every cushion)
   drawPlank(ctx, n) {
     const im = IMG['r7/bench_plank'];
-    if (!im || !n) return;
+    if (!im || !n || (this.pf && this.pf.owns(ctx))) return; // baked on the underlay
     const { step } = this.benchGeom(n);
     const cellS = im.width * 0.1865, cap = im.width * 0.127 - cellS / 2;
     const sc = step / cellS;
@@ -1910,11 +1919,13 @@ export class Game {
     const hc = this.hintId != null && this.board && this.board.cats[this.hintId];
     if (front && !vc.closed && hc && hc.color === vc.color && !this.demo) { // the hinted cat's carrier glows in step with its arrow
       const u = this.calm ? 0.7 : 0.5 + 0.5 * Math.sin(this.clock * 8);
-      ctx.save();
-      ctx.shadowColor = `rgba(255,214,90,${0.5 + 0.4 * u})`;
-      ctx.shadowBlur = 10 + 10 * u;
-      ctx.drawImage(art, -cw / 2, -ch, cw, ch);
-      ctx.restore();
+      if (!(this.pf && this.pf.glowImage(ctx, art, -cw / 2, -ch, cw, ch, 0.5 + 0.4 * u))) { // the glow baked once, pulsed by alpha
+        ctx.save();
+        ctx.shadowColor = `rgba(255,214,90,${0.5 + 0.4 * u})`;
+        ctx.shadowBlur = 10 + 10 * u;
+        ctx.drawImage(art, -cw / 2, -ch, cw, ch);
+        ctx.restore();
+      }
     }
     const dq = this.clock - (vc.popT ?? -9);
     const swing = !vc.closed && !this.calm && dq >= 0 && dq < 0.7 ? Math.exp(-dq * 6) * Math.sin(dq * 24) : 0;
@@ -1994,7 +2005,7 @@ export class Game {
   paintCat(ctx, cat, path, a, b, o = {}) {
     const st = this.catStyle(cat);
     const c = this.cell;
-    drawBody(ctx, path, a, b, {
+    if (!(o.still && this.pf && this.pf.body(ctx, cat, path, a, b, st, o))) drawBody(ctx, path, a, b, {
       pal: st.pal, c, w: st.w * (o.wScale || 1), alpha: o.alpha, glow: o.glow, collar: st.collar, seed: cat.id * 3 + 1,
       run: o.run, wag: o.wag ?? this.wagOf(cat.id),
     });
@@ -2057,7 +2068,7 @@ export class Game {
     const hb = path.marks[cat.cells.length - 1];
     const breath = this.calm || frozen ? 1 : 1 + 0.035 * Math.sin(this.clock * 2.4 + id * 1.3); // idle breathing
     if (cat.mech) content.under(this, ctx, cat); // the swivel bed under the head
-    this.paintCat(ctx, cat, path, 0, hb, { glow, chevron: !frozen && cat.mech !== 'swivel', idle: !frozen, frozen, wScale: breath });
+    this.paintCat(ctx, cat, path, 0, hb, { glow, chevron: !frozen && cat.mech !== 'swivel', idle: !frozen, frozen, wScale: breath, still: true });
     this.mechOver(ctx, cat, path, hb);
     if (cat.mech) content.over(this, ctx, cat, path, hb); // spring coil badge, swivel facing arrow
     ctx.restore();
@@ -2410,8 +2421,8 @@ export class Game {
         const ty = a.from.y + (to.y - a.from.y) * ev - Math.sin(Math.PI * v) * this.cs * 0.7;
         ctx.globalAlpha = 0.5 * (1 - j / 7);
         ctx.fillStyle = j % 2 ? '#fff6c8' : col;
-        ctx.shadowColor = '#ffd43b';
-        ctx.shadowBlur = 10;
+        if (this.pf) this.pf.halo(ctx, tx, ty, s * (0.3 - j * 0.03) + 10); // a baked halo in place of shadowBlur
+        else { ctx.shadowColor = '#ffd43b'; ctx.shadowBlur = 10; }
         ctx.beginPath();
         ctx.arc(tx, ty, s * (0.3 - j * 0.03), 0, Math.PI * 2);
         ctx.fill();
