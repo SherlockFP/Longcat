@@ -84,8 +84,8 @@ function strokeTaper(ctx, path, a, b, c) {
 // R11 fix 2 (appeal): the orange tabby at board scale is a cat, not a striped tube: shoulders just behind the head, a
 // rounder belly in between, the rump tapering to 72%. The profile follows the body (distance from the rump and from
 // the head), never the cell path, so a long straight run and a tight bend read the same. shaped(pal) picks the breeds
-// that get it (the tabby first; the others keep the round stroke until it has been judged on the board).
-export const shaped = (pal) => !!pal && pal.pat === 'stripes';
+// that get it: R11 appeal gives every breed the tabby's body (hearts, dots, zigzag, stars, clouds, spots, plain, mystery).
+export const shaped = (pal) => !!pal;
 // radius factor at arc length s of the window a..b (1 = the plain stroke): rump taper + shoulder and belly swell
 function prof(s, a, b, c) {
   const r = s - a, h = b - s;
@@ -100,20 +100,23 @@ function prof(s, a, b, c) {
 }
 // the shaped silhouette at the current stroke width, filled with the current stroke style: a union of discs along
 // the window (one fill, so translucent layers never double up where discs overlap, and bends stay round)
-function fillShape(ctx, path, a, b, c) {
-  const hw = ctx.lineWidth / 2;
+// (s0..s1 = a band inside the window that keeps the window's profile: the back sheen widens over the belly too)
+function discs(g, path, a, b, c, hw, s0 = a, s1 = b) {
   const step = Math.max(1.2, hw * 0.32);
+  for (let s = s0; ; s += step) {
+    const q = Math.min(s, s1);
+    const p = sample(path, q);
+    const r = hw * prof(q, a, b, c);
+    g.moveTo(p.x + r, p.y);
+    g.arc(p.x, p.y, r, 0, Math.PI * 2);
+    if (q >= s1) break;
+  }
+}
+function fillShape(ctx, path, a, b, c, s0 = a, s1 = b) {
   ctx.save();
   ctx.fillStyle = ctx.strokeStyle;
   ctx.beginPath();
-  for (let s = a; ; s += step) {
-    const q = Math.min(s, b);
-    const p = sample(path, q);
-    const r = hw * prof(q, a, b, c);
-    ctx.moveTo(p.x + r, p.y);
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    if (q >= b) break;
-  }
+  discs(ctx, path, a, b, c, ctx.lineWidth / 2, s0, s1);
   ctx.fill();
   ctx.restore();
 }
@@ -237,7 +240,7 @@ function knitPattern(ctx) {
 }
 
 // running stitches just inside both edges of a body window (offset polylines, dashed)
-function seam(ctx, path, a, b, w, c, al) {
+function seam(ctx, path, a, b, w, c, al, shp) {
   const s0 = a + c * 0.18, s1 = b - c * 0.42;
   if (s1 - s0 < c * 0.3) return;
   const step = Math.max(2, c * 0.07);
@@ -252,7 +255,7 @@ function seam(ctx, path, a, b, w, c, al) {
     ctx.beginPath();
     for (let s = s0; s <= s1; s += step) {
       const p = sample(path, s);
-      const k = s - a < taper ? 0.8 + 0.2 * ((s - a) / taper) : 1;
+      const k = shp ? prof(s, a, b, c) : s - a < taper ? 0.8 + 0.2 * ((s - a) / taper) : 1;
       const off = (w * 0.5 * k - w * 0.13) * sg;
       if (s === s0) ctx.moveTo(p.x - p.ty * off, p.y + p.tx * off); else ctx.lineTo(p.x - p.ty * off, p.y + p.tx * off);
     }
@@ -269,6 +272,7 @@ export function drawBody(ctx, path, a, b, o) {
   const len = b - a;
   const shp = shaped(pal) && len > c * 0.5;
   const fill = shp ? fillShape : strokeTaper; // the body's own silhouette (shaped tabby, else the tapered stroke)
+  const band = (s0, s1) => (shp ? fillShape(ctx, path, a, b, c, s0, s1) : strokeSlice(ctx, path, s0, s1)); // R11 appeal: a band that keeps the profile
   const lite = !!o.lite; // R11 fix 2 (juice): a cat in flight skips the fabric composites (overlay, soft-light, stitches)
   ctx.save();
   ctx.globalAlpha = al;
@@ -354,14 +358,14 @@ export function drawBody(ctx, path, a, b, o) {
   if (felt) {
     ctx.globalAlpha = al * 0.14;
     ctx.lineWidth = w * 0.5;
-    strokeSlice(ctx, path, a + c * 0.15, Math.max(a + c * 0.2, b - c * 0.45));
+    band(a + c * 0.15, Math.max(a + c * 0.2, b - c * 0.45));
     ctx.globalAlpha = al * 0.16;
     ctx.lineWidth = w * 0.26;
-    strokeSlice(ctx, path, a + c * 0.2, Math.max(a + c * 0.25, b - c * 0.5));
+    band(a + c * 0.2, Math.max(a + c * 0.25, b - c * 0.5));
   } else {
     ctx.globalAlpha = al * 0.6;
     ctx.lineWidth = w * 0.2;
-    strokeSlice(ctx, path, a + c * 0.1, Math.max(a + c * 0.15, b - c * 0.5));
+    band(a + c * 0.1, Math.max(a + c * 0.15, b - c * 0.5));
   }
   ctx.restore();
   if (felt && len > c * 0.4 && !lite) {
@@ -384,7 +388,7 @@ export function drawBody(ctx, path, a, b, o) {
     ctx.lineWidth = w * 0.18;
     strokeSlice(ctx, path, a + c * 0.25, Math.max(a + c * 0.3, b - c * 0.3));
     ctx.restore();
-    seam(ctx, path, a, b, w, c, al);
+    seam(ctx, path, a, b, w, c, al, shp);
   }
   if (felt && !lite) {
     ctx.save();
@@ -403,6 +407,23 @@ export function drawBody(ctx, path, a, b, o) {
   const end = b - c * 0.36; // the head covers the rest
   const seed = o.seed || 0;
   const gap = patGap(pal.pat);
+  // R11 appeal: on a shaped body the markings wrap it: clipped to the silhouette, sized by the local width, set at an
+  // angle round the back (sin = how far out, cos = how squashed toward the flank) and turned with the spline
+  if (shp) {
+    ctx.save();
+    ctx.beginPath();
+    discs(ctx, path, a, b, c, w * 0.49);
+    ctx.clip();
+  }
+  const wrap = (p, f, th, r, fn) => {
+    const hw = w * 0.5 * f, sn = Math.sin(th);
+    ctx.save();
+    ctx.translate(p.x - p.ty * hw * sn, p.y + p.tx * hw * sn);
+    ctx.rotate(Math.atan2(p.tx, -p.ty)); // local x = across the body, local up = toward the head
+    ctx.scale(Math.max(0.42, Math.cos(th)), 1);
+    fn(ctx, 0, 0, r * f);
+    ctx.restore();
+  };
   let i = 0;
   for (let s = a + gap[0] * c; s < end; s += c * gap[1], i++) {
     const p = sample(path, s);
@@ -432,24 +453,29 @@ export function drawBody(ctx, path, a, b, o) {
         break;
       }
       case 'dots':
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.4, w * (i % 3 === 0 ? 0.2 : 0.16), disc); wrap(p, f, -side * 1.15, w * 0.13, disc); break; }
         disc(ctx, p.x + nx * side * w * 0.18, p.y + ny * side * w * 0.18, w * (i % 3 === 0 ? 0.2 : 0.15));
         break;
       case 'hearts':
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.28, w * 0.27, heart); wrap(p, f, -side * 1.15, w * 0.14, heart); break; }
         heart(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.27);
         break;
       case 'stars':
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.28, w * 0.3, star); wrap(p, f, -side * 1.15, w * 0.15, star); break; }
         star(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.3);
         break;
       case 'clouds':
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.25, w * 0.26, cloud); wrap(p, f, -side * 1.2, w * 0.15, cloud); break; }
         cloud(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.26);
         break;
       case 'spots': {
         const off = (i * 7 + seed) % 3 ? 0.17 : 0.04;
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * (off > 0.1 ? 0.75 : 0.12), w * (0.13 + 0.05 * ((i + seed) % 3)), disc); if ((i + seed) % 2) wrap(p, f, -side * 1.2, w * 0.11, disc); break; }
         disc(ctx, p.x + nx * side * w * off, p.y + ny * side * w * off, w * (0.13 + 0.05 * ((i + seed) % 3)));
         break;
       }
       case 'qmark':
-        ctx.font = `700 ${w * 0.7}px ${FONT}`;
+        ctx.font = `700 ${w * 0.7 * (shp ? prof(s, a, b, c) : 1)}px ${FONT}`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('?', p.x, p.y + w * 0.03);
@@ -461,21 +487,38 @@ export function drawBody(ctx, path, a, b, o) {
     // a bold zigzag running down the back (lengthwise, so it never reads as a direction arrow)
     ctx.lineWidth = w * 0.17;
     ctx.beginPath();
-    let j = 0;
+    let j = 0, q = null;
     for (let s = a - c * 0.05; s < end + c * 0.05; s += c * 0.2, j++) {
       const p = sample(path, s);
-      const off = (j % 2 ? 1 : -1) * w * 0.24;
-      ctx.lineTo(p.x - p.ty * off, p.y + p.tx * off);
+      const f = shp ? prof(s, a, b, c) : 1;
+      const off = (j % 2 ? 1 : -1) * w * 0.24 * f;
+      const x = p.x - p.ty * off, y = p.y + p.tx * off;
+      if (shp && q) { ctx.lineWidth = w * 0.17 * f; ctx.beginPath(); ctx.moveTo(q[0], q[1]); ctx.lineTo(x, y); ctx.stroke(); }
+      else if (!shp) ctx.lineTo(x, y);
+      q = [x, y];
     }
-    ctx.stroke();
+    if (!shp) ctx.stroke();
   }
   if (pal.pat === 'plain' && len > c * 0.8) {
-    ctx.globalAlpha = al * 0.55;
+    ctx.globalAlpha = al * (shp ? 0.4 : 0.55);
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = w * 0.26;
-    strokeSlice(ctx, path, a + c * 0.5, Math.max(a + c * 0.55, b - c * 0.6));
+    band(a + c * 0.5, Math.max(a + c * 0.55, b - c * 0.6));
   }
   ctx.globalAlpha = al;
+  if (shp) {
+    if (len > c * 0.9) {
+      const p = sample(path, b), hr = c * (w < c * 0.6 ? 0.38 : 0.46);
+      const hx = p.x + p.tx * c * 0.04 - c * 0.05, hy = p.y + p.ty * c * 0.04 + c * 0.07;
+      const gr = ctx.createRadialGradient(hx, hy, hr * 0.75, hx, hy, hr * 1.4);
+      gr.addColorStop(0, 'rgba(60,28,16,0)');
+      gr.addColorStop(0.35, 'rgba(60,28,16,0.26)');
+      gr.addColorStop(1, 'rgba(60,28,16,0)');
+      ctx.fillStyle = gr;
+      ctx.fillRect(hx - hr * 1.5, hy - hr * 1.5, hr * 3, hr * 3);
+    }
+    ctx.restore();
+  }
   // kitten pairs: a thin collar with a gold bell right behind the head (pairs share the collar colour)
   if (o.collar && len > c * 0.6) {
     const s0 = Math.max(a, b - c * 0.56);
