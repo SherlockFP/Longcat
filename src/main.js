@@ -12,6 +12,7 @@ import { t } from './i18n.js';
 import { save } from './kit/save.js';
 import { audio } from './kit/audio.js';
 import { haptics } from './kit/haptics.js';
+import { landBuzz } from './ui/r11-juice.js'; // R11 juice: the chain's last landing buzz
 import { ads } from './kit/ads.js';
 import { track, funnel, retention } from './kit/analytics.js';
 import { now } from './kit/clock.js';
@@ -1795,7 +1796,7 @@ async function boot() {
   // a bench chain (2+ parked cats hop in from one tap): the share clip keeps the best one of the level
   game.on.chain = ({ n }) => { if (game.demo) return; S.chainBest = Math.max(S.chainBest || 0, n); track('chain', { n, lv: S.n }); if (!S.show) funnel('first_chain'); };
   game.on.hop = ({ k }) => { if (game.demo) return; audio.chain(k - 1); haptics.light(); };
-  game.on.chainLand = ({ k, last }) => { if (game.demo || !last) return; audio.star(Math.min(3, k)); haptics.success(); }; // the chain's last landing: the big accent
+  game.on.chainLand = ({ k, last }) => { if (game.demo || !last) return; audio.star(Math.min(3, k)); if (!landBuzz()) haptics.success(); }; // the chain's last landing: the big accent (R11 juice: one short firm buzz)
   game.on.land = (e) => { if (game.demo) return; audio.land(); if (e && e.kind === 'carrier') haptics.light(); }; // the tick lands with the cat, not the tap
   game.on.scoopCan = () => canPayBooster('scoop', SCOOP_COST) || (ui.toast(t('noCoins')), false);
   game.on.scoop = () => { payBooster('scoop', SCOOP_COST); ui.setTut(''); ui.setHud(hudInfo()); track('scoop'); };

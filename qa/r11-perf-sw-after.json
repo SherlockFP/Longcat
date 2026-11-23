@@ -1,0 +1,92 @@
+{
+ "label": "r11-sw-juice",
+ "query": "",
+ "dpr": 3,
+ "size": "375x812",
+ "out": {
+  "x4": {
+   "L60": {
+    "frames": 125,
+    "p50": 16.7,
+    "p95": 33.4,
+    "max": 50,
+    "cost50": 2.1,
+    "cost95": 3.3,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":117,\"skipped\":111,\"covered\":false,\"layers\":2,\"sprites\":18,\"split\":0,\"boardDraws\":0,\"carSprites\":3}"
+   },
+   "L60run": {
+    "frames": 95,
+    "p50": 16.7,
+    "p95": 50,
+    "max": 116.6,
+    "cost50": 2,
+    "cost95": 5.2,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":215,\"skipped\":112,\"covered\":false,\"layers\":2,\"sprites\":18,\"split\":98,\"boardDraws\":34,\"carSprites\":4}"
+   },
+   "rapid6": {
+    "frames": 90,
+    "p50": 16.7,
+    "p95": 33.4,
+    "max": 50.1,
+    "cost50": 2.2,
+    "cost95": 4.5,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":338,\"skipped\":113,\"covered\":false,\"layers\":3,\"sprites\":36,\"split\":172,\"boardDraws\":58,\"carSprites\":8}"
+   },
+   "chain": {
+    "frames": 106,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 33.4,
+    "cost50": 1.6,
+    "cost95": 4.2,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":674,\"skipped\":125,\"covered\":false,\"layers\":4,\"sprites\":48,\"split\":489,\"boardDraws\":123,\"carSprites\":24}"
+   }
+  },
+  "x6": {
+   "L60": {
+    "frames": 55,
+    "p50": 50,
+    "p95": 66.7,
+    "max": 83.3,
+    "cost50": 4.9,
+    "cost95": 8.4,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":72,\"skipped\":74,\"covered\":false,\"layers\":3,\"sprites\":18,\"split\":0,\"boardDraws\":0,\"carSprites\":3}"
+   },
+   "L60run": {
+    "frames": 83,
+    "p50": 33.2,
+    "p95": 66.6,
+    "max": 116.6,
+    "cost50": 2.4,
+    "cost95": 6.9,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":159,\"skipped\":74,\"covered\":false,\"layers\":3,\"sprites\":18,\"split\":86,\"boardDraws\":15,\"carSprites\":4}"
+   },
+   "rapid6": {
+    "frames": 50,
+    "p50": 33.4,
+    "p95": 99.9,
+    "max": 116.7,
+    "cost50": 4.3,
+    "cost95": 12.6,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":229,\"skipped\":74,\"covered\":false,\"layers\":4,\"sprites\":36,\"split\":135,\"boardDraws\":26,\"carSprites\":8}"
+   },
+   "chain": {
+    "frames": 65,
+    "p50": 33.3,
+    "p95": 33.4,
+    "max": 66.7,
+    "cost50": 2.4,
+    "cost95": 5.9,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":470,\"skipped\":74,\"covered\":false,\"layers\":5,\"sprites\":48,\"split\":365,\"boardDraws\":49,\"carSprites\":21}"
+   }
+  }
+ }
+}

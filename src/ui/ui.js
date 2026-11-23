@@ -12,6 +12,7 @@ import { drecHas, cardsOwned, WEEKS } from '../game/r10.js';
 import { house as streetHouse, SHOPS } from '../game/street.js';
 import { gpuRow } from './perf.js';
 import { hubAfter } from './hub.js'; // hub lane: level map, resident layout, wide-screen panels, keys
+import { coinCount, coinLand } from './r11-juice.js'; // R11 juice: more coins by payout, a tick + burst on arrival
 
 const root = document.getElementById('ui');
 let actions = {};
@@ -169,7 +170,8 @@ function flyCoins(from, to) {
     const b = hc.getBoundingClientRect();
     const dx = b.left - a.left - 8;
     const dy = b.top - a.top - 6;
-    for (let i = 0; i < 6; i++) {
+    const n = coinCount(to - from);
+    for (let i = 0; i < n; i++) {
       const c = document.createElement('img');
       c.src = src.src;
       c.className = 'flycoin';
@@ -178,13 +180,14 @@ function flyCoins(from, to) {
       document.body.appendChild(c);
       const k = c.animate([
         { transform: 'translate(0,0) scale(1)' },
-        { transform: `translate(${dx * 0.4 + (i - 2.5) * 14}px,${dy * 0.25 - 30}px) scale(1.1)`, offset: 0.35 },
-        { transform: `translate(${dx}px,${dy}px) scale(.55)` },
-      ], { duration: 620, delay: i * 70, easing: 'cubic-bezier(.4,0,.7,1)', fill: 'both' });
+        { transform: `translate(${dx * 0.4 + (i - (n - 1) / 2) * 12}px,${dy * 0.25 - 30 - (i % 3) * 10}px) scale(1.1) rotate(${(i % 2 ? 1 : -1) * 90}deg)`, offset: 0.35 },
+        { transform: `translate(${dx}px,${dy}px) scale(.55) rotate(${(i % 2 ? 1 : -1) * 200}deg)` },
+      ], { duration: 620, delay: i * Math.round(420 / n), easing: 'cubic-bezier(.4,0,.7,1)', fill: 'both' });
       k.onfinish = () => {
         c.remove();
-        if (document.getElementById('coins') === hc) hc.textContent = Math.round(from + ((to - from) * (i + 1)) / 6);
+        if (document.getElementById('coins') === hc) hc.textContent = Math.round(from + ((to - from) * (i + 1)) / n);
         if (pill) { pill.classList.remove('bump'); void pill.offsetWidth; pill.classList.add('bump'); }
+        coinLand(pill, i, n);
       };
     }
   }, 500);

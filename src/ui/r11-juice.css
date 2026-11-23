@@ -1,0 +1,7 @@
+/* R11 juice: the coin counter's arrival burst on the win card (reduced motion: none, see r11-juice.js) */
+.r11j-burst { position: fixed; width: 0; height: 0; z-index: 71; pointer-events: none; }
+.r11j-burst b { position: absolute; left: -4px; top: -4px; width: 8px; height: 8px; border-radius: 50%; background: #ffd43b; box-shadow: 0 0 0 2px #fff3b0; transform: rotate(var(--a)) translateY(0) scale(1); animation: r11jFly .6s cubic-bezier(.2,.7,.4,1) forwards; }
+@keyframes r11jFly { to { transform: rotate(var(--a)) translateY(-30px) scale(.2); opacity: 0; } }
+.pill.r11j-glow { animation: r11jGlow .55s ease-out; }
+@keyframes r11jGlow { 0% { transform: scale(1); filter: brightness(1); } 35% { transform: scale(1.22); filter: brightness(1.25) drop-shadow(0 0 8px rgba(255,212,59,.9)); } 100% { transform: scale(1); filter: brightness(1); } }
+@media (prefers-reduced-motion: reduce) { .r11j-burst, .pill.r11j-glow { animation: none !important; } }

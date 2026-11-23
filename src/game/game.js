@@ -8,6 +8,7 @@ import { IMG } from './assets.js';
 import * as content from './content.js'; // spring cats, swivel beds, pack themes (content lane)
 import { COLOR_PAL, COLLARS, NAVY, MYSTERY_PAL } from './breeds.js';
 import { attach as perfAttach, DPR_CAP } from './perf.js';
+import { landKick, stampScale, drawLandPulse, closeSquash, stampSprite } from './r11-juice.js'; // R11 juice: final-landing beat, lid slam
 import { roomImage as shopRoom, drawHat as shopHat, drawCarrierSkin as shopSkin } from './shop-look.js';
 import { makePath, sample, drawBody, drawHead, drawArrow, drawChevron, drawPaw, drawPatBadge, drawPaws, disc, FONT, drawDog, drawYarn, drawIce, drawQuestion, drawBadge, head7, shade } from './render.js';
 
@@ -1229,6 +1230,7 @@ export class Game {
   draw() {
     const ctx = this.ctx;
     const { dpr } = this;
+    const L = this.pf ? this.pf.split() : null; // R11 juice: split frame = still board on its own layer, moving cats + fx low-res (perf.js)
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     this.drawBg(ctx);
     if (!this.board) return;
@@ -1244,8 +1246,9 @@ export class Game {
     if (fx && !this.calm) {
       // camera nudge: a slow push-in on the bench while the chain hops in, eased back out after the last hop
       const e = smooth((this.clock - fx.t0 + 0.2) / 0.3) * (1 - smooth((this.clock - fx.t1 - 0.1) / 0.45));
-      if (e > 0) {
-        const s = 1 + 0.045 * e;
+      const kick = landKick(this); // R11 juice: the last landing punches the camera in
+      if (e > 0 || kick > 0) {
+        const s = 1 + 0.045 * e + kick;
         const fy = this.benchY - this.cs * 0.3;
         ctx.translate(this.W / 2, fy);
         ctx.scale(s, s);
@@ -1253,6 +1256,7 @@ export class Game {
       }
     }
     if (this.pf) this.pf.camera(ctx); // the baked underlay follows the camera
+    if (L) L.cam(ctx);
     {
       this.drawBelt(ctx);
       this.drawBench(ctx);
@@ -1261,16 +1265,19 @@ export class Game {
       this.drawPress(ctx);
     }
     this.drawBoard(ctx);
-    this.drawObjs(ctx);
     const now = this.clock;
     const animIds = new Set();
     for (const a of this.anims) if (a.type === 'bonk') animIds.add(a.id);
+    if (!L || L.board) { const ctx = L ? L.board : this.ctx; // R11 juice: a split frame redraws the still board only when it changed
+    this.drawObjs(ctx);
     for (const a of this.anims) if (a.type === 'roll') this.drawRoll(ctx, a); // a knocked yarn ball rolls under the cats, never over them
     for (const id of this.order) {
       if (!this.state.alive[id] || animIds.has(id)) continue;
       this.drawStatic(ctx, id);
     }
     for (const cat of this.board.cats) if (cat.kittenOf != null) this.drawTether(ctx, cat, animIds);
+    }
+    { const ctx = L ? L.fx : this.ctx; // R11 juice: moving cats and particles (the low-res layer on a split frame)
     for (const a of this.anims) {
       if (a.type === 'bonk') this.drawBonk(ctx, a);
       else if (a.type === 'trot') this.drawTrot(ctx, a);
@@ -1314,13 +1321,16 @@ export class Game {
         ctx.restore();
       }
     }
+    }
     this.drawPressTop(ctx);
     this.drawWaitTags(ctx);
     this.drawRulesTeach(ctx);
-    this.drawSweep(ctx);
+    this.drawSweep(L ? L.fx : ctx);
     ctx.restore();
-    this.drawEdgeGlow(ctx);
-    this.drawStamp(ctx);
+    if (L) L.flat();
+    this.drawEdgeGlow(L ? L.fx : ctx);
+    drawLandPulse(this, L ? L.fx : ctx); // R11 juice: the screen pulse of the chain's last landing
+    this.drawStamp(L ? L.top : ctx);
     for (const p of this.popups) this.drawPopup(ctx, p);
   }
 
@@ -1361,6 +1371,7 @@ export class Game {
     const t = this.clock - this.edgeT;
     if (t < 0 || t > 0.6 || this.demo) return;
     const a = 0.55 * (1 - t / 0.6);
+    if (this.pf && this.pf.edgeGlow(a)) return; // R11 juice: two DOM strips, faded by the compositor
     const w = 26;
     ctx.save();
     for (const side of [0, 1]) {
@@ -1382,8 +1393,7 @@ export class Game {
     const t = this.clock - f.landT;
     if (last && t > 1.5) return;
     const al = last && t > 1.1 ? 1 - (t - 1.1) / 0.4 : 1;
-    const big = last ? 1.3 : 1;
-    const pop = this.calm ? big : t < 0.28 ? big * (1 + (last ? 0.45 : 0.3) * (1 - easeOut(t / 0.28))) : big;
+    const pop = stampScale(this, f, t, last); // R11 juice: each tick a bit bigger, the last one lands huge and springs
     const size = Math.round(clamp(this.W * 0.052, 17, 24));
     const p = this.chainPos();
     ctx.save();
@@ -1394,6 +1404,8 @@ export class Game {
     ctx.translate(p.x, p.y);
     ctx.rotate(last ? -0.06 : -0.03);
     ctx.scale(pop, pop);
+    const sp = this.pf && stampSprite(this, text, size, tw, last); // R11 juice: the ribbon baked once per tick
+    if (sp) { ctx.drawImage(sp.cv, sp.x, sp.y, sp.w, sp.h); ctx.restore(); return; }
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.lineJoin = 'round';
@@ -1618,6 +1630,7 @@ export class Game {
       // wooden toy belt with brass end rollers; the carriers stand on its top face
       const bw = W * 0.96, bh = bw * (belt.height / belt.width) * 0.72;
       const kick = this.calm ? 0 : this.beltKick();
+      if (this.pf && this.pf.belt(ctx, belt, (W - bw) / 2, y - bh * 0.3, bw, bh, ['rgba(60,30,10,0.25)', 8, -3, 4], kick)) return; // R11 juice: a baked layer, the kick by CSS
       if (this.pf && this.pf.shadowImage(ctx, belt, (W - bw) / 2 + kick, y - bh * 0.3, bw, bh, ['rgba(60,30,10,0.25)', 8, -3, 4])) return; // shadow baked once
       ctx.save();
       ctx.shadowColor = 'rgba(60,30,10,0.25)';
@@ -1929,7 +1942,8 @@ export class Game {
     }
     if (vc.closed && vc.leaveT != null) {
       const q = this.clock - vc.leaveT;
-      if (q < 0.25) { const k = Math.exp(-q * 14) * Math.cos(q * 34) * 0.12; sy *= 1 - k; sx *= 1 + k * 0.8; }
+      const k = closeSquash(q, this.calm); // R11 juice: the lid slams, squash then stretch
+      sy *= 1 - k; sx *= 1 + k * 0.8;
     }
     const dl = this.clock - (vc.popT ?? -9);
     const dip = !this.calm && !vc.closed && dl >= 0 && dl < 0.32 ? Math.sin((dl / 0.32) * Math.PI) * (1 - dl / 0.32 * 0.5) * cs * 0.06 : 0; // R11 landing dip
@@ -1973,6 +1987,7 @@ export class Game {
 
   // r7 molded carrier (door hinged left, dark mouth), its fill count on a honey tag on the roof
   drawCarrier7(ctx, vc, x, sc, front, rot = 0, dy = 0) {
+    if (this.pf && this.pf.carrier(ctx, vc, x, sc, front, rot, dy)) return; // R11 juice: a carrier at rest is one baked sprite
     const cs = this.cs;
     const pal = COLOR_PAL[vc.color];
     const art = IMG[`r7/carrier_${pal.name}${vc.closed ? '_shut' : ''}`] || IMG['r7/carrier_orange'];
@@ -1986,7 +2001,8 @@ export class Game {
     }
     if (vc.closed && vc.leaveT != null) {
       const q = this.clock - vc.leaveT;
-      if (q < 0.25) { const k = Math.exp(-q * 14) * Math.cos(q * 34) * 0.12; sy *= 1 - k; sx *= 1 + k * 0.8; }
+      const k = closeSquash(q, this.calm); // R11 juice: the lid slams, squash then stretch
+      sy *= 1 - k; sx *= 1 + k * 0.8;
     }
     // R11 contact beat: a cat lands and the carrier dips into the belt, then settles (inside the 0.35 s pop)
     const dl = this.clock - (vc.popT ?? -9);

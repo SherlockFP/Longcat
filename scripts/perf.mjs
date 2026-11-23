@@ -16,6 +16,8 @@ const LABEL = process.argv[2] || 'run';
 const QUERY = process.env.PERF_QUERY || '';
 const RATES = (process.env.PERF_RATES || '4,6').split(',').map(Number);
 const WIN_MS = 3000;
+const ONLY = process.env.PERF_ONLY ? process.env.PERF_ONLY.split(',') : null; // R11 juice: e.g. PERF_ONLY=chain,rapid6 skips the other scenes
+const want = (k) => !ONLY || ONLY.includes(k);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const profile = mkdtempSync(join(tmpdir(), 'lco-perf-'));
 const procs = [];
@@ -92,20 +94,20 @@ try {
     await send('Emulation.setCPUThrottlingRate', { rate });
     const res = {};
     // hub: the café room (DOM) over the demo board
-    await qa('home()'); await sleep(1200);
-    res.hub = await measure(); await shot(`r10-perf-hub-${LABEL}`);
+    if (want('hub')) { await qa('home()'); await sleep(1200);
+    res.hub = await measure(); await shot(`r10-perf-hub-${LABEL}`); }
     // L1: the smallest board, idle (breathing, blinks)
-    await qa('level(1)'); await sleep(1200);
-    res.L1 = await measure(); await shot(`r10-perf-l1-${LABEL}`);
+    if (want('L1')) { await qa('level(1)'); await sleep(1200);
+    res.L1 = await measure(); await shot(`r10-perf-l1-${LABEL}`); }
     // a big late board, idle then while cats sprint
-    await qa('level(60)'); await sleep(1500);
+    if (want('L60')) { await qa('level(60)'); await sleep(1500);
     res.L60 = await measure(); await shot(`r10-perf-l60-${LABEL}`);
     await ev('(() => { let k = 0; const go = () => { if (k++ > 5) return; window.__qa.solveStep(); setTimeout(go, 380); }; go(); })()');
-    res.L60run = await measure(2400);
+    res.L60run = await measure(2400); }
     // R11 fix 2: six rapid sends (a tap every 130 ms, the way a sure player clears a run of free cats)
-    await qa('level(60)'); await sleep(1500);
+    if (want('rapid6')) { await qa('level(60)'); await sleep(1500);
     await ev('(() => { let k = 0; const go = () => { if (k++ > 5) return; window.__qa.solveStep(); setTimeout(go, 130); }; go(); })()');
-    res.rapid6 = await measure(2000);
+    res.rapid6 = await measure(2000); }
     // chain slow-mo: the L13 winning line holds a 3-chain
     await qa('level(13)'); await sleep(1000);
     let chain = null;
@@ -121,9 +123,9 @@ try {
     }
     res.chain = chain;
     // the win card (it loops the chain clip on its own canvas)
-    await waitFor('window.__qa.state().screen === "win"', 60000).catch(() => {});
+    if (want('win')) { await waitFor('window.__qa.state().screen === "win"', 60000).catch(() => {});
     await sleep(2000);
-    res.win = await measure(); await shot(`r10-perf-win-${LABEL}`);
+    res.win = await measure(); await shot(`r10-perf-win-${LABEL}`); }
     out['x' + rate] = res;
     console.log(`CPU x${rate}`);
     for (const [k, v] of Object.entries(res)) if (v) console.log(`  ${k.padEnd(7)} frames ${String(v.frames).padStart(4)}  rAF p50 ${v.p50}  p95 ${v.p95}  max ${v.max}  | game ms p50 ${v.cost50} p95 ${v.cost95}  [${v.renderer}]` + (process.env.PERF_DEBUG ? ' ' + v.pf : ''));

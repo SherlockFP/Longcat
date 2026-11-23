@@ -1,0 +1,92 @@
+{
+ "label": "r11-sw-base",
+ "query": "",
+ "dpr": 3,
+ "size": "375x812",
+ "out": {
+  "x4": {
+   "L60": {
+    "frames": 76,
+    "p50": 33.4,
+    "p95": 50.1,
+    "max": 50.1,
+    "cost50": 3.2,
+    "cost95": 4.2,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":105,\"skipped\":71,\"covered\":false,\"layers\":3,\"sprites\":18}"
+   },
+   "L60run": {
+    "frames": 55,
+    "p50": 50,
+    "p95": 66.7,
+    "max": 116.7,
+    "cost50": 4.3,
+    "cost95": 6.3,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":164,\"skipped\":71,\"covered\":false,\"layers\":3,\"sprites\":18}"
+   },
+   "rapid6": {
+    "frames": 53,
+    "p50": 33.4,
+    "p95": 66.7,
+    "max": 83.3,
+    "cost50": 3.4,
+    "cost95": 6.5,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":250,\"skipped\":71,\"covered\":false,\"layers\":4,\"sprites\":36}"
+   },
+   "chain": {
+    "frames": 42,
+    "p50": 50,
+    "p95": 50.1,
+    "max": 66.6,
+    "cost50": 2.8,
+    "cost95": 6.3,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":458,\"skipped\":78,\"covered\":false,\"layers\":5,\"sprites\":48}"
+   }
+  },
+  "x6": {
+   "L60": {
+    "frames": 52,
+    "p50": 66.6,
+    "p95": 66.7,
+    "max": 66.8,
+    "cost50": 5.7,
+    "cost95": 8.2,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":74,\"skipped\":73,\"covered\":false,\"layers\":2,\"sprites\":18}"
+   },
+   "L60run": {
+    "frames": 31,
+    "p50": 83.3,
+    "p95": 100,
+    "max": 116.6,
+    "cost50": 8.5,
+    "cost95": 12.9,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":109,\"skipped\":73,\"covered\":false,\"layers\":2,\"sprites\":18}"
+   },
+   "rapid6": {
+    "frames": 18,
+    "p50": 116.6,
+    "p95": 183.3,
+    "max": 183.3,
+    "cost50": 12.6,
+    "cost95": 43.7,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":137,\"skipped\":73,\"covered\":false,\"layers\":3,\"sprites\":36}"
+   },
+   "chain": {
+    "frames": 25,
+    "p50": 66.7,
+    "p95": 83.4,
+    "max": 83.4,
+    "cost50": 5.2,
+    "cost95": 10.1,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":274,\"skipped\":73,\"covered\":false,\"layers\":4,\"sprites\":48}"
+   }
+  }
+ }
+}

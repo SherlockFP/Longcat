@@ -2305,6 +2305,86 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }
+  // ---- R11 juice (Sol fix 3): split frames on the L13 3-chain (still board on #pf-board, moving cats + fx on the
+  // low-res #pf-fx, the counter on #pf-top), the same frozen frame drawn whole for comparison, a tap overlapping the
+  // chain keeps every landing, the final landing's screen pulse + buzz (none with reduced motion), the lid slam, the
+  // win card's coin flight, and a 1600x900 frame. QA_SKIP_R11J=1 skips it. ----
+  if (!process.env.QA_SKIP_R11J) {
+    const playChain = async (onChain) => {
+      await qa('level(13)'); await sleep(900);
+      let hit = false;
+      for (const cid of await qa('order()')) {
+        await waitFor('!window.__qa.state().busy', 20000).catch(() => {});
+        if (!(await qa(`alive(${cid})`))) continue;
+        if (!(await ev(`window.__qa.state().free.includes(${cid}) || window.__qa.state().blocked.includes(${cid})`))) continue;
+        const pk = await qa(`peek(${cid})`);
+        await qa(`tap(${cid})`);
+        if (pk.boards >= 3 && !hit) { hit = true; await onChain(pk.boards); }
+      }
+      if (!hit) throw new Error('r11 juice: the L13 line should hold a 3-chain');
+      await waitFor('window.__qa.state().screen === "win"', 60000);
+    };
+    const toLast = async () => { for (let i = 0; i < 120; i++) { const f = await qa('chainFx()'); if (f && f.land === f.n) return true; await qa('freezeAt(0.02)'); } return false; };
+    const stubVib = '(() => { window.__vib = []; navigator.vibrate = (p) => { window.__vib.push(p); return true; }; })()';
+    const opa = (id) => ev(`+(document.getElementById("${id}") || {}).style?.opacity || 0`);
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 20, coins: 100, meta: { sessions: 3 }, settings: { lang: 'en', sound: false, music: false, haptics: true } }))`);
+    await boot();
+    await ev(stubVib);
+    await playChain(async (n) => {
+      await waitFor('(window.__qa.chainFx() || {}).k >= 2', 15000);
+      await qa('freezeAt(0.1)'); await sleep(250);
+      const pf = await ev('(() => { const b = document.getElementById("game"), f = document.getElementById("pf-fx"); return { split: window.__perf.split, board: !!document.getElementById("pf-board"), top: !!document.getElementById("pf-top"), belt: !!document.getElementById("pf-belt"), ratio: f.width / b.width }; })()');
+      if (!pf.split || !pf.board || !pf.top || !pf.belt) throw new Error('r11 juice: the chain should draw split frames: ' + JSON.stringify(pf));
+      if (pf.ratio > 0.76 || pf.ratio < 0.59) throw new Error('r11 juice: the moving layer should be 0.6-0.75 of the board resolution, got ' + pf.ratio);
+      await shot('r11-juice-chain-split');
+      await ev('window.__perf.noSplit = true'); await sleep(250);
+      await shot('r11-juice-chain-whole');
+      await ev('window.__perf.noSplit = false');
+      // a tap that overlaps the chain: the rules take it at once, the chain still lands every cat
+      const free = (await qa('state()')).free;
+      await qa('slow(1)');
+      if (free.length) { await qa(`tap(${free[0]})`); console.log(`  r11 juice: tapped ${free[0]} during the chain`); }
+      await waitFor('(window.__qa.chainFx() || {}).k >= 3', 15000);
+      await qa('freezeAt(0)');
+      if (!(await toLast())) throw new Error('r11 juice: the chain should land all its cats');
+      await qa('freezeAt(0.08)'); await sleep(250);
+      const fl = await opa('pf-flash'), rg = await opa('pf-ring');
+      console.log(`  r11 juice: final landing flash ${fl} ring ${rg} vib ${JSON.stringify(await ev('window.__vib'))}`);
+      if (!(fl > 0.3) || !(rg > 0.2)) throw new Error('r11 juice: the last landing should pulse the screen');
+      if (!(await ev('window.__vib.includes(22)'))) throw new Error('r11 juice: the last landing should buzz once (haptics on)');
+      await shot('r11-juice-chain-final');
+      await qa('freezeAt(0.18)'); await sleep(200);
+      await shot('r11-juice-lid-slam');
+      await qa('slow(1)');
+    });
+    await waitFor('!!document.querySelector("#modal .card.win")', 15000); await sleep(1100);
+    const coins = await ev('document.querySelectorAll(".flycoin:not(.flystar)").length');
+    console.log(`  r11 juice: ${coins} coins in flight`);
+    await shot('r11-juice-win-coins');
+    // reduced motion: no pulse, no buzz (the chain still plays and pays)
+    await send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'reduce' }] });
+    await boot();
+    await ev(stubVib);
+    await playChain(async () => {
+      await waitFor('(window.__qa.chainFx() || {}).k >= 1', 15000);
+      await qa('freezeAt(0)');
+      await toLast();
+      await qa('freezeAt(0.08)'); await sleep(250);
+      if ((await opa('pf-flash')) > 0 || (await ev('window.__vib.includes(22)'))) throw new Error('r11 juice: reduced motion should keep the pulse and the buzz off');
+      await shot('r11-juice-final-calm');
+      await qa('slow(1)');
+    });
+    await send('Emulation.setEmulatedMedia', { features: [] });
+    // wide screen: the layers stay inside the centred phone column (shot once the push-in has eased out: the R10
+    // underlay, scaled by the camera, pokes past the column's bottom while it is in)
+    await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+    await boot();
+    await playChain(async () => { await waitFor('(window.__qa.chainFx() || {}).k >= 1', 15000); await qa('freezeAt(0)'); await toLast(); await qa('freezeAt(0.75)'); await sleep(250); await shot('r11-juice-chain-wide'); await qa('slow(1)'); });
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+    await boot();
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

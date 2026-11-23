@@ -8,6 +8,11 @@
 // - baked sprites in place of per-frame shadowBlur: still cats (body with key light + rim, soft contact shadow), the
 //   belt, glow halos
 // - render DPR capped at 2 (a DPR 3 phone fills 2.25x the pixels for no visible gain on these soft shapes)
+// - R11 juice (Sol fix 3), split frames: while cats sprint or a bench chain plays, the still board (rug objects, still
+//   cats, kitten leashes) moves to its own crisp layer (#pf-board) that is redrawn only when it changes, and the moving
+//   cats + transient fx (hops, sparks, confetti, the edge glow, the sweep) draw on a low-resolution layer (#pf-fx,
+//   FX_SCALE of the board DPR) over #game. #game keeps the belt, bench, carriers, teaching marks and the chain counter
+//   crisp. Software raster pays per drawn pixel on the main thread, so a frame now re-rasters only what moves
 // Renderer: '?r=pixi' or the Settings toggle (save.data.perf.gpu) draws the underlay and the still cats with PixiJS
 // (WebGPU first, WebGL fallback, src/game/pixi-layer.js); Canvas2D stays the default and the fallback.
 import { IMG } from './assets.js';
@@ -18,6 +23,10 @@ import { buildFar, buildNear, carrierShadow } from './render-depth.js';
 // '?perf=0': the old renderer, untouched (A/B timing, a way out if a phone ever draws the underlay wrong)
 const OFF = (() => { try { return new URLSearchParams(location.search).get('perf') === '0'; } catch { return false; } })();
 export const DPR_CAP = OFF ? 3 : 2;
+// R11 juice: '?split=0' draws every frame on #game as in R10 (A/B timing)
+// window.__perf.noSplit = true does the same live (QA draws one frozen frame both ways)
+const SPLIT = (() => { try { return new URLSearchParams(location.search).get('split') !== '0'; } catch { return true; } })();
+export const FX_SCALE = 0.65; // the moving layer's resolution, of the board DPR (2 on a phone: 1.3 device px per CSS px)
 
 const pdata = () => {
   const d = save.data;
@@ -37,7 +46,7 @@ export function gpuSetting() { return !!pdata().gpu; }
 export function setGpu(on) { pdata().gpu = !!on; save.commit(); if (cur) cur.setRenderer(wantedRenderer()); }
 
 let cur = null;
-const stats = { renderer: 'canvas', drawn: 0, skipped: 0, covered: false, layers: 0, sprites: 0 };
+const stats = { renderer: 'canvas', drawn: 0, skipped: 0, covered: false, layers: 0, sprites: 0, split: 0, boardDraws: 0 };
 if (typeof window !== 'undefined') window.__perf = stats;
 
 const mkCanvas = (id) => {
@@ -90,6 +99,40 @@ class Perf {
     this.near = mkCanvas('pf-near');
     host.parentNode.insertBefore(this.far, host);
     host.parentNode.insertBefore(this.near, host);
+    // R11 juice: the split-frame layers, the still board under #game and the low-res moving layer over it
+    this.beltCv = mkCanvas('pf-belt'); // R11: the belt, baked; its stop-click kick is a CSS translate
+    host.parentNode.insertBefore(this.beltCv, host);
+    this.beltKey = '';
+    this.kick = 0;
+    this.boardCv = mkCanvas('pf-board');
+    this.fxCv = mkCanvas('pf-fx');
+    host.parentNode.insertBefore(this.boardCv, host);
+    host.parentNode.insertBefore(this.fxCv, host.nextSibling);
+    this.bctx = this.boardCv.getContext('2d');
+    this.fctx = this.fxCv.getContext('2d');
+    this.splitOn = false;
+    this.bsig = '';
+    this.bAt = 0;
+    this.L = { board: null, top: null, fx: this.fctx, cam: (ctx) => this.fxCam(ctx), flat: () => this.fxFlat() };
+    // R11 juice: full-screen flashes as DOM layers whose opacity/transform the compositor animates (no raster per frame)
+    const div = (css, id) => { const d = document.createElement('div'); d.id = id; d.setAttribute('aria-hidden', 'true'); d.style.cssText = 'position:fixed;pointer-events:none;opacity:0;will-change:opacity,transform;' + css; host.parentNode.insertBefore(d, this.fxCv.nextSibling); return d; };
+    this.fxDom = {
+      edgeL: div('left:0;top:0;bottom:0;width:26px;background:linear-gradient(90deg,rgba(255,212,59,.55),rgba(255,212,59,0))', 'pf-edge-l'),
+      edgeR: div('right:0;top:0;bottom:0;width:26px;background:linear-gradient(270deg,rgba(255,212,59,.55),rgba(255,212,59,0))', 'pf-edge-r'),
+      flash: div('inset:0', 'pf-flash'),
+      ring: div('left:0;top:0;border-radius:50%;border:4px solid #ffd43b;box-sizing:border-box', 'pf-ring'),
+    };
+    this.domOp = { edgeL: 0, edgeR: 0, flash: 0, ring: 0 };
+    // the chain counter on a split frame: a crisp strip over the moving layer (its gold burst stays under the words)
+    this.topCv = mkCanvas('pf-top');
+    this.topCv.style.height = '180px';
+    this.topCv.style.inset = 'auto';
+    this.topCv.style.left = '0';
+    host.parentNode.insertBefore(this.topCv, this.fxDom.edgeL.nextSibling);
+    this.tctx = this.topCv.getContext('2d');
+    this.topY = null;
+    this.domSet = {};
+    this.pulseAt = null;
     try {
       new MutationObserver(() => { this.coverDirty = true; }).observe(document.getElementById('ui'), { childList: true, subtree: true, attributes: true, attributeFilter: ['class', 'style'] });
     } catch { /* no #ui: never covered */ }
@@ -200,7 +243,9 @@ class Perf {
     buildNear(g, this.near.getContext('2d'));
     this.cam = [1, 0, 0, 1, 0, 0];
     if (this.pixi) { this.pixi.layers(this.far, this.near); this.pixi.camera(this.cam); }
-    this.far.style.transform = this.near.style.transform = '';
+    this.far.style.transform = this.near.style.transform = this.boardCv.style.transform = '';
+    this.beltKey = ''; this.beltTf();
+    this.bsig = ''; // the split board layer redraws at the new size
   }
 
   // the camera (shake, chain push-in) as the board canvas has it: the underlay follows by CSS transform
@@ -215,7 +260,8 @@ class Perf {
     const id = Math.abs(a - 1) + Math.abs(b) + Math.abs(c) + Math.abs(dd - 1) + Math.abs(e) + Math.abs(f) < 0.002;
     if (this.pixi) { this.pixi.camera(this.cam); return; }
     const p = 0.4; // the room moves less than the board: parallax
-    this.near.style.transform = id ? '' : `matrix(${a},${b},${c},${dd},${e},${f})`;
+    this.near.style.transform = this.boardCv.style.transform = id ? '' : `matrix(${a},${b},${c},${dd},${e},${f})`; // R11: the split board layer moves with the rug
+    this.beltTf();
     this.far.style.transform = id ? '' : `matrix(${1 + (a - 1) * p},${b * p},${c * p},${1 + (dd - 1) * p},${e * p},${f * p})`;
   }
 
@@ -224,12 +270,115 @@ class Perf {
 
   end() {
     if (this.pixi) this.pixi.end(this.frame);
+    for (const k in this.domOp) if (!this.domSet[k] && this.domOp[k]) this.domStyle(k, 0); // R11: a DOM flash not drawn this frame goes out
+    this.domSet = {};
+    if (this.beltAt !== this.frame && this.beltKey) { // R11: no belt this frame (no board): the belt layer empties too
+      this.beltKey = '';
+      this.beltCv.getContext('2d').clearRect(0, 0, this.beltCv.width, this.beltCv.height);
+    }
+  }
+
+  // ---- R11 juice: a carrier at rest (no squash, dip, door swing, pops, lean, hint glow) from a sprite that
+  // drawCarrier7 itself baked; a state is baked only once it held for two frames (a rolling carrier never bakes) ----
+  carrier(ctx, vc, x, sc, front, rot, dy) {
+    const g = this.g;
+    if (ctx !== g.ctx || this.baking || rot || dy || vc.closed) return false;
+    const t = g.clock;
+    if (t - (vc.sqT ?? -9) < 0.5 || t - (vc.popT ?? -9) < 0.75) return false;
+    const hc = g.hintId != null && g.board && g.board.cats[g.hintId];
+    if (front && hc && hc.color === vc.color && !g.demo) return false;
+    const d = g.dpr;
+    const sh = save.data.shop;
+    const key = `${vc.color}|${vc.fill}|${vc.cap}|${front ? 1 : 0}|${Math.round(sc * 1000)}|${Math.round(x * d)}|${g.cs}|${d}|${g.beltY}|${(sh && sh.eq && sh.eq.car) || ''}`;
+    this.cars = this.cars || new WeakMap();
+    let e = this.cars.get(vc);
+    if (!e || e.key !== key) {
+      if (!e || e.want !== key) { this.cars.set(vc, { want: key }); return false; }
+      const cw = g.cs * 1.3 * sc, art = IMG['r7/carrier_orange'];
+      const ch = cw * (art ? art.height / art.width : 1); // tight: the art (+ its contact shadow), every badge sits inside it
+      const ox = Math.floor((x - cw * 0.56) * d) / d, oy = Math.floor((g.beltY - ch - 6) * d) / d;
+      const w = cw * 1.12 + 2, h = ch * 1.12 + 14;
+      const cv = document.createElement('canvas');
+      cv.width = Math.ceil(w * d);
+      cv.height = Math.ceil(h * d);
+      const k = cv.getContext('2d');
+      k.setTransform(d, 0, 0, d, -ox * d, -oy * d);
+      this.baking = true;
+      try { g.drawCarrier7(k, vc, x, sc, front, 0, 0); } finally { this.baking = false; }
+      e = { key, cv, x: ox, y: oy };
+      this.cars.set(vc, e);
+      stats.carSprites = (stats.carSprites || 0) + 1;
+    }
+    ctx.drawImage(e.cv, e.x, e.y, e.cv.width / d, e.cv.height / d);
+    return true;
+  }
+
+  // ---- R11 juice: the belt on its own baked layer (it only ever moves by the stop-click kick) ----
+  belt(ctx, img, x, y, w, h, sh, kick) {
+    const g = this.g;
+    if (ctx !== g.ctx || this.pixi) return false;
+    this.beltAt = this.frame;
+    const key = `${x}|${y}|${w}|${h}|${g.W}x${g.H}@${g.dpr}`;
+    if (key !== this.beltKey) {
+      this.beltKey = key;
+      const c = this.beltCv;
+      c.width = Math.round(g.W * g.dpr);
+      c.height = Math.round(g.H * g.dpr);
+      const k = c.getContext('2d');
+      k.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
+      this.shadowImage(g.ctx, img, x, y, w, h, sh, k);
+    }
+    if (kick !== this.kick) { this.kick = kick; this.beltTf(); }
+    return true;
+  }
+
+  beltTf() {
+    const [a, b, c, d, e, f] = this.cam;
+    const id = Math.abs(a - 1) + Math.abs(b) + Math.abs(c) + Math.abs(d - 1) + Math.abs(e) + Math.abs(f) < 0.002;
+    const m = id ? '' : `matrix(${a},${b},${c},${d},${e},${f}) `;
+    const tf = (m + (this.kick ? `translateX(${this.kick.toFixed(2)}px)` : '')).trim();
+    if (this.beltCv.style.transform !== tf) this.beltCv.style.transform = tf;
+  }
+
+  // ---- R11 juice: compositor-only flashes ----
+  domStyle(k, op, tf) {
+    const el = this.fxDom[k];
+    this.domSet[k] = true;
+    const o = Math.round(op * 1000) / 1000;
+    if (o !== this.domOp[k]) { el.style.opacity = String(o); this.domOp[k] = o; }
+    if (tf != null && el.style.transform !== tf) el.style.transform = tf;
+  }
+
+  // the chain's 2nd+ hop lights both screen edges (alpha a of the old canvas gradient, 0.55 = full)
+  edgeGlow(a) {
+    if (this.g.demo) return false;
+    this.domStyle('edgeL', a / 0.55);
+    this.domStyle('edgeR', a / 0.55);
+    return true;
+  }
+
+  // the last landing's screen pulse: a warm flash from the counter (op 0..1) and a gold ring of radius r
+  pulse(x, y, op, r, ringOp) {
+    const g = this.g;
+    const R = Math.max(g.W, g.H) * 0.75, r1 = 18 + g.W * 0.42;
+    const key = `${Math.round(x)},${Math.round(y)},${Math.round(R)}`;
+    if (this.pulseAt !== key) { // placed once per chain, then only opacity and scale change
+      this.pulseAt = key;
+      this.fxDom.flash.style.background = `radial-gradient(circle ${Math.round(R)}px at ${Math.round(x)}px ${Math.round(y)}px, rgba(255,236,170,.32), rgba(255,200,90,.144) 45%, rgba(255,190,80,0))`;
+      const rg = this.fxDom.ring.style;
+      rg.width = rg.height = Math.round(r1 * 2) + 'px';
+      rg.left = Math.round(x - r1) + 'px';
+      rg.top = Math.round(y - r1) + 'px';
+    }
+    this.domStyle('flash', op);
+    this.domStyle('ring', ringOp, `scale(${(r / r1).toFixed(3)})`);
+    return true;
   }
 
   // ---- a still cat: soft shadow + live tail + baked body (canvas), or a Pixi sprite ----
   body(ctx, cat, path, a, b, st, o) {
     const g = this.g;
-    if (ctx !== g.ctx || o.glow) return false;
+    if ((ctx !== g.ctx && ctx !== this.bctx) || o.glow) return false; // R11: the split board layer has the board's DPR too
     const c = g.cell;
     const w = st.w;
     const pi = !!this.pixi;
@@ -313,7 +462,7 @@ class Perf {
   }
 
   // an image with its drop shadow baked once (the belt): drawn as one plain drawImage per frame
-  shadowImage(ctx, img, x, y, w, h, sh) {
+  shadowImage(ctx, img, x, y, w, h, sh, into = ctx) {
     if (ctx !== this.g.ctx || !img) return false;
     const d = this.g.dpr;
     const key = `${w}|${h}|${d}|${sh.join()}`;
@@ -333,7 +482,7 @@ class Perf {
       e = { key, cv, pad };
       this.sprites.set(img, e);
     }
-    ctx.drawImage(e.cv, x - e.pad, y - e.pad, e.cv.width / d, e.cv.height / d);
+    into.drawImage(e.cv, x - e.pad, y - e.pad, e.cv.width / d, e.cv.height / d);
     return true;
   }
 
@@ -393,6 +542,109 @@ class Perf {
   }
 
   input() { this.inputAt = performance.now(); }
+
+  // ---- R11 juice: split frames ----
+  // split when something moves over a board that itself holds still: a sprint, a hop, particles, the chain, the sweep.
+  // Never while a finger is down (the lane preview draws under the cats), or while a board cat itself shakes, pops in,
+  // gets bonked or a yarn ball rolls under the cats: those frames draw whole on #game as before
+  wantSplit() {
+    const g = this.g;
+    if (!SPLIT || stats.noSplit || this.pixi || !g.board || !g.state || g.demo || g.press) return false;
+    const t = g.clock;
+    let move = g.parts.length > 0;
+    for (const a of g.anims) {
+      if (a.type === 'bonk' || a.type === 'roll') return false;
+      move = true;
+    }
+    for (const k in g.wiggle) if (t - g.wiggle[k].t < 0.35 && t >= g.wiggle[k].t) return false;
+    for (const k in g.wiggleObj) if (t - g.wiggleObj[k].t < 0.35 && t >= g.wiggleObj[k].t) return false;
+    for (const k in g.popIn) if (t - g.popIn[k] < 0.35) return false;
+    if (g.chainFx && t - (g.chainFx.t1 || g.chainFx.t0 || 0) < 1.8) move = true;
+    if (g.sweep && t - g.sweep.t0 < 1.3) move = true;
+    return move;
+  }
+
+  // what the still board shows; the layer redraws only when this changes (idle life holds still for the moment)
+  boardSig() {
+    const g = this.g, st = g.state, t = g.clock;
+    let s = this.sig + '|' + g.hintId + '|' + (g.cueOn && g.cueOn('cat') ? g.cue.cat : '') + '|';
+    for (const id of g.order) s += st.alive[id] ? '1' : '0';
+    s += '|' + JSON.stringify(g.mv);
+    for (const id in g.freedT) { const fr = t - g.freedT[id]; if (fr >= 0 && fr < 1.4) s += ',' + id; } // a freed cat's arrow
+    return s;
+  }
+
+  // called at the top of Game.draw: null = draw the whole frame on #game; else { board: ctx or null (still clean), fx }
+  split() {
+    const g = this.g;
+    if (!this.wantSplit()) {
+      if (this.splitOn) {
+        this.splitOn = false;
+        this.bsig = '';
+        this.bctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.bctx.clearRect(0, 0, this.boardCv.width, this.boardCv.height);
+        this.fctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.fctx.clearRect(0, 0, this.fxCv.width, this.fxCv.height);
+        this.tctx.setTransform(1, 0, 0, 1, 0, 0);
+        this.tctx.clearRect(0, 0, this.topCv.width, this.topCv.height);
+      }
+      return null;
+    }
+    const d = g.dpr, k = d * FX_SCALE;
+    const bw = Math.round(g.W * d), bh = Math.round(g.H * d), fw = Math.round(g.W * k), fh = Math.round(g.H * k);
+    if (this.boardCv.width !== bw || this.boardCv.height !== bh) { this.boardCv.width = bw; this.boardCv.height = bh; this.bsig = ''; }
+    if (this.fxCv.width !== fw || this.fxCv.height !== fh) { this.fxCv.width = fw; this.fxCv.height = fh; }
+    this.splitOn = true;
+    this.L.top = this.tctx;
+    stats.split++;
+    const f = this.fctx;
+    f.setTransform(1, 0, 0, 1, 0, 0);
+    f.clearRect(0, 0, fw, fh);
+    f.setTransform(k, 0, 0, k, 0, 0);
+    const y0 = Math.round(g.chainPos().y - 90), tw = Math.round(g.W * d), th = Math.round(180 * d);
+    if (this.topCv.width !== tw || this.topCv.height !== th) { this.topCv.width = tw; this.topCv.height = th; }
+    if (y0 !== this.topY) { this.topY = y0; this.topCv.style.top = y0 + 'px'; }
+    const tc = this.tctx;
+    tc.setTransform(1, 0, 0, 1, 0, 0);
+    tc.clearRect(0, 0, tw, th);
+    tc.setTransform(d, 0, 0, d, 0, -y0 * d);
+    // a tap's look-around (1.3 s) and a freed cat's pulsing exit arrow (1.4 s) keep the board alive at up to 20 fps,
+    // but only while frames come fast (each board redraw is a full still-board raster): a phone that is already
+    // dropping frames holds the board still and spends them on the sprinting cat. A bench chain always holds it still
+    // (all eyes are on the hops; the looks pick up again once it is over)
+    const now = performance.now();
+    const dt = now - (this.splitAt || 0);
+    this.splitAt = now;
+    if (dt < 250) this.dtAvg = (this.dtAvg ?? 16.7) * 0.75 + dt * 0.25;
+    const fast = (this.dtAvg ?? 16.7) < 24;
+    const chain = g.chainFx && g.clock - (g.chainFx.t1 || g.chainFx.t0 || 0) < 1.8;
+    let live = fast && !chain && g.look && g.clock - g.look.t < 1.3;
+    if (fast && !chain) for (const id in g.freedT) { const fr = g.clock - g.freedT[id]; if (fr >= 0 && fr < 1.4) live = true; }
+    const sig = this.boardSig();
+    this.L.board = null;
+    if (sig !== this.bsig || (live && now - this.bAt > 48)) {
+      this.bsig = sig;
+      this.bAt = now;
+      stats.boardDraws++;
+      const b = this.bctx;
+      b.setTransform(1, 0, 0, 1, 0, 0);
+      b.clearRect(0, 0, bw, bh);
+      b.setTransform(d, 0, 0, d, 0, 0);
+      this.L.board = b;
+    }
+    return this.L;
+  }
+
+  // the moving layer follows the in-canvas camera (shake, chain push-in) of #game, at its own scale
+  fxCam(ctx) {
+    const m = ctx.getTransform(), s = FX_SCALE;
+    this.fctx.setTransform(m.a * s, m.b * s, m.c * s, m.d * s, m.e * s, m.f * s);
+  }
+
+  fxFlat() {
+    const k = this.g.dpr * FX_SCALE;
+    this.fctx.setTransform(k, 0, 0, k, 0, 0);
+  }
 }
 
 // one per live board (the share clip's fixed-size Game never gets one)

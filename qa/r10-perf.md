@@ -118,3 +118,86 @@ Physical-phone WebGPU timing is unmeasured.
 - Late boards under software raster still 33-66 ms: compositor + DOM HUD at DPR 2. Next step would be measuring on a
   real low-end Android (chrome://tracing) before going further.
 - Still-cat sprites cost memory: ~20 canvases per board (L60 an estimated 15-25 MB at DPR 2, not measured), released on level change.
+
+## R11 juice lane (Sol fix 3): chain + moving cats under software raster
+
+Probe: `scripts/perf.mjs` as above (DPR 3, 375x812), now with `PERF_ONLY=L60,rapid6,chain` to run only those scenes.
+Before = HEAD `d204fce`, after = branch `r11/juice`, run back to back on the same machine (other lanes were also busy,
+so absolute numbers drift; compare pairs, not runs). Files: `r11-perf-sw-before.json`, `r11-perf-sw-after.json`,
+`r11-perf-gpu-before.json`, `r11-perf-gpu-after.json`.
+
+### What the profile said
+
+A CDP trace of the x6 software-raster chain showed that the main thread was spending its time in
+`LayerTreeHost::DoUpdateLayers` (Canvas2D rasterising at commit, about 100 ms a frame), not in script (`Game.update + draw`
+recorded in 5-10 ms). A `nodraw` A/B ran at 16.7 ms. A clear-only canvas took 4 ms a frame, and DPR 1.3 cut the cost in
+proportion to the pixels. So the chain was raster-bound: every drawn pixel cost main-thread time. Forcing a flush around
+each draw call gave this split at x6, as p50 ms per frame: carriers 14.5, bench 5.3, edge glow 4.6 (on the low-res
+layer), counter 3.6 (p95 14), belt 3.4 and room clear 1.7. The first canvas version of the final-landing pulse cost 24 ms.
+
+### What changed
+
+- **Split frames** (`perf.js` `split()`, hooks in `Game.draw`). While something moves and the board itself holds still
+  (a sprint, hops, particles, the chain window or the sweep), the still board (rug objects, still cats, kitten leashes)
+  goes to `#pf-board`. That layer redraws only when its signature changes: alive cats, hint, cue, mechanics state or freed
+  arrows. It follows the camera by CSS, like the rug. Moving cats and transient fx draw on `#pf-fx` at `FX_SCALE` 0.65
+  of the board DPR. `#game` keeps the belt row, bench, carriers and teaching marks crisp. The chain counter sits on
+  `#pf-top`, a crisp 180 px strip over the fx layer, so the gold burst stays under the words. The split never runs while
+  a finger is down (the lane preview draws under the cats). It also skips a bonk, a rolling yarn ball and a board cat's
+  wiggle or pop-in. The share clip's fixed Game, Pixi mode and `?split=0` (or `window.__perf.noSplit`) draw whole frames.
+- **Idle life on a split frame.** A tap's look-around and a freed cat's arrow pulse keep redrawing the board at up to
+  20 fps, but only while frames come fast (an EMA of frame intervals under 24 ms). A phone that is already dropping
+  frames holds the board still and spends its frames on the moving cat. A bench chain always holds the board still.
+- **Baked, not re-rastered.** A carrier at rest draws as one sprite that `drawCarrier7` bakes itself, once its state
+  has held for 2 frames. A squash, dip, door swing, pop, lean or hint glow draws it live. The belt sits on its own baked
+  layer (`#pf-belt`), with the stop-click kick as a CSS translate. The chain counter's ribbon is baked once per tick.
+- **Compositor-only flashes.** The edge glow on hops 2 and later, the final landing's warm flash and its gold ring are
+  DOM layers (`#pf-edge-l/r`, `#pf-flash`, `#pf-ring`). Per frame, the code changes only their opacity or transform.
+- Overlapping taps and landing timing are untouched (rules, `pending` events and the clock are not touched). QA taps a
+  free cat in the middle of the chain, and every landing still counts.
+
+### Software raster (`PERF_NOGPU=1`): rAF delta p50 / p95 ms
+
+| scene | x4 before | x4 after | x6 before | x6 after |
+|---|---:|---:|---:|---:|
+| L60 idle | 33.4 / 50.1 | **16.7 / 33.4** | 66.6 / 66.7 | **50 / 66.7** |
+| L60 sprint | 50 / 66.7 | **16.7 / 50** | 83.3 / 100 | **33.2 / 66.6** |
+| rapid6 | 33.4 / 66.7 | **16.7 / 33.4** | 116.6 / 183.3 | **33.4 / 99.9** |
+| chain x3 | 50 / 50.1 | **16.7 / 16.8** | 66.7 / 83.4 | **33.3 / 33.4** |
+
+**Target met: the chain plays at a 33.4 ms p95 at x6 with software raster.** Two earlier after-runs on a busier machine
+gave 33.4 and 50.1 ms p95. Raster per frame on the chain fell from about 100 ms to about 18 ms (`DoUpdateLayers` p50 at
+x6).
+
+### GPU raster: rAF p50 / p95 | game ms p50 / p95
+
+| scene | x6 before | x6 after |
+|---|---|---|
+| L60 idle | 16.7/16.8 \| 2.9/5.7 | 16.7/16.8 \| 2.6/5.6 |
+| L60 sprint | 16.7/16.7 \| 5.4/7.3 | 16.7/16.7 \| 3.0/7.5 |
+| rapid6 | 16.7/16.7 \| 5.2/8.6 | 16.7/16.7 \| 4.0/8.0 |
+| chain x3 | 16.7/16.8 \| 2.9/4.6 | 16.7/16.8 \| 2.2/4.1 |
+
+On this quiet run, the GPU path was already at 60 fps on both sides (Sol's R12 33.3 ms chain spike came from a busier
+run). The script cost is equal or lower.
+
+### Juice added with this pass (no measurable frame cost)
+
+- The chain's last landing gets a camera punch (+3% scale, 0.32 s), a warm screen flash and a gold ring out of the
+  counter (DOM, compositor). The counter's final pop is bigger: it settles at 1.45x and springs from about 2.3x. Each
+  earlier tick pops a little bigger than the one before.
+- A full carrier's lid slams shut with a squash, then a stretch (0.42 s), in place of the old small wobble.
+- On the win card, 6-12 coins (scaled by the payout) spin to the counter. Every second one ticks, and the last one bursts
+  gold around the pill, which glows.
+- One short 22 ms `navigator.vibrate` buzz on the last landing. It follows the Settings haptics switch and stays off with
+  reduced motion. Where `navigator.vibrate` is missing, the old native-plugin path runs.
+- Reduced motion turns off the punch, flash, ring, overshoot, coin burst and buzz. The lid keeps the old gentle wobble.
+
+### Still weak
+
+- Late boards at x6 under software raster still sit at 50-66 ms when idle. That cost is the 20 baked still cats, live
+  heads and the band at 30 fps, not motion. Every tap in a sprint also redraws the full still board once.
+- Six full-screen canvases (far, near, belt, board, game and fx at 0.65) plus the counter strip now sit under `#ui`.
+  That costs memory on low-end phones, about 5 MB per DPR-2 layer, and none of it has been measured on a device.
+- In a themed pack on a split frame, the live rain and petals draw over the still cats, not under them.
+- None of this has been measured on a physical low-end Android phone.
