@@ -122,3 +122,35 @@
 - Hub thread "Mochi moves in after 2 stars" counts stars to spend, while the win card says "can move in now" when the player already holds them: both true, reads contradictory.
 - Third-hand dare thread labels the unnamed first sender "Your friend" though the new player never met them.
 - Real iOS/Android share delivery still untested (no devices).
+
+## R10 (six parallel lanes, merged on main: content, perf, orders, iq, shop, hub)
+### What landed
+- **content**: Spring cat (hops one blocker, taught L61) and Swivel bed (each neighbour that leaves opens one more exit, max 3, taught L81), in rules, solver, generator and renderer. Packs of 20 from L61: Rainy Day, Bakery Rush, Garden Party, Starry Night, then "II" laps. Each pack has its own painted room, a light ambient effect (still under reduced motion), a HUD chip, an intro card and a packs sheet. Four pack hosts move into the café (Drizzle, Brioche, Fern, Comet). Levels 1-60 are unchanged.
+- **perf**: lag fix on the Canvas2D path. The room, rug, tiles and bench are baked into two underlay canvases. Still cats use sprites, the render DPR is capped at 2, an idle board draws at 30fps (12 with reduced motion), and nothing draws under the hub. Depth comes from baked shadows, a key light and rim on the cats, a vignette and a 40% parallax room. PixiJS is opt-in only (`?r=pixi` or Settings "GPU mode (beta)"), because it measured slower. Numbers are in qa/r10-perf.md.
+- **orders**: every normal level is an adoption order from a Cat Street keeper (one shop per 10-level chapter). Hard levels are Urgent orders (+15) and boss levels are VIP orders (+40). There is an intro card, a keeper strip with an n/N pill at the belt's left end, and a delivery ceremony on first clears (one named cat adopted; a set of 5 pays out). The album gets an "Adopted cats" tab, and doorstep cats appear on built shops.
+- **iq**: a level clock (starts on the first cat, pauses while the tab is hidden), best times, and time medals from solver par. They pay nothing. There is a time row on the win card and a Records sheet on the café rail with four tabs: Levels (replay), Record Run (5 boards on one clock), Stats with Cat IQ, and Rank. Every rival on Rank has a BOT tag; the real list needs a KV store, and `src/kit/rank-kv.js` is an unused stub.
+- **shop**: a four-tab store (Offers / Coins / Boosters / Cosmetics). It has a deal of the day, a Starter pack, ad gifts (hidden without ads), booster packs including a new Extra Cushion (+1 seat on the next new level), and cosmetics shown on the real board (hats, carrier skins, Starry night / Blossom rooms). Real-money buttons are still a stub ("Coming soon" with no store backend).
+- **hub**: the home screen is now a level map (road, cushion nodes, chapter signposts, cat hop after a win). The old Home tab is now "House". At ≥900px wide the column is wider and has side panels plus keys (Space/Enter, Z, H, Esc). The resident and request-bubble layout bug is fixed: no overlaps at any of the 7 sizes checked.
+
+### Integration fixes (each its own commit on main)
+- Pack rooms were invisible: perf's baked underlay always painted the sunny room. `Game.roomArt()` now picks bought shop room > pack room > sunny room. The underlay bakes it (with the pack wash) and rebuilds when the room key changes; the pack's rain/flour/petals/stars still draw live.
+- The win-card time row went missing on first clears: iq added it before the adoption ceremony had shown the card. It now waits for the card (up to ~6s, idempotent).
+- The level clock sat hidden behind the order keeper (both lived under the Home button). It now docks under the keeper's n/N pill, in a smaller style, clear of the bench at 375x667 and 375x812.
+- On L61/L81 the order intro card stacked on top of the pack/new-piece card. It now waits until the content card closes.
+- The Records rail button arrived after the hub had laid out residents, so a request bubble sat under it at 390x844 (hub QA failed). Adding the button now re-runs the resident layout.
+- Turkish used two words for "level" ("Bölüm 27" on the map, "27. seviye" on Play and the HUD). All R9/R10 strings now say *seviye*, with the suffixes fixed (seviyede / seviyeden / seviyeye / seviyeler).
+- A Hard/VIP tag on the locked node after the current one was hidden under the map cat. Tags on locked nodes now sit above the node.
+- Shop QA frames showed a "ghost panel": the Settings card that `lang()` opens peeked out under the shop (perf's GPU row made it taller). The QA now closes it. This was not a player bug.
+
+### Checks
+- `npm run build` passes and `npm run check` passes first try: core worst generation 58.7ms, 0 search misses, econ including orders and the 120-day shop sim, web, sfx and dare.
+- QA (`QA_FROM=106 QA_SKIP667=1 QA_NOGPU=1`) ran every R10 section plus the always-on basics (L5 trap, L13 chain + win card, café builds, Cat Show board): 0 errors and no scroll failures. Pixi started as pixi-webgl.
+
+### Still weak
+- Win flow is getting long on first clears: the ceremony (~2.7s, tap skips), then the win card with the time row, order bonus line, chain clip and build card. On 375x667 the card is full.
+- The order intro card still covers the bench and the top board rows for ~2.5s (taps pass through). On teaching levels it competes with the tutorial line.
+- Top-left HUD is crowded on narrow phones: Home, keeper door, n/N pill and the docked clock in one column. The pack chip touches the "0/3" carrier pill at 375x667.
+- A bought room hides the pack room and its ambient effect (a deliberate choice: the paid item wins). Sol may prefer the pack room on its teaching levels.
+- Perf: the win card is still 83-100ms per frame without a GPU (the clip recorder replays a second game). Pixi chunks (~550KB) are precached by the service worker though few players enable them. Pre-rendered cat sprites cost an estimated 15-25MB on L60 (not measured).
+- Medal cuts and spring/swivel difficulty come from formulas, not playtests. Rank is mostly BOTs until a KV backend exists. Keepers order before their shop is built on the street. Past map nodes cannot be replayed (Records > Levels can). Hats and carrier skins are drawn in code, not painted.
+- Coins still pile up late (shop sim leaves 8.7k-17k after 120 days): more late sinks are needed.
