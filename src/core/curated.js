@@ -6,7 +6,8 @@
 import { makeCat, makeBoard } from './board.js';
 import { generate } from './generate.js';
 
-export const BOARD_REV = 3; // the dare token version that plays these boards (kit/dare.js)
+export const BOARD_REV = 4; // the dare token version of the current boards (kit/dare.js): 3+ plays these curated boards,
+// 4 the boss schedule (generate.js SCHED 2); 2 and 3 (made before the boss lane) keep the schedule-1 board
 
 const mk = (list) => list.map((c, i) => makeCat(i, c[1], c[0]));
 const O = 'tabby', B = 'tuxedo', P = 'calico', G = 'gray';
@@ -81,8 +82,8 @@ export const CURATED = {
   },
 };
 
-// the board a level plays: a curated one from rev 3 on, else the generated one
+// the board a level plays: a curated one from rev 3 on, else the generated one on the link's schedule
 export function boardOf(n, rev = BOARD_REV) {
-  const f = rev >= BOARD_REV && CURATED[n];
-  return f ? f() : generate(n);
+  const f = rev >= 3 && CURATED[n];
+  return f ? f() : generate(n, rev >= 4 ? 2 : 1);
 }

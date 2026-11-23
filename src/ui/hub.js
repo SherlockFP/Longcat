@@ -14,6 +14,7 @@ import { CHAPTER_LEN, CHAPTERS, PROPS } from '../../data/hub.js';
 import { goalsHtml, featGoalHtml, featGoal } from './live.js';
 import { retMap, retRoom, retPanel } from './r11-ret.js'; // R11 retention lane: the album card, the hang card
 import { decorateMap, chapterName as bossChapter } from './boss.js'; // boss lane: castle nodes, chest markers, the chest / flame pill
+import { nextChest } from '../game/boss.js';
 
 const root = document.getElementById('ui');
 const r7 = (name, cls = '') => `<img class="${cls}" src="${assetUrl('r7/' + name + '.webp')}" alt="" draggable="false">`;
@@ -88,6 +89,8 @@ function tabs(info) {
 const GAP = 104; // px between two levels on the road
 const PAD_TOP = 170; // the locked levels and the "more ahead" cloud above the last node
 const PAD_BOT = 150; // under the first node: the goals strip covers the room's bottom
+const MAP_TOP_CLEAR = 72; // the next castle's centre (a chest marker's, + 22) at least this far under the view's top (the coin bar)
+const MAP_BOT_CLEAR = 75; // the current node's centre at least this far over the view's bottom (the goals strip): it wins a tie
 function geometry(cur, W) {
   const first = Math.max(1, cur - 24);
   const lastLv = Math.max(cur + 3, Math.ceil(cur / 5) * 5); // boss lane: the next chest marker is always on the map
@@ -174,7 +177,16 @@ function showMap(info) {
   m.dataset.w = W;
   const sc = m.querySelector('.hmscroll');
   const G = geometry(cur, W);
-  const target = (lv) => Math.max(0, G.pos(lv).y - sc.clientHeight * 0.56);
+  // the current node a bit under the middle; the next chest (a castle on a boss level) within 5 levels is pulled on
+  // screen too: the view rises until the castle / chest clears the coin bar, as long as the current node stays on screen
+  const target = (lv) => {
+    const y = G.pos(lv).y;
+    const h = sc.clientHeight;
+    let top = y - h * 0.56;
+    const nx = nextChest(lv);
+    if (nx.left <= 5 && nx.n > lv) top = Math.max(Math.min(top, (nx.t === 'boss' ? G.pos(nx.n).y : G.pos(nx.n + 0.5).y + 22) - MAP_TOP_CLEAR), y + MAP_BOT_CLEAR - h);
+    return Math.max(0, top);
+  };
   const st = state();
   const from = st.seen > 0 && st.seen < cur && cur - st.seen <= 3 ? st.seen : 0;
   if (mapScroll && mapScroll.lv === cur) sc.scrollTop = mapScroll.top;

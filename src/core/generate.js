@@ -16,6 +16,7 @@ import { packPlan, pickMech, mechCandidates, mechUsed, springTune, thinPlan } fr
 
 const SIZES = [[5, 6], [6, 7], [6, 8], [7, 9], [7, 10], [8, 10], [8, 11]];
 const SIZE_FROM = [1, 4, 5, 12, 20, 34, 50]; // 6x8 from L5 so four colours of chunky cats fit
+const BOSS_SIZES = [...SIZES, [9, 11]];
 const MAX_ATTEMPTS = 60;
 
 // ---- difficulty schedule: a BOSS level every 20 (L20, 40, 60...: the hardest band, src/game/boss.js), hard levels
@@ -25,7 +26,12 @@ const sched = new Map();
 let nextSlot = 15;
 export const BOSS_EVERY = 20;
 export const isBossLevel = (n) => n >= BOSS_EVERY && n % BOSS_EVERY === 0;
-export function levelKind(n) {
+// Schedule versions: SCHED (2) is the boss schedule above; 1 is the one before it (hard every 7-10 from L15, 'super'
+// hard about every 30, mystery taught on L40). A dare link made before the boss lane names no schedule and keeps
+// opening the board it was made on: generate(n, 1) (curated.js boardOf, kit/dare.js token 2 / 3).
+export const SCHED = 2;
+export function levelKind(n, sv = SCHED) {
+  if (sv === 1) return levelKindV1(n);
   if (isBossLevel(n)) return 'boss';
   if (n < 15) return 'normal';
   while (nextSlot <= n) {
@@ -35,31 +41,52 @@ export function levelKind(n) {
   }
   return sched.get(n) || 'normal';
 }
+const schedV1 = new Map();
+let nextSlotV1 = 15;
+let lastSuperV1 = 0;
+function levelKindV1(n) {
+  if (n < 15) return 'normal';
+  while (nextSlotV1 <= n) {
+    let kind = 'hard';
+    if (nextSlotV1 >= 30 && nextSlotV1 - lastSuperV1 >= 26) {
+      kind = 'super';
+      lastSuperV1 = nextSlotV1;
+    }
+    schedV1.set(nextSlotV1, kind);
+    nextSlotV1 += 7 + (hashSeed('hardgap', nextSlotV1) % 4);
+  }
+  return schedV1.get(n) || 'normal';
+}
 
 // ---- mechanics ramp: one new thing per chapter, taught on a gentle level, then mixed ----
 export const TEACH = { 8: 'dog', 12: 'yarn', 41: 'mystery', 55: 'frozen', 61: 'spring', 81: 'swivel' }; // 61 / 81: content packs (content-mech.js); mystery moved off L40 (a boss) onto its breather
 const MECH_FROM = { dog: 8, yarn: 12, mystery: 41, frozen: 55, spring: 61, swivel: 81 };
+const TEACH_V1 = { 8: 'dog', 12: 'yarn', 40: 'mystery', 55: 'frozen', 61: 'spring', 81: 'swivel' }; // schedule 1
+const MECH_FROM_V1 = { dog: 8, yarn: 12, mystery: 40, frozen: 55, spring: 61, swivel: 81 };
+const teachAt = (n, sv = SCHED) => (sv === 1 ? TEACH_V1 : TEACH)[n];
 const TEACH_COUNT = { dog: 1, yarn: 2, mystery: 2, frozen: 1, spring: 2, swivel: 1 };
 
 // ---- mid-game flavours (normal L5-30): neighbouring boards lean on different decisions so the run never repeats.
 // chain = a bench chain is the showpiece (two 2-chains on the line), tight = more deliberate parks held longer,
 // kitten = a parade of mother + kitten pairs, yarn = a yarn alley (two balls on the line, from L13)
-export function flavourOf(n) {
-  if (n < 5 || n > 30 || TEACH[n] || levelKind(n) !== 'normal') return null;
-  if (n > 15 && levelKind(n - 1) !== 'normal') return null; // the breather after a hard level stays plain
+export function flavourOf(n, sv = SCHED) {
+  if (n < 5 || n > 30 || teachAt(n, sv) || levelKind(n, sv) !== 'normal') return null;
+  if (n > 15 && levelKind(n - 1, sv) !== 'normal') return null; // the breather after a hard level stays plain
   const F = n > 12 ? ['chain', 'tight', 'kitten', 'yarn'] : ['chain', 'tight', 'kitten'];
   return F[(n + (n > 12 ? 0 : 1)) % F.length]; // offsets picked so every flavoured board keeps its trap floor
 }
 
 // How many of each mechanic level n asks for (placement may fall short on non-teaching levels).
-export function mechPlan(n) {
-  if (TEACH[n]) return { [TEACH[n]]: TEACH_COUNT[TEACH[n]] };
+export function mechPlan(n, sv = SCHED) {
+  const tk = teachAt(n, sv);
+  if (tk) return { [tk]: TEACH_COUNT[tk] };
   const pack = packPlan(n); // the first lap of the themed packs ramps the new pieces in by hand
   if (pack) return pack;
   const rng = makeRng(hashSeed('mechplan', n));
-  const names = Object.keys(MECH_FROM).filter((k) => n > MECH_FROM[k]);
+  const from = sv === 1 ? MECH_FROM_V1 : MECH_FROM;
+  const names = Object.keys(from).filter((k) => n > from[k]);
   const plan = {};
-  if (flavourOf(n) === 'yarn') return { yarn: 2 };
+  if (flavourOf(n, sv) === 'yarn') return { yarn: 2 };
   names.forEach((k, i) => {
     const fresh = i === names.length - 1 && n < 70;
     if (!rng.chance(fresh ? 0.8 : n >= 70 ? 0.55 : 0.45)) return; // asked for often: a piece that never matters on the line is dropped
@@ -68,35 +95,42 @@ export function mechPlan(n) {
   return thinPlan(plan, n); // springs / swivels past the packs: every other board at most (content-mech.js)
 }
 
-export function params(n) {
-  const kind = levelKind(n);
-  const teach = !!TEACH[n];
+export function params(n, sv = SCHED) {
+  const kind = levelKind(n, sv);
+  const tk = teachAt(n, sv) || null;
+  const teach = !!tk;
   const hard = kind !== 'normal';
-  const bonus = teach ? 0 : kind === 'boss' ? 2 : hard ? 1 : 0;
-  const after = !hard && !teach && n > 15 && levelKind(n - 1) !== 'normal'; // one breather per hard level, never two; a teaching level after a boss (L41, L61, L81) keeps its own gentle shape
+  const boss = kind === 'boss';
+  const big = boss || kind === 'super'; // the hardest band: a boss (schedule 2) or a super hard level (schedule 1)
+  const bonus = teach ? 0 : big ? 2 : hard ? 1 : 0;
+  const after = !hard && (sv === 1 || !teach) && n > 15 && levelKind(n - 1, sv) !== 'normal'; // one breather per hard level, never two; a teaching level after a boss (L41, L61, L81) keeps its own gentle shape
   // about 40% of the normal levels from L10 are 'medium': more dead ends and two or more delayed traps
   const medium = !hard && !after && !teach && n >= 10 && hashSeed('medium', n) % 100 < 40;
   let tier = 0;
   for (let i = 0; i < SIZE_FROM.length; i++) if (n >= SIZE_FROM[i]) tier = i;
   if (tier >= 3 && kind === 'normal' && makeRng(hashSeed('size', n)).chance(0.3)) tier -= 1;
-  if (kind === 'boss') tier = Math.min(SIZES.length - 1, tier + 1);
-  const [w, h] = SIZES[tier];
+  if (kind === 'super') tier = Math.min(SIZES.length - 1, tier + 1);
+  // a boss is a giant order: two size tiers up (L20 8x11, from L40 the boss-only 9x11; cells stay >= 30px at 375x667)
+  const [w, h] = boss ? BOSS_SIZES[Math.min(BOSS_SIZES.length - 1, tier + 2)] : SIZES[tier];
   const fillTarget = Math.min(0.84, (n < 10 ? 0.68 : 0.72 + 0.12 * Math.min(1, (n - 10) / 90)) + 0.03 * bonus);
-  const benchSize = kind === 'boss' && n > BOSS_EVERY ? 4 : 5; // a 5-seat bench from L4 (breathers too: 6 seats made them free wins); the first boss (L20) keeps 5
+  const benchSize = kind === 'super' || (boss && n > BOSS_EVERY) ? 4 : 5; // a 5-seat bench from L4 (breathers too: 6 seats made them free wins); the first boss (L20) keeps 5
   // 4 colours up to L14, 5 from L15, 6 from L30 (hard levels one more), never above 6 so each reads at a glance
   const colors = Math.min(6, (n < 15 ? 4 : n < 30 ? 5 : 6) + bonus);
   // decision band (measured by the solver on the winning line): traps = steps where a tempting tap loses,
   // late = steps with a lose-LATER tap (legal, room on the bench, but no winning line left: a real planning mistake),
   // chains = carrier arrivals that pull >= 2 bench cats, chain3 = a whole carrier filled from the bench,
   // dead = the most losing taps / legal taps we allow, deadMin = the fewest (below it the order hardly matters)
-  const band = kind === 'boss' ? { traps: 4, late: 3, chains: 2, chain3: 1, dead: 0.45, deadMin: 0.15 }
+  // a boss's giant board leaves more taps open (more free cats): it asks for more traps and a lower floor of losing taps
+  const band = boss ? { traps: 5, late: 2, chains: 2, chain3: 1, dead: 0.45, deadMin: 0.1 }
+    : big ? { traps: 4, late: 3, chains: 2, chain3: 1, dead: 0.45, deadMin: 0.15 }
     : hard ? { traps: 3, late: 2, chains: 1, chain3: 1, dead: 0.4, deadMin: 0.12 }
     : after ? { traps: 0, maxTraps: 2, late: 1, chains: 1, chain3: 0, dead: 0.15, deadMin: 0.03 }
     : medium ? { traps: 2, late: n < 40 ? 2 : 3, chains: 1, chain3: 0, dead: 0.36, deadMin: 0.15 }
     : { traps: n < 40 ? 1 : 2, late: n < 10 ? 0 : n < 40 ? 1 : 2, chains: 1, chain3: 0, dead: n < 40 ? 0.25 : 0.32, deadMin: n < 10 ? 0 : n < 40 ? 0.07 : 0.1 };
-  const flav = flavourOf(n);
+  const flav = flavourOf(n, sv);
   const P = {
     n,
+    sv,
     kind,
     medium,
     flavour: flav,
@@ -105,9 +139,9 @@ export function params(n) {
     fillTarget,
     fillMin: n < 10 ? 0.55 : Math.min(0.68, 0.6 + 0.02 * bonus),
     minLen: 2,
-    maxCats: 18, // about 18 heads at most until the cats have more expression variants (round 6: 22 grinning heads read as noise)
-    maxLen: n < 15 ? 6 : 8, // long and short cats mixed: about half are 4-8 cells
-    longP: n < 15 ? 0.35 : 0.5,
+    maxCats: boss ? (n > BOSS_EVERY ? 27 : 24) : 18, // a boss: about 1.5x the cats of the levels around it; else about 18 heads at most until the cats have more expression variants (round 6: 22 grinning heads read as noise)
+    maxLen: n < 15 || boss ? 6 : 8, // a boss packs more, shorter cats; long and short cats mixed: about half are 4-8 cells
+    longP: n < 15 ? 0.35 : boss ? 0.3 : 0.5,
     band,
     after,
     kittenMax: n < 30 ? 2 : 3,
@@ -119,16 +153,17 @@ export function params(n) {
     benchSize,
     colors,
     teach,
-    detourP: teach ? 0.2 : kind === 'boss' ? 0.38 : hard ? 0.3 : after ? 0.15 : medium ? 0.24 : 0.12 + 0.12 * Math.min(1, n / 80),
-    minDetours: teach ? 1 : kind === 'boss' ? 4 : hard ? 3 : n >= 4 ? 2 : 1,
+    tk,
+    detourP: teach ? 0.2 : big ? 0.38 : hard ? 0.3 : after ? 0.15 : medium ? 0.24 : 0.12 + 0.12 * Math.min(1, n / 80),
+    minDetours: teach ? 1 : big ? 4 : hard ? 3 : n >= 4 ? 2 : 1,
     minChains: n >= 5 ? 1 : 0, // from L5 every level has a carrier that fills from the bench the moment it arrives
     // L4-9: the bench fills to 3 of 5 at least once, a first small scare
     minPeak: after ? 3 : benchSize - 1, // the line itself runs the bench to its last spare seat: a squatter there costs the level
-    hold: after ? 2 : kind === 'boss' ? 3 : hard ? 3 : 2,
+    hold: after ? 2 : big ? 3 : hard ? 3 : 2,
     holdUntil: 0.6,
-    pAbsorb: teach ? 0.6 : kind === 'boss' ? 0.35 : hard ? 0.5 : medium ? 0.55 : 0.72 - 0.15 * Math.min(1, n / 100), // lower = parked cats wait longer: a wrong park costs later
+    pAbsorb: teach ? 0.6 : big ? 0.35 : hard ? 0.5 : medium ? 0.55 : 0.72 - 0.15 * Math.min(1, n / 100), // lower = parked cats wait longer: a wrong park costs later
   };
-  if (n > 60 && n <= 140 && !teach) springTune(P, mechPlan(n)); // spring / swivel boards free more cats: a tighter bench keeps them in band
+  if (n > 60 && n <= 140 && !teach) springTune(P, mechPlan(n, sv)); // spring / swivel boards free more cats: a tighter bench keeps them in band
   if (flav === 'chain') {
     P.band = { ...band, chains: 2 };
     P.pAbsorb -= 0.12;
@@ -470,9 +505,9 @@ function clearable(board) {
 
 // Put the level's dogs, yarn and frozen / mystery cats on the bare layout BEFORE the tap order is drawn, so the
 // order has to work around them (wake the dog, knock the yarn, thaw the ice before the cat behind can go).
-function placeObstacles(temp, n, rng) {
+function placeObstacles(temp, n, rng, sv) {
   const { w, h } = temp;
-  const plan = mechPlan(n);
+  const plan = mechPlan(n, sv);
   const placed = { dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0 };
   const taken = () => {
     const g = new Uint8Array(w * h);
@@ -566,7 +601,7 @@ function drawOrder(P, units, rng) {
     if (e.role === 'p') pid.set(e.unit, i);
   });
   const temp = makeBoard(P.w, P.h, entries.map((e) => makeCat(e.id, e.cells, 'tabby', e.role === 'k' ? pid.get(e.unit) : null)));
-  const mechs = P.n >= 8 ? placeObstacles(temp, P.n, rng) : null;
+  const mechs = P.n >= 8 ? placeObstacles(temp, P.n, rng, P.sv) : null;
   const C = compile(temp);
   const sim = new Sim(C, 9999);
   const size = (u) => C.len[u] + (C.ucats[u].length > 1 ? 3 : 0);
@@ -760,7 +795,7 @@ function lineCheck(board, order) {
 
 // The obstacles were placed before the tap order was drawn; now that the line is fixed, keep only the pieces that
 // MATTER on it (removing a piece only frees cats, so the line still wins). The teaching level must keep its lesson.
-function finishMechanics(board, n) {
+function finishMechanics(board, tk) {
   const r = lineCheck(board, board.meta.order);
   if (!r.won) return false;
   board.objs = board.objs.filter((o, k) => r.objM[k]);
@@ -768,7 +803,6 @@ function finishMechanics(board, n) {
   const placed = { dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0 };
   for (const o of board.objs) placed[o.kind]++;
   for (const c of board.cats) if (c.mech) placed[c.mech]++;
-  const tk = TEACH[n];
   board.meta.mechs = placed;
   board.meta.teach = tk || null;
   if (tk && Object.keys(placed).some((k) => k !== tk && placed[k] > 0)) return false;
@@ -860,13 +894,18 @@ function bandScore(d, P) {
 }
 
 const WORK_CAP = 60000;
+const BOSS_WORK = 3000;
 const MAX_EVALS = 14; // decision measurements per level (each is a few hundred solver nodes)
 
-export function generate(n) {
+export function generate(n, sv = SCHED) {
   n = Number.isFinite(+n) ? Math.max(1, Math.floor(+n)) : 1;
   if (n <= 4) return tutorial(n);
-  const P = params(n);
-  const needCats = 3 * Math.min(P.colors, 5);
+  const P = params(n, sv);
+  const boss = P.kind === 'boss';
+  const needCats = boss ? 24 : 3 * Math.min(P.colors, 5); // a boss board only ships a layout with its giant order (24+ cats)
+  const workCap = boss ? BOSS_WORK : WORK_CAP; // bigger boards cost more per measurement: a boss stops measuring sooner
+  // keep measuring: under the cap, or (a boss) up to 3x the cap while the best board still lacks the boss floor
+  const more = () => !best || work < workCap || (boss && work < 2 * workCap && !(best.d.traps >= 4 && best.d.chain3 >= 1));
   // a layout (fill, depth, kitten pairs, long cats); ok = good enough to colour and measure
   const layoutAt = (a) => {
     const r = runAttempt(P, makeRng(levelSeed(n, a)));
@@ -894,17 +933,19 @@ export function generate(n) {
   let relax = false;
   const tryLayout = (L, maxEvals) => {
     let mechFails = 0;
-    for (let o = 0; o < 3 && evals < maxEvals && (work < WORK_CAP || !best); o++) {
+    let lEvals = 0; // a boss gives up on a layout whose first three lines hold almost no trap (a giant open board)
+    let lTraps = 0;
+    for (let o = 0; o < 3 && evals < maxEvals && more(); o++) {
       const ord = drawOrder(P, L.units, makeRng(levelSeed(n, 'final', L.a, o)));
       if (!ord) continue;
       let built = 0;
-      for (let v = 0; v < 30 && built < 3 && evals < maxEvals && (work < WORK_CAP || !best); v++) {
+      for (let v = 0; v < 30 && built < 3 && evals < maxEvals && more(); v++) {
         const asg = assignColors(ord.groups, P, makeRng(levelSeed(n, 'assign', L.a, o, v)), ord.holdAt);
-        if (!asg || (!relax && (!spreadOk(ord.groups, asg, n) || asg.detours < P.minDetours || asg.peak < P.minPeak || (P.hold && asg.peakPre < P.benchSize - 1 && v < 20)))) continue;
+        if (!asg || (!relax && (!spreadOk(ord.groups, asg, n) || asg.detours < P.minDetours || asg.peak < P.minPeak || (P.hold && asg.peakPre < P.benchSize - 1 && v < 20) || (boss && !asg.chains && v < 20)))) continue; // a boss line fills a whole carrier from the bench: checked here, before the costly measurement
         const board = build(P, L.units, ord, asg, L.a);
         const rp = replay(board, board.meta.order);
         if (!rp.won || rp.peak > P.benchSize - 1) continue;
-        if (n >= 8 && !finishMechanics(board, n)) {
+        if (n >= 8 && !finishMechanics(board, P.tk)) {
           if (++mechFails >= 3) return false; // this layout cannot host the lesson's mechanic on its line
           continue;
         }
@@ -932,12 +973,14 @@ export function generate(n) {
         const base = bandScore(dd, P);
         const s = base + (dd.mechLate ? 120 : P.teach ? -600 : 0);
         if (!best || s > best.s) best = { s, base, board: cand, d: dd, L };
+        lTraps = Math.max(lTraps, dd.traps);
+        if (boss && ++lEvals >= 3 && lTraps < 2) return false;
         if (s >= 1000 && (base >= 1000 || !cand.cats.some((c) => c.mech === 'spring' || c.mech === 'swivel'))) return true; // a spring / swivel board stops the search only inside its band
       }
     }
     return false;
   };
-  const maxEvals = MAX_EVALS + (P.kind === 'boss' ? 50 : P.kind !== 'normal' ? 30 : P.teach ? 70 : P.after || n < 40 ? 40 : P.medium ? 30 : 22);
+  const maxEvals = MAX_EVALS + (P.kind === 'boss' || P.kind === 'super' ? 50 : P.kind !== 'normal' ? 30 : P.teach ? 70 : P.after || n < 40 ? 40 : P.medium ? 30 : 22);
   let fallback = null;
   let done = false;
   for (let a = 0; a < MAX_ATTEMPTS + 30 && !done && evals < maxEvals; a++) {

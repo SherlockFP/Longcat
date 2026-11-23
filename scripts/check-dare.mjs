@@ -2,6 +2,8 @@
 import { createHash } from 'node:crypto';
 import { encode, encodeV1, decode, judge, cleanName, trGenitive, shortCode } from '../src/kit/dare.js';
 import { qrMatrix } from '../src/kit/qr.js';
+import { boardOf } from '../src/core/curated.js';
+import { generate, levelKind } from '../src/core/generate.js';
 
 const bad = [];
 const must = (ok, msg) => { if (!ok) bad.push(msg); };
@@ -25,19 +27,38 @@ const hx = decode(raw({ v: 1, n: 5, m: 'seats', g: 2, x: 1, i: '<script>' }), ba
 must(hx && !('x' in hx) && !('i' in hx), 'match flag only on chain, hostile id dropped ' + JSON.stringify(hx));
 // v2: the short typeable core (what the clip burns in) + the extras (names, reply, thread, round)
 const s2 = shortCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, i: 'ab12cd' });
-must(s2 === '3l13-5-c3-ab12cd', 'short code ' + s2);
-must(JSON.stringify(decode(s2, base)) === JSON.stringify({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, nm: '', i: 'ab12cd', rev: 3 }), 'core alone plays the board ' + JSON.stringify(decode(s2, base)));
+must(s2 === '4l13-5-c3-ab12cd', 'short code ' + s2);
+must(JSON.stringify(decode(s2, base)) === JSON.stringify({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, nm: '', i: 'ab12cd', rev: 4 }), 'core alone plays the board ' + JSON.stringify(decode(s2, base)));
+must(shortCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, rev: 3 }) === '3l13-5-c3', 'a reply on a token-3 board keeps its 3');
 // R11 fix 2: a link of the older token (2) still decodes, without rev: it opens the generated board it was made on
 must(JSON.stringify(decode('2l6-5-c3-ab12cd', base)) === JSON.stringify({ n: 6, b: 5, k: 'l', m: 'chain', g: 3, nm: '', i: 'ab12cd' }), 'a token-2 link keeps its board');
 let seenRev = null;
 decode('3l6-5-c3', (n, rev) => { seenRev = rev; return 5; });
 must(seenRev === 3, 'baseBench sees the link revision');
+// R11 boss lane: the leading digit is also the level-schedule version. L34 was a 'super' hard level (4 seats) before the
+// boss schedule and is a plain hard one (5 seats) on it: a token made before (3, 2 or v1: no schedule) still opens the
+// old board, byte for byte (sha256 of the pre-boss generator's L34, commit fdbfbfd), a new token (4) the new one
+const bb = (n, rev) => boardOf(n, rev).meta.benchSize;
+const sha = (b) => createHash('sha256').update(JSON.stringify(b)).digest('hex');
+const OLD34 = '7cc1f6115c7fbbec043e748b483e66cb47d607018ea6d877d54652ab46bf16f5';
+must(levelKind(34, 1) === 'super' && levelKind(34) === 'hard', 'L34 changed kind ' + levelKind(34, 1) + ' > ' + levelKind(34));
+const o34 = decode('3l34-4-c3-ab12cd', bb);
+must(o34 && o34.rev === 3 && o34.b === 4 && sha(boardOf(o34.n, o34.rev)) === OLD34, 'an old token-3 L34 link opens the old board ' + JSON.stringify(o34));
+must(sha(generate(34, 1)) === OLD34 && sha(generate(34)) !== OLD34, 'the legacy schedule path is the pre-boss generator');
+const v34 = decode(encodeV1({ n: 34, b: 4, k: 'l', m: 'chain', g: 3 }), bb);
+must(v34 && !v34.rev && sha(boardOf(v34.n, v34.rev || 2)) === OLD34, 'a v1 L34 link (no rev: main.js reads it as 2) opens the old board');
+must(decode('2l34-4-c3', bb)?.b === 4, 'an old link keeps the old seat count');
+const n34 = encode({ n: 34, b: 5, k: 'l', m: 'chain', g: 3, i: 'qq11', nm: 'Ana' });
+const d34 = decode(n34, bb);
+must(n34.startsWith('4l34-5-c3-qq11.') && d34 && d34.rev === 4 && d34.n === 34 && d34.b === 5 && d34.nm === 'Ana', 'a new token round-trips ' + n34 + ' ' + JSON.stringify(d34));
+must(d34 && JSON.stringify(boardOf(d34.n, d34.rev)) === JSON.stringify(generate(34)), 'a new token opens the current board');
+must(decode('4l20-5-c3', bb)?.rev === 4 && boardOf(20, 4).meta.kind === 'boss' && boardOf(20, 3).meta.kind === 'normal', 'L20: boss on a new token, the old normal board on an old one');
 must(decode(s2.toUpperCase(), base)?.i === 'ab12cd', 'a typed (capitalised) core still decodes');
 must(decode('2d4-5-s0', base)?.m === 'seats' && decode('2d4-5-s0', base).g === 0 && decode('2d4-5-s0', base).k === 'd', 'daily no-park core');
 must(decode('2r9-5-t123', base)?.g === 123, 'time core');
 must(decode('2l2-5-c2m', base)?.x === 1, 'match flag on the core');
 const full = encode({ n: 13, b: 5, k: 'l', m: 'chain', g: 4, nm: 'Deniz', i: 'qq11', r: 'ab12cd', pg: 3, th: [{ nm: 'Ana', v: 3 }], rd: 2 });
-must(full.startsWith('3l13-5-c4-qq11.') && full.length < 160 && /^[A-Za-z0-9_.-]+$/.test(full), 'full v2 link ' + full);
+must(full.startsWith('4l13-5-c4-qq11.') && full.length < 160 && /^[A-Za-z0-9_.-]+$/.test(full), 'full v2 link ' + full);
 const fd = decode(full, base);
 must(fd && fd.nm === 'Deniz' && fd.r === 'ab12cd' && fd.pg === 3 && fd.rd === 2 && fd.th.length === 1 && fd.th[0].nm === 'Ana' && fd.th[0].v === 3, 'v2 round trip ' + JSON.stringify(fd));
 const b64 = (o) => Buffer.from(JSON.stringify(o)).toString('base64url');

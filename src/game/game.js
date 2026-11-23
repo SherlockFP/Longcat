@@ -156,7 +156,7 @@ export class Game {
       }
       const availH = H - top - bottom - 2 * padOut;
       this.cell = Math.max(16, Math.floor(Math.min(availW / w, availH / h, 74)));
-      if (this.demo || this.cell >= 40 || f < 0.72 || availW / w < 40) break;
+      if (this.demo || this.cell >= 40 || f < 0.72 || (availW / w < 40 && this.cell >= Math.floor(availW / w))) break; // a narrow board stops only when its width is what limits the cells (a 9-wide boss board is height-bound: it shrinks too)
     }
     const c = this.cell;
     this.ox = Math.round((W - c * w) / 2);
