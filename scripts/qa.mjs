@@ -1989,7 +1989,7 @@ try {
     await ev(`localStorage.setItem("lco_save", ${JSON.stringify(hubSave(27, { settings: { lang: 'tr', sound: false, music: false, haptics: false } }))})`);
     await boot(); await sleep(600);
     const mapOk = await ev(`(() => { const c = document.querySelector('#cafe.hm-on .hubmap .hmn.cur'); const room = document.querySelector('#cafe .room').getBoundingClientRect(); const top = document.querySelector('#cafe .cafe-top').getBoundingClientRect(); const p = document.querySelector('#cafe .cafe-play').getBoundingClientRect();
-      if (!c) return 'no current node'; const r = c.getBoundingClientRect(); if (!c.textContent.includes('27. Seviye')) return 'label ' + c.textContent;
+      if (!c) return 'no current node'; const r = c.getBoundingClientRect(); if (!(c.getAttribute('aria-label') || '').includes('27. Seviye')) return 'label ' + c.getAttribute('aria-label'); // R11 pres: the node is a level marker, its name in aria-label
       if (r.top < top.bottom || r.bottom > room.bottom - 40) return 'current node off view ' + Math.round(r.top) + '..' + Math.round(r.bottom);
       if (p.bottom > innerHeight || p.top < room.bottom) return 'Play hidden'; if (!document.querySelector('.tabbar .hmtab.on')) return 'map tab';
       if (document.querySelectorAll('.hmn.lock').length !== 3) return 'locked nodes ' + document.querySelectorAll('.hmn.lock').length; return ''; })()`);
