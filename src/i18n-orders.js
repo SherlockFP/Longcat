@@ -23,7 +23,7 @@ addStrings({
     ordThanks: 'Teşekkürler! {n} kedi yeni yuvasına kavuştu.', ordThanksUrgent: 'Tam zamanında! {n} kedi teslim edildi.', ordThanksVip: '{n} kedinin hepsine VIP karşılama!',
     ordAdopted: '{name} artık {at} yaşıyor', ordSet: '{k}. set · {a}/{b}', ordSetDone: 'Set tamamlandı!', ordTap: 'Devam etmek için dokun',
     albCards: 'Kartpostallar', albAdopt: 'Sahiplenilenler', adHead: '{n} kedi teslim edildi', adTotal: '{n} kedi sahiplenildi', adTotal1: '1 kedi sahiplenildi',
-    adSetReward: 'Tam set: {r}', adSets: 'Biten set: {n}', adNext: 'Sıradaki sipariş', adNone: 'İlk siparişi teslim etmek için bir bölüm kazan.', adMore: 'Oynadıkça başka dükkânlar da sipariş verecek.', adOrdering: 'Şu an sipariş veriyor',
+    adSetReward: 'Tam set: {r}', adSets: 'Biten set: {n}', adNext: 'Sıradaki sipariş', adNone: 'İlk siparişi teslim etmek için bir seviye kazan.', adMore: 'Oynadıkça başka dükkânlar da sipariş verecek.', adOrdering: 'Şu an sipariş veriyor',
     coat_0: 'Turuncu çizgili', coat_1: 'Mavi puantiyeli', coat_2: 'Pembe kalpli', coat_3: 'Yeşil zikzaklı', coat_4: 'Mor yıldızlı', coat_5: 'Nane bulutlu', coat_6: 'Sarı benekli', coat_7: 'Düz kırmızı',
   },
 });

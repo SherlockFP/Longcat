@@ -1979,12 +1979,12 @@ try {
     const built = Object.fromEntries(['counter_counter', 'counter_pastry', 'counter_lamps', 'counter_chalkboard', 'counter_tables', 'counter_plant', 'window_seat'].map((id) => [id, 1]));
     const hubSave = (lv, extra = {}) => JSON.stringify({ v: 9, level: lv, coins: 900, meta: { sessions: 5 }, bestStars: { [lv - 1]: 3, [lv - 2]: 2, [lv - 3]: 1 }, cafe: { stars: 2, built }, vis,
       req: { list: [{ k: 'win', who: 'biscuit', need: 2, p: 2, c: 0, s: 1 }, { k: 'carrier', who: 'mochi', need: 8, p: 3, c: 0, s: 2 }], next: Date.now() + 3600000, n: 2, done: 0, fresh: 'mochi' }, ...extra });
-    // the map: Bölüm N on the current node, Play always in view, the cat on the current level
+    // the map: N. Seviye on the current node, Play always in view, the cat on the current level
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
     await ev(`localStorage.setItem("lco_save", ${JSON.stringify(hubSave(27, { settings: { lang: 'tr', sound: false, music: false, haptics: false } }))})`);
     await boot(); await sleep(600);
     const mapOk = await ev(`(() => { const c = document.querySelector('#cafe.hm-on .hubmap .hmn.cur'); const room = document.querySelector('#cafe .room').getBoundingClientRect(); const top = document.querySelector('#cafe .cafe-top').getBoundingClientRect(); const p = document.querySelector('#cafe .cafe-play').getBoundingClientRect();
-      if (!c) return 'no current node'; const r = c.getBoundingClientRect(); if (!c.textContent.includes('Bölüm 27')) return 'label ' + c.textContent;
+      if (!c) return 'no current node'; const r = c.getBoundingClientRect(); if (!c.textContent.includes('27. Seviye')) return 'label ' + c.textContent;
       if (r.top < top.bottom || r.bottom > room.bottom - 40) return 'current node off view ' + Math.round(r.top) + '..' + Math.round(r.bottom);
       if (p.bottom > innerHeight || p.top < room.bottom) return 'Play hidden'; if (!document.querySelector('.tabbar .hmtab.on')) return 'map tab';
       if (document.querySelectorAll('.hmn.lock').length !== 3) return 'locked nodes ' + document.querySelectorAll('.hmn.lock').length; return ''; })()`);

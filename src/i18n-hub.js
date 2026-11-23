@@ -12,10 +12,10 @@ addStrings({
   },
   tr: {
     mapTab: 'Harita', houseTab: 'Ev',
-    mapLevel: 'Bölüm {n}', mapPlay: 'Oyna', mapChapter: '{n}. Mahalle', mapHard: 'Zor', mapSuper: 'Çok zor', mapNew: 'Yeni!',
-    mapSoon: 'Yeni bölümler yolda', mapStart: 'Yol burada başlıyor',
+    mapLevel: '{n}. Seviye', mapPlay: 'Oyna', mapChapter: '{n}. Mahalle', mapHard: 'Zor', mapSuper: 'Çok zor', mapNew: 'Yeni!',
+    mapSoon: 'Yeni seviyeler yolda', mapStart: 'Yol burada başlıyor',
     hsToday: 'Bugün', hsTasks: 'Günlük görevler', hsTasksSub: '{a}/{b} tamam', hsDaily: 'Günlük bulmaca', hsDailyDone: 'Bitti · seri {n}', hsDailyGo: 'Henüz oynanmadı', hsEvents: 'Etkinlikler', hsEventsSub: 'Kedi Şovu · Kafe Yarışı', hsGoals: 'Sıradaki hedefler',
-    hsMap: 'Yolun', hsChapterProg: 'Bu mahallede {a}/{b} bölüm', hsResidents: 'Sakinler', hsResSub: '{a}/{b} taşındı', hsAlbum: 'Albüm', hsAlbumSub: '{a}/{b} kartpostal',
-    hsKeys: 'Klavye', keyPlay: 'Oyna / Sonraki', keyUndo: 'Geri al', keyHint: 'İpucu', keyBack: 'Geri', hsPlaying: '{n}. bölüm oynanıyor',
+    hsMap: 'Yolun', hsChapterProg: 'Bu mahallede {a}/{b} seviye', hsResidents: 'Sakinler', hsResSub: '{a}/{b} taşındı', hsAlbum: 'Albüm', hsAlbumSub: '{a}/{b} kartpostal',
+    hsKeys: 'Klavye', keyPlay: 'Oyna / Sonraki', keyUndo: 'Geri al', keyHint: 'İpucu', keyBack: 'Geri', hsPlaying: '{n}. seviye oynanıyor',
   },
 });

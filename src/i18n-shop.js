@@ -27,11 +27,11 @@ addStrings({
     shPouch: 'Kese', shSack: 'Çuval', shChest: 'Sandık',
     shNoAdsSub: 'Reklam arası olmadan oyna',
     shCushion: 'Minder',
-    shHintD: 'Güvenli bir kediyi gösterir', shUndoD: 'Son dokunuşu geri alır', shScoopD: 'Bir kediyi yerine taşır', shCushD: 'Sonraki bölümde +1 minder',
+    shHintD: 'Güvenli bir kediyi gösterir', shUndoD: 'Son dokunuşu geri alır', shScoopD: 'Bir kediyi yerine taşır', shCushD: 'Sonraki seviyede +1 minder',
     shHave: 'Sende {n} tane', shGot: '+{n} {name}!',
     shCatHat: 'Kıyafet', shCatCar: 'Kutular', shCatRoom: 'Odalar',
     shUse: 'Kullan', shInUse: 'Kullanılıyor', shYours: 'Artık senin! Kullanılıyor.', shPreview: 'Önizleme', shOwnedN: '{a}/{b} sende',
-    shCushOn: 'Ekstra minder: bu bölümde +1 yer',
+    shCushOn: 'Ekstra minder: bu seviyede +1 yer',
     shDealToast: 'Fırsat alındı!',
   },
 });
