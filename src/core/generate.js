@@ -12,6 +12,7 @@ import { DIRS, DIR_KEYS, BREEDS, makeBoard, makeCat, dirKey } from './board.js';
 import { exitRay, edgeNeighbours, catsNear, DOG_NEAR } from './rules.js';
 import { dependencyDepth, replay, kittenStats } from './solver.js';
 import { compile, Sim, decisions, mechChanges } from './search.js';
+import { packPlan, pickMech, mechCandidates, mechUsed, springTune, thinPlan } from './content-mech.js';
 
 const SIZES = [[5, 6], [6, 7], [6, 8], [7, 9], [7, 10], [8, 10], [8, 11]];
 const SIZE_FROM = [1, 4, 5, 12, 20, 34, 50]; // 6x8 from L5 so four colours of chunky cats fit
@@ -36,9 +37,9 @@ export function levelKind(n) {
 }
 
 // ---- mechanics ramp: one new thing per chapter, taught on a gentle level, then mixed ----
-export const TEACH = { 8: 'dog', 12: 'yarn', 40: 'mystery', 55: 'frozen' };
-const MECH_FROM = { dog: 8, yarn: 12, mystery: 40, frozen: 55 };
-const TEACH_COUNT = { dog: 1, yarn: 2, mystery: 2, frozen: 1 };
+export const TEACH = { 8: 'dog', 12: 'yarn', 40: 'mystery', 55: 'frozen', 61: 'spring', 81: 'swivel' }; // 61 / 81: content packs (content-mech.js)
+const MECH_FROM = { dog: 8, yarn: 12, mystery: 40, frozen: 55, spring: 61, swivel: 81 };
+const TEACH_COUNT = { dog: 1, yarn: 2, mystery: 2, frozen: 1, spring: 2, swivel: 1 };
 
 // ---- mid-game flavours (normal L5-30): neighbouring boards lean on different decisions so the run never repeats.
 // chain = a bench chain is the showpiece (two 2-chains on the line), tight = more deliberate parks held longer,
@@ -53,6 +54,8 @@ export function flavourOf(n) {
 // How many of each mechanic level n asks for (placement may fall short on non-teaching levels).
 export function mechPlan(n) {
   if (TEACH[n]) return { [TEACH[n]]: TEACH_COUNT[TEACH[n]] };
+  const pack = packPlan(n); // the first lap of the themed packs ramps the new pieces in by hand
+  if (pack) return pack;
   const rng = makeRng(hashSeed('mechplan', n));
   const names = Object.keys(MECH_FROM).filter((k) => n > MECH_FROM[k]);
   const plan = {};
@@ -62,7 +65,7 @@ export function mechPlan(n) {
     if (!rng.chance(fresh ? 0.8 : n >= 70 ? 0.55 : 0.45)) return; // asked for often: a piece that never matters on the line is dropped
     plan[k] = k === 'dog' ? 1 + (n >= 70 && rng.chance(0.35) ? 1 : 0) : k === 'frozen' ? 1 + (n >= 80 && rng.chance(0.4) ? 1 : 0) : rng.int(1, n < 40 ? 2 : 3);
   });
-  return plan;
+  return thinPlan(plan, n); // springs / swivels past the packs: every other board at most (content-mech.js)
 }
 
 export function params(n) {
@@ -125,6 +128,7 @@ export function params(n) {
     holdUntil: 0.6,
     pAbsorb: teach ? 0.6 : kind === 'super' ? 0.35 : hard ? 0.5 : medium ? 0.55 : 0.72 - 0.15 * Math.min(1, n / 100), // lower = parked cats wait longer: a wrong park costs later
   };
+  if (n > 60 && n <= 140 && !teach) springTune(P, mechPlan(n)); // spring / swivel boards free more cats: a tighter bench keeps them in band
   if (flav === 'chain') {
     P.band = { ...band, chains: 2 };
     P.pAbsorb -= 0.12;
@@ -469,7 +473,7 @@ function clearable(board) {
 function placeObstacles(temp, n, rng) {
   const { w, h } = temp;
   const plan = mechPlan(n);
-  const placed = { dog: 0, yarn: 0, mystery: 0, frozen: 0 };
+  const placed = { dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0 };
   const taken = () => {
     const g = new Uint8Array(w * h);
     for (const c of temp.cats) for (const [x, y] of c.cells) g[y * w + x] = 1;
@@ -531,6 +535,18 @@ function placeObstacles(temp, n, rng) {
       else delete temp.cats[id].mech;
     }
   }
+  // spring cats and swivel beds (content-mech.js); a swivel never shares a board with yarn (a ball rolls off when a cat
+  // passes its lane, and a swivel's lane depends on the side it leaves by)
+  for (const kind of ['spring', 'swivel']) {
+    if (!plan[kind] || (kind === 'swivel' && temp.objs.some((o) => o.kind === 'yarn'))) continue;
+    const crng = makeRng(hashSeed('cplace', n, kind, JSON.stringify(temp.cats[0].cells))); // its own rng: the rest of the board draws as before
+    for (const id of mechCandidates(temp, kind, plain, crng).slice(0, 12)) {
+      if (placed[kind] >= plan[kind]) break;
+      temp.cats[id].mech = kind;
+      if (clearable(temp)) placed[kind]++;
+      else delete temp.cats[id].mech;
+    }
+  }
   return placed;
 }
 
@@ -557,6 +573,7 @@ function drawOrder(P, units, rng) {
   const free0 = sim.free();
   const hold = new Set(free0.sort((a, b) => size(b) - size(a) || a - b).slice(0, Math.min(1, free0.length - 2)));
   const release = Math.floor(C.N * (P.holdUntil || 0.65));
+  const newMech = C.mk.some((k) => k > 0); // spring / swivel on the board: the line has to use them
   let holdAt = -1;
   const groups = [];
   while (sim.left > 0) {
@@ -566,7 +583,7 @@ function drawOrder(P, units, rng) {
       for (const u of free) if (hold.size < (P.hold || 0) && C.ucats[u].length > 1 && free.length - hold.size > 2) hold.add(u);
     }
     const pickable = groups.length >= release ? free : free.filter((u) => !hold.has(u));
-    const u = rng.pick(pickable.length ? pickable : free);
+    const u = newMech ? pickMech(sim, C, pickable.length ? pickable : free, rng) : rng.pick(pickable.length ? pickable : free);
     sim.apply(u);
     if (hold.has(u) && holdAt < 0) holdAt = groups.length;
     groups.push(C.ucats[u].slice());
@@ -709,10 +726,12 @@ function lineCheck(board, order) {
   const frzU = C.units.map((p, u) => u).filter((u) => C.frozenOf[u] >= 0);
   const frzM = new Map(frzU.map((u) => [u, false]));
   let peak = 0;
+  const used = new Set(); // springs that hop and swivels that turned before their tap
   for (const id of order) {
     const lu = C.unitOf[id];
+    if (C.mk[lu] && mechUsed(sim, lu)) used.add(C.units[lu]);
     for (let u = 0; u < C.N; u++) {
-      if (!sim.alive[u]) continue;
+      if (!sim.alive[u] || C.mk[u]) continue;
       let catIn = false;
       for (const v of C.rayU[u]) if (sim.alive[v]) catIn = true;
       if (catIn) continue;
@@ -735,6 +754,7 @@ function lineCheck(board, order) {
   const keepCat = new Set();
   for (const [u, ok] of frzM) if (ok) keepCat.add(C.units[u]);
   for (const m of mysU) if (m.ok) keepCat.add(C.units[m.u]);
+  for (const p of used) keepCat.add(p);
   return { won: sim.left === 0 && peak <= board.meta.benchSize - 1, peak, objM, keepCat };
 }
 
@@ -745,7 +765,7 @@ function finishMechanics(board, n) {
   if (!r.won) return false;
   board.objs = board.objs.filter((o, k) => r.objM[k]);
   for (const c of board.cats) if (c.mech && !r.keepCat.has(c.id)) delete c.mech;
-  const placed = { dog: 0, yarn: 0, mystery: 0, frozen: 0 };
+  const placed = { dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0 };
   for (const o of board.objs) placed[o.kind]++;
   for (const c of board.cats) if (c.mech) placed[c.mech]++;
   const tk = TEACH[n];
@@ -759,7 +779,7 @@ const hasMech = (board) => board.objs.length > 0 || board.cats.some((c) => c.mec
 // the same board with every dog, yarn ball, ice coat and mystery taken away
 function stripMechs(board) {
   const cats = board.cats.map((c) => { const k = { ...c }; delete k.mech; return k; });
-  return { ...board, objs: [], cats, meta: { ...board.meta, mechs: { dog: 0, yarn: 0, mystery: 0, frozen: 0 }, teach: null } };
+  return { ...board, objs: [], cats, meta: { ...board.meta, mechs: { dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0 }, teach: null } };
 }
 
 // Does the level's mechanic change the solution? Compare the line on the board with every dog, yarn ball, ice coat
@@ -767,6 +787,7 @@ function stripMechs(board) {
 // both boards wins on one and loses on the other. Otherwise the wake / knock / thaw timing never matters.
 function mechGain(board) {
   if (!hasMech(board)) return false;
+  if (board.cats.some((c) => c.mech === 'spring' || c.mech === 'swivel')) return true; // kept only when the line hops / waits for the turn: without it the line is not even legal
   if (board.cats.some((c) => c.mech === 'mystery')) return true; // lineCheck kept it only when it is free while hidden and the line waits for its colour
   return mechChanges(board, stripMechs(board), board.meta.order);
 }
@@ -911,7 +932,7 @@ export function generate(n) {
         const base = bandScore(dd, P);
         const s = base + (dd.mechLate ? 120 : P.teach ? -600 : 0);
         if (!best || s > best.s) best = { s, base, board: cand, d: dd, L };
-        if (s >= 1000) return true;
+        if (s >= 1000 && (base >= 1000 || !cand.cats.some((c) => c.mech === 'spring' || c.mech === 'swivel'))) return true; // a spring / swivel board stops the search only inside its band
       }
     }
     return false;

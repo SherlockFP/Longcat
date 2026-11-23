@@ -3,6 +3,7 @@
 // carrier when its color matches, else takes a bench seat. A full front carrier departs, the next
 // carrier rolls in and matching bench cats hop in (chains). No seat for a cat = fail.
 import { DIRS } from './board.js';
+import { mechBlocker, swivelNewest } from './content-mech.js';
 
 export const BENCH_DEFAULT = 5;
 export const CARRIER_CAP = 3;
@@ -70,6 +71,7 @@ export function createState(board) {
     thaw: new Uint8Array(cats.length),
     revealed: new Uint8Array(cats.length),
     nbrOf, // cat id -> mechanic cats (frozen / mystery) that count it as a neighbour
+    nb: neighbours, // mechanic cat id -> its edge neighbours (a swivel bed turns as they leave)
     carriers: (board.carriers || []).map((c, i) => ({ uid: i, color: c.color, cap: c.cap || CARRIER_CAP, fill: 0 })),
     departed: 0,
     benchSize,
@@ -104,6 +106,7 @@ export function exitRay(cat, w, h) {
 // First occupied ray cell: { cell:[x,y], id (cat id or -1), obj (dog/yarn index or -1) } or null when the way out is clear.
 export function findBlocker(state, id) {
   const cat = state.board.cats[id];
+  if (cat.mech === 'spring' || cat.mech === 'swivel') return mechBlocker(state, id); // content-mech.js
   const { w, h, grid } = state;
   const head = cat.cells[cat.cells.length - 1];
   const [dx, dy] = DIRS[cat.dir];
@@ -179,7 +182,7 @@ function exitEffects(state, freed, events, knock) {
           state.frozen[n] = 0;
           events.push({ type: 'thaw', id: n });
         } else events.push({ type: 'chip', id: n, left: THAW_NEED - state.thaw[n] });
-      }
+      } else if (m === 'swivel') events.push({ type: 'spin', id: n, dir: swivelNewest(state, n) }); // the bed opens a side
     }
     state.objs.forEach((o, k) => {
       if (!state.objAlive[k] || !state.near[k] || !state.near[k].has(id)) return;

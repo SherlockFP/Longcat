@@ -8,6 +8,7 @@ import {
 } from '../src/core/rules.js';
 import { analyze, hint, replay, solve, solveFrom, freeCats } from '../src/core/solver.js';
 import { edgeNeighbours } from '../src/core/rules.js';
+import { springHop, swivelSeq, swivelOpen, packOf, packPlan } from '../src/core/content-mech.js';
 
 // Independent check that every mechanic piece MATTERS on the winning line, on the real rules state: a dog or yarn is,
 // at some step while it is there, the only thing in an unfrozen cat's lane; a frozen cat's lane is clear while the
@@ -19,7 +20,7 @@ function mechMatter(b) {
   const freeHidden = new Set();
   for (const id of b.meta.order) {
     for (const c of b.cats) {
-      if (!st.alive[c.id] || c.kittenOf != null) continue;
+      if (!st.alive[c.id] || c.kittenOf != null || c.mech === 'spring' || c.mech === 'swivel') continue;
       const hits = new Set();
       let cat = false;
       for (const [x, y] of exitRay(c, b.w, b.h)) {
@@ -34,6 +35,9 @@ function mechMatter(b) {
     }
     const c = b.cats[id];
     if (c.mech === 'mystery') catOk.set(id, freeHidden.has(id) && !isHidden(st, id));
+    // a spring that ships hops something on the line; a swivel leaves while its starting side is still blocked
+    if (c.mech === 'spring') catOk.set(id, canExit(st, id) && !!springHop(st, id));
+    if (c.mech === 'swivel') catOk.set(id, canExit(st, id) && exitRay(c, b.w, b.h).some(([x, y]) => st.grid[y * b.w + x] !== -1));
     if (!tap(st, id).ok) return { ok: false, why: 'line breaks' };
   }
   const bad = [...objOk.map((v, k) => (v ? null : b.objs[k].kind)), ...[...catOk].map(([id, v]) => (v ? null : b.cats[id].mech))].filter(Boolean);
@@ -63,8 +67,8 @@ const hardAt = [];
 const superAt = [];
 // mechanics per level range: levels that carry each mechanic, and total pieces
 const RANGES = [[1, 7], [8, 11], [12, 39], [40, 54], [55, 69], [70, 600]];
-const MECH_FROM = { dog: 8, yarn: 12, mystery: 40, frozen: 55 };
-const mechStat = RANGES.map(() => ({ dog: 0, yarn: 0, mystery: 0, frozen: 0, pieces: 0, mixed: 0 }));
+const MECH_FROM = { dog: 8, yarn: 12, mystery: 40, frozen: 55, spring: 61, swivel: 81 };
+const mechStat = RANGES.map(() => ({ dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0, pieces: 0, mixed: 0 }));
 // decision ramp per level range (normal levels and hard/super separately)
 const DRANGES = [[5, 14], [15, 39], [40, 99], [100, 249], [250, 600]];
 const dStat = DRANGES.map(() => ({ normal: [], hard: [] }));
@@ -154,12 +158,14 @@ for (let n = 1; n <= MAXN; n++) {
   }
   // mechanics: only after their chapter starts, teaching level has its mechanic, counts match the board
   {
-    const m = b.meta.mechs || { dog: 0, yarn: 0, mystery: 0, frozen: 0 };
+    const m = b.meta.mechs || { dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0 };
     const real = {
       dog: b.objs.filter((o) => o.kind === 'dog').length,
       yarn: b.objs.filter((o) => o.kind === 'yarn').length,
       mystery: b.cats.filter((c) => c.mech === 'mystery').length,
       frozen: b.cats.filter((c) => c.mech === 'frozen').length,
+      spring: b.cats.filter((c) => c.mech === 'spring').length,
+      swivel: b.cats.filter((c) => c.mech === 'swivel').length,
     };
     eq(real, m, `level ${n} meta.mechs`);
     let kindsHere = 0;
@@ -177,7 +183,8 @@ for (let n = 1; n <= MAXN; n++) {
     if (n < 8) ok(kindsHere === 0 && b.objs.length === 0, `level ${n} has mechanics too early`);
     const ri = RANGES.findIndex(([lo, hi]) => n >= lo && n <= hi);
     for (const k of Object.keys(real)) if (real[k] > 0) mechStat[ri][k]++;
-    mechStat[ri].pieces += real.dog + real.yarn + real.mystery + real.frozen;
+    mechStat[ri].pieces += real.dog + real.yarn + real.mystery + real.frozen + real.spring + real.swivel;
+    if (real.swivel) ok(!real.yarn && b.cats.every((c) => c.mech !== 'swivel' || c.cells.length <= 3), `level ${n} swivel with yarn or on a long cat`);
     if (kindsHere >= 2) mechStat[ri].mixed++;
     // every dog / yarn blocks at least one lane
     for (const o of b.objs) {
@@ -583,6 +590,104 @@ const car = (color, cap = 3) => ({ color, cap });
   ok(r.ok && st.alive[1] === 0 && r.freed.length === 2, 'scoop lifts the kitten with its mother');
 }
 
+// ---------------- content lane: spring cats, swivel beds, packs ----------------
+{
+  // spring: hops ONE blocker unit (a mother + kitten count once), a second one stops it
+  const b = makeBoard(5, 6, [
+    cat(0, [[2, 5], [2, 4]], 'tabby'), // spring, facing up
+    cat(1, [[1, 2], [2, 2], [3, 2]], 'tuxedo'), // across its lane
+    cat(2, [[0, 0], [1, 0], [2, 0]], 'calico'), // a second blocker higher up
+  ], {}, [car(0, 1), car(1, 1), car(2, 1)]);
+  b.cats[0].mech = 'spring';
+  ok(validateBoard(b).length === 0, 'spring board valid: ' + validateBoard(b).join(';'));
+  const st = createState(b);
+  ok(!canExit(st, 0) && findBlocker(st, 0).id === 2, 'spring with two blockers is stuck on the second');
+  st.grid[0 * 5 + 2] = -1; st.alive[2] = 0; // take the far blocker off by hand
+  ok(canExit(st, 0), 'spring hops a single blocker');
+  eq(springHop(st, 0), [2, 2], 'the hop is over the cat in its lane');
+  const C = compile(b);
+  const sim = new Sim(C, 5);
+  ok(!sim.canExit(C.unitOf[0]), 'fast model: spring with two blockers stuck');
+  sim.apply(C.unitOf[2]);
+  ok(sim.canExit(C.unitOf[0]), 'fast model: spring hops one');
+}
+{
+  // swivel: starts facing up into a blocker; each neighbour that leaves opens one more side (clockwise, never its neck)
+  const b = makeBoard(5, 6, [
+    cat(0, [[2, 4], [2, 3]], 'tabby'), // swivel, head (2,3) facing up; sides U, R, L
+    cat(1, [[2, 0], [2, 1]], 'tuxedo'), // in its up lane (facing down: blocked by the swivel)
+    cat(2, [[3, 4], [3, 3]], 'calico'), // right neighbour, facing up (free)
+    cat(3, [[4, 3], [4, 2]], 'gray'), // in its right lane, facing up (free)
+    cat(4, [[1, 3], [0, 3]], 'siamese'), // left neighbour + in its left lane, facing left (free)
+  ], {}, [car(0, 1), car(1, 1), car(2, 1), car(3, 1), car(4, 1)]);
+  b.cats[0].mech = 'swivel';
+  ok(validateBoard(b).length === 0, 'swivel board valid: ' + validateBoard(b).join(';'));
+  eq(swivelSeq(b.cats[0]), ['U', 'R', 'L'], 'swivel sides clockwise, neck skipped');
+  const st = createState(b);
+  ok(!canExit(st, 0), 'swivel starts blocked on its first side');
+  const r = tap(st, 2);
+  ok(r.ok && r.events.some((e) => e.type === 'spin' && e.id === 0 && e.dir === 'R'), 'a neighbour leaves: the bed opens its right side');
+  eq(swivelOpen(st, 0), ['U', 'R'], 'two sides open');
+  ok(!canExit(st, 0), 'right side still blocked by cat 3');
+  tap(st, 3);
+  ok(canExit(st, 0), 'right lane clear: the swivel can leave');
+  ok(undo(st).ok && !canExit(st, 0) && undo(st).ok && swivelOpen(st, 0).length === 1, 'undo closes the opened sides again');
+  // the fast model and rules agree along the same taps
+  const C = compile(b);
+  const sim = new Sim(C, 5);
+  ok(!sim.canExit(C.unitOf[0]), 'fast model: swivel blocked at the start');
+  sim.apply(C.unitOf[2]);
+  ok(!sim.canExit(C.unitOf[0]), 'fast model: right side blocked');
+  sim.apply(C.unitOf[3]);
+  ok(sim.canExit(C.unitOf[0]), 'fast model: swivel free after the right lane clears');
+  const st2 = createState(b);
+  tap(st2, 2);
+  ok(Sim.fromState(C, st2).spin[0] === 1, 'Sim.fromState reads the bed turns');
+}
+{
+  // packs: 20 levels each from L61, the first lap teaches spring (L61) then swivel (L81); every new piece is used on its line
+  eq([packOf(60), packOf(61).pack.id, packOf(80).i, packOf(81).pack.id, packOf(141).lap, packOf(141).pack.id], [null, 'rainy', 19, 'bakery', 1, 'rainy'], 'pack mapping');
+  ok(TEACH[61] === 'spring' && TEACH[81] === 'swivel', 'teaching levels for the new pieces');
+  let springLv = 0;
+  let swivelLv = 0;
+  let late = 0;
+  let diff = 0;
+  for (let n = 61; n <= 140; n++) {
+    const b = generate(n);
+    const sp = b.cats.filter((c) => c.mech === 'spring').length;
+    const sw = b.cats.filter((c) => c.mech === 'swivel').length;
+    if (n <= 80) springLv += sp ? 1 : 0;
+    if (n >= 81 && n <= 100) swivelLv += sw ? 1 : 0;
+    if (n >= 101 && sp + sw) late++;
+    if (n <= 80) ok(!sw, `level ${n} has a swivel before its pack`);
+    const plan = packPlan(n);
+    if (plan && packOf(n).pack.teach && packOf(n).i <= 4) ok(Object.keys(plan).every((k) => k === packOf(n).pack.teach), `level ${n}: the first boards of a pack show only its new piece`);
+    // random play: rules.js and the fast model agree on free cats (springs and swivels included)
+    if (!(sp + sw)) continue;
+    const C = compile(b);
+    let seed = n * 17;
+    const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    const st = createState(b);
+    st.benchSize = st.bench.length = 99;
+    st.bench.fill(-1);
+    const sim = new Sim(C, 99);
+    for (let g = 0; g < 200 && !isWon(st) && st.aliveCount; g++) {
+      const fr = freeCats(st);
+      const sf = sim.free().map((u) => C.units[u]).sort((x, y) => x - y);
+      if (JSON.stringify(fr) !== JSON.stringify(sf)) { diff++; fail(`level ${n}: rules ${fr} vs fast model ${sf}`); break; }
+      if (!fr.length) { diff++; fail(`level ${n}: random play stuck with ${st.aliveCount} cats home`); break; }
+      const id = fr[Math.floor(rnd() * fr.length)];
+      tap(st, id);
+      sim.apply(C.unitOf[id]);
+    }
+  }
+  ok(springLv >= 14, `Rainy Day: only ${springLv}/20 levels carry a spring cat`);
+  ok(swivelLv >= 8, `Bakery Rush: only ${swivelLv}/20 levels carry a swivel bed`);
+  ok(late >= 20, `L101-140: only ${late} levels mix the new pieces`);
+  ok(diff === 0, `spring / swivel: ${diff} disagreements between rules and the fast model`);
+  console.log(`content packs: spring on ${springLv}/20 Rainy Day boards, swivel on ${swivelLv}/20 Bakery Rush boards, ${late}/40 later boards mix them`);
+}
+
 // ---------------- report ----------------
 console.log('\nlevel  size   kind    cats  carriers  colors  bench  peak  detours  gen_ms');
 for (const [n, s] of stats) {
@@ -591,7 +696,7 @@ for (const [n, s] of stats) {
 console.log('\nmechanics per range (levels carrying each, total pieces)');
 RANGES.forEach(([lo, hi], i) => {
   const m = mechStat[i];
-  console.log(`  L${lo}-${hi}: dog ${m.dog}, yarn ${m.yarn}, mystery ${m.mystery}, frozen ${m.frozen}, mixed ${m.mixed}, pieces ${m.pieces}`);
+  console.log(`  L${lo}-${hi}: dog ${m.dog}, yarn ${m.yarn}, mystery ${m.mystery}, frozen ${m.frozen}, spring ${m.spring}, swivel ${m.swivel}, mixed ${m.mixed}, pieces ${m.pieces}`);
 });
 console.log(`\nkinds ${JSON.stringify(kinds)}; hard at ${hardAt.slice(0, 8).join(',')}...; super at ${superAt.slice(0, 6).join(',')}...`);
 console.log('\ndecisions per range (averages; dead = losing taps / legal taps, long = share of cats 4+ cells)');

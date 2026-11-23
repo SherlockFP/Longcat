@@ -4,7 +4,7 @@
 // color = index into COLORS (== index into BREEDS: color i is shown as breed BREEDS[i]).
 // board.carriers = [{color, cap}] queue order (front first); cap is 3 except hand-made tutorials.
 // board.objs = [{kind:'dog'|'yarn', cells}] non-cat blockers (dog = 2 cells, yarn = 1). They sit on the grid as -2-index.
-// cat.mech = 'mystery' | 'frozen' (optional, never on a kitten or its mother).
+// cat.mech = 'mystery' | 'frozen' | 'spring' | 'swivel' (optional, never on a kitten or its mother).
 // id === index in board.cats.
 // A kitten (kittenOf = parent id) has its head directly behind the parent's tail,
 // continuing the parent's line: kittenHead = parentTail - (parent.cells[1] - parent.cells[0]).
@@ -36,7 +36,7 @@ export function makeCat(id, cells, breed, kittenOf) {
   return cat;
 }
 
-export const MECH_CATS = ['mystery', 'frozen'];
+export const MECH_CATS = ['mystery', 'frozen', 'spring', 'swivel']; // spring / swivel: src/core/content-mech.js
 export const OBJ_KINDS = ['dog', 'yarn'];
 
 export function makeBoard(w, h, cats, meta = {}, carriers = []) {

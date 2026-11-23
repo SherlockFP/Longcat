@@ -5,6 +5,7 @@ import { createState, tap, scoop as rulesScoop, undo as rulesUndo, canUndo, addS
 import { hint as solverHint } from '../core/solver.js';
 import { DIRS } from '../core/board.js';
 import { IMG } from './assets.js';
+import * as content from './content.js'; // spring cats, swivel beds, pack themes (content lane)
 import { COLOR_PAL, COLLARS, NAVY, MYSTERY_PAL } from './breeds.js';
 import { makePath, sample, drawBody, drawHead, drawArrow, drawChevron, drawPaw, drawPatBadge, drawPaws, disc, FONT, drawDog, drawYarn, drawIce, drawQuestion, drawBadge, head7, shade } from './render.js';
 
@@ -240,6 +241,7 @@ export class Game {
     }
     this.prevAlive = s.alive.slice();
     this.syncMech();
+    content.sync(this);
     this.pending = this.pending.filter((p) => !p.vis);
     if (prev.leaving.length) this.parts = this.parts.filter((p) => p.kind !== 'conf');
   }
@@ -300,6 +302,8 @@ export class Game {
           this.sparks(p.x, p.y, '#bfeaff', 5);
           if (this.on.mech) this.on.mech(e);
         } });
+      } else if (e.type === 'spin') {
+        this.pending.push({ at: at0, vis: true, fn: () => content.spin(this, e) });
       } else if (e.type === 'thaw') {
         this.pending.push({ at: at0 + 0.05, vis: true, fn: () => {
           this.mv.frozen[e.id] = false;
@@ -461,7 +465,8 @@ export class Game {
     const cat = this.board.cats[id];
     const c = this.cell;
     const { w, h } = this.state;
-    const [dx, dy] = DIRS[cat.dir];
+    const ld = content.dirOf(this, id); // a swivel cat faces where its bed turned
+    const [dx, dy] = DIRS[ld];
     const [hx, hy] = cat.cells[cat.cells.length - 1];
     ctx.save();
     let i = 0;
@@ -471,7 +476,7 @@ export class Game {
       this.rr(ctx, this.ox + x * c + 4, this.oy + y * c + 4, c - 8, c - 8, c * 0.22);
       ctx.fill();
       const ph = this.calm ? 0 : ((this.clock * 3 - i * 0.35) % 1 + 1) % 1;
-      drawChevron(ctx, this.ox + (x + 0.5) * c, this.oy + (y + 0.5) * c, FACE[cat.dir], c * 0.32, 0.45 + 0.45 * (1 - ph));
+      drawChevron(ctx, this.ox + (x + 0.5) * c, this.oy + (y + 0.5) * c, FACE[ld], c * 0.32, 0.45 + 0.45 * (1 - ph));
     }
     ctx.restore();
   }
@@ -723,7 +728,8 @@ export class Game {
     const cat = this.board.cats[r.id];
     const c = this.cell;
     const head = cat.cells.at(-1);
-    const [dx, dy] = DIRS[cat.dir];
+    const bdir = content.dirOf(this, r.id);
+    const [dx, dy] = DIRS[bdir];
     if (r.frozen) {
       // frozen: a stiff little shiver, ice chips, no lane
       this.anims.push({ type: 'bonk', id: r.id, t0: this.clock, emax: 0.22 * c, headCell: head, blockerCell: null });
@@ -737,7 +743,7 @@ export class Game {
     }
     const k = Math.abs(r.blockerCell[0] - head[0]) + Math.abs(r.blockerCell[1] - head[1]);
     const emax = Math.min((k - 1) * c + 0.2 * c, 2.6 * c);
-    this.anims.push({ type: 'bonk', id: r.id, t0: this.clock, emax, headCell: head, blockerCell: r.blockerCell });
+    this.anims.push({ type: 'bonk', id: r.id, t0: this.clock, emax, headCell: head, blockerCell: r.blockerCell, dir: bdir });
     if (r.blockerObj >= 0) this.wiggleObj[r.blockerObj] = { t: this.clock + 0.12, dx, dy };
     else this.wiggle[r.blockerId] = { t: this.clock + 0.12, dx, dy };
     if (!this.calm) this.shake = { t0: this.clock + 0.09, dx, dy };
@@ -786,7 +792,8 @@ export class Game {
     const freed = r.freed;
     const lead = cats[freed[0]];
     const events = r.events || [];
-    const dirKey = lead.dir;
+    const ex = content.exitOf(this, lead); // a swivel cat leaves the way its bed faces
+    const dirKey = ex.dir;
     const t0 = this.clock;
     const members = [];
     let stuckK = this.vis.stuck.length;
@@ -796,8 +803,8 @@ export class Game {
       const cells = trailing ? [...cat.cells, ...lead.cells] : cat.cells;
       const tg = this.targetOf(id, events);
       if (tg.kind === 'stuck') tg.pos = this.stuckPos(stuckK++);
-      const path = this.buildPath(cells, dirKey, ray ? lead.ray : -1, tg.pos);
-      members.push({ id, path, headBase: path.marks[cat.cells.length - 1], len: path.len, tg, edgeS: ray ? path.marks[cells.length - 1] + (lead.ray + 0.5) * c : -1, puffed: false, arrived: false, arrAt: 0 });
+      const path = this.buildPath(cells, dirKey, ray ? ex.ray : -1, tg.pos);
+      members.push({ id, path, headBase: path.marks[cat.cells.length - 1], len: path.len, tg, edgeS: ray ? path.marks[cells.length - 1] + (ex.ray + 0.5) * c : -1, puffed: false, arrived: false, arrAt: 0 });
     }
     const Dmax = Math.max(...members.map((m) => m.len));
     const speed = 1500 * (this.W / 375);
@@ -819,6 +826,7 @@ export class Game {
       if (this.anims[i].type === 'bonk' && freed.includes(this.anims[i].id)) this.anims.splice(i, 1);
     }
     this.anims.push(anim);
+    if (ray) content.run(this, lead, t0); // a spring cat's boing over the cat it hops
     // paw prints on the cells the cats leave
     let i = 0;
     for (const m of freed) {
@@ -1428,6 +1436,7 @@ export class Game {
 
   drawBg(ctx) {
     const { W, H } = this;
+    if (content.bg(this, ctx)) return; // a themed pack room (content lane)
     const room = IMG['r7/bg_play_room'];
     if (room) {
       // the sunny boarding room: one painted layer, cover-fit, never tiled
@@ -2047,16 +2056,19 @@ export class Game {
     const frozen = !!this.mv.frozen[id];
     const hb = path.marks[cat.cells.length - 1];
     const breath = this.calm || frozen ? 1 : 1 + 0.035 * Math.sin(this.clock * 2.4 + id * 1.3); // idle breathing
-    this.paintCat(ctx, cat, path, 0, hb, { glow, chevron: !frozen, idle: !frozen, frozen, wScale: breath });
+    if (cat.mech) content.under(this, ctx, cat); // the swivel bed under the head
+    this.paintCat(ctx, cat, path, 0, hb, { glow, chevron: !frozen && cat.mech !== 'swivel', idle: !frozen, frozen, wScale: breath });
     this.mechOver(ctx, cat, path, hb);
+    if (cat.mech) content.over(this, ctx, cat, path, hb); // spring coil badge, swivel facing arrow
     ctx.restore();
     const fr = this.freedT[id] != null ? this.clock - this.freedT[id] : -1;
     if (hinted || (fr >= 0 && fr < 1.4)) {
       const head = cat.cells.at(-1);
-      const [dx, dy] = DIRS[cat.dir];
+      const hd = content.dirOf(this, id);
+      const [dx, dy] = DIRS[hd];
       const [hx, hy] = this.center(head[0], head[1]);
       const dist = c * 0.98 + Math.sin(this.clock * 8) * c * 0.1;
-      drawArrow(ctx, hx + dx * dist, hy + dy * dist, FACE[cat.dir] + Math.PI / 2, c * 0.42);
+      drawArrow(ctx, hx + dx * dist, hy + dy * dist, FACE[hd] + Math.PI / 2, c * 0.42);
     }
   }
 
@@ -2431,7 +2443,7 @@ export class Game {
       const fade = Math.min(1, (0.7 - t) / 0.3);
       const [hx, hy] = a.headCell;
       const [bx, by] = a.blockerCell;
-      const [dx, dy] = DIRS[cat.dir];
+      const [dx, dy] = DIRS[a.dir || cat.dir];
       ctx.save();
       ctx.fillStyle = `rgba(229,57,53,${0.28 * fade})`;
       for (let x = hx + dx, y = hy + dy; ; x += dx, y += dy) {
