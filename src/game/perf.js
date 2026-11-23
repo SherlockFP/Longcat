@@ -180,7 +180,7 @@ class Perf {
     ctx.restore();
     this.frame++;
     const n = g.vis ? g.vis.bench.length : 0;
-    const sig = `${g.W}x${g.H}@${g.dpr}|${g.board ? g.board.w + 'x' + g.board.h : '-'}|${g.ox},${g.oy},${g.cell}|${n}|${g.benchY}|${g.beltY}|${!!IMG['r7/bg_play_room']}${!!IMG['r7/table_top']}|${g.demo}`;
+    const sig = `${g.W}x${g.H}@${g.dpr}|${g.board ? g.board.w + 'x' + g.board.h : '-'}|${g.ox},${g.oy},${g.cell}|${n}|${g.benchY}|${g.beltY}|${!!IMG['r7/bg_play_room']}${!!IMG['r7/table_top']}|${g.demo}|${g.roomArt ? g.roomArt().key : ''}`;
     if (sig !== this.sig || this.boardRef !== g.board) {
       this.sig = sig;
       this.boardRef = g.board;

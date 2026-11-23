@@ -201,22 +201,35 @@ export function run(game, lead, t0) {
 // game.theme (set per level by src/ui/content.js): the pack's painted room, a colour wash and a light ambient effect
 // (rain on the glass, flour motes, petals, twinkling stars). Static with reduced motion.
 export function bg(game, ctx) {
-  const th = !game.demo && game.theme && THEMES[game.theme];
-  if (!th) return false;
-  const room = IMG['r7/bg_' + game.theme] || IMG['r7/bg_play_room'];
-  if (!room) return false;
+  const art = room(game);
+  if (!art) return false;
   const { W, H } = game;
-  const sc = Math.max(W / room.width, H / room.height);
-  const dw = room.width * sc;
-  const dh = room.height * sc;
-  ctx.drawImage(room, (W - dw) / 2, (H - dh) / 2, dw, dh);
-  const wash = IMG['r7/bg_' + game.theme] ? th.wash : th.bare; // no pack art yet: tint the sunny room harder
-  if (wash) {
-    ctx.fillStyle = wash;
+  const sc = Math.max(W / art.img.width, H / art.img.height);
+  const dw = art.img.width * sc;
+  const dh = art.img.height * sc;
+  ctx.drawImage(art.img, (W - dw) / 2, (H - dh) / 2, dw, dh);
+  if (art.wash) {
+    ctx.fillStyle = art.wash;
     ctx.fillRect(0, 0, W, H);
   }
-  fx(game, ctx, th.fx, W, H);
+  ambient(game, ctx);
   return true;
+}
+
+// the pack room as data, for the perf lane's baked underlay: { img, wash, key }, or null for the default room
+export function room(game) {
+  const th = !game.demo && game.theme && THEMES[game.theme];
+  if (!th) return null;
+  const img = IMG['r7/bg_' + game.theme] || IMG['r7/bg_play_room'];
+  if (!img) return null;
+  const wash = IMG['r7/bg_' + game.theme] ? th.wash : th.bare; // no pack art yet: tint the sunny room harder
+  return { img, wash, key: game.theme };
+}
+
+// the live ambient effect only (drawn every frame over a baked room)
+export function ambient(game, ctx) {
+  const th = !game.demo && game.theme && THEMES[game.theme];
+  if (th) fx(game, ctx, th.fx, game.W, game.H);
 }
 
 // deterministic pseudo-random per index (no per-frame allocation)

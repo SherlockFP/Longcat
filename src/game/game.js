@@ -1440,8 +1440,11 @@ export class Game {
     ctx.restore();
   }
 
+  // the room behind the board (the perf underlay bakes it): a pack theme (content lane) or the sunny room
+  roomArt() { return content.room(this) || { img: IMG['r7/bg_play_room'], key: 'play' }; }
+
   drawBg(ctx) {
-    if (this.pf && this.pf.bg(ctx)) return; // the room is on the baked underlay: clear only
+    if (this.pf && this.pf.bg(ctx)) { content.ambient(this, ctx); return; } // baked room: clear, then only the pack's live rain/petals
     const { W, H } = this;
     if (content.bg(this, ctx)) return; // a themed pack room (content lane)
     const room = IMG['r7/bg_play_room'];

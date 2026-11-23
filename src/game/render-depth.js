@@ -11,7 +11,8 @@ export function buildFar(g, ctx) {
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const room = IMG['r7/bg_play_room'];
+  const art = g.roomArt ? g.roomArt() : { img: IMG['r7/bg_play_room'] }; // a pack theme or a bought room, else sunny
+  const room = art.img;
   if (!room) { g.drawBg(ctx); return; }
   const sc = Math.max(W / room.width, H / room.height) * OVER;
   const dw = room.width * sc, dh = room.height * sc;
@@ -24,6 +25,7 @@ export function buildFar(g, ctx) {
   s.drawImage(room, (soft.width - dw * 0.8) / 2, (soft.height - dh * 0.8) / 2, dw * 0.8, dh * 0.8);
   ctx.imageSmoothingQuality = 'high';
   ctx.drawImage(soft, 0, 0, W, H);
+  if (art.wash) { ctx.fillStyle = art.wash; ctx.fillRect(0, 0, W, H); } // the pack's colour wash
   // the window light, held at its mean (the old per-frame drift cost a full-screen gradient every frame)
   const gr = ctx.createLinearGradient(W, 0, W * 0.35, H * 0.55);
   gr.addColorStop(0, 'rgba(255,214,140,0.11)');
