@@ -1713,6 +1713,56 @@ try {
     await shot('30h-667-fail-more');
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
   }
+  // ---- R10 content lane: spring cats, swivel beds, themed packs past L60 (intro, one-time cards, ceremony, sheet) ----
+  if (!process.env.QA_SKIP_CONTENT) {
+    console.log('content lane');
+    const cards = () => ev('window.__qaContent.cards()');
+    const go = async () => { await ev('document.querySelector("#cmodal [data-cgo]")?.click()'); await sleep(450); };
+    for (const [w, h, tag] of [[375, 812, ''], [375, 667, '-667']]) {
+      await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true });
+      await ev('localStorage.setItem("lco_save", JSON.stringify({v:9,level:61,coins:500,meta:{sessions:3,shareNudge:1}}))');
+      await boot(); await qa(tag ? 'lang("tr")' : 'lang("en")');
+      await qa('level(61)'); await sleep(900);
+      if (JSON.stringify(await cards()) !== '["intro"]') throw new Error('L61 should open the Rainy Day intro, got ' + JSON.stringify(await cards()));
+      await shot('r10-content-intro' + tag);
+      await go();
+      if (JSON.stringify(await cards()) !== '["mech"]') throw new Error('then the spring card, got ' + JSON.stringify(await cards()));
+      await shot('r10-content-spring-card' + tag);
+      await go();
+      if ((await ev('window.__qaContent.mechs().filter((m) => m.mech === "spring").length')) < 1) throw new Error('L61 has no spring cat');
+      if (!(await ev('!!document.querySelector("#hud .cpchip")'))) throw new Error('pack chip missing on the HUD');
+      await shot('r10-content-l61' + tag);
+      // seen once: a retry shows no card
+      await qa('level(61)'); await sleep(700);
+      if ((await cards()).length) throw new Error('the cards should show only once');
+    }
+    await qa('lang("en")');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 2, mobile: true });
+    // the spring level wins on the hint line (springs hop on the real board)
+    await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 40000); await sleep(1200);
+    // finishing a pack: the host moves in and the next level opens with the ceremony, the new pack and the swivel card
+    await ev('window.__qaContent.finish(80)'); await sleep(300);
+    if (!(await ev('window.__qaContent.state().hosts.drizzle > 0'))) throw new Error('Drizzle should move in after L80');
+    await qa('level(81)'); await sleep(900);
+    if (JSON.stringify(await cards()) !== '["done"]') throw new Error('L81 should open with the Rainy Day ceremony, got ' + JSON.stringify(await cards()));
+    await shot('r10-content-done');
+    await go();
+    if (JSON.stringify(await cards()) !== '["intro"]') throw new Error('then the Bakery Rush intro');
+    await go();
+    if (JSON.stringify(await cards()) !== '["mech"]') throw new Error('then the swivel card');
+    await shot('r10-content-swivel-card');
+    await go();
+    if ((await ev('window.__qaContent.mechs().filter((m) => m.mech === "swivel").length')) < 1) throw new Error('L81 has no swivel bed');
+    await shot('r10-content-l81');
+    await ev('window.__qaContent.sheet()'); await sleep(500);
+    await shot('r10-content-packs');
+    await go();
+    // the host lives in the café with the visiting cats
+    await qa('home()'); await sleep(900);
+    if (!(await ev('!!document.querySelector(\'[data-act=visitor][data-id=drizzle]\')'))) console.log('  note: Drizzle not in view in this room');
+    await shot('r10-content-cafe');
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

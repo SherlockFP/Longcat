@@ -4,6 +4,7 @@
 // minus how many sit on the bench. So a search state is just (cats gone, bench colour counts), and memo results are
 // shared across every query on one board.
 import { createState, exitRay, catsNear, edgeNeighbours, DOG_WAKE, DOG_NEAR, THAW_NEED } from './rules.js';
+import { compileMech, mechCanExit, spinFromState } from './content-mech.js';
 
 const rootOf = (board, id) => {
   let c = board.cats[id];
@@ -75,6 +76,7 @@ export function compile(board) {
     cc: Int8Array.from(carriers.map((c) => c.color)),
     cap: Int8Array.from(carriers.map((c) => c.cap || 3)),
     memo: new Map(),
+    ...compileMech(board, st, unitOf, units), // spring cats + swivel beds (content-mech.js)
   };
 }
 
@@ -89,6 +91,7 @@ export class Sim {
     this.left = C.N;
     this.cnt = new Int16Array(C.nObj);
     this.thaw = new Int16Array(C.nFrozen);
+    this.spin = new Int16Array(C.nSpin); // neighbours gone per swivel bed
     this.bench = new Int8Array(8);
     this.used = 0;
     this.ci = 0;
@@ -108,6 +111,7 @@ export class Sim {
     s.ci = st.carriers.length ? st.carriers[0].uid : C.cc.length;
     s.fill = st.carriers.length ? st.carriers[0].fill : 0;
     s.dead = !!st.failed;
+    if (C.nSpin) spinFromState(s, st);
     return s;
   }
 
@@ -123,6 +127,7 @@ export class Sim {
   canExit(u) {
     const C = this.C;
     if (!this.alive[u] || this.frozen(u)) return false;
+    if (C.mk[u]) return mechCanExit(this, u);
     const ru = C.rayU[u];
     for (let i = 0; i < ru.length; i++) if (this.alive[ru[i]]) return false;
     const ro = C.rayO[u];
@@ -149,6 +154,8 @@ export class Sim {
       for (let i = 0; i < ho.length; i++) this.cnt[ho[i]]++;
       const hf = C.hitsF[id];
       for (let i = 0; i < hf.length; i++) this.thaw[hf[i]]++;
+      const hs = C.hitsS[id];
+      for (let i = 0; i < hs.length; i++) this.spin[hs[i]]++;
     }
     this.boards.length = 0;
     const nc = C.cc.length;
@@ -192,6 +199,8 @@ export class Sim {
       for (let i = 0; i < ho.length; i++) this.cnt[ho[i]]--;
       const hf = C.hitsF[id];
       for (let i = 0; i < hf.length; i++) this.thaw[hf[i]]--;
+      const hs = C.hitsS[id];
+      for (let i = 0; i < hs.length; i++) this.spin[hs[i]]--;
     }
   }
 
