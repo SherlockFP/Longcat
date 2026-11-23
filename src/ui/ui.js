@@ -12,6 +12,7 @@ import { drecHas, cardsOwned, WEEKS } from '../game/r10.js';
 import { house as streetHouse, SHOPS } from '../game/street.js';
 import { gpuRow } from './perf.js';
 import { hubAfter } from './hub.js'; // hub lane: level map, resident layout, wide-screen panels, keys
+import { cardBtn } from './r11-vir.js'; // R11 vir: Share QR card beside Dare a friend
 
 const root = document.getElementById('ui');
 let actions = {};
@@ -469,7 +470,7 @@ export const ui = {
     // Share: a round icon; at a real high (chain x3+, a clean sweep, a friend challenge) a labelled "Share clip" pill
     // (the compact card then drops its Home circle: the HUD Home stays), and on the very first chain x3 a "Show a
     // friend!" bubble on it
-    const shareBtn = info.dare ? `<button class="btn pink sm sharebtn" data-act="share">${SHARE_SVG}<span>${t('shareDareBtn')}</span>${info.nudge ? `<i class="nudge">${t('shareNudge')}</i>` : ''}</button>` : SHARE_ROUND();
+    const shareBtn = info.dare ? `<button class="btn pink sm sharebtn" data-act="share">${SHARE_SVG}<span>${t('shareDareBtn')}</span>${info.nudge ? `<i class="nudge">${t('shareNudge')}</i>` : ''}</button>${cardBtn()}` : SHARE_ROUND();
     // only the stars that were earned (1 normal, 2 hard, 3 super hard): a clean clear never shows grey slots
     const stars = Array.from({ length: info.stars }, (_, i) => img('ui_star.webp', 'star on').replace('<img ', `<img style="--i:${i}" `)).join('');
     // a moved-in resident peeks over the card and cheers (by how clean the clear was); before that, a cat of the level
@@ -547,7 +548,7 @@ export const ui = {
   ${drecRow(info.drec)}
   ${info.purr && !(info.chain && main) ? `<div class="purr">${info.purr}</div>` : ''}
   ${info.chain ? '' : dres}
-  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? `<button class="btn pink sm sharebtn dsend" data-act="share">${SHARE_SVG}<span>${t('dareSendResult')}</span></button>` : ''}` : `<button class="btn teal sm" data-act="home">${t('home')}</button>${shareBtn}`}</div>
+  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? `<button class="btn pink sm sharebtn dsend" data-act="share">${SHARE_SVG}<span>${t('dareSendResult')}</span></button>` : ''}${cardBtn()}` : `<button class="btn teal sm" data-act="home">${t('home')}</button>${shareBtn}`}</div>
   ${primary}
 </div></div>`);
     if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);

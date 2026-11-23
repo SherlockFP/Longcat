@@ -1,0 +1,11 @@
+/* R11 vir: the Share QR card button beside Dare a friend (a round button, pink rim: the share family) */
+.round.vircard { width: 50px; height: 50px; flex: none; border-color: #ff6b9a; box-shadow: 0 4px 0 #c23a68; }
+.round.vircard:active { box-shadow: 0 1px 0 #c23a68; }
+.round.vircard svg { width: 26px; height: 26px; fill: var(--ink, #1d2b53); stroke: var(--ink, #1d2b53); }
+.card.win > .row.r7row .round.vircard { width: 44px; height: 44px; }
+.card.win.compact .r7row .round.vircard { width: 50px; height: 50px; }
+/* the compact card's one row (Next, Dare a friend, QR card) fits 360 px in Turkish too: a tighter pill, a smaller round */
+.card.win.compact .r7row:has(.vircard) { gap: 6px; }
+.card.win.compact .r7row .round.vircard { width: 46px; height: 46px; }
+.card.win.compact .r7row:has(.vircard) .btn.sharebtn { font-size: 18px; padding: 0 9px; gap: 4px; }
+.card.win.compact .r7row:has(.vircard) .btn[data-act=next] { font-size: 23px; }

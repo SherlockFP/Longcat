@@ -12,11 +12,12 @@ import { drawQr } from './qr.js';
 
 export const CLIP_W = 360;
 export const CLIP_H = 640;
-const DPR = 2;
+const DPR = 2; // src.dpr overrides it: 1 (360x640) on a slow device (R11 vir: the background recording)
 const FPS = 30;
 const TOP = 66; // caption band above the carriers (the counter, "4 of 5 seats taken!")
 const BOT = 70; // brand band under the board ("Long Cat Out!" + the dare's short link, the whole clip)
-const END = 2.2; // end card seconds
+const END = 2.8; // end card seconds (R11 vir: long enough to pause a forwarded clip on the QR)
+const QR_END = 168; // the end card's QR side (CSS px): 4+ px per module when the clip is seen 360 px wide
 const NAVY = '#1d2b53';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const isMove = (o) => o && (o.op === 'tap' || o.op === 'scoop');
@@ -45,8 +46,9 @@ export function planClip(log, won) {
 //   qr: the public https dare link the end card and the PNG carry as a scannable code (R11), scan: its caption } }
 export function clipPlayer(src) {
   const { board, log, plan, text } = src;
+  const dpr = src.dpr || DPR;
   const cv = document.createElement('canvas');
-  const g = new Game(cv, { size: { W: CLIP_W, H: CLIP_H, dpr: DPR, top: TOP, bottom: BOT } });
+  const g = new Game(cv, { size: { W: CLIP_W, H: CLIP_H, dpr, top: TOP, bottom: BOT } });
   g.texts = text.combo;
   g.chainText = text.chainX;
   g.lastSeatText = text.lastSeat;
@@ -54,8 +56,8 @@ export function clipPlayer(src) {
   g.load(board);
   // the frame that is recorded: the game canvas copied with a punch-in, then the caption bands on top
   const out = document.createElement('canvas');
-  out.width = CLIP_W * DPR;
-  out.height = CLIP_H * DPR;
+  out.width = CLIP_W * dpr;
+  out.height = CLIP_H * dpr;
   const apply = (o) => {
     if (o.op === 'tap') { g.anims = g.anims.filter((a) => !(a.type === 'bonk' && a.id === o.id)); return g.tapCat(o.id); }
     if (o.op === 'scoop') return g.scoopCat(o.id);
@@ -181,7 +183,7 @@ export function clipPlayer(src) {
 
   function overlay() {
     let ctx = g.ctx;
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     // tap ripples: where the finger went (the trick has to be readable after one view)
@@ -207,10 +209,10 @@ export function clipPlayer(src) {
       const h = CLIP_H / z.s;
       const sx = z.x - z.x / z.s;
       const sy = z.y - z.y / z.s;
-      o.drawImage(cv, sx * DPR, sy * DPR, w * DPR, h * DPR, 0, 0, out.width, out.height);
+      o.drawImage(cv, sx * dpr, sy * dpr, w * dpr, h * dpr, 0, 0, out.width, out.height);
     } else o.drawImage(cv, 0, 0);
     ctx = o;
-    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     // top band: the bench before the move, then the chain counter counting up, hop by hop
@@ -286,7 +288,7 @@ export function clipPlayer(src) {
         ctx.fillText(text.url, 0, 176 + (sz + 22) / 2 + 1);
       }
       // R11: a phone that got the clip without its caption scans this to open the exact board (the typed code stays above)
-      if (text.qr && drawQrCard(ctx, text.qr, -64, 232, 128, text.scan)) label(ctx, text.title, 0, 424, 30, '#ffd43b', CLIP_W - 40, '#0e1630');
+      if (text.qr && drawQrCard(ctx, text.qr, -QR_END / 2, 232, QR_END, text.scan)) label(ctx, text.title, 0, 232 + QR_END + 54, 30, '#ffd43b', CLIP_W - 40, '#0e1630');
       else label(ctx, text.title, 0, 262, 32, '#ffd43b', CLIP_W - 40, '#0e1630');
       ctx.restore();
     }
@@ -299,7 +301,7 @@ export function clipPlayer(src) {
     stampQr() {
       if (!text.qr) return;
       const o = out.getContext('2d');
-      o.setTransform(DPR, 0, 0, DPR, 0, 0);
+      o.setTransform(dpr, 0, 0, dpr, 0, 0);
       o.textAlign = 'center';
       o.textBaseline = 'middle';
       const s = 104;
@@ -312,6 +314,8 @@ export function clipPlayer(src) {
     get done() { return endAt != null && t >= endAt + END; },
     get peak() { return peakSeen; },
     get endAt() { return endAt; },
+    // R11 vir: where the end card's QR sits once the card is in (CSS px of the 360x640 frame), for the legibility probe
+    qrRect: { x: CLIP_W / 2 - QR_END / 2, y: CLIP_H * 0.19 + 232, s: QR_END },
     // fast-forward (no drawing) to a clip time ('tap' = the punch-in on the deciding tap, 'peak' = the full chain on
     // screen, 'end' = the end card), then draw it
     seek(to) {
@@ -335,7 +339,7 @@ function pickType() {
 export const canRecord = () => !!pickType() && typeof HTMLCanvasElement !== 'undefined' && !!HTMLCanvasElement.prototype.captureStream;
 
 // the clip in real time through MediaRecorder; onFrame(canvas) sees every frame (the win card preview)
-async function record(src, onFrame, alive) {
+async function record(src, onFrame, alive) { // resolves to { blob, ext, lag (wall time / clip time), dpr } or null
   const type = pickType();
   const p = clipPlayer(src);
   if (!type || !p.canvas.captureStream) return null;
@@ -359,7 +363,8 @@ async function record(src, onFrame, alive) {
     rec.stop();
     await stopped;
     const blob = new Blob(parts, { type: type.split(';')[0] });
-    return blob.size ? { blob, ext: type.includes('mp4') ? 'mp4' : 'webm' } : null;
+    const lag = (performance.now() - t0) / 1000 / Math.max(0.1, p.t); // > 1: the device could not keep real time
+    return blob.size ? { blob, ext: type.includes('mp4') ? 'mp4' : 'webm', lag, dpr: src.dpr || DPR } : null;
   } finally {
     stream.getTracks().forEach((x) => x.stop()); // also on a failed encode
   }
@@ -392,11 +397,13 @@ export function makeShareClip() {
     // preview canvas while it records (not under reduced motion), then the finished video loops in its place.
     // Resolves to the video ({ blob, ext }) or null.
     // onProg(0..1): how far the real-time encode is (the button counts up while the video is made)
-    record(cv, still, onProg) {
+    // bg (R11 vir): started by the win card itself, so the thumbnail keeps its still while it records (no frame copies)
+    // and the finished video loops in its place
+    record(cv, still, onProg, bg) {
       if (!src || !canRecord()) return Promise.resolve(null);
       if (job) return job;
       const mine = gen;
-      const copy = (frame, f) => { if (!still && cv && cv.isConnected) cv.getContext('2d').drawImage(frame, 0, 0, cv.width, cv.height); if (onProg) onProg(f); };
+      const copy = (frame, f) => { if (!still && !bg && cv && cv.isConnected) cv.getContext('2d').drawImage(frame, 0, 0, cv.width, cv.height); if (onProg) onProg(f); };
       busy = true;
       job = record(src, copy, () => mine === gen).catch(() => null).then((r) => {
         if (mine !== gen) return null;
@@ -429,6 +436,20 @@ export function makeShareClip() {
       const blob = await new Promise((res) => p.canvas.toBlob(res, 'image/png'));
       png = blob ? { blob, ext: 'png' } : null;
       return png;
+    },
+    // R11 vir: the peak still for the QR share card, at its own resolution (1 = 360x640)
+    peakCanvas(dpr = 1) {
+      if (!src) return null;
+      const p = clipPlayer({ ...src, dpr });
+      p.seek('peak');
+      return p.canvas;
+    },
+    // QA: the end card at a given resolution and where its QR is (the 360 px legibility probe)
+    endFrame(dpr = 1) {
+      if (!src) return null;
+      const p = clipPlayer({ ...src, dpr });
+      p.seek('end');
+      return { canvas: p.canvas, qr: p.qrRect, url: src.text.qr };
     },
     // QA: stills of the clip at given times (seconds, 'peak', 'end') as JPEG data URLs, in one fresh run
     frames(times) {
