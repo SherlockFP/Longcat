@@ -41,6 +41,27 @@
 .ordintro.fade { transition: opacity .25s; opacity: 0; }
 @keyframes oiin { from { transform: translate(-50%, -14px) scale(.85); opacity: 0; } to { transform: translate(-50%, 0) scale(1); opacity: 1; } }
 @keyframes oifly { to { transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(.15); opacity: 0; } }
+/* R11: an ordinary order's intro is a one-line bubble right of the order row (the bench and the top cats stay in view) */
+.ordintro.tuck { width: max-content; max-width: 260px; gap: 0; padding: 4px 10px; border-width: 2.5px; border-radius: 12px; box-shadow: 0 3px 0 rgba(60,30,10,.25); transform: translate(0, -50%); animation: oitin .3s cubic-bezier(.2,1.4,.4,1) both; }
+.ordintro.tuck::before { content: ''; position: absolute; left: -8px; top: 50%; width: 10px; height: 10px; margin-top: -6px; background: #fff6e5; border: solid #8e5530; border-width: 0 0 2.5px 2.5px; transform: rotate(45deg); }
+.ordintro.tuck b { font: 700 12.5px/1.2 var(--font, sans-serif); color: var(--navy, #1d2b53); text-align: left; }
+.ordintro.tuck.fly { animation: oitfly .45s ease-in forwards; }
+@keyframes oitin { from { transform: translate(-10px, -50%) scale(.85); opacity: 0; } to { transform: translate(0, -50%) scale(1); opacity: 1; } }
+@keyframes oitfly { to { transform: translate(var(--dx, 0px), calc(-50% + var(--dy, 0px))) scale(.15); opacity: 0; } }
+/* R11: the order row (count, then the docked level clock as one capsule) and the Urgent / VIP icon on the door */
+.ordstrip .osdoor .ostag { left: auto; right: -9px; bottom: auto; top: -7px; padding: 0; border-width: 1.5px; transform: rotate(8deg); }
+.ordstrip .osdoor .ostag b { display: none; }
+.ordstrip .osdoor .ostag img { width: 16px; height: 16px; margin: 0; }
+.ordstrip.withclk .oscount { border-radius: 999px 0 0 999px; padding-right: 3px; border-right-width: 1px; }
+/* R11: an ordinary first clear names the adopted cat on the win card (no ceremony in front of it) */
+.ordwin { display: flex; align-items: center; gap: 7px; margin: 2px 0; padding: 4px 8px 4px 4px; border-radius: 14px; background: #fff6e5; border: 2px solid #c9a57a; text-align: left; animation: ocpop .35s .25s cubic-bezier(.2,1.6,.4,1) both; }
+.ordwin .owcat { flex: none; width: 34px; height: 34px; }
+.ordwin span { display: flex; flex-direction: column; gap: 1px; min-width: 0; flex: 1; }
+.ordwin b { font: 700 13px/1.15 var(--font, sans-serif); color: var(--navy, #1d2b53); }
+.ordwin small { display: flex; align-items: center; gap: 6px; font: 700 11px/1.1 var(--font, sans-serif); color: #8e5530; white-space: nowrap; }
+.ordwin .ocsegs { flex: 1; max-width: 90px; margin: 0; }
+.ordwin .ocsegs i { height: 6px; }
+.ordwin.calm { animation: none; }
 
 /* ---- the delivery ceremony (before the win card; tap skips) ---- */
 .ordcer { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(40,22,8,.55); pointer-events: auto; animation: ocfade .2s ease-out; }
@@ -109,6 +130,6 @@
 .sh .ordstep b { margin-left: 5px; padding: 0 4px; border-radius: 999px; border: 1.5px solid var(--navy, #1d2b53); background: rgba(255,255,255,.92); font: 700 10px var(--font, sans-serif); color: var(--navy, #1d2b53); }
 
 @media (prefers-reduced-motion: reduce) {
-  .ordstrip .osdoor, .ordstrip .osmood, .ordstrip .osplus, .ordintro, .ordintro.fly, .ordcer, .occard, .ocscene .ocbub, .ocad .ocnew, .ocrew { animation: none !important; }
+  .ordstrip .osdoor, .ordstrip .osmood, .ordstrip .osplus, .ordintro, .ordintro.fly, .ordintro.tuck, .ordintro.tuck.fly, .ordwin, .ordcer, .occard, .ocscene .ocbub, .ocad .ocnew, .ocrew { animation: none !important; }
   .ocscene .occat { animation: none !important; transform: translateX(calc(var(--i) * -30px - 34px)); }
 }

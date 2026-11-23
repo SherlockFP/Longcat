@@ -280,7 +280,8 @@ try {
   await ev('localStorage.setItem("lco_save", JSON.stringify({v:3,level:4,coins:120,cafe:{stars:2,built:{counter_counter:1}}}))');
   await boot();
   await sleep(400);
-  const lamp = await ev('(() => { const r = document.querySelector("[data-id=counter_pastry]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()');
+  // home opens on the map since R10: the room's build button sits under it, so tap the goal card's row
+  const lamp = await ev('(() => { const r = document.querySelector(".trow[data-id=counter_pastry]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()');
   await tap(lamp.x, lamp.y);
   await waitFor('window.__qa.state().screen === "arrive"', 6000);
   await sleep(900);
@@ -710,7 +711,7 @@ try {
       localStorage.setItem('lco_save', JSON.stringify(d)); })()`);
     await boot();
     await shot('40a-hub-live');
-    if ((await ev('document.querySelectorAll(".goals .goal").length')) !== 2) throw new Error('the hub should show 2 next goals (the next resident sits on the build card)');
+    if ((await ev('document.querySelectorAll(".goals .goal.feat").length')) !== 1) throw new Error('the hub should feature exactly one goal (R11; the next resident sits on the build card)');
     if (!(await ev('!!document.querySelector(".rr.ring[data-act=jartap], .jar7")'))) throw new Error('tip jar missing (rail or counter)');
     if ((await ev('document.querySelectorAll("#cafe .dot:not([hidden])").length')) > 3) throw new Error('more than 3 red dots on the hub');
     await qa('act("cafesheet")'); await sleep(600);
@@ -1185,7 +1186,7 @@ try {
       localStorage.setItem('lco_save', JSON.stringify(d)); })()`);
     await boot(); await sleep(400);
     const gl = await ev('[...document.querySelectorAll(".goals .goal")].map((g) => g.dataset.act + ":" + (g.dataset.tab || ""))');
-    if (gl[0] !== 'dailysheet:' || gl[1] !== 'events:show') throw new Error('Daily then Cat Show should lead the goals: ' + gl.join(','));
+    if (gl.length !== 1 || gl[0] !== 'daily:') throw new Error('the featured goal should be the Daily, playable in one tap (R11): ' + gl.join(','));
     await shot('90d-hub-daily-show');
     await qa('lang("tr")'); await qa('home()'); await sleep(700);
     await shot('90e-hub-daily-show-tr');
@@ -1467,7 +1468,7 @@ try {
     await seed(all, `d.daily.doneDay = ''; d.daily.last = String(day - 1)`, 120);
     const jl = await ev('window.__qa.live().goals.map((g) => g.k).join(",")');
     if (!/job/.test(jl)) throw new Error('the hub should carry a resident job: ' + jl);
-    if (!(await ev('[...document.querySelectorAll(".goals .goal")].some((g) => /:/.test(g.textContent) && g.querySelector(".gi img"))'))) throw new Error('the job tile names a cat');
+    if (!(await ev('!!document.querySelector(".goals .goal.feat .gcta") && !!document.querySelector(".goals .goal.feat .lchip")'))) throw new Error('the featured goal shows its reward and its route (R11)');
     if (!(await visible('.cafe-play'))) throw new Error('Play visible with the job tile');
     await shot('104m-hub-job');
     await edit(`d.jobs = { day, p: [4, 0], paid: 0 }`); await boot();
@@ -2040,6 +2041,146 @@ try {
     await shot('r10-hub-desk-1600-play');
     await ev('dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))'); await sleep(600);
     if (!(await ev('!!document.querySelector("#cafe.on")'))) throw new Error('hub keys: Esc in a level should go home');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+  }
+  // ---- R11 fix round 1 (sol-r11-1): the order row + tucked intro, the pack in the plaque, the on-demand clip with its
+  // QR, carrier dip / cushion rebound, the quick adoption on the win card, the lost-bench and Take back cues, the
+  // featured hub goal, the archive covering released postcards, one Play on desktop. ----
+  if (!process.env.QA_SKIP_R11) {
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    const R = (sel) => ev(`(() => { const e = document.querySelector(${JSON.stringify(sel)}); if (!e) return null; const r = e.getBoundingClientRect(); return { l: r.left, r: r.right, t: r.top, b: r.bottom, w: r.width, h: r.height }; })()`);
+    const saveImg = (name, url) => writeFileSync(join(OUT, name), Buffer.from(url.split(',')[1], 'base64'));
+    const lib = (named) => ({ last: 14 + named, shops: { library: { cats: 15 * named, named, sets: 0, cur: Array.from({ length: named }, (_, i) => [15 + i, 3 + i, i % 8]), done: [] } } });
+    // presentation: one order row (door, then count + clock as one capsule) and an ordinary intro as a bubble beside it
+    for (const [lg, n] of [['en', 7], ['tr', 8]]) {
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: ${n}, coins: 300, meta: { sessions: 3 }, cafe: { stars: 1, built: { counter_counter: 1 } }, settings: { lang: '${lg}', sound: false, music: false, haptics: false } }))`);
+      await boot(); await qa(`level(${n})`); await sleep(900);
+      const L = await qa('layout()');
+      const bub = await R('.ordintro.tuck');
+      const pill = await R('#ordstrip .oscount');
+      const clk = await R('#iqclk.dock');
+      const txt = await ev('document.querySelector(".ordintro.tuck")?.textContent || ""');
+      if (!bub) throw new Error(`r11 ${lg}: an ordinary order should open with the tucked bubble`);
+      if (!(lg === 'en' ? /needs \d+ cats!/ : /\d+ kedi lazım!/).test(txt)) throw new Error(`r11 ${lg} bubble text: ${txt}`);
+      if (bub.b > L.oy - 2) throw new Error(`r11 ${lg}: the bubble reaches the board (${Math.round(bub.b)} > ${Math.round(L.oy)})`);
+      if (bub.r > 375 + 1) throw new Error(`r11 ${lg}: the bubble runs off the screen`);
+      if (!(await ev('(() => { const b = document.querySelector(".ordintro.tuck b"); return b.scrollWidth <= b.clientWidth + 1; })()'))) throw new Error(`r11 ${lg}: the bubble text is clipped`);
+      if (!pill || !clk || Math.abs((pill.t + pill.b) / 2 - (clk.t + clk.b) / 2) > 2 || clk.l < pill.r - 3) throw new Error(`r11 ${lg}: the clock should sit on the order row's right end ${JSON.stringify({ pill, clk })}`);
+      if (clk.b > L.benchY - L.bw * 0.35) console.log(`  note: r11 ${lg} order row bottom ${Math.round(clk.b)} vs cushion top ${Math.round(L.benchY - L.bw * 0.35)}`);
+      await shot(`r11-order-row-${lg}`);
+      await sleep(2400);
+      if (await ev('!!document.querySelector(".ordintro")')) throw new Error(`r11 ${lg}: the bubble should fly into the strip`);
+      await shot(`r11-order-row-${lg}-after`);
+    }
+    // the pack name is the plaque's second line, inside the plaque
+    await qa('lang("en")'); await qa('level(66)'); await sleep(900);
+    const plq = await R('#hud .lvl-pill.pk');
+    const chp = await R('#hud .lvl-pill .cpchip');
+    if (!plq || !chp || chp.t < plq.t - 1 || chp.b > plq.b + 1) throw new Error('r11: the pack chip should sit inside the level plaque ' + JSON.stringify({ plq, chp }));
+    await ev('document.getElementById("cmodal")?.remove()'); await sleep(200);
+    await shot('r11-pack-plaque');
+    // juice + virality: the L13 chain; cushions rebound as cats launch; the win card shows the still at once and records
+    // only on Share clip; the end card and the PNG carry a QR of the public dare link
+    const idle = async () => { await waitFor('!window.__qa.state().busy', 10000); await sleep(150); };
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:9,level:60,coins:500,meta:{sessions:3,shareNudge:1,bestChain:5}}))');
+    await boot(); await qa('lang("en")'); await qa('slow(1)');
+    await qa('level(13)'); await sleep(700);
+    let rebound = false;
+    for (const id of await qa('order()')) {
+      await idle();
+      if (!(await qa(`alive(${id})`))) continue;
+      await qa(`tap(${id})`);
+      if (!rebound) {
+        for (let k = 0; k < 20 && !(await ev('(window.__qa.chainFx() || {}).k >= 2')); k++) await sleep(60);
+        if (await ev('(window.__qa.chainFx() || {}).k >= 2')) { await sleep(60); await shot('r11-chain-rebound'); rebound = (await qa('benchOut()')) > 0; }
+      }
+    }
+    if (!rebound) throw new Error('r11: a chain should spring its cushions back (benchOut)');
+    await waitFor('window.__qa.state().screen === "win"', 30000);
+    await sleep(350);
+    const w0 = await qa('clip()');
+    if (w0.encoding || w0.ready) throw new Error('r11: the win card must not record before the player asks ' + JSON.stringify(w0));
+    if (!(await ev('(() => { const c = document.querySelector("#modal .chainclip canvas"); return !!c && c.height === 320; })()'))) throw new Error('r11: the peak still should be on the win card at once');
+    if (await ev('document.querySelector("#modal [data-act=shareclip]").hidden')) throw new Error('r11: Share clip should be offered at once');
+    if (!/^https?:\/\/.+\?c=2l13-\d+-c\d+m?-[a-z0-9]+$/.test(w0.qr || '')) throw new Error('r11: QR link ' + w0.qr);
+    await shot('r11-win-still');
+    await ev('document.querySelector("#modal [data-act=shareclip]").click()'); await sleep(300);
+    const w1 = await qa('clip()');
+    if (w1.canRecord) {
+      if (!w1.encoding || !(await ev('document.querySelector("#modal [data-act=shareclip]").classList.contains("making")'))) throw new Error('r11: the first Share clip tap should start the recording');
+      await shot('r11-clip-making');
+      await waitFor('window.__qa.clip().ready', 20000); await sleep(400);
+      if (!(await ev('document.querySelector("#modal [data-act=shareclip]").classList.contains("ready")'))) throw new Error('r11: Share clip should say it is ready');
+      await shot('r11-clip-ready');
+    } else console.log('  note: r11 no MediaRecorder here: Share clip sends the PNG');
+    const qf = await qa('clipFrames(["end", "png"])');
+    saveImg('r11-clip-end-qr.jpg', qf[0].url); saveImg('r11-clip-png-qr.jpg', qf[1].url);
+    // perf proxy: the win transition and the card's first seconds at 4x CPU (a slow phone), frame deltas
+    await send('Emulation.setCPUThrottlingRate', { rate: 4 });
+    await qa('level(13)'); await sleep(600); await qa('winNow()');
+    const ft = await ev('new Promise((res) => { const d = []; let last = performance.now(); const t0 = last; const f = (now) => { d.push(now - last); last = now; if (now - t0 < 3000) requestAnimationFrame(f); else res(d); }; requestAnimationFrame(f); })');
+    await send('Emulation.setCPUThrottlingRate', { rate: 1 });
+    const fs = ft.slice().sort((a, b) => a - b);
+    console.log(`  r11 perf 4x CPU win transition: ${ft.length} frames, p50 ${fs[Math.floor(fs.length * 0.5)].toFixed(1)} ms, p95 ${fs[Math.floor(fs.length * 0.95)].toFixed(1)} ms, max ${fs.at(-1).toFixed(1)} ms`);
+    await waitFor('window.__qa.state().screen === "win"', 30000);
+    // overall: an ordinary first clear (not the first adoption) credits the cat on the win card, Next is the one route
+    for (const [lg, n] of [['en', 16], ['tr', 17]]) {
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: ${n}, coins: 500, meta: { sessions: 3 }, cafe: { stars: 4, built: { counter_counter: 1 } }, orders: ${JSON.stringify(lib(n - 15))}, settings: { lang: '${lg}', sound: false, music: false, haptics: false } }))`);
+      await boot(); await qa(`level(${n})`); await sleep(600); await qa('winNow()');
+      await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1300);
+      if (await ev('!!document.querySelector("#ordcer")')) throw new Error(`r11 ${lg}: an ordinary first clear should skip the ceremony`);
+      const ow = await ev('document.querySelector("#modal .ordwin")?.textContent || ""');
+      if (!(lg === 'en' ? /now lives at the Library/ : /yaşıyor/).test(ow)) throw new Error(`r11 ${lg}: the win card should name the adopted cat: ${ow}`);
+      if (!(await ev('!!document.querySelector("#modal [data-act=next]")'))) throw new Error(`r11 ${lg}: Next should be the main route`);
+      if (await ev('!!document.querySelector("#modal .btn[data-act=cafe]")')) throw new Error(`r11 ${lg}: Build should ride on the café bar, not replace Next`);
+      const named = await ev('JSON.parse(localStorage.getItem("lco_save")).orders.shops.library.named');
+      if (named !== n - 14) throw new Error(`r11 ${lg}: the adoption should be saved at once (${named})`);
+      await shot(`r11-quick-adopt-${lg}`);
+    }
+    // fun: a lost bench marks the carrier it needed; Take back marks the cushion that came free / a cat that boards now
+    await ev('localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 20, coins: 300, meta: { sessions: 3 }, settings: { lang: "en", sound: false, music: false, haptics: false } }))');
+    await boot(); await qa('level(13)'); await sleep(600); await qa('failNow()');
+    await waitFor('window.__qa.state().screen === "fail"', 30000); await sleep(900);
+    const cf = await qa('cue()');
+    if (!cf || cf.need == null) throw new Error('r11: the lost bench should mark the carrier it needs ' + JSON.stringify(cf));
+    await shot('r11-fail-cue');
+    if (await ev('!!document.querySelector("#modal [data-act=takeback]")')) {
+      await ev('document.querySelector("#modal [data-act=takeback]").click()'); await sleep(500);
+      const cb = await qa('cue()');
+      console.log('  r11 take back cue', JSON.stringify(cb));
+      if (!cb || cb.need != null || (cb.seat < 0 && cb.cat < 0)) console.log('  note: r11 take back left nothing to point at (bench full, no matching cat)');
+      await shot('r11-takeback-cue');
+    } else console.log('  note: r11 no free Take back on this loss');
+    // retention: one featured goal with its reward and route; the archive offers released postcards of a started page
+    const hday = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
+    const hw = Math.floor((hday + 3) / 7);
+    const hubS = (lg) => JSON.stringify({ v: 9, level: 27, coins: 900, meta: { sessions: 5 }, cafe: { stars: 0, built: { counter_counter: 1, counter_pastry: 1, counter_lamps: 1, counter_chalkboard: 1, counter_tables: 1, counter_plant: 1, window_seat: 1 } },
+      req: { list: [{ k: 'carrier', who: 'mochi', need: 8, p: 6, c: 0, s: 2 }], next: Date.now() + 3600000, n: 2, done: 0, fresh: '' }, show: { marks: {}, from: hw }, album: { cards: { [((hw % 24) + 24) % 24]: 1 }, hung: {} },
+      daily: { last: String(hday - 1), streak: 1, doneDay: '' }, settings: { lang: lg, sound: false, music: false, haptics: false } });
+    for (const lg of ['en', 'tr']) {
+      await ev(`localStorage.setItem("lco_save", ${JSON.stringify(hubS(lg))})`);
+      await boot(); await sleep(500);
+      const fg = await ev('[...document.querySelectorAll("#cafe .goals .goal")].map((g) => g.className + "|" + g.dataset.act + "|" + g.textContent)');
+      if (fg.length !== 1 || !/feat/.test(fg[0])) throw new Error(`r11 ${lg}: the hub should feature one goal: ` + fg.join(' / '));
+      if (!(await ev('!!document.querySelector("#cafe .goal.feat .gcta") && !!document.querySelector("#cafe .goal.feat .lchip")'))) throw new Error(`r11 ${lg}: the featured goal needs its reward and route`);
+      if (!(await ev('[...document.querySelectorAll("#cafe .goal.feat .gt b, #cafe .goal.feat .gcta")].every((e) => e.scrollWidth <= e.clientWidth + 1)'))) throw new Error(`r11 ${lg}: featured goal text clipped`);
+      console.log(`  r11 featured goal ${lg}: ${fg[0].split('|').slice(1).join(' | ')}`);
+      await shot(`r11-hub-feat-${lg}`);
+    }
+    await qa('lang("en")');
+    await qa('act("album", {})'); await sleep(700);
+    const alb = await ev('document.querySelector("#sheet")?.textContent || ""');
+    if (!/In the archive/.test(alb)) throw new Error('r11: the started page should offer released postcards from the archive: ' + alb.slice(0, 200));
+    await shot('r11-album-archive');
+    // desktop: one primary Play (the column's), the goals in the left panel only
+    await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+    await ev(`localStorage.setItem("lco_save", ${JSON.stringify(hubS('en'))})`);
+    await boot(); await sleep(600);
+    if (await ev('!!document.querySelector("#hubR [data-act=play]")')) throw new Error('r11 desktop: the road panel should not repeat Play');
+    if (!(await ev('!!document.querySelector("#hubL .goal.feat")'))) throw new Error('r11 desktop: the featured goal belongs in the left panel');
+    if (await ev('(() => { const g = document.querySelector("#cafe .goals"); return !!g && g.getClientRects().length > 0; })()')) throw new Error('r11 desktop: the column should not repeat the goals');
+    await shot('r11-hub-desk');
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }

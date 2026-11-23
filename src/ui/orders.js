@@ -1,12 +1,14 @@
 // Adoption orders UI (logic: src/game/orders.js, data: data/orders.js). Every normal level is an order from a Cat Street
 // shopkeeper:
-//  - intro card at the level start (first attempt): the keeper, "Baker Crumb's bakery needs 9 cats!", the reason, the
-//    Urgent / VIP tag. It never blocks a tap and flies into the strip after ~2.4 s or on the first cat out.
+//  - intro at the level start (first attempt): an ordinary order is a one-line speech bubble beside the order row
+//    ("Baker Crumb's bakery needs 9 cats!"), so the bench and the top cats stay in view; an Urgent / VIP order keeps the
+//    big card with its reason and tag. Neither blocks a tap; both fly into the strip after ~2.4 s or on the first cat.
 //  - the strip at the left end of the carrier belt: the keeper in a shop door, n/N cats delivered, a mood (a heart on
 //    chains, a sweat drop when the bench is one seat from full). A full carrier drives off the left edge into that door:
 //    the count ticks when it gets there.
-//  - the delivery ceremony before the win card (first clear): the cats hop into the shop, the keeper says thanks, the
-//    named cat joins the shop's album set (a full set pays). Tap skips it.
+//  - the delivery ceremony before the win card: the first adoption ever, a finished set, an Urgent / VIP order. The cats
+//    hop into the shop, the keeper says thanks, the named cat joins the shop's album set (a full set pays). Tap skips it.
+//    Any other first clear credits the adoption at once and names the cat in one row on the win card (R11).
 //  - "Adopted cats" tab in the album sheet: one page per shop served; street façades get doorstep cats as they fill up.
 // Hooks (main.js): initOrders(game, ctx) once at boot, startOrder(n, board, special) after each level load.
 import { t, lang } from '../i18n.js';
@@ -108,7 +110,9 @@ export function startOrder(n, board, special) {
   strip.className = `ordstrip k-${o.kind}`;
   strip.dataset.mood = '';
   strip.setAttribute('role', 'status');
-  strip.innerHTML = `<div class="osdoor" style="--sh:url('${url('street_' + o.shop)}')"><i class="osawn"></i><div class="osface" style="background-image:url('${url('keeper_' + o.shop)}')"></div><i class="osmood">${HEART}${DROP}</i></div><b class="oscount">${r7(head(board.carriers && board.carriers.length ? board.carriers[0].color : 0), 'osc')}<span>0/${total}</span></b>${tagHtml(o)}`;
+  // the keeper's door, then one order row under it: the delivered count (the level clock docks on its right end,
+  // src/ui/iq.js) and an Urgent / VIP icon on the door (its word is on the intro card)
+  strip.innerHTML = `<div class="osdoor" style="--sh:url('${url('street_' + o.shop)}')"><i class="osawn"></i><div class="osface" style="background-image:url('${url('keeper_' + o.shop)}')"></div><i class="osmood">${HEART}${DROP}</i>${tagHtml(o)}</div><b class="oscount">${r7(head(board.carriers && board.carriers.length ? board.carriers[0].color : 0), 'osc')}<span>0/${total}</span></b>`;
   strip.setAttribute('aria-label', `${orderTitle(o, total)} ${t('ordStrip', { a: 0, b: total })}`);
   place();
   // a pack / new-piece card (content lane, #cmodal) goes first: the order card waits for it to close
@@ -130,7 +134,21 @@ function place() {
   strip.style.top = Math.round(hdr + 9) + 'px'; // clear of the Home button
   strip.style.width = Math.round(w) + 'px';
   strip.style.setProperty('--ps', Math.round(Math.min(w - 4, G.cs * 0.74)) + 'px');
-  if (intro) intro.style.top = Math.round(G.benchY - G.bw * 0.5) + 'px';
+  if (intro) placeIntro();
+}
+// the big card (Urgent / VIP) sits over the bench; the tucked bubble sits right of the order row (count + clock)
+function placeIntro() {
+  if (!intro.classList.contains('tuck')) { intro.style.top = Math.round(G.benchY - G.bw * 0.5) + 'px'; return; }
+  const row = strip && !strip.hidden ? strip.querySelector('.oscount') : null;
+  if (!row) return;
+  const r = row.getBoundingClientRect();
+  const clk = document.querySelector('#iqclk.dock');
+  const right = Math.max(r.right, clk && clk.offsetParent ? clk.getBoundingClientRect().right : 0);
+  const host = document.body.getBoundingClientRect(); // wide screens: the centred phone column
+  const left = right + 7;
+  intro.style.left = Math.round(left) + 'px';
+  intro.style.maxWidth = Math.max(120, Math.round(host.right - left - 6)) + 'px';
+  intro.style.top = Math.round(r.top + r.height / 2) + 'px';
 }
 
 function tick() {
@@ -139,6 +157,7 @@ function tick() {
   strip.hidden = !vis;
   if (!vis) { if (intro && !(cur && G && G.board === cur.board)) dismissIntro(true); return; }
   if (pendIntro && !document.getElementById('cmodal')) { pendIntro = false; showIntro(); }
+  if (intro && intro.classList.contains('tuck') && !intro.classList.contains('fly')) placeIntro(); // the clock docks after the load
   const st = G.state;
   if (!st) return;
   // a carrier counts once it has driven off the edge into the shop (still on screen = still on its way)
@@ -175,9 +194,12 @@ function showIntro() {
   const o = cur.o;
   const c = O.CUSTOMERS[o.shop];
   intro = document.createElement('div');
-  intro.className = 'ordintro' + (calm() ? ' calm' : '');
+  const tuck = o.kind === 'normal';
+  intro.className = 'ordintro' + (tuck ? ' tuck' : '') + (calm() ? ' calm' : '');
   const line = o.kind === 'normal' ? loc(c.why[o.why]) : t(o.kind === 'vip' ? 'ordVipLine' : 'ordUrgentLine', { c: o.bonus });
-  intro.innerHTML = `<div class="oiface" style="background-image:url('${url('keeper_' + o.shop)}')"></div><div class="oitext">${tagHtml(o)}<b>${esc(orderTitle(o, cur.total))}</b><small>${esc(line)}</small></div>`;
+  intro.innerHTML = tuck
+    ? `<b>${esc(orderTitle(o, cur.total))}</b>` // the keeper's door is right beside it: no face, no reason line
+    : `<div class="oiface" style="background-image:url('${url('keeper_' + o.shop)}')"></div><div class="oitext">${tagHtml(o)}<b>${esc(orderTitle(o, cur.total))}</b><small>${esc(line)}</small></div>`;
   document.body.insertBefore(intro, document.getElementById('ui'));
   place();
   const el = intro;
@@ -193,7 +215,7 @@ function dismissIntro(now = false) {
   if (now || calm() || !strip || strip.hidden) { el.classList.add('fade'); setTimeout(() => el.remove(), now ? 0 : 260); return; }
   const a = el.getBoundingClientRect();
   const b = strip.getBoundingClientRect();
-  el.style.setProperty('--dx', Math.round(b.left + b.width / 2 - (a.left + a.width / 2)) + 'px');
+  el.style.setProperty('--dx', Math.round(b.left + b.width / 2 - (a.left + a.width / 2)) + 'px'); // .tuck has no -50% shift
   el.style.setProperty('--dy', Math.round(b.top + b.height / 3 - (a.top + a.height / 2)) + 'px');
   el.classList.add('fly');
   setTimeout(() => el.remove(), 480);
@@ -210,7 +232,22 @@ function delivered(go) {
   happyT = performance.now() + 4000;
   dismissIntro(true);
   if (!a || flushing) return go();
+  // R11: the full ceremony only for the first adoption ever, a finished set and Urgent / VIP orders; an ordinary first
+  // clear credits the cat at once and names it on the win card (main.js reads S.quickAdopt)
+  if (!(O.totalAdopted(save.data) <= 1 || a.reward || cur.o.kind !== 'normal')) {
+    S.quickAdopt = adoptRow(a);
+    try { go(); } finally { S.quickAdopt = null; }
+    return;
+  }
   showCeremony(a, go, { n: S.n, daily: S.daily, show: S.show });
+}
+
+// the win card's adoption row: the new cat's face, "Cupcake now lives at the Library", the set's progress
+function adoptRow(a) {
+  const c = O.CUSTOMERS[a.shop];
+  const name = O.CAT_NAMES[a.cat[1]];
+  const segs = Array.from({ length: a.set.size }, (_, i) => `<i class="${i < a.set.have ? 'on' : ''}"></i>`).join('');
+  return `<div class="ordwin${calm() ? ' calm' : ''}">${r7(head(a.cat[2]), 'owcat')}<span><b>${esc(t('ordAdopted', { name, at: loc(c.at) }))}</b><small>${esc(t('ordSet', { k: a.set.k, a: a.set.have, b: a.set.size }))}<i class="ocsegs">${segs}</i></small></span></div>`;
 }
 
 function showCeremony(a, go, snap) {

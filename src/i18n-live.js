@@ -56,7 +56,7 @@ addStrings({
     previewTitle: '{n} pulda {name}', previewBody: '{room} odasında bir köşe · günde +{c} altın',
     renoTitle: '{set}', renoFeatured: 'Yeni stil · bu sezonun seti', renoSub: '{room} için yeni stil', renoSwitch: 'Stili değiştir', renoSwitchSub: 'Ücretsiz · {n} set var', renoDone: 'Yeni görünüm: {set}!',
     nextUp: 'Sırada: {room}', unlocksX: '{name} taşınır',
-    goalResident: 'Yeni: {name}', g_win: '{n} galibiyet', g_color: '{n} kedi çıkar', g_carrier: '{n} taşıyıcı', g_tidy: 'Temiz galibiyet', g_daily: 'Günlük bulmaca', outfit_hat: 'Bere', outfit_scarf: 'Atkı', outfit_crown: 'Taç', goalVisitor: '{name} geliyor', goalGift: 'Sezon hediyesi', goalStreak: 'Günlük seri', goalParty: 'Çatı partisi', goalShow: 'Kedi Şovu madalyası', resThread: '{n} yıldız sonra {name} taşınıyor', reqFirst: '{name} senden istiyor: {what}', nextAskNow: 'Sırada: {name} için {task}', nextAskIn: '{t} sonra yeni istek var. Görüşürüz!',
+    goalResident: 'Yeni: {name}', g_win: '{n} galibiyet', g_color: '{n} kedi çıkar', g_carrier: '{n} taşıyıcı doldur', g_tidy: 'Temiz galibiyet', g_daily: 'Günlük bulmaca', outfit_hat: 'Bere', outfit_scarf: 'Atkı', outfit_crown: 'Taç', goalVisitor: '{name} geliyor', goalGift: 'Sezon hediyesi', goalStreak: 'Günlük seri', goalParty: 'Çatı partisi', goalShow: 'Kedi Şovu madalyası', resThread: '{n} yıldız sonra {name} taşınıyor', reqFirst: '{name} senden istiyor: {what}', nextAskNow: 'Sırada: {name} için {task}', nextAskIn: '{t} sonra yeni istek var. Görüşürüz!',
     petHeart: '{name} seni çok sevdi! ♥{n}',
     outfitGift: 'Yeni kıyafet: {name} için {o}!',
     cafeChores: 'Kafe bahşişleri', jarRate: 'Sakinlerin saatte {n} altın bahşiş bırakıyor', collect: 'Topla', jarIsFull: 'Kavanoz doldu: topla!', jarFullIn: '{t} sonra dolu',

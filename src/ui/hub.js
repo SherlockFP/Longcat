@@ -11,7 +11,7 @@ import { RESIDENTS, isBuilt } from '../game/cafe.js';
 import { taskDone } from '../game/econ.js';
 import { cardsOwned, WEEKS } from '../game/r10.js';
 import { CHAPTER_LEN, CHAPTERS, PROPS } from '../../data/hub.js';
-import { goalsHtml } from './live.js';
+import { goalsHtml, featGoalHtml, featGoal } from './live.js';
 
 const root = document.getElementById('ui');
 const r7 = (name, cls = '') => `<img class="${cls}" src="${assetUrl('r7/' + name + '.webp')}" alt="" draggable="false">`;
@@ -240,7 +240,7 @@ export function layoutResidents() {
   room.querySelectorAll('.frail > *, .rrail > *').forEach((el) => add(el, el.querySelector('span') ? 14 : 0)); // a rail label hangs under its button
   let bot = box.b - PAD;
   const g = room.querySelector('.goals');
-  if (g) bot = Math.min(bot, rel(g.getBoundingClientRect()).t - PAD);
+  if (g && g.getClientRects().length) bot = Math.min(bot, rel(g.getBoundingClientRect()).t - PAD); // R11: hidden on desktop (left panel)
   const pct = (v) => (parseFloat(v) || 0) / 100 * S;
   const units = [];
   const bubbleOf = (id) => room.querySelector(`.rqbub[data-who="${id}"]`);
@@ -349,7 +349,8 @@ try { document.fonts.addEventListener('loadingdone', () => { if (!mapOn && docum
 // ---- wide screens: a bigger column with side panels ----
 // index.html centres a 9:16 phone column on any screen wider than 2:3. On a desktop with room to spare the column
 // grows (a bigger board) and two panels stand beside it: today (tasks, daily, events, goals, keys) on the left, the
-// road, the residents and the album on the right.
+// road, the residents and the album on the right. R11: the column keeps the one primary Play; the goals live in the
+// left panel only (the featured one first), the road panel is chapter context.
 let wideOn = false;
 function wideFit() {
   const W = innerWidth, H = innerHeight;
@@ -412,7 +413,7 @@ function panels() {
 ${row('quests', 'icon_calendar', t('hsTasks'), t('hsTasksSub', { a: tdone, b: tasks.length || 3 }), dots.quests)}
 ${row('dailysheet', 'hud_medal', t('hsDaily'), dailyDone ? t('hsDailyDone', { n: Lv.daily.streak }) : t('hsDailyGo'), dots.daily)}
 ${row('show', 'icon_trophy', t('hsEvents'), t('hsEventsSub'), dots.show)}
-${Lv && Lv.goals && Lv.goals.length ? `<h4>${t('hsGoals')}</h4><div class="hsgoals">${goalsHtml(Lv.goals.slice(0, 3))}</div>` : ''}
+${Lv && Lv.goals && Lv.goals.length ? `<h4>${t('hsGoals')}</h4><div class="hsgoals">${featGoalHtml(Lv.goals)}${goalsHtml(Lv.goals.filter((g) => g !== featGoal(Lv.goals)).slice(0, 2))}</div>` : ''}
 <h4>${t('hsKeys')}</h4><ul class="hskeys">${key(['Space', 'Enter'], t('keyPlay'))}${key(['Z'], t('keyUndo'))}${key(['H'], t('keyHint'))}${key(['Esc'], t('keyBack'))}</ul>
 </div>`;
   const c = chapterOf(cur);
@@ -424,7 +425,7 @@ ${Lv && Lv.goals && Lv.goals.length ? `<h4>${t('hsGoals')}</h4><div class="hsgoa
 <div class="hsroad"><div class="hssign">${r7('map_sign')}<span><small>${t('mapChapter', { n: c })}</small><b>${esc(chapterName(c))}</b></span></div>
 <div class="hsdots">${Array.from({ length: CHAPTER_LEN }, (_, i) => `<i class="${i < inCh ? 'on' : i === inCh ? 'cur' : ''}"></i>`).join('')}</div>
 <small>${t('hsChapterProg', { a: inCh, b: CHAPTER_LEN })}</small>
-<button class="btn play hsplay" data-act="play"><b>${t('play')}</b><small>${t('mapLevel', { n: cur })}</small></button></div>
+<small class="hsnext">${t('mapLevel', { n: cur })}</small></div>
 <h4>${t('hsResidents')}</h4>
 <button class="hsrow hsres" data-act="residents"><span class="hsheads">${owned.slice(0, 6).map((r) => r7('res7_' + r.id + '_idle')).join('') || r7('icon_paw', 'hsi')}</span><span><small>${t('hsResSub', { a: owned.length, b: RESIDENTS.length })}</small></span></button>
 <h4>${t('hsAlbum')}</h4>

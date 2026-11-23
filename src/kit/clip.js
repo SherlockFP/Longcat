@@ -8,6 +8,7 @@
 // WebM; without one, Share hands over a PNG of the peak moment with the caption.
 import { Game } from '../game/game.js';
 import { FONT, drawPaw } from '../game/render.js';
+import { drawQr } from './qr.js';
 
 export const CLIP_W = 360;
 export const CLIP_H = 640;
@@ -40,7 +41,8 @@ export function planClip(log, won) {
   return { from, peak: p, kind, n: kind === 'chain' ? best : 0 };
 }
 
-// src: { board, log, plan, text: { combo[], chainX(n), lastSeat, title, board, result, can, link, url, goal, bench(u, n), chain } }
+// src: { board, log, plan, text: { combo[], chainX(n), lastSeat, title, board, result, can, link, url, goal, bench(u, n), chain,
+//   qr: the public https dare link the end card and the PNG carry as a scannable code (R11), scan: its caption } }
 export function clipPlayer(src) {
   const { board, log, plan, text } = src;
   const cv = document.createElement('canvas');
@@ -145,6 +147,27 @@ export function clipPlayer(src) {
 
   // punch-in: the camera leans in on the deciding tap, slides down to the bench while its cushions empty, then eases
   // back out before the end card
+  // the QR on a white card with a pink rim and its caption under it
+  function drawQrCard(ctx, url, x, y, s, cap, room = CLIP_W - 60) {
+    ctx.save();
+    ctx.beginPath();
+    ctx.roundRect(x - 6, y - 6, s + 12, s + 12, 14);
+    ctx.fillStyle = '#ffffff';
+    ctx.fill();
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = '#ff5d8f';
+    ctx.stroke();
+    const ok = drawQr(ctx, url, x, y, s);
+    ctx.restore();
+    if (ok && cap) {
+      const cx = x + s / 2;
+      fit(ctx, cap, 14, room, 700);
+      ctx.fillStyle = '#9fe8e1';
+      ctx.fillText(cap, cx, y + s + 20);
+    }
+    return ok;
+  }
+
   function zoom() {
     if (!peakTap) return { s: 1, x: 0, y: 0 };
     const u = t - peakTap.t0;
@@ -240,7 +263,7 @@ export function clipPlayer(src) {
       ctx.globalAlpha = u;
       ctx.fillStyle = 'rgba(29,43,83,0.93)';
       ctx.fillRect(0, 0, CLIP_W, CLIP_H);
-      ctx.translate(CLIP_W / 2, CLIP_H * 0.25);
+      ctx.translate(CLIP_W / 2, CLIP_H * (text.qr ? 0.19 : 0.25)); // R11: with the QR the block sits higher
       const s = 0.8 + 0.2 * u;
       ctx.scale(s, s);
       label(ctx, text.result, 0, 0, 54, '#ff8fb3', CLIP_W - 40, '#0e1630');
@@ -262,7 +285,9 @@ export function clipPlayer(src) {
         ctx.fillStyle = NAVY;
         ctx.fillText(text.url, 0, 176 + (sz + 22) / 2 + 1);
       }
-      label(ctx, text.title, 0, 262, 32, '#ffd43b', CLIP_W - 40, '#0e1630');
+      // R11: a phone that got the clip without its caption scans this to open the exact board (the typed code stays above)
+      if (text.qr && drawQrCard(ctx, text.qr, -64, 232, 128, text.scan)) label(ctx, text.title, 0, 424, 30, '#ffd43b', CLIP_W - 40, '#0e1630');
+      else label(ctx, text.title, 0, 262, 32, '#ffd43b', CLIP_W - 40, '#0e1630');
       ctx.restore();
     }
   }
@@ -270,6 +295,16 @@ export function clipPlayer(src) {
   return {
     canvas: out,
     step,
+    // the PNG fallback (the peak frame): the QR in the bottom-right corner above the brand band
+    stampQr() {
+      if (!text.qr) return;
+      const o = out.getContext('2d');
+      o.setTransform(DPR, 0, 0, DPR, 0, 0);
+      o.textAlign = 'center';
+      o.textBaseline = 'middle';
+      const s = 104;
+      drawQrCard(o, text.qr, CLIP_W - s - 14, CLIP_H - BOT - s - 30, s, text.scan, s + 20); // centred under the code, the caption stays 4 px inside the edge
+    },
     draw() { g.draw(); overlay(); },
     get t() { return t; },
     get done() { return endAt != null && t >= endAt + END; },
@@ -335,31 +370,36 @@ export function makeShareClip() {
   let done = null;
   let gen = 0;
   let png = null;
+  let busy = false;
+  let failed = false; // the encode gave nothing: Share clip falls back to the PNG
   return {
-    set(s) { src = s; job = null; done = null; png = null; gen++; },
-    clear() { src = null; job = null; done = null; png = null; gen++; },
+    set(s) { src = s; job = null; done = null; png = null; busy = false; failed = false; gen++; },
+    clear() { src = null; job = null; done = null; png = null; busy = false; failed = false; gen++; },
     has: () => !!src,
     get src() { return src; },
-    // preview canvas: a still of the peak (reduced motion, or no MediaRecorder) or the live frames while it encodes,
-    // then the finished video loops in its place
-    // onReady: the video is encoded (the win card reveals Share clip only then)
-    start(cv, still, onReady) {
-      if (!src) return;
+    // preview canvas: the still of the peak (the moment the clip is about), drawn once
+    start(cv) {
+      if (!src || !cv) return;
+      const p = clipPlayer(src);
+      p.seek('peak');
+      cv.width = 180;
+      cv.height = 320;
+      cv.getContext('2d').drawImage(p.canvas, 0, 0, 180, 320);
+    },
+    // the encode, only when the player asks for the clip (R11): real time through MediaRecorder, the frames play in the
+    // preview canvas while it records (not under reduced motion), then the finished video loops in its place.
+    // Resolves to the video ({ blob, ext }) or null.
+    record(cv, still) {
+      if (!src || !canRecord()) return Promise.resolve(null);
+      if (job) return job;
       const mine = gen;
-      if (cv) {
-        const p = clipPlayer(src);
-        p.seek('peak');
-        cv.width = 180;
-        cv.height = 320;
-        cv.getContext('2d').drawImage(p.canvas, 0, 0, 180, 320);
-      }
-      if (!canRecord()) return;
       const copy = (frame) => { if (!still && cv && cv.isConnected) cv.getContext('2d').drawImage(frame, 0, 0, cv.width, cv.height); };
-      job = record(src, copy, () => mine === gen).catch(() => null);
-      job.then((r) => {
-        if (mine !== gen) return;
+      busy = true;
+      job = record(src, copy, () => mine === gen).catch(() => null).then((r) => {
+        if (mine !== gen) return null;
+        busy = false;
         done = r;
-        if (r && onReady) onReady(r);
+        if (!r) failed = true;
         if (r && !still && cv && cv.isConnected && cv.parentNode) { // the finished clip loops in place of the frames
           const v = document.createElement('video');
           v.muted = true; v.loop = true; v.playsInline = true; v.autoplay = true;
@@ -369,16 +409,20 @@ export function makeShareClip() {
           v.addEventListener('loadeddata', () => { if (cv.isConnected) cv.replaceWith(v); }, { once: true });
           v.play().catch(() => {});
         }
+        return r;
       });
+      return job;
     },
     ready: () => done,
-    encoding: () => !!job && !done,
+    encoding: () => busy,
+    failed: () => failed,
     // the peak moment as a PNG with its caption (no MediaRecorder, or the video is not ready inside the tap)
     async png() {
       if (!src) return null;
       if (png) return png;
       const p = clipPlayer(src);
       p.seek('peak');
+      p.stampQr();
       const blob = await new Promise((res) => p.canvas.toBlob(res, 'image/png'));
       png = blob ? { blob, ext: 'png' } : null;
       return png;
@@ -387,7 +431,13 @@ export function makeShareClip() {
     frames(times) {
       if (!src) return null;
       const p = clipPlayer(src);
-      return times.map((x) => ({ at: +p.seek(x).toFixed(2), url: p.canvas.toDataURL('image/jpeg', 0.85) }));
+      return times.map((x) => {
+        if (x !== 'png') return { at: +p.seek(x).toFixed(2), url: p.canvas.toDataURL('image/jpeg', 0.85) };
+        const q = clipPlayer(src); // the PNG fallback: a fresh run to the peak, then its QR stamp
+        const at = +q.seek('peak').toFixed(2);
+        q.stampQr();
+        return { at, url: q.canvas.toDataURL('image/jpeg', 0.85) };
+      });
     },
   };
 }

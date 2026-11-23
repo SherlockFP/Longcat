@@ -154,3 +154,30 @@
 - Perf: the win card is still 83-100ms per frame without a GPU (the clip recorder replays a second game). Pixi chunks (~550KB) are precached by the service worker though few players enable them. Pre-rendered cat sprites cost an estimated 15-25MB on L60 (not measured).
 - Medal cuts and spring/swivel difficulty come from formulas, not playtests. Rank is mostly BOTs until a KV backend exists. Keepers order before their shop is built on the street. Past map nodes cannot be replayed (Records > Levels can). Hats and carrier skins are drawn in code, not painted.
 - Coins still pile up late (shop sim leaves 8.7k-17k after 120 days): more late sinks are needed.
+
+## R10 fix round 1 (sol-r11-1: presentation, juice, fun, retention, virality, the first-clear flow)
+### Presentation
+- One order row under the keeper's door: the n/N count and the level clock dock as one capsule (iq.js dock); the Urgent / VIP tag is an icon on the door. Frames r11-order-row-en/tr.
+- An ordinary order's intro is a one-line bubble beside that row (no face, no reason line), so the bench and the top cats stay in view; Urgent / VIP keep the big card. QA asserts the bubble stays above the board and is not clipped (EN + TR, 375x667).
+- The pack name is the level plaque's second line ("Rainy Day 6/20"), no longer touching the front carrier's 0/3 tag (r11-pack-plaque).
+- Desktop: the road panel lost its PLAY (the column keeps the one primary Play); the goals live in the left panel only, the featured one first (r11-hub-desk). The resident layout ignores the hidden goals strip.
+### Juice
+- The win card draws the peak still about one frame after it opens and records nothing. The first Share clip tap records the clip in real time (the thumbnail plays, the button says "Making clip…"); when it is ready the button pulses and the next tap sends it. If recording fails, Share clip sends the PNG (r11-win-still, r11-clip-making, r11-clip-ready).
+- Contact beats inside the existing timing: a carrier dips into the belt when a cat lands (0.32 s), and a cushion squashes and springs back as its cat launches (0.4 s). Neither runs under reduced motion (r11-chain-rebound).
+- Perf proxy (QA, 4x CPU throttle, headless, no GPU) for the 3 s after a win: p50 16.7 ms; p95 was 50 ms in three runs and 66 / 133 ms in two others, depending on machine load. Not measured on a real low-end Android; rapid-tap profiling was not done.
+### Fun
+- Lost bench: the carrier the stuck cat needs gets a dashed pink ring (its slot, or its dot in the queue capsule) with a badge showing how many carriers must leave first (r11-fail-cue).
+- After Take back: the cushion that came free gets a green ring with a check mark, and a cat that can board the front carrier right now glows with an arrow, for 3.4 s or until the next tap. Usually the bench is still full after the losing tap is undone, so the cat cue appears more often than the cushion one (r11-takeback-cue). The fresh-player test was not run.
+### Retention
+- The hub features ONE goal, picked in this order: one ready to claim, a newcomer's first ask, the nearest one at least half done, else the first pinned one. The tile shows its reward (coins, hearts, chest) and one route: Play for a cat, carrier or win goal, the Daily puzzle itself, Claim, or Go (r11-hub-feat-en/tr). TR "{n} taşıyıcı doldur".
+- The weekly catch-up can now claim any postcard already released (its latest past week) on a page the player has started, or on this week's page, fullest page first (r10.catchWeeks). check-econ: from every start week in a 24-week cycle, the first framed print is done by event week 4 (r11-album-archive: "In the archive" slots).
+### Virality
+- A scannable QR (own encoder in kit/qr.js: byte mode, level M, versions 1-10) of the public https dare (VITE_PUBLIC_URL, otherwise this page's address, plus the typeable core) on the clip's end card, under the short code (still visible), and in the corner of the PNG fallback. check-dare compares two matrices, v4 and v9, with node-qrcode 1.5.4's output; 56 version/mask pairs matched in a one-off comparison. Frames r11-clip-end-qr.jpg, r11-clip-png-qr.jpg.
+- Not verified: real delivery through iMessage or WhatsApp, a phone scanning the code off another screen, or a caption-stripped clip followed through first move and counter-dare.
+### Overall (first-clear flow)
+- The adoption ceremony now plays only for the first adoption ever, a finished set, and Urgent / VIP orders. Other first clears credit the cat immediately and name it in one row on the win card ("Nutmeg now lives at the Library · Set 1 · 2/5"), beside the clip on a replay card. Next is the one big button; a ready build rides on the café bar ("Build!"). A replay card with an adoption drops the Purr Streak line (r11-quick-adopt-en/tr).
+### Checks
+- `npm run build` and `npm run check` pass. QA ran only the touched sections: R10 orders, iq and hub, plus the new R11 section (QA_FROM=999 QA_SKIP667 QA_SKIP_CONTENT QA_SKIPPERF QA_SKIPSHOP QA_NOGPU). 0 errors, no scroll failures. The hub goal asserts in sections 90/104 were updated to the single featured goal but not re-run. QA_STRIPS was not re-run.
+### Still weak
+- The win-card time row and moment headline still make the replay card tall. The level-1-60 boards are unchanged.
+- The QR has not been tested with a real phone camera.

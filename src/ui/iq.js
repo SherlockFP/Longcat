@@ -142,15 +142,19 @@ function hudClock() {
   dock(el);
   return el;
 }
-// the adoption order's keeper (orders lane) sits under the Home button too: the clock docks under its n/N pill
+// the adoption order's keeper (orders lane) sits under the Home button too: the clock docks on the right end of its
+// n/N pill, so the count and the clock read as one order row (R11: the old stack under the pill crowded the bench)
 function dock(el) {
   if (!el || !el.offsetParent) return;
-  const pill = document.querySelector('#ordstrip:not([hidden]) .oscount');
+  const strip = document.querySelector('#ordstrip:not([hidden])');
+  const pill = strip && strip.querySelector('.oscount');
   if (!pill) { if (el.classList.contains('dock')) { el.classList.remove('dock'); el.style.left = el.style.top = ''; } return; }
+  strip.classList.add('withclk');
   const p = pill.getBoundingClientRect();
   const h = el.offsetParent.getBoundingClientRect();
-  const left = Math.max(4, Math.round(p.left + p.width / 2 - el.offsetWidth / 2 - h.left)) + 'px';
-  const top = Math.round(p.bottom + 3 - h.top) + 'px';
+  el.style.setProperty('--rowh', Math.round(p.height) + 'px');
+  const left = Math.round(p.right - h.left) + 'px';
+  const top = Math.round(p.top + p.height / 2 - h.top - el.offsetHeight / 2) + 'px';
   el.classList.add('dock');
   if (el.style.left !== left) el.style.left = left;
   if (el.style.top !== top) el.style.top = top;

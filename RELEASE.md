@@ -27,6 +27,7 @@ Test it: `npm run preview`, open the shown URL on a phone-sized window. Offline 
 | `public/privacy.html` | `[DATE]`, `[TARİH]`, `[CONTACT EMAIL]`, `[İLETİŞİM E-POSTASI]` | date and your contact email |
 | `store/listing.md` | `[BRACKETS]` if any appear | store-specific fields |
 | `.env.production` (create) | `VITE_H5_CLIENT_ID` | your AdSense publisher id, `ca-pub-...` |
+| `.env.production` (create) | `VITE_PUBLIC_URL` | the public https address with a trailing slash (e.g. `https://USER.github.io/REPO/`): the QR on the share clip's end card and PNG opens it. Empty: the page's own address |
 | portal forms | contact email, developer name | yours |
 
 ## 4. Portal submission (pick one or several)

@@ -54,7 +54,8 @@ export class Game {
     this.top = 104;
     this.bottom = 112;
     this.texts = ['Purrfect!', 'Cat-tastic!', 'Meow-velous!'];
-    this.vis = { carriers: [], leaving: [], bench: [], stuck: [], benchT: [] };
+    this.vis = { carriers: [], leaving: [], bench: [], stuck: [], benchT: [], benchOut: [] };
+    this.cue = null; // R11 teaching marks: { t0, need: carrier color (lost bench), seat + cat (after Take back) }
     this.chain = 0;
     this.lastDepart = -9;
     this.chainFx = null; // the bench chain on screen: { n, k (hops so far), kT, t0, t1 }
@@ -196,6 +197,7 @@ export class Game {
     this.wiggleObj = {};
     this.shake = null;
     this.hintId = null;
+    this.cue = null;
     this.press = null;
     this.scoopMode = false;
     this.over = false;
@@ -239,6 +241,7 @@ export class Game {
       bench: s.bench.slice(),
       stuck: s.failed ? s.pending.slice() : [],
       benchT: [],
+      benchOut: [],
     };
     // cats that came back (undo) pop in
     if (this.prevAlive) {
@@ -392,11 +395,18 @@ export class Game {
     this.failFired = false;
     this.winPending = false;
     this.hintId = null;
+    this.cue = null;
     this.press = null;
     this.syncVis();
     if (this.autoHint) this.refreshHint();
     return true;
   }
+
+  // R11 teaching marks (no text on the board): after a lost bench, the carrier the stuck cat needs, with how many
+  // departures stand before it; after Take back, the cushion that came free and one cat that can board right now
+  cueNeed(color) { this.cue = { t0: this.clock, need: color }; }
+  cueBack(seat, cat) { this.cue = { t0: this.clock, seat, cat, dur: 3.4 }; }
+  cueOn(k) { const c = this.cue; return !!c && c[k] != null && c[k] !== -1 && (!c.dur || this.clock - c.t0 < c.dur); }
 
   // ---- input ----
   // A free cat is committed on release: while the finger is down its destination lights up (the carrier slot or the
@@ -705,7 +715,7 @@ export class Game {
     }
     if (r.bonk) this.addBonk(r);
     else this.startRun(r, { ray: true });
-    if (r.ok) this.hintId = null; // any real move makes the old hint stale (the auto-hint of L1-3 refreshes itself)
+    if (r.ok) { this.hintId = null; this.cue = null; } // any real move makes the old hint stale (the auto-hint of L1-3 refreshes itself)
     return r;
   }
 
@@ -935,6 +945,7 @@ export class Game {
   visBoard(e, fx) {
     const from = this.benchPos(e.seat);
     if (this.vis.bench[e.seat] === e.id) this.vis.bench[e.seat] = -1; // a later cat may already sit there (vis trails rules)
+    this.vis.benchOut[e.seat] = this.clock; // R11: the cushion springs back up as its cat launches
     this.addHop(from, e, this.clock, this.clock + 0.3, fx ? fx.k + 1 : 0);
     if (fx) {
       fx.k++;
@@ -1700,7 +1711,30 @@ export class Game {
       const art = yel && IMG.cushion_alt ? IMG.cushion_alt : cush; // a yellow cat never melts into a yellow cushion (v2: yellow cushion)
       if (r7 && art) {
         const cw = bw * 0.92, ch = cw * (art.height / art.width);
-        ctx.drawImage(art, x - cw / 2, y - ch * 0.52, cw, ch);
+        // R11: a cat launching off it squashes the cushion, which springs back (0.4 s, inside the hop)
+        const lo = this.calm ? 99 : this.clock - (this.vis.benchOut[i] ?? -9);
+        if (lo >= 0 && lo < 0.4) {
+          const k = Math.exp(-lo * 9) * Math.cos(lo * 26) * 0.16;
+          ctx.save();
+          ctx.translate(x, y + ch * 0.48);
+          ctx.scale(1 + k * 0.6, 1 - k);
+          ctx.drawImage(art, -cw / 2, -ch, cw, ch);
+          ctx.restore();
+        } else ctx.drawImage(art, x - cw / 2, y - ch * 0.52, cw, ch);
+        if (this.cueOn('seat') && this.cue.seat === i && this.vis.bench[i] < 0) { // Take back: the cushion that came free
+          const u = this.calm ? 0.7 : 0.5 + 0.5 * Math.sin((this.clock - this.cue.t0) * 7);
+          ctx.save();
+          ctx.globalAlpha = Math.min(1, (this.cue.dur - (this.clock - this.cue.t0)) / 0.5);
+          ctx.strokeStyle = `rgba(67,176,71,${0.65 + 0.35 * u})`;
+          ctx.fillStyle = `rgba(155,230,150,${0.18 + 0.12 * u})`;
+          ctx.lineWidth = 4;
+          ctx.beginPath();
+          ctx.ellipse(x, y, cw * (0.54 + 0.05 * u), ch * 0.52, 0, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+          drawBadge(ctx, x + cw * 0.36, y - ch * 0.42, Math.max(8, bw * 0.13), '✓', '#2f9e44');
+        }
         if (free === 1 && this.vis.bench[i] < 0 && !this.demo) { // the last free seat pulses amber, with a "!" tag
           const u = this.calm ? 0.6 : 0.5 + 0.5 * Math.sin(this.clock * 6);
           ctx.save();
@@ -1816,6 +1850,40 @@ export class Game {
       this.drawCarrier(ctx, vc, vc.x, 0.9 + 0.26 * near, i === 0, lean);
     }
     this.drawQueueRest(ctx);
+    if (this.cueOn('need')) this.drawNeedCue(ctx);
+  }
+
+  // R11, a lost bench: the carrier the stuck cat needs glows (in its slot, or its dot in the queue capsule) with the
+  // number of carriers that have to leave before it, so the loss reads on the board, not only on the card
+  drawNeedCue(ctx) {
+    const k = this.vis.carriers.findIndex((c) => !c.closed && c.color === this.cue.need);
+    if (k < 1) return;
+    const u = this.calm ? 0.7 : 0.5 + 0.5 * Math.sin((this.clock - this.cue.t0) * 6);
+    let x, y, rx, ry;
+    if (k <= 2) {
+      const vc = this.vis.carriers[k];
+      const sc = 0.9 + 0.26 * clamp(1 - (vc.x - this.slotX(0)) / this.sw, 0, 1);
+      x = vc.x; y = this.beltY - this.cs * 0.5 * sc; rx = this.cs * 0.66 * sc; ry = this.cs * 0.58 * sc;
+    } else { // its dot in the capsule after the two previews
+      const r = clamp(this.cs * 0.1, 6, 9);
+      const show = Math.min(3, this.vis.carriers.length - 3);
+      const h = show * r * 2.25 + (this.vis.carriers.length - 3 > show ? r * 1.9 : 0) + r * 0.6;
+      x = Math.min(this.W - r * 1.35 - 6, this.slotX(2) + this.cs * 0.62);
+      y = k - 3 < 3 ? this.beltY - 6 - h + r * 1.4 + (k - 3) * r * 2.25 : this.beltY - 6 - r * 1.05;
+      rx = ry = r * 1.7;
+    }
+    ctx.save();
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = `rgba(255,93,143,${0.6 + 0.4 * u})`;
+    ctx.setLineDash(this.calm ? [] : [10, 6]);
+    ctx.lineDashOffset = this.calm ? 0 : -(this.clock - this.cue.t0) * 30;
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx * (1 + 0.04 * u), ry * (1 + 0.04 * u), 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+    // the count of departures before it, on a pink tag hanging under the ring
+    const br = Math.max(10, this.cs * 0.15);
+    drawBadge(ctx, x - rx * 0.62, y + ry * 0.62, br, String(k), '#ff5d8f');
   }
 
   // the queue after the two previews: a capsule of pattern dots in order plus a +N count, so a player can
@@ -1863,8 +1931,10 @@ export class Game {
       const q = this.clock - vc.leaveT;
       if (q < 0.25) { const k = Math.exp(-q * 14) * Math.cos(q * 34) * 0.12; sy *= 1 - k; sx *= 1 + k * 0.8; }
     }
+    const dl = this.clock - (vc.popT ?? -9);
+    const dip = !this.calm && !vc.closed && dl >= 0 && dl < 0.32 ? Math.sin((dl / 0.32) * Math.PI) * (1 - dl / 0.32 * 0.5) * cs * 0.06 : 0; // R11 landing dip
     ctx.save();
-    ctx.translate(x, this.beltY - 2 + dy);
+    ctx.translate(x, this.beltY - 2 + dy + dip);
     ctx.rotate(rot);
     ctx.scale(sc * sx, sc * sy);
     if (art) ctx.drawImage(art, -cs / 2, -cs, cs, cs);
@@ -1918,8 +1988,11 @@ export class Game {
       const q = this.clock - vc.leaveT;
       if (q < 0.25) { const k = Math.exp(-q * 14) * Math.cos(q * 34) * 0.12; sy *= 1 - k; sx *= 1 + k * 0.8; }
     }
+    // R11 contact beat: a cat lands and the carrier dips into the belt, then settles (inside the 0.35 s pop)
+    const dl = this.clock - (vc.popT ?? -9);
+    const dip = !this.calm && !vc.closed && dl >= 0 && dl < 0.32 ? Math.sin((dl / 0.32) * Math.PI) * (1 - dl / 0.32 * 0.5) * cs * 0.06 : 0;
     ctx.save();
-    ctx.translate(x, this.beltY + 2 + dy);
+    ctx.translate(x, this.beltY + 2 + dy + dip);
     ctx.rotate(rot);
     ctx.scale(sc * sx, sc * sy);
     ctx.fillStyle = 'rgba(60,30,10,0.25)';
@@ -2074,7 +2147,7 @@ export class Game {
       ctx.scale(s, s);
       ctx.translate(-cx, -cy);
     }
-    const hinted = this.hintId === id;
+    const hinted = this.hintId === id || (this.cueOn('cat') && this.cue.cat === id); // R11: after Take back, a cat that boards now
     const glow = hinted ? 0.5 + 0.5 * Math.sin(this.clock * 6) : 0;
     const frozen = !!this.mv.frozen[id];
     const hb = path.marks[cat.cells.length - 1];

@@ -47,6 +47,23 @@ export function catchUp(d, week, pastW, medals) { // -> { card, page } or null
   d.album.cards[i] = 1;
   return { card: i, page: pageDone(d, pageOf(i)) ? pageOf(i) : -1 };
 }
+// R11: the weeks whose postcard the weekly catch-up can claim, in the order the archive lists them: first the latest
+// release of every card still missing on a page the player has started (or this week's page), the fullest page
+// first, then the player's own archive. With this week's card and one catch-up a week, the first framed print is
+// done within four event weeks even when the player starts on a page's last week.
+export function catchWeeks(d, week, archive = []) {
+  const cur = popIndex(week);
+  const pages = PAGES.map((_, p) => p).filter((p) => p === pageOf(cur) || pageHave(d, p) > 0).sort((a, b) => pageHave(d, b) - pageHave(d, a));
+  const first = [];
+  for (const p of pages) {
+    for (const i of pageCards(p)) {
+      if (hasCard(d, i) || i === cur) continue;
+      const back = (((cur - i) % WEEKS.length) + WEEKS.length) % WEEKS.length || WEEKS.length;
+      if (!first.includes(week - back)) first.push(week - back);
+    }
+  }
+  return [...first, ...archive.filter((w) => !first.includes(w))];
+}
 
 // ---- album ----
 export const pageOf = (i) => Math.floor(i / CARDS_PER_PAGE);

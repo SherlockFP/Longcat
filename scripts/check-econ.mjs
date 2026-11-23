@@ -349,7 +349,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
         const med = { a: !!L.medalOf(d, week, 'a'), b: !!L.medalOf(d, week, 'b') };
         const pc = R.popClaim(d, week, med);
         if (pc) { earn.add('postcard'); if (pc.page >= 0) { R.hangPrint(d, pc.page, R.printsHung(d) % 5); earn.add('print'); } }
-        for (const pw of L.archiveWeeks(d, week)) { const c = R.catchUp(d, week, pw, { a: !!L.medalOf(d, pw, 'a'), b: !!L.medalOf(d, pw, 'b') }); if (c) { earn.add('postcard'); if (c.page >= 0) R.hangPrint(d, c.page, R.printsHung(d) % 5); break; } }
+        for (const pw of R.catchWeeks(d, week, L.archiveWeeks(d, week))) { const c = R.catchUp(d, week, pw, { a: !!L.medalOf(d, pw, 'a'), b: !!L.medalOf(d, pw, 'b') }); if (c) { earn.add('postcard'); if (c.page >= 0) R.hangPrint(d, c.page, R.printsHung(d) % 5); break; } }
       }
       for (let s = 0; s < 2; s++) if (R.jobsClaim(d, day, res, s)) earn.add('job');
       for (let i = d.req.list.length - 1; i >= 0; i--) if (L.reqClaim(d, i, now)) earn.add('request');
@@ -447,6 +447,22 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   ok(!R.popClaim(d, w, { a: true, b: true }), 'claimed once');
   ok(!R.catchUp(d, w + 1, w - 1, { a: true, b: false }), 'catch-up needs both boards of the past week');
   ok(R.catchUp(d, w + 1, w - 1, { a: true, b: true }) && !R.catchUp(d, w + 1, w - 2, { a: true, b: true }), 'one catch-up postcard a week');
+  // R11: the first framed print within four event weeks, whatever week the player starts on (this week's postcard +
+  // one catch-up a week from the cards already released, the started page first)
+  for (let start = 2900; start < 2924; start++) {
+    const f = fresh();
+    let got = -1;
+    for (let k = 0; k < 6 && got < 0; k++) {
+      const wk = start + k;
+      f.pop.daily[wk] = 1;
+      R.popClaim(f, wk, { a: true, b: true });
+      const pw = R.catchWeeks(f, wk, []).find((x) => !R.hasCard(f, R.popIndex(x)));
+      if (pw != null) R.catchUp(f, wk, pw, { a: true, b: true });
+      if (R.PAGES.some((_, p) => R.pageDone(f, p))) got = k + 1;
+    }
+    ok(got > 0 && got <= 4, `first framed print by event week 4 (start ${start}: week ${got})`);
+  }
+  ok(R.catchWeeks(fresh(), 2905, []).every((x) => x < 2905), 'catch-up weeks are already released');
   for (const i of R.pageCards(3)) d.album.cards[i] = 1;
   ok(R.pageDone(d, 3) && R.hangPrint(d, 3, 1) && d.album.hung[1] === 3 && !R.hangPrint(d, 2, 0), 'a full page hangs its print; an open page cannot');
   ok(R.hangPrint(d, 3, 2) && d.album.hung[2] === 3 && d.album.hung[1] === undefined, 'a print hangs in one room at a time');

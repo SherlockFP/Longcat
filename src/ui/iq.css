@@ -3,7 +3,7 @@
 /* the HUD clock: small, under the LEVEL plaque, never in the board's way */
 .iqclk { position: absolute; left: 8px; top: calc(54px + var(--safe-t, 0px)); display: flex; align-items: center; gap: 3px; height: 22px; padding: 0 8px 0 3px; border-radius: 999px; background: rgba(38,51,74,.6); color: #fff6e5; font: 700 13px/1 var(--font); font-variant-numeric: tabular-nums; white-space: nowrap; pointer-events: none; }
 .iqclk .iqci { width: 18px; height: 18px; }
-.iqclk.dock { height: 18px; padding: 0 6px 0 2px; gap: 2px; font-size: 12px; z-index: 2; } /* under the order keeper's n/N pill */
+.iqclk.dock { height: var(--rowh, 21px); box-sizing: border-box; padding: 0 6px 0 2px; gap: 2px; font-size: 12px; z-index: 2; background: #fff6e5; color: var(--navy, #1d2b53); border: 2px solid var(--navy, #1d2b53); border-left: 1px solid rgba(29,43,83,.35); border-radius: 0 999px 999px 0; } /* R11: the right end of the order row (the keeper's n/N pill) */
 .iqclk.dock .iqci { width: 15px; height: 15px; }
 .iqrunclk { min-width: 120px; }
 

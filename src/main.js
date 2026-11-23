@@ -44,6 +44,8 @@ import * as shopRules from './game/shop.js';
 import { shopActions } from './ui/shop.js';
 import './i18n-hub.js';
 import * as hub from './ui/hub.js';
+import './i18n-r11.js';
+import './ui/r11.css'; // R11 fix round 1: plaque pack line, on-demand clip, featured goal, one Play
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -285,7 +287,7 @@ function pageInfo(p) {
   const cards = r10.pageCards(p).map((i) => {
     const c = cardInfo(i);
     if (r10.hasCard(d, i)) return { ...c, own: true };
-    const ago = live.archiveWeeks(d, w).find((x) => r10.popIndex(x) === i);
+    const ago = r10.catchWeeks(d, w, live.archiveWeeks(d, w)).find((x) => r10.popIndex(x) === i);
     const ahead = r10.nextCardWeek(d, w, i);
     return { ...c, own: false, src: !open ? 'locked' : ahead === 0 ? 'now' : ago != null ? 'arch' : 'soon', weeks: ahead };
   });
@@ -304,7 +306,7 @@ function eventsInfo() {
   if (!open) return { open, from: live.EVENTS_FROM };
   const th = econ.themeOf(w);
   const boards = ['a', 'b'].map((k) => ({ w, k, medal: live.medalOf(d, w, k), goal: showGoal(w, k) }));
-  const arch = live.archiveWeeks(d, w).map((x) => { const pi = r10.popIndex(x); const m = popMedals(x); return { w: x, ago: w - x, name: cafe.loc(r10.WEEKS[pi].ev), boards: ['a', 'b'].map((k) => ({ k, medal: live.medalOf(d, x, k) })), card: { own: r10.hasCard(d, pi), fg: r10.WEEKS[pi].fg, ok: !r10.hasCard(d, pi) && m.a && m.b && r10.catchOpen(d, w) } }; });
+  const arch = r10.catchWeeks(d, w, live.archiveWeeks(d, w)).map((x) => { const pi = r10.popIndex(x); const m = popMedals(x); return { w: x, ago: w - x, name: cafe.loc(r10.WEEKS[pi].ev), boards: ['a', 'b'].map((k) => ({ k, medal: live.medalOf(d, x, k) })), card: { own: r10.hasCard(d, pi), fg: r10.WEEKS[pi].fg, ok: !r10.hasCard(d, pi) && m.a && m.b && r10.catchOpen(d, w) } }; });
   // Rush: the board's cat count sets the bots' simulated times; the table shows the top 3 and you
   if (!(d.rush.week === w && d.rush.cats)) { d.rush.cats = generate(rushLevel(w)).cats.length; save.commit(); }
   const bots = live.rushBots(w, d.rush.cats);
@@ -365,7 +367,7 @@ function liveHub() {
   const jobs = r10.jobsToday(d, day, res);
   const jb = d.jobs.paid ? null : jobs.slice().sort((x, y) => y.p / y.need - x.p / x.need)[0];
   const goals = live.goals(d, now(), { stars: cafe.stars(), res, week: w, streak: streak(), dailyDone, party: cafe.partyOpen() ? cafe.PARTY_COST : 0, show: showW, job: jb ? { ...jb, name: resName(jb.who) } : null })
-    .map((g) => ({ ...g, name: g.k === 'outfit' ? resName(g.who) : g.name, vname: g.visitor ? visName(g.visitor) : '' }));
+    .map((g) => ({ ...g, name: g.k === 'outfit' ? resName(g.who) : g.name, vname: g.visitor ? visName(g.visitor) : '', rw: goalReward(g) }));
   // badge budget: at most 3 red dots, claimable rewards first, then an event ending within a day, then the daily puzzle
   const want = [
     ['quests', econ.dots(d, now()).quests],
@@ -414,6 +416,14 @@ function liveHub() {
     visitor: vid && { id: vid, name: visName(vid), line: live.VISITORS[vid].line, gift: d.season.visDay < day },
     cups: lui.cupsHtml(d.rush.cups),
   };
+}
+// R11: what a hub goal pays, shown on the featured goal (null: a visitor, an outfit or a party, shown by its art)
+function goalReward(g) {
+  if (g.k === 'req') { const def = live.reqDef(g.req.k); return def ? { coins: def.coins, hearts: def.hearts } : null; }
+  if (g.k === 'job') return { ...r10.JOB_REWARD };
+  if (g.k === 'daily') return live.streakChest(streak() + 1);
+  if (g.k === 'show') return { coins: live.SHOW_BRONZE_COINS };
+  return null;
 }
 // after a claim: the next reason to come back, said by the resident who was just thanked
 function nextReturn() {
@@ -745,7 +755,7 @@ function onWin(stars) {
   if (peak === 0) ach.push({ k: 'nobench', text: t('achNoBench') });
   // the win card is the payoff moment: never an upsell on it (the Starter Bundle shows once, on a lost bench instead)
   const pay = parts.length > 1 || (parts[0] && parts[0].k === 'payReplay') ? parts.map((p) => `${t(p.k, { n: p.v })} +${p.n}`).join(' · ') : '';
-  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, peek: peekColor(), cafeStars, canBuild, cafeNext, purr: chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, drec: drecNew ? drecInfo(drecNew) : null, ach, ...shareOn() });
+  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, peek: peekColor(), cafeStars, canBuild, cafeNext, purr: chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, drec: drecNew ? drecInfo(drecNew) : null, ach, adopt: S.quickAdopt || '', ...shareOn() });
   for (let i = 0; i < stars; i++) setTimeout(() => audio.star(i), 300 + i * 300);
   cui.onWin(S.n, first); // a pack's last level: its reward and host
   clipPreview();
@@ -778,7 +788,7 @@ function prepClip() {
     board: game.board,
     log: game.log.slice(),
     plan,
-    text: { combo: [t('purrfect'), t('combo2'), t('combo3')], chainX: (n) => t('chainX', { n }), lastSeat: t('lastSeat'), title: t('title'), board: boardName(), result, can: t('clipCan'), link: t('clipLink'), url: shortUrl(wd), goal: `${dareGoal(wd.m, wd.g, wd.x)} · ${t('dareBoard', { board: boardName(), n: wd.b })}`, bench: (u, n) => t('clipBench', { u, n }), oneSeat: t('clipOneSeat'), chain: t('clipChain') },
+    text: { combo: [t('purrfect'), t('combo2'), t('combo3')], chainX: (n) => t('chainX', { n }), lastSeat: t('lastSeat'), title: t('title'), board: boardName(), result, can: t('clipCan'), link: t('clipLink'), url: shortUrl(wd), qr: qrUrl(wd), scan: t('clipScan'), goal: `${dareGoal(wd.m, wd.g, wd.x)} · ${t('dareBoard', { board: boardName(), n: wd.b })}`, bench: (u, n) => t('clipBench', { u, n }), oneSeat: t('clipOneSeat'), chain: t('clipChain') },
   });
 }
 // the win card's share parts: the clip preview (a chain, or a clean sweep) and, at a moment that tells a story, Dare a
@@ -808,19 +818,38 @@ function shareOn(extra) {
   const head = { first3: t('momFirst3', { n: c }), best: t('momBest', { n: c }), sweep: t('momSweep'), daily: t('momDaily'), gold: t('momGold'), rush3: t('momRush') }[k] || '';
   return { chain: preview, dare: !!k, nudge, moment: head };
 }
-// the preview starts after the card has settled; the encode runs behind it (real time, ~8 s) so Share has the video
+// R11: the win card shows the peak still on its first frames and records nothing. The real-time encode (a second game
+// replayed at 30 fps, the win card's 100 ms frames on a slow phone) starts only when the player taps Share clip: the
+// thumbnail then plays as it records, and the button says "Making clip…" until the video can be sent (a second tap).
 function clipPreview() {
   const token = S.winToken;
   clearTimeout(S.clipTimer);
-  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   S.clipTimer = setTimeout(() => {
     if (token !== S.winToken || ui.screen !== 'win' || !clip.has()) return;
     const cv = document.querySelector('#modal .chainclip canvas');
-    // Share clip shows only once there is a real video to send (no MediaRecorder: the captioned peak still, at once)
-    const reveal = () => { if (token !== S.winToken) return; const b = document.querySelector('#modal [data-act=shareclip]'); if (b) b.hidden = false; };
-    if (cv) clip.start(cv, still, reveal);
-    if (!canRecord()) reveal();
-  }, 500);
+    if (cv) clip.start(cv);
+    const b = document.querySelector('#modal [data-act=shareclip]');
+    if (b) b.hidden = false;
+  }, 60); // one frame after the card mounts: the card's pop-in starts before the replay to the peak runs
+}
+// Share clip, first tap with no video yet: record it into the thumbnail, then the button is ready to send
+function makeClip() {
+  const token = S.winToken;
+  const btn = () => document.querySelector('#modal [data-act=shareclip]');
+  const b = btn();
+  if (b) { b.classList.add('making'); const sp = b.querySelector('span'); if (sp) sp.textContent = t('clipMaking'); }
+  track('clip_make', { n: S.n });
+  const cv = document.querySelector('#modal .chainclip canvas');
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  return clip.record(cv, still).then((r) => {
+    const x = btn();
+    if (token !== S.winToken || !x) return r;
+    x.classList.remove('making');
+    const sp = x.querySelector('span');
+    if (sp) sp.textContent = t('shareClipBtn');
+    if (r) x.classList.add('ready');
+    return r;
+  });
 }
 const srcName = (k, n) => (k === 'd' ? t('dailyLevel') : k === 's' ? t('showBoard') : k === 'r' ? t('rush') : t('level', { n }));
 const boardName = () => (S.show ? (S.show.kind === 'friend' ? srcName(S.show.k, S.n) : S.show.kind === 'rush' ? t('rush') : t('showBoardN', { k: S.show.k.toUpperCase() })) : S.daily ? t('dailyLevel') : t('level', { n: S.n }));
@@ -920,6 +949,10 @@ function dareText(d) {
 const dareUrl = (d) => location.origin + location.pathname + '?c=' + dare.encode(d);
 // what the clip shows: the link without its scheme, with the typeable core only (board, seats, goal, share id)
 const shortUrl = (d) => location.host + location.pathname + '?c=' + dare.shortCode(d);
+// R11: the QR on the clip's end card and PNG: the public https address (VITE_PUBLIC_URL at build time, else this page)
+// with the same typeable core, so a scan opens the exact board and goal
+const PUBLIC_URL = (import.meta.env && import.meta.env.VITE_PUBLIC_URL) || '';
+const qrUrl = (d) => (PUBLIC_URL || location.origin + location.pathname) + '?c=' + dare.shortCode(d);
 // a ?c= link opened the game: decoded (and clamped) once, then dropped from the address bar
 function readDare() {
   let code = null;
@@ -1033,6 +1066,9 @@ function onFail(silent = false) {
   if (silent) return;
   audio.mew();
   const info = failInfo();
+  // R11: the board shows the lesson too: the carrier the stuck cat needs glows with the departures still before it
+  const st = game.state;
+  if (st && st.pending && st.pending.length) game.cueNeed(game.board.cats[st.pending[0]].color);
   ui.fail(info);
   if (info.offer) {
     save.data.shop.starterShown = true;
@@ -1433,7 +1469,15 @@ const actions = {
   // the free Take Back on a level's first lost bench: the losing tap is undone, nothing is charged
   takeback() {
     if (busy || S.mode !== 'play' || !game.over || !game.state.failed || S.freeBack[triesKey()]) return;
+    const before = game.state.bench.slice();
     if (!game.undoMove()) return ui.toast(t('noUndo'));
+    // R11: mark the cushion that came free and, when there is one, a cat that boards the front carrier right now
+    const st = game.state;
+    const seat = st.bench.findIndex((x, i) => x < 0 && before[i] >= 0);
+    const fc = st.carriers[0];
+    const now0 = fc ? freeCats(st).find((i) => game.board.cats[i].color === fc.color && !isHidden(st, i)) : undefined;
+    game.cueBack(seat, now0 ?? -1);
+    track('takeback_cue', { seat: seat >= 0 ? 1 : 0, cat: now0 != null ? 1 : 0 });
     S.freeBack[triesKey()] = true;
     S.undid = true;
     ui.hideModal();
@@ -1559,7 +1603,7 @@ const actions = {
     S.sharing = true;
     try { await doShare(false); } finally { S.sharing = false; }
   },
-  // Share clip: the encoded replay of the best moment with the same text + link (the button only shows when it is ready)
+  // Share clip: the encoded replay of the best moment with the same text + link (R11: the first tap records it)
   sharehouse: (o) => shareHouse(o),
   async shareclip() {
     if (S.sharing) return;
@@ -1604,7 +1648,8 @@ async function doShare(withClip) {
   if (from != null) track('dare_reshare', { i: from, to: d.i });
   const goal = `${dareGoal(d.m, d.g, d.x)} · ${t('dareBoard', { board: boardName(), n: d.b })}`;
   if (withClip && clip.has()) {
-    const f = clip.ready() || (canRecord() ? null : await clip.png()); // no long await: the tap's user activation must still hold
+    if (!clip.ready() && canRecord() && !clip.failed()) { if (!clip.encoding()) makeClip(); return; } // R11: the first tap makes the clip
+    const f = clip.ready() || (await clip.png()); // no long await: the tap's user activation must still hold
     if (f) {
       const how = await shareFile(f, `long-cat-out-${d.k === 'l' ? 'level-' + S.n : 'challenge'}`, text, url);
       track('share', { kind: f.ext, how, m: d.m });
@@ -1865,9 +1910,9 @@ async function boot() {
       toast: (s) => ui.toast(s),
       today: () => dayNum(),
       lives: () => econ.lives(save.data, now()),
-      clip: () => ({ has: clip.has(), plan: clip.src && clip.src.plan, ready: !!clip.ready(), encoding: clip.encoding(), canRecord: canRecord(), url: clip.src && clip.src.text.url, goal: clip.src && clip.src.text.goal }),
+      clip: () => ({ has: clip.has(), plan: clip.src && clip.src.plan, ready: !!clip.ready(), encoding: clip.encoding(), canRecord: canRecord(), url: clip.src && clip.src.text.url, qr: clip.src && clip.src.text.qr, goal: clip.src && clip.src.text.goal }),
       dareDecode: (c) => dare.decode(c, (n) => generate(n).meta.benchSize),
-      async clipEncode() { for (let i = 0; i < 150 && clip.encoding(); i++) await new Promise((r) => setTimeout(r, 100)); const r = clip.ready() || (await clip.png()); return r && { ext: r.ext, size: r.blob.size }; },
+      async clipEncode() { if (canRecord() && !clip.ready() && !clip.encoding() && !clip.failed() && clip.has()) makeClip(); for (let i = 0; i < 150 && clip.encoding(); i++) await new Promise((r) => setTimeout(r, 100)); const r = clip.ready() || (await clip.png()); return r && { ext: r.ext, size: r.blob.size }; },
       clipFrames: (times) => clip.frames(times),
       dareLink: () => { const d = winDare(); return { d, text: dareText(d), url: dareUrl(d), short: shortUrl(d) }; },
       houseCard: () => S.lastHouseCard || null,
@@ -1892,6 +1937,9 @@ async function boot() {
         };
       },
       pos: (id) => game.cellPos(id),
+      layout: () => ({ beltY: game.beltY, benchY: game.benchY, bw: game.bw, oy: game.oy, cs: game.cs, W: game.W }),
+      cue: () => (game.cue ? { ...game.cue, now: game.clock } : null),
+      benchOut: () => game.vis.benchOut.filter((x) => x != null).length,
       // frame strip of a move (qa/_leap-strip.jpg, _chain-strip.jpg): freeze the clock, tap, then step the game to each
       // time (seconds after the tap; 'end' = when the send finishes) and crop the play area into a 3-column grid
       strip(id, times, cols = 3, wide = false) {

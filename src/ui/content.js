@@ -99,9 +99,12 @@ export function levelStart(n, special, board) {
   next();
 }
 
+// R11: the pack rides inside the level plaque as its second line (it used to hang under it and touch the front
+// carrier's 0/3 tag on narrow phones); a tap still opens the packs sheet
 function chip(p) {
-  const wrap = document.querySelector('#hud .logo-wrap');
+  const wrap = document.querySelector('#hud .logo-wrap .lvl-pill') || document.querySelector('#hud .logo-wrap');
   if (!wrap) return;
+  wrap.classList.add('pk');
   const el = document.createElement('button');
   el.className = 'cpchip';
   el.type = 'button';

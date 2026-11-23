@@ -1,5 +1,7 @@
 // Friend challenge links: round trip, and every hostile payload is refused or clamped.
+import { createHash } from 'node:crypto';
 import { encode, encodeV1, decode, judge, cleanName, trGenitive, shortCode } from '../src/kit/dare.js';
+import { qrMatrix } from '../src/kit/qr.js';
 
 const bad = [];
 const must = (ok, msg) => { if (!ok) bad.push(msg); };
@@ -48,6 +50,17 @@ must(judge('seats', 2, 1) === 'beat' && judge('seats', 2, 3) === 'miss', 'judge 
 must(judge('time', 250, 249) === 'beat' && judge('time', 250, 260) === 'miss', 'judge time');
 must(cleanName('  a\u0000b  ') === 'ab', 'control chars');
 for (const [n, g] of [['Ana', "Ana'nın"], ['Ali', "Ali'nin"], ['Murat', "Murat'ın"], ['Gül', "Gül'ün"], ['Oğuz', "Oğuz'un"], ['Elif', "Elif'in"]]) must(trGenitive(n) === g, 'tr genitive ' + n + ' ' + trGenitive(n));
+
+// R11: the QR on the clip's end card. Two matrices must equal a reference encoder's (node-qrcode 1.5.4, byte mode,
+// level M, the same mask), hashed row by row; the auto mask, a dare link's size and the no-fit case
+const qrHash = (q) => { let s = ''; for (let y = 0; y < q.size; y++) for (let x = 0; x < q.size; x++) s += q.get(x, y) ? '1' : '0'; return createHash('sha256').update(s).digest('hex'); };
+const q1 = qrMatrix('https://example.github.io/long-cat-out/?c=2l13-5-c3-ab12cd', 5);
+must(q1 && q1.version === 4 && qrHash(q1) === '31bb6470e867527c6395c01af7d5b7f72048d5e581fc523ac8a70d73b7472e7c', 'qr v4 matrix');
+const q2 = qrMatrix('https://example.github.io/long-cat-out/?c=' + 'q'.repeat(120), 2);
+must(q2 && q2.version === 9 && qrHash(q2) === '9d42762f71b7518e66be522b0b66496ba682609b53f5f55d723abbe2d036b53b', 'qr v9 matrix (two block sizes, version bits)');
+const qa = qrMatrix('https://example.github.io/long-cat-out/?c=2l13-5-c3m-ab12cd');
+must(qa && qa.size <= 33, 'a dare link fits a 33-module code ' + (qa && qa.size));
+must(qrMatrix('z'.repeat(300)) === null, 'qr: too long is refused');
 
 if (bad.length) { console.error('check-dare FAILED:\n  ' + bad.join('\n  ')); process.exit(1); }
 console.log('check-dare ok');

@@ -45,26 +45,59 @@ export function railHtml(L) {
 const fmtShort = (ms) => { const m = Math.ceil(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)}${t('hShort')}` : `${m}${t('mShort')}`; };
 
 // ---- hub: the "next goals" strip (nearest 3 goals with progress) ----
+// one goal's icon, label and the tap that opens where it is tracked
+function goalParts(g) {
+  let icon = r7('hud_star');
+  let label = '';
+  let act = 'cafeview';
+  let extra = '';
+  if (g.k === 'build') { label = g.name; act = 'cafeview'; }
+  else if (g.k === 'resident') { icon = resImg(g.id || ''); label = t('goalResident', { name: g.name }); }
+  else if (g.k === 'req') { icon = resImg(g.who) + r7(g.req.k === 'color' ? `cat_head_${COLORS[g.req.c]}_happy` : 'hud_yarn', 'sub'); label = t('g_' + g.req.k, { n: g.req.need }); act = 'cafesheet'; }
+  else if (g.k === 'outfit') { icon = resImg(g.who, g.outfit); label = t('outfit_' + g.outfit); act = 'residents'; }
+  else if (g.k === 'season') { icon = g.visitor ? r7('vis7_' + g.visitor) : r7('hud_rosette'); label = g.visitor ? t('goalVisitor', { name: g.vname }) : t('goalGift'); act = 'events'; extra = 'data-tab="season"'; }
+  else if (g.k === 'job') { icon = resImg(g.who) + `<i class="gjrw">${r7('hud_coin')}30</i>`; label = t('jobGoal', { name: g.job.name, task: t('jk_' + g.job.k, { n: g.job.need }) }); act = g.job.done ? 'jobclaim' : 'quests'; extra = `data-s="${g.job.s}"`; }
+  else if (g.k === 'daily') { icon = r7('hud_medal'); label = t('g_daily'); act = 'dailysheet'; }
+  else if (g.k === 'show') { icon = r7('icon_trophy'); label = t('goalShow'); act = 'events'; extra = 'data-tab="show"'; }
+  else if (g.k === 'party') { icon = r7('hud_star'); label = t('goalParty'); }
+  return { icon, label, act, extra };
+}
 export function goalsHtml(list) {
   if (!list || !list.length) return '';
   const row = list.map((g) => {
-    let icon = r7('hud_star');
-    let label = '';
-    let act = 'cafeview';
-    let extra = '';
-    if (g.k === 'build') { label = g.name; act = 'cafeview'; }
-    else if (g.k === 'resident') { icon = resImg(g.id || ''); label = t('goalResident', { name: g.name }); }
-    else if (g.k === 'req') { icon = resImg(g.who) + r7(g.req.k === 'color' ? `cat_head_${COLORS[g.req.c]}_happy` : 'hud_yarn', 'sub'); label = t('g_' + g.req.k, { n: g.req.need }); act = 'cafesheet'; }
-    else if (g.k === 'outfit') { icon = resImg(g.who, g.outfit); label = t('outfit_' + g.outfit); act = 'residents'; }
-    else if (g.k === 'season') { icon = g.visitor ? r7('vis7_' + g.visitor) : r7('hud_rosette'); label = g.visitor ? t('goalVisitor', { name: g.vname }) : t('goalGift'); act = 'events'; extra = 'data-tab="season"'; }
-    else if (g.k === 'job') { icon = resImg(g.who) + `<i class="gjrw">${r7('hud_coin')}30</i>`; label = t('jobGoal', { name: g.job.name, task: t('jk_' + g.job.k, { n: g.job.need }) }); act = g.job.done ? 'jobclaim' : 'quests'; extra = `data-s="${g.job.s}"`; }
-    else if (g.k === 'daily') { icon = r7('hud_medal'); label = t('g_daily'); act = 'dailysheet'; }
-    else if (g.k === 'show') { icon = r7('icon_trophy'); label = t('goalShow'); act = 'events'; extra = 'data-tab="show"'; }
-    else if (g.k === 'party') { icon = r7('hud_star'); label = t('goalParty'); }
+    const { icon, label, act, extra } = goalParts(g);
     const ready = g.pct >= 1;
     return `<button class="goal ${ready ? 'ready' : ''} ${g.fresh ? 'fresh' : ''}" data-act="${act}" ${extra} ${act === 'cafeview' ? 'data-view="room"' : ''}><span class="gi">${icon}</span><span class="gt"><b>${label}</b>${bar(g.have, g.need)}</span></button>`;
   }).join('');
   return `<div class="goals">${row}</div>`;
+}
+// R11: the hub features ONE goal: the claimable one, else the nearest (main.js orders them). It shows its reward and
+// goes straight to where it is earned: Play for a cat / carrier / win goal, the Daily puzzle, the Cat Show, a Claim.
+// pick: a goal ready to claim, else a newcomer's first ask, else the nearest one at least half done, else the first in
+// the pinned order
+export function featGoal(list) {
+  if (!list || !list.length) return null;
+  const ready = list.find((g) => g.pct >= 1);
+  if (ready) return ready;
+  const fresh = list.find((g) => g.fresh); // a newcomer's first ask is a moment of its own
+  if (fresh) return fresh;
+  const near = list.filter((g) => g.pct >= 0.5).sort((a, b) => b.pct - a.pct)[0];
+  return near || list[0];
+}
+export function featGoalHtml(list) {
+  const g = featGoal(list);
+  if (!g) return '';
+  const p = goalParts(g);
+  const ready = g.pct >= 1;
+  let act = p.act;
+  let extra = p.extra;
+  let cta = t('goThere');
+  if (g.k === 'req') { act = ready ? 'cafesheet' : 'play'; extra = ''; cta = ready ? t('claim') : t('play'); }
+  else if (g.k === 'job') { act = ready ? 'jobclaim' : 'play'; cta = ready ? t('claim') : t('play'); }
+  else if (g.k === 'daily') { act = 'daily'; cta = t('play'); }
+  else if (ready) cta = t('claim');
+  const icon = g.k === 'job' ? resImg(g.who) : p.icon; // the reward chip carries the coins
+  return `<div class="goals feat"><button class="goal feat ${ready ? 'ready' : ''} ${g.fresh ? 'fresh' : ''}" data-act="${act}" ${extra} ${act === 'cafeview' ? 'data-view="room"' : ''}><span class="gi">${icon}</span><span class="gt"><b>${p.label}</b>${bar(g.have, g.need)}</span>${g.rw ? chips(g.rw) : ''}<i class="gcta">${cta}</i></button></div>`;
 }
 
 // ---- café tips sheet: the tip jar + resident requests ----
