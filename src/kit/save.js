@@ -162,6 +162,7 @@ function validate(d) {
   R.next = num(R.next, 0, 0);
   R.n = Number.isInteger(R.n) && R.n >= 0 ? R.n : 0;
   R.done = Number.isInteger(R.done) && R.done >= 0 ? R.done : 0;
+  R.bridge = R.bridge ? 1 : 0; // R11 fix round 1: the second resident's three-win ask was given (game/live.js reqTick)
   R.list = Array.isArray(R.list) ? R.list.filter((x) => isObj(x) && typeof x.k === 'string' && typeof x.who === 'string' && Number.isInteger(x.need) && x.need > 0).slice(0, 2).map((x) => ({ k: x.k, who: x.who, need: x.need, p: Math.min(x.need, num(x.p, 0, 0)), c: Number.isInteger(x.c) && x.c >= 0 && x.c < 8 ? x.c : 0, s: num(x.s, 0, 0) })) : [];
   const ru = d.rush;
   ru.week = num(ru.week, 0, 0);

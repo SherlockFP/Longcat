@@ -84,6 +84,17 @@ export function reqTick(d, now, res) { // -> true when a request was added
   if (!R.next) R.next = now; // the first resident: one request right away
   if (R.next > now + REQ_EVERY_H * H_MS) R.next = now + REQ_EVERY_H * H_MS; // a stamp in the future (clock rollback): at most one interval
   let added = false;
+  // R11 fix round 1 (sol-r12-1 retention): the long stretch between the second resident and the third gets a named ask
+  // at once: with two residents in and no win request waiting, the newest one asks for three wins (once per save). It
+  // leads the hub like a newcomer's first ask, so those wins have a face and a reward before the third one moves in
+  if (res.length === 2 && !R.bridge && R.list.length < REQ_MAX && !R.list.some((x) => x.k === 'win')) {
+    const kd = REQ_KINDS.find((k) => k.k === 'win');
+    R.n++;
+    R.list.push({ k: 'win', who: res[1], need: Math.max(3, kd.need), p: 0, c: 0, s: R.n });
+    R.bridge = 1;
+    R.fresh = res[1];
+    added = true;
+  }
   while (now >= R.next && R.list.length < REQ_MAX) {
     R.n++;
     const r = rng(R.n * 2654435761 + 7);

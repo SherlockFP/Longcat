@@ -512,7 +512,7 @@ export const ui = {
     // café bar in the column beside it, so the card is header, main reward row, replay row, buttons
     const clipDet = info.moment ? `<div class="clipdet"><i class="mom">${escHtml(info.moment)}</i></div>` : ach ? `<div class="clipdet">${(info.ach || []).map((a) => `<i class="a-${a.k}">${a.text}</i>`).join('')}</div>` : '';
     const hilite = info.chain
-      ? `<div class="hilite"><div class="chainclip"><canvas width="180" height="320" aria-hidden="true"></canvas>${clipDet}${CLIP_BTN(info.rec)}</div><div class="hcol">${dres}${rrow}${info.payHi ? `<div class="ordpay">${info.payHi}</div>` : ''}${barMain ? '' : cafeBar(true)}</div></div>`
+      ? `<div class="hilite"><div class="cliphd"><div class="chainclip"><canvas width="180" height="320" aria-hidden="true"></canvas>${clipDet}${CLIP_BTN(info.rec)}</div><i class="clipcap" aria-hidden="true"></i></div><div class="hcol">${dres}${rrow}${info.payHi ? `<div class="ordpay">${info.payHi}</div>` : ''}${barMain ? '' : cafeBar(true)}</div></div>`
       : `${pay}${ach ? `<ul class="ach inline">${ach}</ul>` : ''}`;
     const homeRound = `<button class="round" data-act="home" aria-label="${t('home')}"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button>`;
     // an ordinary clear gets a compact result low on the screen: one thumb action (Next); the big card is kept for hard
@@ -520,7 +520,7 @@ export const ui = {
     const compact = !info.show && !info.again && info.stars < 2 && !(nr && nr.left <= 0); // a chain loops as a thumbnail in it
     if (compact) {
       const main = info.adopt || (barMain ? cafeBar(true) : '');
-      const head = info.chain ? `<div class="chainclip mini"><canvas width="180" height="320" aria-hidden="true"></canvas>${CLIP_BTN(info.rec)}</div>` : info.res ? r7c('res7_' + info.res + '_idle', 'cpeek') : r7c('cat_head_' + info.peek + '_happy', 'cpeek');
+      const head = info.chain ? `<div class="cliphd"><div class="chainclip mini"><canvas width="180" height="320" aria-hidden="true"></canvas>${CLIP_BTN(info.rec)}</div><i class="clipcap" aria-hidden="true"></i></div>` : info.res ? r7c('res7_' + info.res + '_idle', 'cpeek') : r7c('cat_head_' + info.peek + '_happy', 'cpeek');
       root.insertAdjacentHTML('beforeend', `
 <div class="backdrop winb" id="modal"><div class="card teal win compact ${info.chain ? 'haschain' : ''}">
   <div class="cwtop">${head}<div class="cwt"><h2 class="title yellow">${t(info.title)}</h2>${moment}${info.pay && !main ? `<div class="paybd">${info.pay}</div>` : ''}</div><div class="stars n${info.stars}">${stars}</div></div>

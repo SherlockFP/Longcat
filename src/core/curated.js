@@ -6,7 +6,11 @@
 import { makeCat, makeBoard } from './board.js';
 import { generate } from './generate.js';
 
-export const BOARD_REV = 3; // the dare token version that plays these boards (kit/dare.js)
+export const BOARD_REV = 4; // the newest board revision (kit/dare.js token digit)
+// R11 fix round 1: the revision each curated board arrived in. A link names the oldest revision that plays the board it
+// was made on (linkRev), so every link made before L7 was curated keeps opening the board it names
+const SINCE = { 6: 3, 9: 3, 11: 3, 7: 4 };
+export const linkRev = (n) => Math.max(3, CURATED[n] ? SINCE[n] : 3);
 
 const mk = (list) => list.map((c, i) => makeCat(i, c[1], c[0]));
 const O = 'tabby', B = 'tuxedo', P = 'calico', G = 'gray';
@@ -33,6 +37,25 @@ export const CURATED = {
     for (const c of cats) c.cells = c.cells.map(([x, y]) => [x, y - 1]); // drawn on 8 rows, played on 7 (row 0 was empty)
     const carriers = [{ color: 0, cap: 3 }, { color: 1, cap: 3 }, { color: 2, cap: 3 }, { color: 3, cap: 3 }];
     return makeBoard(6, 7, cats, { n: 6, kind: 'normal', benchSize: 5, cur: 'cushion', colors: 4, order: [0, 1, 3, 4, 5, 6, 7, 2, 10, 8, 9, 11] }, carriers);
+  },
+  // L7 "warm-up" (R11 fix round 1, sol-r12-1 fun): a short consolidation board between the L6 and L8 lessons, so the
+  // player gets a clean win. Three colours, nine cats. A blue and a pink sit on the last orange and a pink sits on another
+  // orange: park them, the oranges fill their carrier and the parked blues and pinks hop in by themselves. The line peaks
+  // at three cushions of five; a careless order can still fill the bench, and the rewind covers it
+  7: () => {
+    const cats = mk([
+      [O, [[0, 6], [0, 5], [0, 4]]], // 0 orange, free
+      [O, [[5, 6], [5, 5]]], // 1 orange, held by pink 8
+      [O, [[2, 6], [2, 5]]], // 2 the last orange, held by blue 3 and pink 4
+      [B, [[1, 3], [2, 3], [3, 3]]], // 3 blue, free
+      [P, [[3, 1], [2, 1], [1, 1]]], // 4 pink, free
+      [B, [[4, 5], [4, 4]]], // 5 blue, free
+      [B, [[3, 6], [4, 6]]], // 6 blue, held by orange 1
+      [P, [[1, 5], [1, 4]]], // 7 pink, held by blue 3
+      [P, [[5, 1], [5, 0]]], // 8 pink, free (it sits on orange 1)
+    ]);
+    const carriers = [{ color: 0, cap: 3 }, { color: 1, cap: 3 }, { color: 2, cap: 3 }];
+    return makeBoard(6, 7, cats, { n: 7, kind: 'normal', benchSize: 5, cur: 'warm', colors: 3, order: [0, 8, 1, 3, 4, 2, 5, 6, 7] }, carriers);
   },
   // L9 "the big pair": blue goes first and the last blue sits at the foot of a staircase (orange, orange, pink, orange,
   // each freeing the next): four cushions. The big green mother + kitten by the thumb is free all along, and parked
@@ -81,8 +104,8 @@ export const CURATED = {
   },
 };
 
-// the board a level plays: a curated one from rev 3 on, else the generated one
+// the board a level plays: a curated one from the revision it arrived in on, else the generated one
 export function boardOf(n, rev = BOARD_REV) {
-  const f = rev >= BOARD_REV && CURATED[n];
+  const f = CURATED[n] && rev >= SINCE[n] && CURATED[n];
   return f ? f() : generate(n);
 }

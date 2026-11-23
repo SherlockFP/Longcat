@@ -19,6 +19,8 @@ import { IMG } from './assets.js';
 import { save } from '../kit/save.js';
 import { drawBody, sample, bodyShape } from './render.js';
 import { buildFar, buildNear, carrierShadow } from './render-depth.js';
+import { DIRS } from '../core/board.js';
+import { DOG_NEAR } from '../core/rules.js';
 
 // '?perf=0': the old renderer, untouched (A/B timing, a way out if a phone ever draws the underlay wrong)
 const OFF = (() => { try { return new URLSearchParams(location.search).get('perf') === '0'; } catch { return false; } })();
@@ -179,6 +181,13 @@ class Perf {
   // loop gate: 0 = update + draw, 1 = skip the frame (dt accumulates), 2 = update only
   gate(now) {
     const g = this.g;
+    // R11 fix round 1 (juice): what a frame that rastered the whole still board costs here, from the rAF interval that
+    // follows it (a quiet phone shows 16.7 ms, a phone that rasters on the main thread much more). Latched: only a
+    // whole-board raster updates it, so an idle hold (below) does not talk itself back out of holding
+    const dt = now - (this.prevNow || now);
+    this.prevNow = now;
+    if (this.boardDrawn && dt > 0 && dt < 300) this.heavy = (this.heavy ?? 16.7) * 0.7 + dt * 0.3;
+    this.boardDrawn = false;
     if (this.coverDirty || now - this.coverAt > 500) {
       this.coverDirty = false;
       this.coverAt = now;
@@ -547,7 +556,11 @@ class Perf {
   // split when something moves over a board that itself holds still: a sprint, a hop, particles, the chain, the sweep.
   // Never while a finger is down (the lane preview draws under the cats), or while a board cat itself shakes, pops in,
   // gets bonked or a yarn ball rolls under the cats: those frames draw whole on #game as before
-  wantSplit() {
+  wantSplit() { return this.splitState() === 'move'; }
+
+  // R11 fix round 1: 'move' (split), 'still' (nothing moves and the board may sit on its layer: an idle hold candidate)
+  // or false (the frame must draw whole on #game)
+  splitState() {
     const g = this.g;
     if (!SPLIT || stats.noSplit || this.pixi || !g.board || !g.state || g.demo || g.press) return false;
     const t = g.clock;
@@ -561,75 +574,220 @@ class Perf {
     for (const k in g.popIn) if (t - g.popIn[k] < 0.35) return false;
     if (g.chainFx && t - (g.chainFx.t1 || g.chainFx.t0 || 0) < 1.8) move = true;
     if (g.sweep && t - g.sweep.t0 < 1.3) move = true;
-    return move;
+    return move ? 'move' : 'still';
   }
 
-  // what the still board shows; the layer redraws only when this changes (idle life holds still for the moment)
-  boardSig() {
+  // what the still board shows; the layer redraws only when this changes (idle life holds still for the moment).
+  // R11 fix round 1 (juice): kept in parts, so a change can name the cats it touched (a cat left, an arrow came or went,
+  // the scheduled blink moved on) and redraw only their corner of the layer
+  boardState() {
     const g = this.g, st = g.state, t = g.clock;
-    let s = this.sig + '|' + g.hintId + '|' + (g.cueOn && g.cueOn('cat') ? g.cue.cat : '') + '|';
-    for (const id of g.order) s += st.alive[id] ? '1' : '0';
-    s += '|' + JSON.stringify(g.mv);
-    for (const id in g.freedT) { const fr = t - g.freedT[id]; if (fr >= 0 && fr < 1.4) s += ',' + id; } // a freed cat's arrow
-    return s;
+    const parts = [this.sig, g.hintId, g.cueOn && g.cueOn('cat') ? g.cue.cat : '', JSON.stringify(g.mv), g.idleHeld ? 1 : 0];
+    const head = parts.join('|');
+    let alive = '';
+    for (const id of g.order) alive += st.alive[id] ? '1' : '0';
+    const freed = [];
+    for (const id in g.freedT) { const fr = t - g.freedT[id]; if (fr >= 0 && fr < 1.4) freed.push(+id); } // a freed cat's arrow
+    return { parts, mv: g.mv, head, alive, freed: freed.join(','), freedIds: freed, blink: g.idleHeld ? g.heldBlink : -1 };
+  }
+
+  // R11 fix round 1 (juice): a slow phone (its whole-board frames come late) or reduced motion draws the still board the
+  // same way every time: no breathing, no look-around, no arrow bob, and one cat at a time blinks on a schedule. The
+  // same board then always rasters to the same pixels, so a change can redraw a corner without a seam
+  slowBoard() {
+    const g = this.g;
+    // a little hysteresis: a board already drawn the slow way stays so until frames come clearly fast (no flip-flop,
+    // each flip is a whole-board redraw)
+    const on = g.idleHeld, hv = this.heavy ?? 16.7, dt = this.dtAvg ?? 16.7;
+    return g.calm || !!stats.forceSlow || (on ? hv > 21 || dt >= 20 : hv > 26 || dt >= 24); // forceSlow: QA
+  }
+
+  // idle hold: a quiet board on a slow phone (or with reduced motion) keeps its still cats on the board layer too, which
+  // redraws only when something on it changes (a blink is one cat), instead of re-rastering every cat 30 times a second.
+  // Also between the moving parts of a busy moment (a tap's events waiting to play), so a send never falls back to a
+  // whole-board frame. Not while a hint or a Take back cue glows (those pulse), nor at the end of a level
+  wantHold() {
+    const g = this.g;
+    if (g.over || g.hintId != null || (g.cueOn && g.cueOn('cat'))) return false;
+    return this.slowBoard();
+  }
+
+  // the CSS-px rectangle a still cat can paint: its cells, a little air, and its head side (chevron, "?" bubble, arrow)
+  catRect(id, arrow) {
+    const g = this.g, c = g.cell, cat = g.board.cats[id];
+    let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9;
+    for (const [x, y] of cat.cells) { if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y; }
+    const ext = arrow ? 1.6 : 0.8; // past the head: the chevron (and the "?" bubble), or a freed cat's exit arrow
+    const p = [0.35, 0.35, 0.35, 0.35]; // left, top, right, bottom, in cells
+    const dir = DIRS[cat.dir];
+    if (cat.mech || !dir) p.fill(ext); // a swivel or mystery cat may face anywhere
+    else {
+      if (dir[0] < 0) p[0] = ext; if (dir[0] > 0) p[2] = ext;
+      if (dir[1] < 0) p[1] = ext; if (dir[1] > 0) p[3] = ext;
+    }
+    return [g.ox + (x0 - p[0]) * c, g.oy + (y0 - p[1]) * c, g.ox + (x1 + 1 + p[2]) * c, g.oy + (y1 + 1 + p[3]) * c];
+  }
+
+  // the dirty rectangle between two board states, or null when the whole layer has to redraw. A mechanics change names
+  // its own corner too: a mystery / frozen cat that changed, a dog whose z count dropped (its head), a dog that left
+  // (its hearing zone). stats.why counts the reasons for a whole redraw (QA / perf.mjs PERF_DEBUG)
+  dirtyRect(a, b) {
+    const g = this.g;
+    const full = (k) => { stats.why = stats.why || {}; stats.why[k] = (stats.why[k] || 0) + 1; return null; };
+    if (!a) return full('new');
+    const pa = a.parts, pb = b.parts;
+    if (pa[0] !== pb[0] || pa[1] !== pb[1] || pa[2] !== pb[2] || pa[4] !== pb[4]) return full('head');
+    if (a.alive.length !== b.alive.length) return full('cats');
+    const ids = new Set();
+    const rects = [];
+    const c = g.cell;
+    if (pa[3] !== pb[3]) {
+      const ma = a.mv, mb = b.mv;
+      if (!ma || !mb) return full('mv');
+      for (const key of ['hidden', 'frozen', 'chip']) {
+        const A = ma[key] || {}, B = mb[key] || {};
+        for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) if (A[k] !== B[k]) ids.add(+k);
+      }
+      const objs = (g.state && g.state.objs) || [];
+      for (let k = 0; k < Math.max(ma.obj.length, mb.obj.length); k++) {
+        const gone = ma.obj[k] !== mb.obj[k];
+        if (!gone && ma.zzz[k] === mb.zzz[k]) continue;
+        const o = objs[k];
+        if (!o || !o.cells) return full('obj');
+        const xs = o.cells.map(([x]) => x), ys = o.cells.map(([, y]) => y);
+        const p = gone ? DOG_NEAR + 0.3 : 1.2; // the whole hearing zone, or the dog and its floating z's
+        rects.push([g.ox + (Math.min(...xs) - p) * c, g.oy + (Math.min(...ys) - p) * c, g.ox + (Math.max(...xs) + 1 + p) * c, g.oy + (Math.max(...ys) + 1 + p) * c]);
+      }
+    }
+    for (let i = 0; i < b.alive.length; i++) if (a.alive[i] !== b.alive[i]) ids.add(g.order[i]);
+    const fa = new Set(a.freedIds), fb = new Set(b.freedIds);
+    for (const id of fa) if (!fb.has(id)) ids.add(id);
+    for (const id of fb) if (!fa.has(id)) ids.add(id);
+    if (a.blink >= 0) ids.add(a.blink);
+    if (b.blink >= 0) ids.add(b.blink);
+    if ((!ids.size && !rects.length) || ids.size > 6) return full('ids');
+    for (const id of [...ids]) { // a kitten's leash runs to its parent: both ends
+      const cat = g.board.cats[id];
+      if (cat.kittenOf != null) ids.add(cat.kittenOf);
+      for (const k of g.board.cats) if (k.kittenOf === id) ids.add(k.id);
+    }
+    for (const id of ids) rects.push(this.catRect(id, fa.has(id) || fb.has(id)));
+    let r = rects[0];
+    for (const q of rects) r = [Math.min(r[0], q[0]), Math.min(r[1], q[1]), Math.max(r[2], q[2]), Math.max(r[3], q[3])];
+    const d = g.dpr; // whole device pixels: no half-covered edge pixel to seam against
+    r = [Math.floor(r[0] * d) / d, Math.floor(r[1] * d) / d, Math.ceil(r[2] * d) / d, Math.ceil(r[3] * d) / d];
+    const bwid = g.board.w * c, bhei = g.board.h * c;
+    if ((r[2] - r[0]) * (r[3] - r[1]) > 0.6 * bwid * bhei) return full('area'); // most of the board: one clean full redraw
+    return r;
+  }
+
+  // the board block of Game.draw asks this on a partial redraw: does cat `id` reach into the dirty rectangle?
+  inClip(id) {
+    const r = this.L.clipR;
+    if (!r) return true;
+    const q = this.catRect(id, true);
+    return q[0] < r[2] && q[2] > r[0] && q[1] < r[3] && q[3] > r[1];
   }
 
   // called at the top of Game.draw: null = draw the whole frame on #game; else { board: ctx or null (still clean), fx }
   split() {
     const g = this.g;
-    if (!this.wantSplit()) {
+    const ss = this.splitState();
+    const move = ss === 'move';
+    const hold = ss === 'still' && this.wantHold();
+    this.L.clip = false;
+    this.L.clipR = null;
+    if (!move && !hold) {
+      g.idleHeld = false;
+      g.heldBlink = -1;
+      this.boardDrawn = true; // a whole frame on #game: every still cat rastered
       if (this.splitOn) {
         this.splitOn = false;
-        this.bsig = '';
+        this.bsig = null;
         this.bctx.setTransform(1, 0, 0, 1, 0, 0);
         this.bctx.clearRect(0, 0, this.boardCv.width, this.boardCv.height);
         this.fctx.setTransform(1, 0, 0, 1, 0, 0);
         this.fctx.clearRect(0, 0, this.fxCv.width, this.fxCv.height);
         this.tctx.setTransform(1, 0, 0, 1, 0, 0);
         this.tctx.clearRect(0, 0, this.topCv.width, this.topCv.height);
+        this.fxClean = true;
       }
       return null;
     }
     const d = g.dpr, k = d * FX_SCALE;
     const bw = Math.round(g.W * d), bh = Math.round(g.H * d), fw = Math.round(g.W * k), fh = Math.round(g.H * k);
-    if (this.boardCv.width !== bw || this.boardCv.height !== bh) { this.boardCv.width = bw; this.boardCv.height = bh; this.bsig = ''; }
-    if (this.fxCv.width !== fw || this.fxCv.height !== fh) { this.fxCv.width = fw; this.fxCv.height = fh; }
+    if (this.boardCv.width !== bw || this.boardCv.height !== bh) { this.boardCv.width = bw; this.boardCv.height = bh; this.bsig = null; }
+    if (this.fxCv.width !== fw || this.fxCv.height !== fh) { this.fxCv.width = fw; this.fxCv.height = fh; this.fxClean = false; }
     this.splitOn = true;
     this.L.top = this.tctx;
-    stats.split++;
+    if (move) stats.split++; else stats.hold = (stats.hold || 0) + 1;
     const f = this.fctx;
-    f.setTransform(1, 0, 0, 1, 0, 0);
-    f.clearRect(0, 0, fw, fh);
-    f.setTransform(k, 0, 0, k, 0, 0);
     const y0 = Math.round(g.chainPos().y - 90), tw = Math.round(g.W * d), th = Math.round(180 * d);
-    if (this.topCv.width !== tw || this.topCv.height !== th) { this.topCv.width = tw; this.topCv.height = th; }
+    if (this.topCv.width !== tw || this.topCv.height !== th) { this.topCv.width = tw; this.topCv.height = th; this.fxClean = false; }
     if (y0 !== this.topY) { this.topY = y0; this.topCv.style.top = y0 + 'px'; }
     const tc = this.tctx;
-    tc.setTransform(1, 0, 0, 1, 0, 0);
-    tc.clearRect(0, 0, tw, th);
+    // R11 fix round 1: nothing moves in an idle hold, so the moving layer and the counter strip are cleared once and then
+    // left alone (an untouched canvas costs no raster)
+    if (move || !this.fxClean) {
+      f.setTransform(1, 0, 0, 1, 0, 0);
+      f.clearRect(0, 0, fw, fh);
+      tc.setTransform(1, 0, 0, 1, 0, 0);
+      tc.clearRect(0, 0, tw, th);
+      this.fxClean = !move;
+    }
+    f.setTransform(k, 0, 0, k, 0, 0);
     tc.setTransform(d, 0, 0, d, 0, -y0 * d);
     // a tap's look-around (1.3 s) and a freed cat's pulsing exit arrow (1.4 s) keep the board alive at up to 20 fps,
     // but only while frames come fast (each board redraw is a full still-board raster): a phone that is already
     // dropping frames holds the board still and spends them on the sprinting cat. A bench chain always holds it still
     // (all eyes are on the hops; the looks pick up again once it is over)
     const now = performance.now();
-    const dt = now - (this.splitAt || 0);
-    this.splitAt = now;
-    if (dt < 250) this.dtAvg = (this.dtAvg ?? 16.7) * 0.75 + dt * 0.25;
+    if (move) {
+      const dt = now - (this.splitAt || 0);
+      this.splitAt = now;
+      if (dt < 250) this.dtAvg = (this.dtAvg ?? 16.7) * 0.75 + dt * 0.25;
+    } else this.splitAt = 0;
     const fast = (this.dtAvg ?? 16.7) < 24;
+    // R11 fix round 1: a slow board is drawn the same way every time (Game reads idleHeld), with a scheduled blink
+    g.idleHeld = this.slowBoard();
+    g.heldBlink = -1;
+    if (g.idleHeld && !g.calm) {
+      const P = 1.7, n = Math.floor(g.clock / P);
+      if (g.clock - n * P < 0.16) {
+        const ids = g.order.filter((id) => g.state.alive[id]);
+        if (ids.length) g.heldBlink = ids[(n * 7) % ids.length];
+      }
+    }
     const chain = g.chainFx && g.clock - (g.chainFx.t1 || g.chainFx.t0 || 0) < 1.8;
-    let live = fast && !chain && g.look && g.clock - g.look.t < 1.3;
-    if (fast && !chain) for (const id in g.freedT) { const fr = g.clock - g.freedT[id]; if (fr >= 0 && fr < 1.4) live = true; }
-    const sig = this.boardSig();
+    let live = !g.idleHeld && fast && !chain && g.look && g.clock - g.look.t < 1.3;
+    if (!g.idleHeld && fast && !chain) for (const id in g.freedT) { const fr = g.clock - g.freedT[id]; if (fr >= 0 && fr < 1.4) live = true; }
+    const cur = this.boardState();
+    const prev = this.bsig;
     this.L.board = null;
-    if (sig !== this.bsig || (live && now - this.bAt > 48)) {
-      this.bsig = sig;
+    const same = prev && prev.head === cur.head && prev.alive === cur.alive && prev.freed === cur.freed && prev.blink === cur.blink;
+    if (!same || (live && now - this.bAt > 48)) {
+      this.bsig = cur;
       this.bAt = now;
-      stats.boardDraws++;
       const b = this.bctx;
-      b.setTransform(1, 0, 0, 1, 0, 0);
-      b.clearRect(0, 0, bw, bh);
-      b.setTransform(d, 0, 0, d, 0, 0);
+      // only when the board is drawn the same way every time: else neighbours could seam at the rectangle's edge
+      const r = !same && g.idleHeld && g.hintId == null && !(g.cueOn && g.cueOn('cat')) ? this.dirtyRect(prev, cur) : null;
+      if (r) {
+        stats.boardParts = (stats.boardParts || 0) + 1;
+        b.setTransform(d, 0, 0, d, 0, 0);
+        b.save();
+        b.beginPath();
+        b.rect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
+        b.clip();
+        b.clearRect(r[0], r[1], r[2] - r[0], r[3] - r[1]);
+        this.L.clip = true;
+        this.L.clipR = r;
+      } else {
+        stats.boardDraws++;
+        this.boardDrawn = true;
+        b.setTransform(1, 0, 0, 1, 0, 0);
+        b.clearRect(0, 0, bw, bh);
+        b.setTransform(d, 0, 0, d, 0, 0);
+      }
       this.L.board = b;
     }
     return this.L;

@@ -45,6 +45,7 @@ function albumCard(L) {
   const dd = dailyDone();
   const g = albumNext(d, week, dd);
   if (!g || !g.today || !stepOk(d, week, g, dd)) return '';
+  if (g.old && fg) return ''; // R11 fix round 1: an old archived board leaves the strip to a request, a job or the Daily
   return cardHtml(g);
 }
 

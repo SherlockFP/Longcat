@@ -153,6 +153,9 @@ export class Game {
         this.boardTop = top;
         this.laneB = (r7 ? 80 : 84) * k + this.safeB + (this.extraBottom || 0) * (r7 ? 0.55 : 1) + 2; // r7: the hint is a bubble that may overlap the rug's bottom edge // CSS bottom of the toast lane above the booster bar (and the hint card)
         bottom = this.demo ? this.bottom : this.laneB + (r7 ? 12 : LANE) + (this.tipExtra || 0); // r7: toasts may sit over the rug's bottom edge; a 2-line hint lifts the board by its extra lines
+        // R11 fix round 1 (pres): the teaching card gets its own slot. Its box sits 8 px under the lane line (r7.css .tut) and
+        // its tail pokes 10 px above it; the rug's rim may run under the card, the cells end above the tail
+        if (r7 && !this.demo && this.tutH) bottom = Math.max(bottom, this.laneB - 8 + this.tutH + 12 - padOut);
       }
       const availH = H - top - bottom - 2 * padOut;
       this.cell = Math.max(16, Math.floor(Math.min(availW / w, availH / h, 74)));
@@ -183,10 +186,11 @@ export class Game {
     return [this.ox + (x + 0.5) * this.cell, this.oy + (y + 0.5) * this.cell];
   }
 
-  load(board, { demo = false, top = 104, bottom = 112, extraBottom = 0, tipExtra = 0 } = {}) {
+  load(board, { demo = false, top = 104, bottom = 112, extraBottom = 0, tipExtra = 0, tutH = 0 } = {}) {
     this.board = board;
     this.extraBottom = extraBottom;
     this.tipExtra = tipExtra;
+    this.tutH = tutH; // R11 fix round 1 (pres): the teaching card's measured height (0: no card)
     this.state = createState(board);
     this.demo = demo;
     this.top = top;
@@ -1278,9 +1282,11 @@ export class Game {
     for (const a of this.anims) if (a.type === 'roll') this.drawRoll(ctx, a); // a knocked yarn ball rolls under the cats, never over them
     for (const id of this.order) {
       if (!this.state.alive[id] || animIds.has(id)) continue;
+      if (L && L.clip && !this.pf.inClip(id)) continue; // R11 fix round 1: a partial redraw paints only the cats it touches
       this.drawStatic(ctx, id);
     }
     for (const cat of this.board.cats) if (cat.kittenOf != null) this.drawTether(ctx, cat, animIds);
+    if (L && L.clip) { ctx.restore(); L.clip = false; } // the dirty-rectangle clip (perf.js split)
     }
     { const ctx = L ? L.fx : this.ctx; // R11 juice: moving cats and particles (the low-res layer on a split frame)
     for (const a of this.anims) {
@@ -2089,7 +2095,10 @@ export class Game {
   }
 
   // idle life: blink every few seconds, ear twitch, tail wag
+  // R11 fix round 1: on a slow phone the still board is drawn the same way every time (perf.js idleHeld): no breathing,
+  // twitch, wag or look-around, and one cat at a time blinks on a schedule (heldBlink)
   blinkOf(id) {
+    if (this.idleHeld) return id === this.heldBlink ? 1 : 0;
     if (this.calm) return 0;
     const per = 3.9 + (id % 5) * 0.8;
     const x = (this.clock + id * 1.37) % per;
@@ -2097,14 +2106,14 @@ export class Game {
   }
 
   twitchOf(id) {
-    if (this.calm) return 0;
+    if (this.calm || this.idleHeld) return 0;
     const per = 6.7 + (id % 4) * 1.3;
     const x = (this.clock + id * 2.11) % per;
     return x < 0.35 ? Math.sin((x / 0.35) * Math.PI * 3) * 0.11 : 0;
   }
 
   wagOf(id) {
-    return this.calm ? 0 : Math.sin(this.clock * 5.2 + id * 1.9) * 0.4;
+    return this.calm || this.idleHeld ? 0 : Math.sin(this.clock * 5.2 + id * 1.9) * 0.4;
   }
 
   // body + head over a path window
@@ -2129,7 +2138,7 @@ export class Game {
       face.blink = this.blinkOf(cat.id);
       face.twitch = this.twitchOf(cat.id);
       // a tap nearby: eyes pop open and the head turns toward the tapped cat for a moment
-      const lk = this.look;
+      const lk = this.idleHeld ? null : this.look;
       if (lk && lk.id !== cat.id && this.clock - lk.t < 1.3) {
         const dx = lk.x - p1.x, dy = lk.y - p1.y, d = Math.hypot(dx, dy);
         if (d > c * 0.5 && d < c * 5) {
@@ -2174,7 +2183,7 @@ export class Game {
     const glow = hinted ? 0.5 + 0.5 * Math.sin(this.clock * 6) : 0;
     const frozen = !!this.mv.frozen[id];
     const hb = path.marks[cat.cells.length - 1];
-    const breath = this.calm || frozen ? 1 : 1 + 0.035 * Math.sin(this.clock * 2.4 + id * 1.3); // idle breathing
+    const breath = this.calm || frozen || this.idleHeld ? 1 : 1 + 0.035 * Math.sin(this.clock * 2.4 + id * 1.3); // idle breathing
     if (cat.mech) content.under(this, ctx, cat); // the swivel bed under the head
     this.paintCat(ctx, cat, path, 0, hb, { glow, chevron: !frozen && cat.mech !== 'swivel', idle: !frozen, frozen, wScale: breath, still: true });
     this.mechOver(ctx, cat, path, hb);
@@ -2186,7 +2195,7 @@ export class Game {
       const hd = content.dirOf(this, id);
       const [dx, dy] = DIRS[hd];
       const [hx, hy] = this.center(head[0], head[1]);
-      const dist = c * 0.98 + Math.sin(this.clock * 8) * c * 0.1;
+      const dist = c * 0.98 + (this.idleHeld ? 0 : Math.sin(this.clock * 8) * c * 0.1);
       drawArrow(ctx, hx + dx * dist, hy + dy * dist, FACE[hd] + Math.PI / 2, c * 0.42);
     }
   }
@@ -2247,7 +2256,7 @@ export class Game {
         ctx.stroke();
         ctx.restore();
         const [a, b] = o.cells.map(([x, y]) => this.center(x, y));
-        drawDog(ctx, a[0], a[1], b[0], b[1], c, { asleep: true, breathe: this.calm ? 0 : Math.sin(this.clock * 2 + k) });
+        drawDog(ctx, a[0], a[1], b[0], b[1], c, { asleep: true, breathe: this.calm || this.idleHeld ? 0 : Math.sin(this.clock * 2 + k) });
         const hx = a[0] + (a[0] - b[0]) * 0.1, hy = a[1] + (a[1] - b[1]) * 0.1;
         // floating z z
         ctx.font = `700 ${c * 0.44}px ${FONT}`;

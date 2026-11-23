@@ -9,7 +9,7 @@ import {
 import { analyze, hint, replay, solve, solveFrom, freeCats } from '../src/core/solver.js';
 import { edgeNeighbours } from '../src/core/rules.js';
 import { springHop, swivelSeq, swivelOpen, packOf, packPlan } from '../src/core/content-mech.js';
-import { CURATED, boardOf, BOARD_REV } from '../src/core/curated.js';
+import { CURATED, boardOf, BOARD_REV, linkRev } from '../src/core/curated.js';
 import { searchWin, maxChain } from '../src/core/search.js';
 
 // Independent check that every mechanic piece MATTERS on the winning line, on the real rules state: a dog or yarn is,
@@ -737,6 +737,11 @@ DRANGES.forEach(([lo, hi], i) => {
   }
   const b11 = CURATED[11]();
   ok(winsWith(b11, 4) && !winsWith(b11, 3), 'curated L11: four seats win, three do not');
+  // R11 fix round 1: L7 is a short consolidation board (three seats are enough, a chain of 5 is there), and only a
+  // rev-4 link plays it: a rev-3 link made before it was curated keeps the generated L7
+  const b7 = CURATED[7]();
+  ok(winsWith(b7, 3) && maxChain(new Sim(compile(b7), 5), 400000).best >= 4, 'curated L7: three seats win and a chain of 4+ is there');
+  ok(JSON.stringify(boardOf(7, 3)) === JSON.stringify(generate(7)) && linkRev(7) === 4 && linkRev(6) === 3 && linkRev(13) === 3, 'curated L7: rev 3 keeps the generated board, new L7 links say 4');
 }
 console.log(`levels missing the full band (floor still held): ${bandMiss}; normal levels from L10 with a delayed trap: ${lateOk}/${lateN}`);
 console.log(`search misses ${searchMiss} (avg ${(searchNodes / 200).toFixed(0)} nodes)`);

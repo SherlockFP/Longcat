@@ -38,6 +38,9 @@ export function hangPending(d) {
 // still needs after this one (0: this card completes the framed print); today = the step can be done right now.
 // Nearest: fewest steps left (the week's Daily stamp counts half: the player clears the Daily anyway, and a catch-up
 // counts half a step more: one a week, and this week's card expires), then the fuller page; on a tie this week first.
+// R11 fix round 1 (sol-r12-1 retention): a claim leads, then an archived week that is one clear from its postcard or
+// would finish a page (promo), then this week's postcard; any other archived week comes last (old), and dayGoal puts
+// the Daily, a resident job and a resident request before it, so the default goal never turns into a queue of old boards
 export function albumNext(d, week, dailyDone) {
   if (!eventsOpen(d)) return null;
   const hp = hangPending(d);
@@ -64,8 +67,11 @@ export function albumNext(d, week, dailyDone) {
   for (const g of out) {
     g.page = r10.pageOf(g.card);
     g.pageLeft = r10.CARDS_PER_PAGE - r10.pageHave(d, g.page) - 1;
+    g.promo = g.arch && (g.left <= 1 || g.pageLeft <= 0);
+    g.old = g.arch && !g.promo;
   }
-  const key = (g) => [g.today ? 0 : 1, g.cost, g.pageLeft];
+  const rank = (g) => (g.left === 0 ? 0 : g.promo ? 1 : g.arch ? 3 : 2);
+  const key = (g) => [g.today ? 0 : 1, rank(g), g.cost, g.pageLeft];
   const cmp = (x, y) => { const a = key(x), b = key(y); for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
   return out.sort(cmp)[0] || null; // sort is stable: equal keys keep this week first, then the archive's order
 }
@@ -84,10 +90,12 @@ export function stepOk(d, week, g, dailyDone) {
 // the one concrete goal for today -> { k: 'album', g } | { k: 'daily' } | { k: 'job' } | { k: 'req', i } | null
 export function dayGoal(d, { week, day, dailyDone, res = [] }) {
   const g = albumNext(d, week, dailyDone);
-  if (g && g.today && stepOk(d, week, g, dailyDone)) return { k: 'album', g };
+  const ok = g && g.today && stepOk(d, week, g, dailyDone);
+  if (ok && !g.old) return { k: 'album', g };
   if (!dailyDone) return { k: 'daily' };
   if (res.length && !(d.jobs.day === day && d.jobs.paid)) return { k: 'job' };
   if (d.req.list.length) return { k: 'req', i: 0 }; // a request to work on or to claim
+  if (ok) return { k: 'album', g }; // an old archived board: when nothing fresher waits
   return null;
 }
 

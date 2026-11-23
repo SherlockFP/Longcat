@@ -14,7 +14,9 @@ import * as r10 from '../game/r10.js';
 
 const QR_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.5 3.5h6v6h-6zM14.5 3.5h6v6h-6zM3.5 14.5h6v6h-6z" fill="none" stroke-width="2.4"/><path d="M5.6 5.6h1.8v1.8H5.6zM16.6 5.6h1.8v1.8h-1.8zM5.6 16.6h1.8v1.8H5.6zM14 14h3v3h-3zM17.5 17.5h3v3h-3zM18 14h2.5v2.5H18zM14 18h2.5v2.5H14z" stroke="none"/></svg>';
 // the QR card button: a round button beside Dare a friend on every win card that offers a dare
-export const cardBtn = () => `<button class="round vircard" data-act="sharecard" aria-label="${t('virCardBtn')}" title="${t('virCardBtn')}">${QR_SVG}</button>`;
+// R11 fix round 1 (sol-r12-1 virality): its name is printed on it ("Share card"), so the link, the picture and the video
+// read as three different things
+export const cardBtn = () => `<button class="round vircard" data-act="sharecard" aria-label="${t('virCardBtn')}" title="${t('virCardBtn')}">${QR_SVG}<i class="vcap" aria-hidden="true">${t('virCardBtn')}</i></button>`;
 
 const vir = () => save.data.vir || (save.data.vir = {});
 // the background recording's resolution: 360x640 on a device that looks slow or was slow last time, else 720x1280

@@ -3,12 +3,14 @@ import { addStrings } from './i18n.js';
 
 addStrings({
   en: {
-    virCardBtn: 'Share QR card',
+    virCardBtn: 'Share card', // R11 fix round 1: what the button hands over (a picture), shown under its QR icon
+    virVideoPrep: 'Preparing video',
     virVideoSoon: 'The video is almost ready',
     virVideoBg: 'Video {p}%',
   },
   tr: {
-    virCardBtn: 'QR kartını paylaş',
+    virCardBtn: 'Kartı paylaş',
+    virVideoPrep: 'Video hazırlanıyor',
     virVideoSoon: 'Video birazdan hazır',
     virVideoBg: 'Video %{p}',
   },

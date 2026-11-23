@@ -1,0 +1,50 @@
+{
+ "label": "r11f1-sw",
+ "query": "",
+ "dpr": 3,
+ "size": "375x812",
+ "out": {
+  "x6": {
+   "L60": {
+    "frames": 180,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 16.8,
+    "cost50": 0.3,
+    "cost95": 1,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":106,\"skipped\":172,\"covered\":false,\"layers\":2,\"sprites\":18,\"split\":0,\"boardDraws\":1,\"carSprites\":3,\"hold\":103,\"why\":{\"new\":1},\"boardParts\":5}"
+   },
+   "L60run": {
+    "frames": 82,
+    "p50": 33.3,
+    "p95": 50.1,
+    "max": 83.3,
+    "cost50": 3.4,
+    "cost95": 6.6,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":191,\"skipped\":172,\"covered\":false,\"layers\":2,\"sprites\":18,\"split\":85,\"boardDraws\":1,\"carSprites\":4,\"hold\":103,\"why\":{\"new\":1},\"boardParts\":17}"
+   },
+   "rapid6": {
+    "frames": 74,
+    "p50": 16.7,
+    "p95": 66.7,
+    "max": 83.3,
+    "cost50": 2.2,
+    "cost95": 8.2,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":306,\"skipped\":172,\"covered\":false,\"layers\":3,\"sprites\":36,\"split\":145,\"boardDraws\":3,\"carSprites\":8,\"hold\":158,\"why\":{\"new\":2,\"ids\":1},\"boardParts\":30}"
+   },
+   "chain": {
+    "frames": 71,
+    "p50": 33.3,
+    "p95": 33.4,
+    "max": 50,
+    "cost50": 2.4,
+    "cost95": 6.3,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":579,\"skipped\":178,\"covered\":false,\"layers\":4,\"sprites\":48,\"split\":407,\"boardDraws\":6,\"carSprites\":23,\"hold\":169,\"why\":{\"new\":3,\"ids\":1,\"cats\":1,\"area\":1},\"boardParts\":43}"
+   }
+  }
+ }
+}

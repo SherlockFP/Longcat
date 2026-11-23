@@ -1,6 +1,6 @@
 import './ui/ui.css';
 import { generate, levelKind } from './core/generate.js';
-import { boardOf, BOARD_REV } from './core/curated.js';
+import { boardOf, BOARD_REV, linkRev } from './core/curated.js';
 import { COLORS, makeCat, makeBoard } from './core/board.js';
 import { freeCats, hint as solverHint, solveFrom } from './core/solver.js';
 import { compile, Sim, searchWin, maxChain } from './core/search.js';
@@ -152,6 +152,7 @@ const setTexts = () => {
   game.chainText = (n) => t('chainX', { n });
   game.lastSeatText = t('lastSeat');
   game.teachTexts = [t('teachBoards'), t('teachWaits')];
+  if (game.pairCost) game.pairCost = t('pairSeats'); // a language switch mid-L9
   document.title = t('title');
 };
 const peekColor = () => COLORS[game.board.cats[0].color];
@@ -589,7 +590,7 @@ function startLevel(n, daily = false, show = false) {
   S.winToken = (S.winToken || 0) + 1; // a pending win-card job (clip preview) of an older attempt is dropped
   clearTimeout(S.clipTimer);
   game.autoHint = !daily && !show && n <= 3; // L3's arrow points past the tempting pink pair; L4 is a real choice now: no tap-by-tap guide, only a nudge after a costly park
-  const board = boardOf(n, show && show.kind === 'friend' ? show.rev : BOARD_REV); // a curated L6 / L9 / L11 from rev 3 on (core/curated.js)
+  const board = boardOf(n, show && show.kind === 'friend' ? show.rev : BOARD_REV); // a curated L6 / L9 / L11 from rev 3 on, L7 from rev 4 (core/curated.js)
   if (show && show.kind === 'friend') board.meta.benchSize = show.b; // the sender's seats: the exact board they played
   const tries = (S.tries[triesKey()] = (S.tries[triesKey()] || 0) + 1);
   S.continued = false;
@@ -649,9 +650,11 @@ function startLevel(n, daily = false, show = false) {
   S.tut3b = false;
   S.curCue = '';
   S.tut = tut;
-  game.load(board, { extraBottom: tut ? 64 : 0, tipExtra: tut ? tipExtra(tut) : 0 });
+  const tb = tut ? tutBox(tut) : null; // R11 fix round 1 (pres): the card's own slot under the board (game.js layout)
+  game.load(board, { extraBottom: tut ? 64 : 0, tipExtra: tb ? tb.extra : 0, tutH: tb ? tb.h : 0 });
   game.rulesTeach = friend;
   game.waitTags = !special && (n === 4 || (!!board.meta.cur && tries >= 3)); // L4's clue: the free cats show how many carriers they would wait on a cushion (R11 fun: a curated lesson's 3rd try brings it back)
+  game.pairCost = !special && board.meta.cur === 'pair' ? t('pairSeats') : ''; // R11 fix round 1: L9's pair wears its seat cost before the first tap (game/r11-fun.js)
   S.teach = !special && (!!TUT_KEY[n] || !!board.meta.cur); // R11 fun: a teaching level's free rewind goes back to the tap that cost the win
   game.funGhost = (!show || friend) && (S.teach || n <= 20); // R11 fun: a park shows its cushions and the carrier it waits for
   clip.clear();
@@ -897,8 +900,22 @@ function clipPreview() {
     if (cv) clip.start(cv);
     const b = document.querySelector('#modal [data-act=shareclip]');
     if (b) b.hidden = false;
+    // R11 fix round 1 (sol-r12-1 virality): the video starts on its own a moment later, so from the first frame the
+    // thumbnail says it is being prepared (not "Make video", which read as a third thing to do)
+    if (b && canRecord() && !clip.failed() && !clip.ready() && !clip.encoding()) {
+      b.classList.add('making');
+      const sp = b.querySelector('span');
+      if (sp) sp.textContent = t('virVideoBg', { p: 0 });
+      b.setAttribute('aria-label', t('virVideoPrep'));
+      clipCap(t('virVideoPrep'));
+    }
     vir.onWinCard(); // R11 vir: the QR card is drawn and the video starts recording in the background
   }, 60); // one frame after the card mounts: the card's pop-in starts before the replay to the peak runs
+}
+// R11 fix round 1: the line under the thumbnail: "Preparing video" until the clip is ready, then "Send video"
+function clipCap(s) {
+  const c = document.querySelector('#modal .clipcap');
+  if (c) c.textContent = s || '';
 }
 // Share clip, first tap with no video yet: record it into the thumbnail, then the button is ready to send
 function makeClip(bg) { // bg (R11 vir): started by the win card, not a tap
@@ -909,6 +926,7 @@ function makeClip(bg) { // bg (R11 vir): started by the win card, not a tap
   const label = (x, s) => { const sp = x.querySelector('span'); if (sp) sp.textContent = s; x.setAttribute('aria-label', s); };
   const mk = bg ? 'virVideoBg' : 'clipMakingP';
   if (b) { b.classList.add('making'); label(b, t(mk, { p: 0 })); }
+  clipCap(t('virVideoPrep'));
   track('clip_make', { n: S.n, bg: bg ? 1 : 0 });
   const cv = document.querySelector('#modal .chainclip canvas');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -927,6 +945,7 @@ function makeClip(bg) { // bg (R11 vir): started by the win card, not a tap
     x.classList.remove('making');
     x.style.removeProperty('--p');
     label(x, t(r ? 'clipSend' : 'shareClipBtn'));
+    clipCap(r ? t('clipSend') : '');
     if (r) x.classList.add('ready');
     return r;
   });
@@ -938,8 +957,9 @@ const timed = () => !!S.show && (S.show.kind === 'rush' || (S.show.kind === 'fri
 // "Ana's" / "Ana'nın"; no name: "your friend's" / "Arkadaşının"
 const whoOf = (nm) => (nm ? (save.data.settings.lang === 'tr' ? dare.trGenitive(nm) : nm + "'s") : t('dareWho'));
 const dareGoal = (m, g, x) => (m === 'chain' ? t(x ? 'dareGoalChainMatch' : 'dareGoalChain', { n: g }) : m === 'time' ? t('dareGoalTime', { t: (g / 10).toFixed(1) }) : g === 0 ? t('dareGoalNoBench') : t('dareGoalSeats', { n: g }));
-// how much taller the hint card is than one line (a 2-line hint would cover the board's bottom row otherwise)
-function tipExtra(text) {
+// how much taller the hint card is than one line (a 2-line hint would cover the board's bottom row otherwise), and its
+// whole height (R11 fix round 1: the board keeps a slot for it)
+function tutBox(text) {
   const el = document.createElement('div');
   el.className = 'tut';
   el.style.visibility = 'hidden';
@@ -950,7 +970,7 @@ function tipExtra(text) {
   el.textContent = text;
   const h = el.getBoundingClientRect().height;
   el.remove();
-  return Math.max(0, Math.round(h - one));
+  return { extra: Math.max(0, Math.round(h - one)), h: Math.ceil(h) };
 }
 // a result in words: x4, 2 seats, 12.3s
 const valText = (m, v) => (m === 'chain' ? 'x' + v : m === 'time' ? t('valTime', { t: (v / 10).toFixed(1) }) : t('valSeats', { n: v }));
@@ -982,7 +1002,7 @@ function myDare() {
   else if (sh && sh.kind === 'friend' && sh.m === 'seats') m = 'seats';
   else m = (S.chainBest || 0) >= 2 ? 'chain' : 'seats';
   const g = m === 'time' ? Math.max(30, Math.round((S.lastMs || 0) / 100)) : m === 'chain' ? S.chainBest : peak;
-  const rev = sh && sh.kind === 'friend' ? sh.rev : BOARD_REV; // a reply names the board revision it was played on
+  const rev = sh && sh.kind === 'friend' ? sh.rev : linkRev(S.n); // a reply names the board revision it was played on; a new dare the oldest one that plays this board
   return checkDare({ n: S.n, b: S.bench0 || game.board.meta.benchSize, k, m, g, rev });
 }
 // A dare goes out only if the recipient can really reach it: the sender's moves are replayed on the exact board and
@@ -2072,9 +2092,9 @@ async function boot() {
         };
       },
       pos: (id) => game.cellPos(id),
-      layout: () => ({ beltY: game.beltY, benchY: game.benchY, bw: game.bw, oy: game.oy, cs: game.cs, W: game.W }),
+      layout: () => ({ beltY: game.beltY, benchY: game.benchY, bw: game.bw, oy: game.oy, cs: game.cs, W: game.W, cellsB: game.board ? game.oy + game.board.h * game.cell : 0 }), // cellsB: the bottom of the bottom row (R11 fix round 1)
       cue: () => (game.cue ? { ...game.cue, now: game.clock } : null),
-      fun: () => ({ ghost: !!game.funGhost, park: game.funPark ? game.funPark.seats.length : 0, culprit: game.funCulprit ? game.funCulprit.id : null, press: game.press ? game.press.dest.length : 0 }), // R11 fun lane
+      fun: () => ({ pairCost: game.pairCost || '', ghost: !!game.funGhost, park: game.funPark ? game.funPark.seats.length : 0, culprit: game.funCulprit ? game.funCulprit.id : null, press: game.press ? game.press.dest.length : 0 }), // R11 fun lane
       benchOut: () => game.vis.benchOut.filter((x) => x != null).length,
       // frame strip of a move (qa/_leap-strip.jpg, _chain-strip.jpg): freeze the clock, tap, then step the game to each
       // time (seconds after the tap; 'end' = when the send finishes) and crop the play area into a 3-column grid

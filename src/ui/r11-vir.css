@@ -9,3 +9,15 @@
 .card.win.compact .r7row .round.vircard { width: 46px; height: 46px; }
 .card.win.compact .r7row:has(.vircard) .btn.sharebtn { font-size: 18px; padding: 0 9px; gap: 4px; }
 .card.win.compact .r7row:has(.vircard) .btn[data-act=next] { font-size: 23px; }
+/* R11 fix round 1 (sol-r12-1 virality): each share control says what it is. The QR card button carries "Share card" on
+   a small tag over its top rim; the replay thumbnail has a line under it, "Preparing video" from the moment the win card
+   opens until the clip is ready, then "Send video" */
+.round.vircard { position: relative; overflow: visible; }
+.round.vircard .vcap { position: absolute; right: -5px; top: -11px; padding: 1px 6px; border-radius: 999px; background: #fffaf0; border: 2px solid #ff6b9a; color: var(--ink, #1d2b53); font: 700 9.5px/1.25 var(--font); font-style: normal; white-space: nowrap; pointer-events: none; }
+.cliphd { display: flex; flex-direction: column; align-items: center; gap: 3px; min-width: 0; }
+.cliphd .clipcap { max-width: 78px; font: 700 10px/1.15 var(--font); font-style: normal; color: var(--ink, #1d2b53); text-align: center; }
+.cliphd .clipcap:empty { display: none; }
+/* the big card: the line stays on one row and the thumbnail gives up its height, so Next keeps its place */
+.card.win.withclip .cliphd .clipcap { white-space: nowrap; max-width: none; }
+.card.win.withclip .cliphd:has(.clipcap:not(:empty)) .chainclip :is(canvas, video) { height: 144px; width: auto; }
+@media (max-height: 700px) { .card.win.withclip .cliphd:has(.clipcap:not(:empty)) .chainclip :is(canvas, video) { height: 116px; width: auto; } }

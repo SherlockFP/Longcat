@@ -32,6 +32,9 @@ must(JSON.stringify(decode('2l6-5-c3-ab12cd', base)) === JSON.stringify({ n: 6, 
 let seenRev = null;
 decode('3l6-5-c3', (n, rev) => { seenRev = rev; return 5; });
 must(seenRev === 3, 'baseBench sees the link revision');
+// R11 fix round 1: the curated L7 arrived in revision 4; its links say 4 and decode with it, every other link still says 3
+must(shortCode({ n: 7, b: 5, k: 'l', m: 'seats', g: 2, rev: 4 }) === '4l7-5-s2' && decode('4l7-5-s2', base)?.rev === 4, 'a rev-4 link round trips');
+must(shortCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, rev: 3 }).startsWith('3l13-'), 'a rev-3 link still says 3');
 must(decode(s2.toUpperCase(), base)?.i === 'ab12cd', 'a typed (capitalised) core still decodes');
 must(decode('2d4-5-s0', base)?.m === 'seats' && decode('2d4-5-s0', base).g === 0 && decode('2d4-5-s0', base).k === 'd', 'daily no-park core');
 must(decode('2r9-5-t123', base)?.g === 123, 'time core');

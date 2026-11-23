@@ -19,3 +19,10 @@
 /* wide screens: both side panels start at the same height instead of each centring on its own length */
 html.hubwide .hubside { top: max(20px, calc(50% - 270px)); transform: none; }
 html.hubwide .hscard { max-height: calc(100vh - max(20px, calc(50vh - 270px)) - 20px); }
+
+/* R11 fix round 1 (sol-r12-1 presentation): the map keeps a safe band under the hub's top bar (settings, hearts, coins,
+   stars). The road and its nodes fade out as they scroll into it, so no node ever sits half-hidden behind a pill */
+.hubmap .hmscroll {
+  -webkit-mask-image: linear-gradient(to bottom, transparent calc(var(--safe-t, 0px) + 34px), #000 calc(var(--safe-t, 0px) + 72px));
+  mask-image: linear-gradient(to bottom, transparent calc(var(--safe-t, 0px) + 34px), #000 calc(var(--safe-t, 0px) + 72px));
+}

@@ -2223,14 +2223,16 @@ try {
         if (await ev('!!document.querySelector("#modal .hcol .ach, #modal .hcol .paybd")')) throw new Error(`r12 ${lg}: the replay details belong on the thumbnail`);
         const lab = await ev('document.querySelector("#modal [data-act=shareclip]")?.getAttribute("aria-label") || ""');
         const cr = (await qa('clip()')).canRecord;
-        if (cr && lab !== (lg === 'en' ? 'Make video' : 'Video yap')) throw new Error(`r12 ${lg}: the clip button should say it makes the video: ${lab}`);
+        // R11 fix round 1: the video starts on its own, so the thumbnail says it is being prepared from the first frame
+        const cap = await ev('document.querySelector("#modal .clipcap")?.textContent || ""');
+        if (cr && !(cap === (lg === 'en' ? 'Preparing video' : 'Video hazırlanıyor') || cap === (lg === 'en' ? 'Send video' : 'Videoyu yolla'))) throw new Error(`r12 ${lg}: the thumbnail should say the video is being prepared: ${cap} / ${lab}`);
         if (!(await ev('[...document.querySelectorAll("#modal .clipdet i, #modal [data-act=shareclip] span")].every((e) => e.getBoundingClientRect().right <= e.closest(".chainclip").getBoundingClientRect().right + 1)'))) console.log(`  note: r12 ${lg} a thumbnail label runs past the thumbnail`);
         at.clip = await nextAt();
         await shot(`r12-win-clip-${lg}`);
         if (cr && lg === 'en') {
           await ev('document.querySelector("#modal [data-act=shareclip]").click()'); await sleep(900);
           const mk = await ev('document.querySelector("#modal [data-act=shareclip]")?.getAttribute("aria-label") || ""');
-          if (!/^Making \d+%$/.test(mk)) throw new Error('r12: the clip button should count up while the video is made: ' + mk);
+          if (!/^(Making|Video) \d+%$/.test(mk) && mk !== 'Send video') throw new Error('r12: the clip button should count up while the video is made: ' + mk);
           await shot('r12-clip-making');
           await waitFor('window.__qa.clip().ready', 20000); await sleep(300);
           const rd = await ev('document.querySelector("#modal [data-act=shareclip]")?.getAttribute("aria-label") || ""');
@@ -2376,6 +2378,26 @@ try {
       await qa('slow(1)');
     });
     await send('Emulation.setEmulatedMedia', { features: [] });
+    // R11 fix round 1 (sol-r12-1 juice): on a slow phone an idle board holds its still cats on #pf-board (no whole-board
+    // raster at 30 fps) and a tap redraws only the corner it changed. Forced here: headless frames come fast
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 60, coins: 100, meta: { sessions: 3 }, settings: { lang: 'en', sound: false, music: false, haptics: false } }))`);
+    await boot(); await qa('level(60)'); await sleep(900);
+    await ev('window.__perf.forceSlow = true'); await sleep(1500);
+    const hs = () => ev('({ hold: window.__perf.hold || 0, full: window.__perf.boardDraws || 0, part: window.__perf.boardParts || 0 })');
+    const h0 = await hs(); await sleep(1500);
+    const h1 = await hs();
+    console.log(`  r11 f1 idle hold: ${JSON.stringify(h0)} -> ${JSON.stringify(h1)}`);
+    if (!(h1.hold > h0.hold + 20) || h1.full - h0.full > 1) throw new Error('r11 f1: a slow idle board should hold its still cats on their layer: ' + JSON.stringify([h0, h1]));
+    await shot('r11-f1-idle-hold');
+    const fr = (await qa('state()')).free;
+    if (fr.length) {
+      await qa(`tap(${fr[0]})`); await sleep(1400);
+      const h2 = await hs();
+      console.log(`  r11 f1 after a tap: ${JSON.stringify(h2)}`);
+      if (!(h2.part > h1.part)) throw new Error('r11 f1: a tap on a slow board should redraw only its corner: ' + JSON.stringify([h1, h2]));
+      await shot('r11-f1-after-tap');
+    }
+    await ev('window.__perf.forceSlow = false');
     // wide screen: the layers stay inside the centred phone column (shot once the push-in has eased out: the R10
     // underlay, scaled by the camera, pokes past the column's bottom while it is in)
     await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -2417,6 +2439,9 @@ try {
       await ev(saveF(lg, 5));
       await boot(); await qa('slow(1)'); await qa('level(9)'); await sleep(700);
       if ((await qa('meta()')).cur !== 'pair') throw new Error('r11 fun: L9 should play the curated pair board');
+      // R11 fix round 1: before any tap the pair wears its seat cost and green's place in the queue
+      if ((await qa('fun()')).pairCost !== (lg === 'en' ? '2 seats' : '2 minder')) throw new Error('r11 fun: L9 should show the pair cost before the first tap');
+      await shot(`r11-f1-pair-cost-${lg}`);
       if (!(await qa('fun()')).ghost) throw new Error('r11 fun: L9 should preview its parks');
       for (const id of [5, 6]) { await idleF(); await qa(`tap(${id})`); }
       await idleF();
@@ -2472,7 +2497,7 @@ try {
     const saveV = (name, url) => writeFileSync(join(OUT, name), Buffer.from(url.split(',')[1], 'base64'));
     const cfgV = (lg) => `settings: { lang: '${lg}', sound: false, music: false, haptics: false }`;
     const pub = process.env.QA_LOCAL_URL ? origin + '/' : process.env.VITE_PUBLIC_URL;
-    const inView = (sel) => ev(`[...document.querySelectorAll(${JSON.stringify(sel)})].length > 0 && [...document.querySelectorAll(${JSON.stringify(sel)})].every((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && e.scrollWidth <= e.clientWidth + 1 && r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1; })`);
+    const inView = (sel) => ev(`[...document.querySelectorAll(${JSON.stringify(sel)})].length > 0 && [...document.querySelectorAll(${JSON.stringify(sel)})].every((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && (e.classList.contains('vircard') || e.scrollWidth <= e.clientWidth + 1) && r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1; })`);
     const winV = async () => { await waitFor('window.__qa.state().screen === "win"', 30000); await waitFor('!!document.querySelector("#modal .card.win")', 15000); };
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
     // 1 the sender (Ana) clears L13 with a chain x3: Dare a friend, Share QR card and the video on one win card
@@ -2481,6 +2506,10 @@ try {
     await qa('level(13)'); await sleep(700); await playV();
     await winV(); await sleep(400);
     if (!(await inView('#modal [data-act=share], #modal [data-act=sharecard], #modal [data-act=next]'))) throw new Error('vir: Dare a friend, Share QR card and Next should all sit on screen at 375x667');
+    // R11 fix round 1: the picture share is named on its button, and the thumbnail says the video is on its way
+    if ((await ev('document.querySelector("#modal [data-act=sharecard] .vcap")?.textContent || ""')) !== 'Share card') throw new Error('vir: the QR button should be labelled Share card');
+    if (!(await inView('#modal [data-act=sharecard] .vcap'))) throw new Error('vir: the Share card tag should sit on screen'); // (the tag hangs over the round button's rim, so the button itself skips the overflow test)
+    if ((await qa('clip()')).canRecord && !/^(Preparing video|Send video)$/.test(await ev('document.querySelector("#modal .clipcap")?.textContent || ""'))) throw new Error('vir: the thumbnail should say Preparing video until the clip is ready');
     const v0 = await qa('clip()');
     if (v0.canRecord) {
       await waitFor('window.__qa.clip().encoding || window.__qa.clip().ready', 4000); // nobody tapped: the win card started it
@@ -2661,10 +2690,17 @@ try {
         const thr = await ev('(() => { const s = document.querySelector("#cafe .nbcard small.thread"); if (!s) return null; const r = s.getBoundingClientRect(), c = s.closest(".nbcard").getBoundingClientRect(); return { txt: s.textContent, clip: s.scrollWidth > s.clientWidth + 1, out: r.bottom > c.bottom - 2 || r.right > c.right }; })()');
         if (thr && (thr.clip || thr.out)) throw new Error(`pres ${w} ${lg}: the resident line on the build card is clipped: ${JSON.stringify(thr)}`);
         if (!(await ev('[...document.querySelectorAll("#cafe .goal.feat .gt b")].every((e) => e.scrollWidth <= e.clientWidth + 1 && e.scrollHeight <= e.clientHeight + 1)'))) throw new Error(`pres ${w} ${lg}: featured goal text clipped`);
+        // R11 fix round 1: the map fades out under the top bar, so no node sits half-hidden behind a pill
+        if (await ev('getComputedStyle(document.querySelector("#cafe .hmscroll")).maskImage === "none" && getComputedStyle(document.querySelector("#cafe .hmscroll")).webkitMaskImage === "none"')) throw new Error(`pres ${w} ${lg}: the map should keep a safe band under the top bar`);
         await shot(`r11-pres-map-${w}-${lg}`);
         // the teaching boards: the n/3 tag on the front carrier stays clear of the plaque
-        for (const lv of [4, 6]) {
+        for (const lv of [4, 6, 7]) {
           await qa(`level(${lv})`); await sleep(900);
+          if (lv === 7 && (await qa('meta()')).cur !== 'warm') throw new Error(`pres ${w} ${lg}: L7 should play the curated warm-up board`);
+          // R11 fix round 1: the teaching card has its own slot: its tail stays below the bottom row of cells
+          const slot = await ev('(() => { const t = document.getElementById("tut"); if (!t || t.hidden || !t.textContent) return null; return Math.round(t.getBoundingClientRect().top - 10 - window.__qa.layout().cellsB); })()');
+          console.log(`  pres ${w}x${h} ${lg} L${lv} card slot ${slot}px`);
+          if (slot != null && slot < 0) throw new Error(`pres ${w} ${lg} L${lv}: the teaching card covers the bottom row (${slot}px)`);
           const gap = await ev(TAGGAP);
           console.log(`  pres ${w}x${h} ${lg} L${lv} tag-plaque gap ${gap}px`);
           if (gap < 3) throw new Error(`pres ${w} ${lg} L${lv}: the n/3 tag crowds the LEVEL plaque (${gap}px)`);

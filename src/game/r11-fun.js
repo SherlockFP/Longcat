@@ -8,7 +8,7 @@
 import { undo as rulesUndo } from '../core/rules.js';
 import { winnableBack, movesOnStack } from '../core/r11-fun.js';
 import { COLOR_PAL, NAVY } from './breeds.js';
-import { drawBadge } from './render.js';
+import { drawBadge, FONT } from './render.js';
 
 const GHOST = 1.15; // seconds the post-tap ghosts stay
 const CULPRIT = 9; // seconds the teaching mark stays (or until the next tap)
@@ -146,8 +146,83 @@ export function drawUnder(game, ctx) {
   }
 }
 
+// R11 fix round 1 (sol-r12-1 fun): L9's pair shows what parking it costs before any tap, so a quick tap never commits
+// blind. Over the free mother + kitten a tag reads "2 seats" with two cushions and the number of carriers before green
+// (L4's wait number); the green carrier in the queue wears a ring with the same number. Drawn still (no pulse, so an
+// idle board stays idle) until the pair leaves the board; the press preview takes over while a finger is down
+function drawPairCost(game, ctx) {
+  const text = game.pairCost;
+  if (!text || game.demo || game.press || !game.board || !game.state) return;
+  const st = game.state;
+  const kit = game.board.cats.find((k) => k.kittenOf != null && st.alive[k.id] && st.alive[k.kittenOf]);
+  if (!kit) return;
+  const mom = game.board.cats[kit.kittenOf];
+  const pal = COLOR_PAL[mom.color] || COLOR_PAL[0];
+  const c = game.cell;
+  const to = carrierAt(game, mom.color);
+  // the tag sits in the row over the kitten (L9: the free cells beside the staircase)
+  let x0 = 1e9, x1 = -1e9, y0 = 1e9;
+  for (const [x, y] of kit.cells) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); }
+  const fs = Math.max(11, Math.round(c * 0.27));
+  ctx.save();
+  ctx.font = `800 ${fs}px ${FONT}`;
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'middle';
+  const cw = fs * 0.95, gap = fs * 0.3, br = fs * 0.62; // cushion width, gaps, wait badge radius
+  const tw = ctx.measureText(text).width;
+  const w = 10 + cw * 2 + gap + gap + tw + (to ? gap + br * 2 : 0) + 10, h = fs * 1.75;
+  const bx0 = game.ox + 4, bx1 = game.ox + game.board.w * c - 4;
+  const cx = clamp(game.ox + ((x0 + x1 + 1) / 2) * c, bx0 + w / 2, bx1 - w / 2);
+  const cy = game.oy + y0 * c - c * 0.42;
+  const L = cx - w / 2;
+  ctx.fillStyle = '#fffaf0';
+  ctx.strokeStyle = pal.base;
+  ctx.lineWidth = 2.5;
+  game.rr(ctx, L, cy - h / 2, w, h, h / 2);
+  ctx.fill();
+  ctx.stroke();
+  // the tail points down at the pair
+  ctx.beginPath();
+  ctx.moveTo(cx - 6, cy + h / 2 - 1);
+  ctx.lineTo(cx, cy + h / 2 + 6);
+  ctx.lineTo(cx + 6, cy + h / 2 - 1);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = '#fffaf0';
+  ctx.fillRect(cx - 5, cy + h / 2 - 3, 10, 3);
+  // two cushions in the pair's colour
+  for (let i = 0; i < 2; i++) {
+    const ex = L + 10 + cw / 2 + i * (cw + gap * 0.6);
+    ctx.fillStyle = '#f3e2c4';
+    ctx.strokeStyle = pal.base;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(ex, cy + 1, cw / 2, cw * 0.36, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+  }
+  const tx = L + 10 + cw * 2 + gap * 0.6 + gap;
+  ctx.fillStyle = NAVY;
+  ctx.fillText(text, tx, cy + 1);
+  ctx.restore();
+  if (!to) return;
+  drawBadge(ctx, tx + tw + gap + br, cy, br, to.k, to.k >= 2 ? '#e8590c' : '#2f9e44');
+  // where green waits: a ring around its carrier (or its dot in the queue) with the same number
+  const rr = to.k <= 2 ? game.cs * 0.42 : clamp(game.cs * 0.1, 6, 9) * 1.9;
+  ctx.save();
+  ctx.strokeStyle = pal.base;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([5, 4]);
+  ctx.beginPath();
+  ctx.arc(to.x, to.y, rr, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+  drawBadge(ctx, to.x - rr * 0.8, to.y - rr * 0.8, Math.max(8, br * 0.85), to.k, to.k >= 2 ? '#e8590c' : '#2f9e44');
+}
+
 // drawn over the cats: the teaching mark's lane and "!" tag on the tap that cost the win
 export function drawTop(game, ctx) {
+  drawPairCost(game, ctx);
   const c = game.funCulprit;
   if (!c || game.demo || game.press || c.board !== game.board || !game.state.alive[c.id]) return;
   const a = clamp((CULPRIT - (game.clock - c.t0)) / 0.6, 0, 1);

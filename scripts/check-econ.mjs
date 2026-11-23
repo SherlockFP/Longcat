@@ -170,6 +170,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
 {
   const d = fresh();
   const res = ['mochi', 'biscuit'];
+  d.req.bridge = 1; // the timed requests on their own (the second resident's bridge ask has its own check below)
   ok(!L.reqTick(d, T0, []), 'no residents: no requests');
   ok(L.reqTick(d, T0, res) && d.req.list.length === 1, 'the first resident brings a request at once');
   ok(!L.reqTick(d, T0 + H, res), 'nothing new within the interval');
@@ -323,7 +324,8 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
         const dg = RT.dayGoal(d, { week, day, dailyDone: doneDay === day, res });
         ok(dg && (dg.k !== 'album' || RT.stepOk(d, week, dg.g, doneDay === day)), `day ${dd + 1} ${hour}:00: a concrete next goal reachable now (got ${dg ? dg.k : 'none'})`);
         const an = RT.albumNext(d, week, doneDay === day);
-        if (an && an.today) { openDays++; ok(dg && dg.k === 'album', `day ${dd + 1} ${hour}:00: an open album reward is the goal (got ${dg && dg.k})`); if (dg && dg.k === 'album') albumDays++; }
+        if (an && an.today && !an.old) { openDays++; ok(dg && dg.k === 'album', `day ${dd + 1} ${hour}:00: an open album reward is the goal (got ${dg && dg.k})`); if (dg && dg.k === 'album') albumDays++; }
+        if (an && an.old && dg && dg.k === 'album') ok(doneDay === day && !d.req.list.length, `day ${dd + 1} ${hour}:00: an old archived board only leads when nothing fresher waits`);
       }
       // play this visit's half of the day's levels
       for (let k = 0; k < levels / 2; k++) {
@@ -816,6 +818,17 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   const card = R.popIndex(wk);
   let g = RT.albumNext(d, wk, false);
   eq([g.k, g.b, g.card, g.left, g.unit], ['board', 'a', card, 3, 'stamp'], 'a fresh week: board A of the Show, 3 stamps left');
+  { // R11 fix round 1: an archived week jumps ahead of this week's postcard only once it is one clear from its own
+    const d3 = JSON.parse(JSON.stringify(d));
+    d3.album.cards[card] = 1;
+    const ga = RT.albumNext(d3, wk, false);
+    ok(ga && ga.arch && ga.left === 2 && ga.old, `an archived week two boards away is an old step (${ga && ga.left})`);
+    const d4 = JSON.parse(JSON.stringify(d));
+    L.showMedal(d4, ga.w, 'a', false);
+    const gp = RT.albumNext(d4, wk, false);
+    ok(gp && gp.arch && gp.w === ga.w && gp.promo && gp.left === 1, `one board from its postcard, the archived week leads (${gp && gp.k} w${gp && gp.w})`);
+    eq(RT.dayGoal(d3, { week: wk, day: wk * 7, dailyDone: false, res: [] }).k, 'daily', 'an old archived board waits behind the Daily');
+  }
   L.showMedal(d, wk, 'a', false);
   g = RT.albumNext(d, wk, false);
   eq([g.k, g.b, g.left], ['board', 'b', 2], 'then board B');
@@ -850,6 +863,21 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   ok(E.weekOf(sun) !== E.weekOf(sun + 1), 'test day is a Sunday');
   const tm = RT.tomorrow(d, { day: sun, res: ['mochi'], dailyDone: true, streak: 4 });
   ok(tm.some((x) => x.k === 'week') && tm.some((x) => x.k === 'chest' && x.n === 5) && tm.some((x) => x.k === 'job'), `tomorrow on a Sunday: ${tm.map((x) => x.k).join(', ')}`);
+}
+
+// ---------------- R11 fix round 1: the second resident's named ask bridges the wait for the third ----------------
+{
+  const d = fresh();
+  const t0 = Date.UTC(2026, 10, 2, 9);
+  L.reqTick(d, t0, ['mochi']);
+  ok(!d.req.list.some((x) => x.need === 3 && x.k === 'win'), 'one resident: no bridge ask');
+  d.req.list = [];
+  L.reqTick(d, t0 + 1000, ['mochi', 'biscuit']);
+  const br = d.req.list.find((x) => x.k === 'win' && x.who === 'biscuit');
+  ok(br && br.need === 3 && d.req.fresh === 'biscuit', `two residents: the newest asks for three wins at once (${JSON.stringify(d.req.list)})`);
+  d.req.list = d.req.list.filter((x) => x !== br);
+  L.reqTick(d, t0 + 2000, ['mochi', 'biscuit']);
+  ok(!d.req.list.some((x) => x.k === 'win' && x.need === 3), 'the bridge ask comes once');
 }
 
 if (failures) {
