@@ -232,6 +232,7 @@ function load() {
       if (isObj(m.season)) for (const k of ['daily', 'claim']) if (isObj(m.season[k])) d.season[k] = m.season[k];
       if (isObj(m.vis)) d.vis = m.vis;
       if (isObj(m.orders)) d.orders = m.orders; // adoption orders: free-form, sanitised in src/game/orders.js
+      if (isObj(m.hub)) d.hub = { seen: Number.isInteger(m.hub.seen) && m.hub.seen >= 0 ? m.hub.seen : 0 }; // hub lane (src/ui/hub.js): the last level the map showed
       for (const [o, ks] of [['pop', ['daily', 'paid']], ['album', ['cards', 'hung']]]) if (isObj(m[o])) for (const k of ks) if (isObj(m[o][k])) d[o][k] = m[o][k];
       if (isObj(m.rush) && isObj(m.rush.cups)) d.rush.cups = m.rush.cups;
       if (isObj(m.iap) && isObj(m.iap.owned)) d.iap.owned = m.iap.owned;

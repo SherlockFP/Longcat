@@ -1970,6 +1970,77 @@ try {
     await click('[data-act=closesheet]'); await sleep(300);
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
   }
+  // ---- hub lane (R10): the home level map, resident layout at 7 sizes, wide-screen panels + keyboard ----
+  if (!process.env.QA_SKIP_HUB) {
+    const hday = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
+    // 2 floors open, so the visitors share the ground floor with the residents and today's visitor may stand at the door
+    const nVis = [4, 5, 3, 6].find((n) => (hday % n) % 2 === 1) || 4;
+    const vis = Object.fromEntries(['bean', 'frost', 'hazel', 'maple', 'pip', 'sakura'].slice(0, nVis).map((id) => [id, 1]));
+    const built = Object.fromEntries(['counter_counter', 'counter_pastry', 'counter_lamps', 'counter_chalkboard', 'counter_tables', 'counter_plant', 'window_seat'].map((id) => [id, 1]));
+    const hubSave = (lv, extra = {}) => JSON.stringify({ v: 9, level: lv, coins: 900, meta: { sessions: 5 }, bestStars: { [lv - 1]: 3, [lv - 2]: 2, [lv - 3]: 1 }, cafe: { stars: 2, built }, vis,
+      req: { list: [{ k: 'win', who: 'biscuit', need: 2, p: 2, c: 0, s: 1 }, { k: 'carrier', who: 'mochi', need: 8, p: 3, c: 0, s: 2 }], next: Date.now() + 3600000, n: 2, done: 0, fresh: 'mochi' }, ...extra });
+    // the map: Bölüm N on the current node, Play always in view, the cat on the current level
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await ev(`localStorage.setItem("lco_save", ${JSON.stringify(hubSave(27, { settings: { lang: 'tr', sound: false, music: false, haptics: false } }))})`);
+    await boot(); await sleep(600);
+    const mapOk = await ev(`(() => { const c = document.querySelector('#cafe.hm-on .hubmap .hmn.cur'); const room = document.querySelector('#cafe .room').getBoundingClientRect(); const top = document.querySelector('#cafe .cafe-top').getBoundingClientRect(); const p = document.querySelector('#cafe .cafe-play').getBoundingClientRect();
+      if (!c) return 'no current node'; const r = c.getBoundingClientRect(); if (!c.textContent.includes('Bölüm 27')) return 'label ' + c.textContent;
+      if (r.top < top.bottom || r.bottom > room.bottom - 40) return 'current node off view ' + Math.round(r.top) + '..' + Math.round(r.bottom);
+      if (p.bottom > innerHeight || p.top < room.bottom) return 'Play hidden'; if (!document.querySelector('.tabbar .hmtab.on')) return 'map tab';
+      if (document.querySelectorAll('.hmn.lock').length !== 3) return 'locked nodes ' + document.querySelectorAll('.hmn.lock').length; return ''; })()`);
+    if (mapOk) throw new Error('hub map: ' + mapOk);
+    await shot('r10-hub-map-375-tr');
+    await ev('document.querySelector(".hmn.cur").click()');
+    await waitFor('window.__qa.state().screen === "play"', 10000);
+    await qa('home()'); await sleep(600);
+    if (!(await ev('!!document.querySelector("#cafe.hm-on .hubmap")'))) throw new Error('hub map: home should open on the map');
+    // residents: no two touch, none under the top bar, the rails, the goals strip or the room name, at every size
+    const RES = `(() => { const R = (e) => e.getBoundingClientRect(); const room = document.querySelector('#cafe .room'); const rr = R(room);
+      const res = [...room.querySelectorAll('.guest.g7')].filter((e) => !e.hidden).map(R);
+      const blk = [...room.querySelectorAll('.cafe-top, .frail > *, .rrail > *, .goals, .fname, .jar7')].map(R).filter((r) => r.width && r.height);
+      const ov = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom; const bad = [];
+      res.forEach((a, i) => { if (a.left < rr.left - 1 || a.right > rr.right + 1 || a.top < rr.top - 1 || a.bottom > rr.bottom + 1) bad.push('out' + i);
+        res.forEach((b, j) => { if (j > i && ov(a, b)) bad.push('overlap' + i + '/' + j); }); blk.forEach((b, k) => { if (ov(a, b)) bad.push('hud' + i + '/' + k); }); });
+      const bub = [...room.querySelectorAll('.rqbub:not([hidden])')].map(R); // request bubbles: apart, clear of the bars and rails
+      bub.forEach((a, i) => { if (blk.some((b) => ov(a, b)) || a.left < rr.left - 1 || a.right > rr.right + 1) bad.push('bubble' + i); bub.forEach((b, j) => { if (j > i && ov(a, b)) bad.push('bubbles' + i + '/' + j); }); });
+      return { n: res.length, bad }; })()`;
+    for (const [w, h] of [[360, 640], [375, 667], [390, 844], [430, 932], [768, 1024], [1600, 900], [1920, 1080]]) {
+      await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: w > 800 ? 1 : 2, mobile: w < 768 });
+      await ev(`localStorage.setItem("lco_save", ${JSON.stringify(hubSave(27))})`);
+      await boot(); await sleep(400);
+      await ev('document.querySelector("#cafe .tab[data-act=cafeview]").click()'); await sleep(300);
+      await ev('document.querySelector(".frail .fl[data-d=\'-1\']")?.click()'); await sleep(700);
+      const r = await ev(RES);
+      if (r.n < 4) throw new Error(`hub residents ${w}x${h}: only ${r.n} cats in the ground floor`);
+      if (r.bad.length) throw new Error(`hub residents ${w}x${h}: ${r.bad.join(' ')}`);
+      console.log(`  hub residents ${w}x${h}: ${r.n} placed, no overlap`);
+      await shot(`r10-hub-res-${w}x${h}`);
+    }
+    // wide screens: a bigger column, panels both sides inside the window, keys
+    await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+    await ev(`localStorage.setItem("lco_save", ${JSON.stringify(hubSave(27))})`);
+    await boot(); await sleep(500);
+    const wide = await ev(`(() => { const b = document.body.getBoundingClientRect(); const L = document.getElementById('hubL'); const R = document.getElementById('hubR');
+      if (!document.documentElement.classList.contains('hubwide')) return 'not wide'; if (b.width <= 900 * 9 / 16 + 1) return 'column not bigger ' + b.width;
+      if (!L || !R) return 'no panels'; const l = L.getBoundingClientRect(), r = R.getBoundingClientRect();
+      if (l.left < 0 || l.right > b.left || r.left < b.right || r.right > innerWidth || l.top < 0 || l.bottom > innerHeight || r.bottom > innerHeight) return 'panels off ' + [l.left, l.right, r.left, r.right, l.bottom, r.bottom].map(Math.round);
+      return ''; })()`);
+    if (wide) throw new Error('hub wide: ' + wide);
+    await shot('r10-hub-desk-1600');
+    await ev('document.querySelector("#hubR [data-act=residents]").click()'); await sleep(500);
+    if ((await qa('state()')).screen !== 'residents') console.log('  note: the Residents panel row did not open the residents screen');
+    await qa('home()'); await sleep(500);
+    await ev('document.querySelector("#cafe .tab[data-act=cafeview]").click()'); await sleep(400);
+    await ev('dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))'); await sleep(300);
+    if (!(await ev('!!document.querySelector("#cafe.hm-on .hubmap")'))) throw new Error('hub keys: Esc in the rooms should go back to the map');
+    await ev('dispatchEvent(new KeyboardEvent("keydown", { key: "Enter" }))');
+    await waitFor('window.__qa.state().screen === "play"', 10000); await sleep(900);
+    await shot('r10-hub-desk-1600-play');
+    await ev('dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }))'); await sleep(600);
+    if (!(await ev('!!document.querySelector("#cafe.on")'))) throw new Error('hub keys: Esc in a level should go home');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 
