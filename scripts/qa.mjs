@@ -2689,6 +2689,43 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }
+  // ---- R11 look: the map ground changes per chapter (the next chapter's layer fades in over the boundary, the props
+  // take the theme), the right panel's road card uses the chapter ground, and the desktop sides show the painted cat
+  // street (only on a wide screen: a phone never fetches it). Frames r11x-look-*. QA_SKIP_LOOK=1 skips it. ----
+  if (!process.env.QA_SKIP_LOOK) {
+    const lookSave = (lv) => `localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: ${lv}, coins: 100, meta: { sessions: 3 }, cafe: { stars: 0, built: {} }, settings: { lang: 'en', sound: false, music: false, haptics: false } }))`;
+    const DESKREQ = `performance.getEntriesByType('resource').filter((e) => /look-desk/.test(e.name)).length`;
+    const LAYERS = `[...document.querySelectorAll('#cafe .hubmap .lookch')].map((e) => e.className.replace('lookch ', ''))`;
+    // scroll the map so the chapter 1|2 boundary (the fading layer's bottom edge minus the fade) sits mid-screen
+    const TOEDGE = `(() => { const sc = document.querySelector('#cafe .hmscroll'); const f = [...document.querySelectorAll('#cafe .lookch.fade')].pop(); if (!sc || !f) return -1; sc.scrollTop = f.offsetTop + f.offsetHeight - 150 - sc.clientHeight / 2; return Math.round(sc.scrollTop); })()`;
+    const lookMaps = async (tag) => {
+      await ev(lookSave(5)); await boot(); await qa('home()'); await sleep(1200);
+      const l1 = await ev(LAYERS);
+      if (!l1.length || !l1[0].includes('t-garden')) throw new Error(`look ${tag}: chapter 1 should stand on the garden: ${JSON.stringify(l1)}`);
+      await shot(`r11x-look-map-ch1-${tag}`);
+      await ev(lookSave(12)); await boot(); await qa('home()'); await sleep(1200);
+      const l2 = await ev(LAYERS);
+      if (!l2.some((c) => c.includes('t-garden')) || !l2.some((c) => c.includes('t-autumn') && c.includes('fade'))) throw new Error(`look ${tag}: L12 should show the garden fading into the autumn park: ${JSON.stringify(l2)}`);
+      if (!(await ev('!!document.querySelector("#cafe .hmprop.t-autumn, #cafe .hmprop.t-garden")'))) throw new Error(`look ${tag}: the road props should carry their chapter theme`);
+      if ((await ev(TOEDGE)) < 0) throw new Error(`look ${tag}: no chapter boundary to scroll to`);
+      await sleep(500);
+      await shot(`r11x-look-map-edge-${tag}`);
+    };
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await lookMaps('375');
+    if ((await ev(DESKREQ)) !== 0) throw new Error('look: a phone should never download the desktop backdrop');
+    for (const [w, h] of [[1920, 1080], [1366, 768]]) {
+      await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 1, mobile: false });
+      await lookMaps(String(w));
+      await waitFor(`${DESKREQ} > 0`, 8000); await sleep(400);
+      const bg = await ev('getComputedStyle(document.documentElement, "::before").backgroundImage');
+      if (!/look-desk-/.test(bg)) throw new Error(`look ${w}: the sides should show the cat street: ${bg.slice(0, 120)}`);
+      if (!(await ev('/look-map-autumn/.test(document.querySelector("#hubR .hsroad")?.getAttribute("style") || "")'))) throw new Error(`look ${w}: the road card should use chapter 2's ground`);
+      await shot(`r11x-look-desk-${w}`);
+    }
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

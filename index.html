@@ -29,6 +29,11 @@
       html::before { content: ''; position: fixed; inset: -40px; background: url(./assets/r7/bg_play_room.webp) center / cover; filter: blur(18px) brightness(.72) saturate(1.1); }
       body { position: relative; width: var(--vw); margin: 0 auto; transform: translateZ(0); box-shadow: 0 0 0 1px rgba(60,30,10,.35), 0 0 60px rgba(0,0,0,.45); }
     }
+    /* R11 look: a real desktop (not a landscape phone) shows a painted cat street, sharp, with a light vignette; its
+       time of day follows the chapter (--look-desk, src/ui/look-world.js). Only this rule names it, so phones never load it. */
+    @media (min-aspect-ratio: 2/3) and (min-width: 900px) and (min-height: 560px) {
+      html::before { inset: -4px; background: radial-gradient(ellipse 75% 85% at 50% 50%, transparent 55%, rgba(40,20,8,.38)), var(--look-desk, url(./assets/r7/look-desk-day.webp)) center / cover; background-color: #5a3b22; filter: blur(1.2px); }
+    }
   </style>
 </head>
 <body>
