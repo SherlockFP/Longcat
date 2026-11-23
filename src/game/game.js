@@ -6,6 +6,7 @@ import { hint as solverHint } from '../core/solver.js';
 import { DIRS } from '../core/board.js';
 import { IMG } from './assets.js';
 import * as content from './content.js'; // spring cats, swivel beds, pack themes (content lane)
+import * as fun from './r11-fun.js'; // R11 fun lane: park ghosts + carrier line, the winnable rewind's teaching mark
 import { COLOR_PAL, COLLARS, NAVY, MYSTERY_PAL } from './breeds.js';
 import { attach as perfAttach, DPR_CAP } from './perf.js';
 import { landKick, stampScale, drawLandPulse, closeSquash, stampSprite } from './r11-juice.js'; // R11 juice: final-landing beat, lid slam
@@ -717,6 +718,7 @@ export class Game {
     if (r.bonk) this.addBonk(r);
     else this.startRun(r, { ray: true });
     if (r.ok) { this.hintId = null; this.cue = null; } // any real move makes the old hint stale (the auto-hint of L1-3 refreshes itself)
+    fun.onTap(this, r);
     return r;
   }
 
@@ -1263,6 +1265,7 @@ export class Game {
       if (this.pf) this.pf.carriers(ctx); // soft baked shadows under the carriers
       this.drawCarriers(ctx);
       this.drawPress(ctx);
+      fun.drawUnder(this, ctx);
     }
     this.drawBoard(ctx);
     const now = this.clock;
@@ -1323,6 +1326,7 @@ export class Game {
     }
     }
     this.drawPressTop(ctx);
+    fun.drawTop(this, ctx);
     this.drawWaitTags(ctx);
     this.drawRulesTeach(ctx);
     this.drawSweep(L ? L.fx : ctx);

@@ -2404,6 +2404,61 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }
+  // ---- R11 fun lane (sol-r11-3 fixes 4 + 7): L9's pair park previewed before it commits (press rings + the line to its
+  // carrier) and after (ghost cushions), the teaching rewind back to the tap that cost the win, the winnable Take back
+  // on a generated board, a free opening (L1-12 losses cost no life), EN + TR at 375x667. QA_SKIP_FUN=1 skips it. ----
+  if (!process.env.QA_SKIP_FUN) {
+    const lsaveF = () => ev('JSON.parse(localStorage.getItem("lco_save"))');
+    const idleF = async () => { await waitFor('!window.__qa.state().busy', 10000); await sleep(150); };
+    const toasts = () => ev('[...document.querySelectorAll(".toast")].map((e) => e.textContent).join(" | ")');
+    const saveF = (lg, lives) => `localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 13, coins: 100, meta: { sessions: 3 }, lives: { n: ${lives}, t: Date.now() }, cafe: { stars: 0, built: { counter_counter: 1, counter_pastry: 1 } }, settings: { lang: '${lg}', sound: false, music: false, haptics: false } }))`;
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    for (const lg of ['en', 'tr']) {
+      await ev(saveF(lg, 5));
+      await boot(); await qa('slow(1)'); await qa('level(9)'); await sleep(700);
+      if ((await qa('meta()')).cur !== 'pair') throw new Error('r11 fun: L9 should play the curated pair board');
+      if (!(await qa('fun()')).ghost) throw new Error('r11 fun: L9 should preview its parks');
+      for (const id of [5, 6]) { await idleF(); await qa(`tap(${id})`); }
+      await idleF();
+      // hold the big pair: two cushion rings + the line to the green carrier, nothing committed yet
+      const pp = await qa('pos(9)');
+      await touch('touchStart', pp.x, pp.y); await sleep(450);
+      if ((await qa('fun()')).press < 2) throw new Error('r11 fun: holding the pair should preview two seats');
+      await shot(`r11-fun-press-pair-${lg}`);
+      await touch('touchEnd', pp.x, pp.y); await sleep(160);
+      if ((await qa('fun()')).park !== 2) throw new Error('r11 fun: the pair park should leave two ghost cushions: ' + JSON.stringify(await qa('fun()')));
+      await shot(`r11-fun-park-ghost-${lg}`);
+      // the pair park is a proven loss: play it out with real taps (the hint's cheapest seat, then any cat) until the bench overflows
+      for (let k = 0; k < 30 && (await qa('state()')).screen !== 'fail'; k++) { await idleF(); const f = await qa('freeId()'); if (f == null) break; await qa(`tap(${f})`); await sleep(100); }
+      await waitFor('window.__qa.state().screen === "fail"', 30000); await sleep(900);
+      if ((await lsaveF()).lives.n !== 5) throw new Error('r11 fun: a lost bench in the opening should cost no life');
+      const lbl = await ev('document.querySelector("#modal [data-act=takeback] b")?.textContent || ""');
+      if (lbl !== (lg === 'en' ? 'Back to that tap' : 'O hamleye dön')) throw new Error(`r11 fun ${lg}: the teaching rewind label: ${lbl}`);
+      if (!(await ev('[...document.querySelectorAll("#modal .frow *")].every((e) => e.scrollWidth <= e.clientWidth + 1)'))) throw new Error(`r11 fun ${lg}: fail row text clipped`);
+      await shot(`r11-fun-fail-l9-${lg}`);
+      await ev('document.querySelector("#modal [data-act=takeback]").click()'); await sleep(700);
+      const fc = await qa('fun()');
+      if (fc.culprit !== 9) throw new Error('r11 fun: the teaching rewind should go back to the pair park (cat 9): ' + JSON.stringify(fc));
+      const tl = await toasts();
+      if (!(lg === 'en' ? /cost the win/ : /Kaybettiren/).test(tl)) throw new Error(`r11 fun ${lg}: the rewind toast: ${tl}`);
+      console.log(`  r11 fun ${lg}: rewound to cat ${fc.culprit}, toast "${tl}"`);
+      await shot(`r11-fun-culprit-${lg}`);
+    }
+    // a generated board past the opening: a loss costs a life, Take back rewinds to a spot the solver proves winnable
+    await ev(saveF('en', 5));
+    await boot(); await qa('level(13)'); await sleep(600);
+    for (let i = 0; i < 2; i++) { await idleF(); const f = await qa('freeId()'); if (f != null) await qa(`tap(${f})`); }
+    await idleF(); await qa('failNow()');
+    await waitFor('window.__qa.state().screen === "fail"', 30000); await sleep(900);
+    if ((await lsaveF()).lives.n !== 4) throw new Error('r11 fun: a loss past the opening should still cost a life');
+    if (await ev('!!document.querySelector("#modal [data-act=takeback]")')) {
+      await ev('document.querySelector("#modal [data-act=takeback]").click()'); await sleep(600);
+      console.log('  r11 fun take back L13: ' + (await toasts()));
+      await shot('r11-fun-takeback-l13');
+    } else console.log('  note: r11 fun no free Take back on the L13 loss');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

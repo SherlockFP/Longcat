@@ -50,6 +50,8 @@ import * as hub from './ui/hub.js';
 import './i18n-r11.js';
 import './ui/r11.css'; // R11 fix round 1: plaque pack line, on-demand clip, featured goal, one Play
 import './ui/r11b.css'; // R11 fix round 2: win card rows, thread bar, video progress
+import './i18n-fun.js';
+import * as fun from './game/r11-fun.js'; // R11 fun lane: winnable Take back, park ghosts, teaching rewind, a free opening
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -630,7 +632,9 @@ function startLevel(n, daily = false, show = false) {
   S.tut = tut;
   game.load(board, { extraBottom: tut ? 64 : 0, tipExtra: tut ? tipExtra(tut) : 0 });
   game.rulesTeach = friend;
-  game.waitTags = !special && n === 4; // L4's clue: the free cats show how many carriers they would wait on a cushion
+  game.waitTags = !special && (n === 4 || (!!board.meta.cur && tries >= 3)); // L4's clue: the free cats show how many carriers they would wait on a cushion (R11 fun: a curated lesson's 3rd try brings it back)
+  S.teach = !special && (!!TUT_KEY[n] || !!board.meta.cur); // R11 fun: a teaching level's free rewind goes back to the tap that cost the win
+  game.funGhost = (!show || friend) && (S.teach || n <= 20); // R11 fun: a park shows its cushions and the carrier it waits for
   clip.clear();
   S.bench0 = board.meta.benchSize; // the seats this attempt started with (a friend challenge link carries them)
   ui.none();
@@ -1097,6 +1101,7 @@ function failInfo() {
     tip: S.daily ? t('dailyRetryFree') : cur() ? t('curTry_' + cur()) : t(st && st.carriers[0] && freeCats(st).some((i) => game.board.cats[i].color === st.carriers[0].color) ? 'failTip2' : 'failTip'),
     // the first lost bench on a level offers one free Take Back (the losing tap undone), so the lesson can be applied
     freeBack: !S.show && !S.freeBack[triesKey()] && !!st && canUndo(st),
+    backLabel: S.teach ? t('funBackTap') : '', // R11 fun
     practice: !!S.show, // the Show board: Retry is free, nothing to buy
     // the Starter Bundle shows once, here (never on a win card), and not in the first session
     offer: !S.show && !S.daily && save.data.meta.sessions >= 2 && econ.starterDue(save.data) && starterOpen() && { coins: iap.PRODUCTS.starter.coins, scoop: iap.PRODUCTS.starter.scoop, price: iap.PRODUCTS.starter.price },
@@ -1111,7 +1116,7 @@ function onFail(silent = false) {
   if (!S.show && !S.daily) { // Cat Show practice and the daily puzzle are free to retry: no life, no streak
     econ.purrLoss(save.data);
     save.data.purr.lost = S.n;
-    S.lifeLost = lifeGate() && econ.loseLife(save.data, now());
+    S.lifeLost = lifeGate() && !fun.freeLoss(S.n) && econ.loseLife(save.data, now()); // R11 fun: the opening (L1-12) is practice
   }
   save.commit();
   if (S.lifeLost) track('life_lost', { n: S.n });
@@ -1527,14 +1532,20 @@ const actions = {
   takeback() {
     if (busy || S.mode !== 'play' || !game.over || !game.state.failed || S.freeBack[triesKey()]) return;
     const before = game.state.bench.slice();
-    if (!game.undoMove()) return ui.toast(t('noUndo'));
+    const rw = fun.rewindWinnable(game); // R11 fun: back to the latest spot the solver proves winnable, not just one move
+    if (!rw) return ui.toast(t('noUndo'));
     // R11: mark the cushion that came free and, when there is one, a cat that boards the front carrier right now
     const st = game.state;
     const seat = st.bench.findIndex((x, i) => x < 0 && before[i] >= 0);
     const fc = st.carriers[0];
     const now0 = fc ? freeCats(st).find((i) => game.board.cats[i].color === fc.color && !isHidden(st, i)) : undefined;
-    game.cueBack(seat, now0 ?? -1);
+    const mark = S.teach && rw.proven && rw.id >= 0; // a teaching level: point at the tap that cost the win instead
+    if (mark) fun.markCulprit(game, rw.id);
+    else game.cueBack(seat, now0 ?? -1);
+    if (mark) ui.toast(t('funTapLine'));
+    else if (rw.proven) ui.toast(rw.k > 1 ? t('funBackN', { n: rw.k }) : t('funBack1'));
     track('takeback_cue', { seat: seat >= 0 ? 1 : 0, cat: now0 != null ? 1 : 0 });
+    track('fun_rewind', { n: S.n, k: rw.k, proven: rw.proven ? 1 : 0, teach: S.teach ? 1 : 0 });
     S.freeBack[triesKey()] = true;
     S.undid = true;
     ui.hideModal();
@@ -2021,6 +2032,7 @@ async function boot() {
       pos: (id) => game.cellPos(id),
       layout: () => ({ beltY: game.beltY, benchY: game.benchY, bw: game.bw, oy: game.oy, cs: game.cs, W: game.W }),
       cue: () => (game.cue ? { ...game.cue, now: game.clock } : null),
+      fun: () => ({ ghost: !!game.funGhost, park: game.funPark ? game.funPark.seats.length : 0, culprit: game.funCulprit ? game.funCulprit.id : null, press: game.press ? game.press.dest.length : 0 }), // R11 fun lane
       benchOut: () => game.vis.benchOut.filter((x) => x != null).length,
       // frame strip of a move (qa/_leap-strip.jpg, _chain-strip.jpg): freeze the clock, tap, then step the game to each
       // time (seconds after the tap; 'end' = when the send finishes) and crop the play area into a 3-column grid

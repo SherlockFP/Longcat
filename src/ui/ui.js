@@ -592,7 +592,7 @@ export const ui = {
     const tag = info.stuckAt ? `<div class="stucktag" style="left:${info.stuckAt.x}px;top:${info.stuckAt.y}px">${t('stuckWhy')}</div>` : '';
     const more = info.practice ? [] : [scoop, seat, ad].filter(Boolean);
     const offer = info.offer ? `<button class="offercard slimoffer" data-act="starter"><i class="ribbon">${t('bestValue')}</i><span class="oc-t"><b>${t('starterBundle')}</b><small>${t('starterLine', { c: info.offer.coins.toLocaleString(lang()), s: info.offer.scoop })}</small></span><span class="oc-p">${info.offer.price}</span></button>` : '';
-    const takeBack = back && !info.practice ? `<button class="btn green sm tb" data-act="takeback">${img('v2/ui_undo.webp', 'mini')}<b>${t('takeBack')}</b><small>${t('free')}</small></button>` : '';
+    const takeBack = back && !info.practice ? `<button class="btn green sm tb" data-act="takeback">${img('v2/ui_undo.webp', 'mini')}<b>${info.backLabel || t('takeBack')}</b><small>${t('free')}</small></button>` : '';
     root.insertAdjacentHTML('beforeend', `
 <div class="backdrop offerb" id="modal">${tag}<div class="card cream offer slim r7fail">
   <h2 class="title navy">${t('offerTitle')}</h2>
