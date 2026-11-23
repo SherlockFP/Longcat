@@ -1911,6 +1911,7 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
     await ev('localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 30, coins: 5000, meta: { sessions: 3 }, cafe: { stars: 4, built: { counter_counter: 1, counter_pastry: 1 } } }))');
     await boot(); await qa('lang("en")');
+    await ev('document.querySelector("#modal .settings [data-act=close]")?.click()'); await sleep(200); // lang() opens Settings: close it, or it peeks out under the shop
     await qa('screen("shop")'); await sleep(700);
     for (const tab of ['offers', 'coins', 'boosters', 'style']) {
       await tabTo(tab);
@@ -1954,6 +1955,7 @@ try {
     console.log('  shop board bench ' + JSON.stringify(st.bench));
     // TR: every tab fits
     await qa('home()'); await sleep(500); await qa('lang("tr")');
+    await ev('document.querySelector("#modal .settings [data-act=close]")?.click()'); await sleep(200);
     await qa('screen("shop")'); await sleep(600);
     for (const tab of ['offers', 'coins', 'boosters', 'style']) {
       await tabTo(tab);
