@@ -130,3 +130,143 @@ svg.medal.gold .rb { fill: #e5484d; }
 @media (prefers-reduced-motion: reduce) {
   .rr.ring.full, .goal.ready, .r7hub .guest .pheart, .sstep.ready img { animation: none !important; }
 }
+/* forgiving streak: the weekly shield (one missed day covered) */
+.shieldchip { display: inline-flex; align-items: center; gap: 5px; margin: 3px 0 2px; padding: 3px 10px 3px 6px; border-radius: 999px; font: 700 13px var(--font); white-space: nowrap; }
+.shieldchip svg { width: 18px; height: 18px; }
+.shieldchip svg path { fill: currentColor; }
+.shieldchip svg path.ck { fill: none; stroke: #fff; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.shieldchip.on { background: #dff3ff; color: #1971c2; box-shadow: inset 0 0 0 2px #74c0fc; }
+.shieldchip.used { background: #f1ece4; color: #9c8d7b; }
+
+/* ---- r10 hub: one spotlight, compact goals, jar on the counter, request bubbles, nooks, renovation, Cat Street ---- */
+.goals { gap: 4px; }
+.goal { height: 40px; padding: 2px 5px 2px 2px; border-radius: 12px; border-width: 2px; box-shadow: 0 2px 0 rgba(90,52,24,.5); }
+.goal .gi { width: 28px; height: 28px; }
+.goal .gi img.sub { width: 16px; height: 16px; right: -4px; bottom: -3px; }
+.goal .gt b { font: 700 10.5px/1.05 var(--font); white-space: normal; overflow: visible; text-overflow: clip; }
+.goal .lbar { height: 11px; border-width: 1px; }
+.goal .lbar em { font-size: 9px; }
+.r7hub .room.goaled .stage { bottom: 44px; }
+.goal.ready { animation: none; } /* one spotlight: a finished goal is green, it does not pulse */
+.r7hub .fname.up { bottom: 52px; }
+/* the spotlight: a soft honey glow that breathes */
+.spot { animation: spotPulse 1.3s ease-in-out infinite; }
+@keyframes spotPulse { 0%, 100% { filter: drop-shadow(0 0 3px rgba(255,214,110,.9)); } 50% { filter: drop-shadow(0 0 12px rgba(255,200,80,1)) drop-shadow(0 0 4px #fff6d0); } }
+.rr.spot, .nbcard .trow.spot { animation: spotRing 1.3s ease-in-out infinite; }
+@keyframes spotRing { 0%, 100% { box-shadow: 0 3px 0 var(--oak-d), 0 0 0 2px rgba(255,214,110,.6); } 50% { box-shadow: 0 3px 0 var(--oak-d), 0 0 0 4px var(--honey), 0 0 16px 6px rgba(255,200,80,.85); } }
+.nbcard .trow.spot { border-radius: 16px; }
+.sptag { position: absolute; right: calc(100% + 6px); top: 50%; transform: translateY(-50%); padding: 2px 8px; border-radius: 999px; background: var(--honey); border: 2px solid #fff6e5; font: 700 12px var(--font); font-style: normal; color: #5a300f; white-space: nowrap; box-shadow: 0 2px 3px rgba(0,0,0,.3); animation: tagNudge 1.3s ease-in-out infinite; pointer-events: none; }
+.tab .sptag { right: auto; left: 50%; top: -14px; transform: translateX(-50%); animation: none; }
+@keyframes tagNudge { 50% { transform: translate(-4px, -50%); } }
+.jar7 { position: absolute; transform: translate(-50%, -100%); padding: 0; border: 0; background: none; cursor: pointer; }
+.jar7 img { display: block; width: 100%; height: auto; filter: drop-shadow(-3px 4px 3px rgba(60,30,10,.35)); }
+.jar7.full img { animation: jarWobble 2.2s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes jarWobble { 0%, 70%, 100% { transform: rotate(0); } 78% { transform: rotate(-7deg); } 86% { transform: rotate(6deg); } 93% { transform: rotate(-3deg); } }
+.jar7 .jtag { position: absolute; left: 50%; bottom: 100%; transform: translateX(-50%); padding: 1px 7px; border-radius: 999px; background: #fffaf0; border: 2px solid var(--oak-d); font: 700 12px var(--font); font-style: normal; color: var(--ink); white-space: nowrap; box-shadow: 0 2px 0 rgba(142,85,48,.45); }
+.jar7.full .jtag { background: var(--honey); color: #5a300f; border-color: #fff6e5; }
+.rqbub { position: absolute; z-index: 95; transform: translate(-50%, -100%); display: flex; align-items: center; gap: 5px; width: max-content; max-width: 230px; padding: 4px 6px 4px 4px; border-radius: 16px; background: #fffaf0; border: 2.5px solid #2a6e4a; box-shadow: 0 3px 0 rgba(42,110,74,.45); color: var(--ink); text-align: left; cursor: pointer; }
+.rqbub::after { content: ""; position: absolute; left: 50%; top: 100%; transform: translateX(-50%); border: 8px solid transparent; border-top-color: #2a6e4a; }
+.rqbub .rqo { flex: none; width: 30px; height: 30px; object-fit: contain; }
+.rqbub b { font: 700 12px/1.1 var(--font); }
+.rqbub em { flex: none; padding: 3px 8px; border-radius: 999px; background: linear-gradient(#7fd48a, #3e9f6a); color: #fff; font: 700 12px var(--font); font-style: normal; text-shadow: 0 1px 0 rgba(0,60,30,.5); }
+.nook7 { position: absolute; transform: translate(-50%, -100%); pointer-events: none; }
+.nook7 img { display: block; width: 100%; height: auto; filter: drop-shadow(-3px 5px 3px rgba(60,30,10,.3)); }
+.r7hub .guest.idle7 .gimg { animation: idle7 4.6s ease-in-out infinite; }
+.r7hub .guest.idle7.b .gimg { animation-delay: -2.1s; }
+@keyframes idle7 { 0%, 100% { transform: scale(1, 1); } 20% { transform: scale(1.02, .98); } 40% { transform: scale(1, 1) rotate(-3deg); } 55% { transform: rotate(0); } 75% { transform: scale(1.02, .98); } }
+.reno-g { position: absolute; left: 50%; top: 1.5%; width: 58%; transform: translateX(-50%); z-index: 85; pointer-events: none; filter: drop-shadow(-3px 5px 3px rgba(60,30,10,.25)); }
+.reno-r { position: absolute; left: 50%; top: 99%; width: 54%; transform: translate(-50%, -100%); z-index: 1; pointer-events: none; }
+.reno-g.fresh { animation: renoDrop .8s cubic-bezier(.2,1.5,.4,1) both; }
+.reno-r.fresh { animation: renoRug .6s ease-out both; }
+@keyframes renoDrop { from { transform: translate(-50%, -60%); opacity: 0; } }
+@keyframes renoRug { from { transform: translate(-50%, -100%) scale(.4); opacity: 0; } }
+/* house view: the next floor's tag, the sign to Cat Street */
+.hnext { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); z-index: 4; display: flex; align-items: center; gap: 4px; padding: 2px 8px 2px 2px; border-radius: 14px; background: rgba(255,250,240,.95); border: 2px solid var(--oak-d); font-style: normal; color: var(--ink); white-space: nowrap; box-shadow: 0 2px 0 rgba(142,85,48,.45); }
+.hnext .hnres { width: 30px; height: 30px; object-fit: contain; }
+.hnext span { display: flex; flex-direction: column; text-align: left; }
+.hnext b { font: 700 11px/1.1 var(--font); }
+.hnext small { font: 600 10px/1.1 var(--font); color: var(--oak-d); }
+.hf.roof.gable .hnext { top: 68%; }
+.hf > span { z-index: 5; }
+.streetbtn { position: absolute; right: 8px; bottom: 52px; z-index: 100; width: 104px; display: flex; flex-direction: column; align-items: center; gap: 0; padding: 4px 4px 5px; border-radius: 14px; background: #fffaf0; border: 2.5px solid var(--oak-d); box-shadow: 0 3px 0 rgba(90,52,24,.55); color: var(--ink); }
+.streetbtn .sbimg { width: 46px; height: 46px; object-fit: contain; }
+.streetbtn b { font: 700 12px var(--font); }
+.streetbtn small { font: 600 9.5px/1.1 var(--font); color: var(--oak-d); text-align: center; }
+.streetbtn:not(.open) .sbimg { filter: grayscale(.7) opacity(.75); }
+.streetbtn.open { border-color: #2a6e4a; }
+/* Cat Street view */
+.vstreet .room .hbg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 100%; }
+.street { position: absolute; left: 4px; right: 4px; bottom: calc(51.4cqw - 6px); /* the pavement line of street_bg (cover, width-driven) */ display: flex; align-items: flex-end; justify-content: center; gap: 2%; }
+.sh { position: relative; flex: none; display: flex; flex-direction: column; align-items: center; }
+.sh .shimg { display: block; width: 100%; height: auto; filter: drop-shadow(-4px 5px 4px rgba(40,20,5,.35)); }
+.sh.sl, .sh.sr { width: 27%; }
+.sh.sc { width: 44%; }
+.sh.home .shimg { width: 92%; }
+.sh.sc .shimg.ghost { filter: grayscale(1) brightness(1.25) opacity(.4); }
+.sh.sc .shimg.built { position: absolute; left: 0; top: 0; clip-path: inset(var(--p) 0 0 0); transition: clip-path .7s ease-out; }
+.sh.sc.locked .shimg.built { display: none; }
+.sh .shimg.sil { filter: brightness(.25) opacity(.35); }
+.sh .crane { position: absolute; right: -24%; bottom: 34%; width: 60%; height: auto; z-index: 2; transform-origin: 30% 30%; animation: craneSwing 4s ease-in-out infinite alternate; }
+.sh .hcost { position: absolute; left: 50%; top: 44%; transform: translate(-50%, -50%); display: flex; align-items: center; gap: 2px; padding: 2px 10px 2px 3px; border-radius: 999px; background: #fffaf0; border: 2.5px solid var(--oak-d); font: 700 16px var(--font); font-style: normal; color: var(--ink); z-index: 3; }
+.sh .hcost img { width: 22px; height: 22px; }
+.sh .hcost.lk { padding: 4px; }
+.sh > span { margin-top: 3px; font: 700 11px var(--font); color: #fff; background: rgba(78,44,20,.72); border-radius: 999px; padding: 1px 8px; white-space: nowrap; }
+.sh .keeper { position: absolute; right: -8%; bottom: 12px; width: 52%; height: auto; z-index: 3; filter: drop-shadow(-3px 4px 3px rgba(40,20,5,.35)); animation: idle7 5s ease-in-out infinite; }
+.sh.sc.fresh .shimg.built { animation: build7s .7s cubic-bezier(.2,1.5,.4,1) both; }
+@keyframes build7s { 0% { transform: scale(1, .94); } 60% { transform: scale(1.03, 1.02); } }
+.sh .puff { bottom: 10%; }
+.vstreet .fname, .r7hub.vhouse .fname.up { bottom: auto; top: calc(52px + var(--safe-t)); } /* top + bottom both set stretched the label into a tall pill */
+/* season: what inviting the next visitor changes */
+.vprev { display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px; border-radius: 16px; background: #fffaf0; border: 2.5px dashed var(--oak-d); }
+.vpp { position: relative; flex: none; width: 66px; height: 58px; }
+.vpp .vpn { position: absolute; left: 0; bottom: 0; width: 66px; height: auto; }
+.vpp .vpc { position: absolute; left: 13px; bottom: 10px; width: 40px; height: 40px; object-fit: contain; }
+.vpt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
+.vpt b { font: 700 14px/1.1 var(--font); color: var(--ink); }
+.vpt small { font: 600 11.5px/1.15 var(--body, var(--font)); color: var(--oak-d); }
+/* arrival scene: walks in, hops, waves, then the card */
+.arrival { position: fixed; inset: 0; z-index: 300; background: radial-gradient(70% 50% at 50% 45%, rgba(255,226,160,.35), rgba(30,15,5,.62)); }
+.arwalk { position: absolute; left: 50%; bottom: 46%; width: min(46vw, 190px); transform: translateX(-50%); animation: arWalk 1.3s cubic-bezier(.3,.7,.4,1) both; }
+.arwalk .arcat { display: block; width: 100%; height: auto; filter: drop-shadow(-4px 8px 6px rgba(0,0,0,.35)); transform-origin: 50% 95%; animation: arHop .26s ease-in-out 5 alternate, arWave .5s 1.4s ease-in-out 3 alternate; }
+@keyframes arWalk { from { transform: translateX(80vw); } }
+@keyframes arHop { to { transform: translateY(-8%) rotate(-3deg); } }
+@keyframes arWave { from { transform: rotate(-8deg); } to { transform: rotate(8deg); } }
+.arcard { position: absolute; left: 16px; right: 16px; bottom: max(14%, 70px); display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 14px 12px; border-radius: 22px; background: linear-gradient(#fffaf0, #f6e2c0); border: 3px solid var(--oak-d); box-shadow: 0 5px 0 #5a3418; text-align: center; color: var(--ink); animation: arCard .45s 1.5s cubic-bezier(.2,1.4,.4,1) both; }
+.arcard b { font: 700 22px var(--font); }
+.arcard p { margin: 0; font: 600 14px/1.25 var(--body, var(--font)); }
+.arcard small { font: 600 12.5px var(--font); color: var(--oak-d); display: flex; align-items: center; gap: 4px; }
+.arcard small img.mini { width: 18px; height: 18px; }
+.arcard .btn { margin-top: 6px; min-width: 140px; }
+@keyframes arCard { from { transform: translateY(40px); opacity: 0; } }
+.arrival.calm .arwalk, .arrival.calm .arcat, .arrival.calm .arcard { animation: none; }
+@media (prefers-reduced-motion: reduce) {
+  .spot, .rr.spot, .nbcard .trow.spot, .sptag, .jar7.full img, .r7hub .guest.idle7 .gimg, .sh .keeper, .sh .crane, .reno-g.fresh, .reno-r.fresh, .sh.sc.fresh .shimg.built, .arwalk, .arcat, .arcard { animation: none !important; }
+  .spot { filter: drop-shadow(0 0 8px rgba(255,200,80,1)); }
+  .sh.sc .shimg.built { transition: none; }
+}
+/* r9 retention: the hub's thread (next resident on the build card), a newcomer's first request, the arrival ask */
+.nbcard .tname small.thread { color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nbcard .tname small.thread .mini-res { width: 20px; height: 20px; flex: none; }
+.goal.fresh { border-color: #e07a1f; background: #fff3df; }
+.arrive-wrap .firstreq { margin: 0; padding: 6px 14px; border-radius: 14px; background: #fffaf0; color: var(--ink); font: 700 17px/1.15 var(--font); text-align: center; box-shadow: 0 3px 0 rgba(0,0,0,.18); }
+/* request bubbles over a resident: the reward on the Claim bubble, a newcomer's first ask (progress + reward), and the
+   "come back" note after a claim */
+.rqbub .rqt { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.rqbub .rqrw { display: flex; align-items: center; gap: 2px; font: 700 11px/1 var(--font); font-style: normal; color: #7a4a12; white-space: nowrap; }
+.rqbub .rqrw img { width: 14px; height: 14px; object-fit: contain; }
+.rqbub.ask { border-color: #e07b1f; box-shadow: 0 3px 0 rgba(224,123,31,.45); max-width: 190px; padding: 5px 8px; }
+.rqbub.ask::after { border-top-color: #e07b1f; }
+.rqbub.ask .rqp { display: block; height: 6px; border-radius: 3px; background: #f3e2c4; overflow: hidden; }
+.rqbub.ask .rqp i { display: block; height: 100%; background: linear-gradient(90deg, #ffb347, #e07b1f); }
+.rqbub.ask small { font: 700 10px/1 var(--font); opacity: .8; }
+.rqbub.next { cursor: default; pointer-events: none; border-color: #6a5acd; box-shadow: 0 3px 0 rgba(106,90,205,.4); max-width: 180px; padding: 5px 9px; animation: rqNext .4s ease-out; }
+.rqbub.next::after { border-top-color: #6a5acd; }
+@keyframes rqNext { from { opacity: 0; transform: translate(-50%, -80%); } to { opacity: 1; transform: translate(-50%, -100%); } }
+@media (prefers-reduced-motion: reduce) { .rqbub.next { animation: none; } }
+/* Cat Street, first repeat lap: the keeper's kitten apprentice sits by the finished shop; the house being built shows
+   its silhouette ("An apprentice moves in") */
+.sh .appr { position: absolute; left: 20%; bottom: 6px; width: 30%; height: auto; z-index: 3; filter: drop-shadow(-2px 3px 2px rgba(40,20,5,.35)); }
+.sh .apnext { position: absolute; left: 50%; bottom: 30px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px; z-index: 4; font-style: normal; pointer-events: none; }
+.sh .apnext .appr { position: static; width: 40px; filter: brightness(0) opacity(.45); }
+.sh .apnext b { padding: 2px 7px; border-radius: 999px; background: rgba(255,250,240,.92); border: 2px solid var(--ink, #1d2b53); font: 700 10px/1.1 var(--font); color: var(--ink, #1d2b53); white-space: nowrap; }
+.arwalk .arkit { position: absolute; left: 62%; bottom: 0; width: 55%; }

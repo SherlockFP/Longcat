@@ -1,0 +1,1360 @@
+Reading additional input from stdin...
+OpenAI Codex v0.171.0
+--------
+workdir: C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+model: gpt-6.2-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a2078e-8cde-76b1-ab09-55f931048508
+--------
+user
+You are co-director at a top hybrid-casual studio scoring Long Cat Out! (web). Previous review qa/sol-r8.md gave overall 7 (presentation 8, appeal 8, juice 6, fun 7, retention 7, virality 5). Here is the new build; also read the code-level summaries in qa/r9-notes.md if present. Score honestly 1-10 each: presentation, appeal, juice, fun, retention, virality, and overall. A score of 8 means on par with a solid top-100 hybrid-casual puzzle game in that dimension. Then list the most important remaining fixes per dimension below 9 (concrete, buildable).
+codex
+I’ll read the previous review and any R9 notes, then score the build against your top-100 benchmark and prioritize the fixes by dimension.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Location; rg --files -g AGENTS.md -g '*r8*' -g '*r9*' -g package.json -g README.md -g '*101*' -g '*leap-strip*' -g '*chain-strip*'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -LiteralPath 'qa/sol-r8.md','qa/r9-notes.md'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 629ms:
+**7/10 for first-impression pull. 7/10 overall.** I�?Td tap Play. The sunny boarding room, stitched rug, and curled cats give Long Cat Out! a place and a personality. The remaining gap is the move itself. The image I want to remember is a cat stretching across the table and folding into a tiny carrier. Even in the captured chain moments, the pink banner grabs my eye before the cats do. With conveyor puzzles occupying six of AppMagic�?Ts Q3 top ten by in-app revenue, that stretch is what can make this one recognizable. [AppMagic�?Ts Q3 2026 benchmark](https://appmagic.rocks/research/Hybridcasual-Puzzles-Q32026/?hl=en)
+
+| Dimension | Score | Read |
+|---|---:|---|
+| Presentation | **8/10** | The cafAc and puzzle now feel like rooms in the same house. The carrier, bench, and board read as physical objects. |
+| Appeal | **8/10** | Expressive faces, sleeping bench cats, and named residents give the game charm at both scales. |
+| Juice | **6/10** | The bench hops and carrier departures have good beats. The banners sometimes cover the payoff, and the glossy bodies still read as tubes in stills. |
+| Fun | **7/10** | Choosing which cat can afford to wait gives the puzzle teeth. Turning a nearly full bench into a chain is the best payoff. |
+| Retention | **7/10** | Daily Puzzle gives tomorrow a purpose, Cat Show gives mastery a purpose, and requests make outfits feel earned. The jar supports those loops. Seasonal visitors give stamps a face. CafAc Rush is the weakest draw today. |
+| Virality | **5/10** | The replay captures a real achievement. It�?Ts small, and sharing it gives the recipient little to do. |
+
+These are design scores from the captures and implementation. I didn�?Tt play on a phone or measure player behavior. The automated checks passed. The economy simulation keeps the collection growing through day 60, with authored house construction ending around Level 60 in the model.
+
+### The eight most important remaining fixes
+
+1. **Make the long cat the payoff.** Rework one Level 1 send until the cat visibly crouches, stretches across the gap, lands paws-first, and folds into the carrier with a tail snap. Bring the soft texture of the faces into the bodies. Let that landing drive the counter pop, sound, and haptic. Use that exact beat as the lead store visual.
+
+2. **Make the first four boards prove the game�?Ts range.** Keep the authored sequence. Aim for the first carrier departure within ten seconds, make both Level 2 bench cats visibly wake up when their carrier arrives, and pulse the exit that the Level 3 kitten frees. At Level 4, watch whether new players choose the earlier carrier unaided. Track Level 4 starts and Level 10 reach.
+
+3. **Make the next move readable on a crowded board.** On press, connect the cat�?Ts exit, first blocker, and projected destination. Use the same pattern symbol on the cat and its carrier. Flag the final free cushion. Keep chain text clear of the carrier mouth, and give tutorial copy and status messages one shared lane. Level 12 already shows what happens when both speak at once.
+
+4. **Make wins fast and losses teach.** Give ordinary clears a compact result with one thumb-level action, **Next** or **Build** when the upgrade is ready. Let the earned star fly into the build meter. On failure, keep the bench and queue visible, point to the overflowing cat, and say how far away its carrier is. Keep **Take back** and **Retry** clear of the life-loss toast.
+
+5. **Give the hub one obvious reason to act.** Keep Play pinned and spotlight one meaningful action in the room. Put the tip jar on the counter and the ready request over its resident. A prompt like **Help Mochi earn his beanie** gives the player a reason to care. The right rail, goal strip, and Shop badge currently compete with that reason.
+
+6. **Extend the house players came to build.** Show the next floor early, then ship a chapter beyond the rooftop and a visible renovation tier. Give each season�?Ts visitor a furnished spot, an arrival scene, and an idle behavior. The first invitation at eight stamps is a good milestone. Let players see what inviting Pip will change.
+
+7. **Give each challenge a clear job.** Make Daily a curated, free-retry board with a forgiving streak. Lead weekly Events with Cat Show�?Ts seat limit and chain goals, and show gold progress during the run. Make Rush about beating your own time, with a visible clock, a personal-best split, and **Run again** on the result. The current Rush result leads with **Cat Show**.
+
+8. **Turn the replay into a playable dare.** Frame the nearly full bench, the setup tap, and the cascade in a short vertical clip that reads with sound off. Pair it with **Beat my chain A-4** or **Beat my time** and a link to the exact board. Test whether a recipient can explain the trick after one view and start the challenge from the link.
+# Round 9 notes (for Sol)
+
+## Juice
+- Signature send: 60ms crouch, noodle stretch (head 1.6x tail speed, body thins), sideways leap arc with ground shadow, paws land first, accordion body (120ms), white-tip tail snap. ~510ms, taps overlap. Land sound/haptic/counter pop fire on paw landing. Carrier grate door swings. Legs reduced to front/back pair.
+- Chain: slow-mo 0.6x for 0.25s only on 2nd+ hops; glowing trail, gold screen edge glow, rising sparkles.
+- Bodies (render.js): code-made knit texture, edge stitches, inner belly shadow, soft sheen, tapered tail.
+
+## Fun / readability
+- Press preview while holding a free cat: exit lane with chevrons, speech bubble showing destination (carrier pattern badge or cushion + wait count), amber "LAST SEAT" tag (TR "SON MINDER") or red "!" if no seat. Blocked cats bonk with red lane + blocker highlight.
+- Last free cushion pulses amber with "!" tag.
+- L4: each free cat shows wait-count badge before first tap; tut4 text updated EN+TR.
+- QA asserts L1 first carrier leaves < 10s (measured 2.6s).
+
+## Virality
+- Clip from replay (src/kit/clip.js): offscreen 720x1280 9:16 replay, skips to 2 moves before best moment (biggest chain or final clear), captions (seats taken, CHAIN xN, game strip), 2.2s end card "Can you beat it?" + link. MediaRecorder MP4 preferred, WebM fallback; PNG peak-frame fallback. L13 clip ~6.3s, ~0.75MB.
+- Win card: 9:16 preview then looping video; pink "Share clip" on chain x3+ or no-park clear on 10+ cat boards; Web Share with file/text/link, else download + copy text. Challenge landing link.
+- Old live-filming code removed.
+
+## Retention
+- (report pending at time of writing)
+
+## Checks
+- build, check, full QA pass (0 console errors, no scroll failures at 375x667). Nothing committed.
+
+## Virality (r8 high finding)
+- Clip (src/kit/clip.js): opens on the tight bench. Window reaches up to 4 moves back, then setup moves made with 2+ free seats are fast-forwarded, so frame 1 reads "Only ONE seat left!" (TR "Tek minder kald��!"); caption latches through the deciding tap.
+- Punch-in on the deciding tap (camera leans 1.16x on the tap, slides to the bench at 1.10x while the cushions empty, eases out before the end card). Recorded frame is a separate canvas: zoomed world, then unzoomed caption bands.
+- One chain caption: the in-game "Chain x3!" stamp is off in the clip (Game.noStamp); only the top band counts CHAIN x1..x3.
+- Win card: the labelled pink button is now "Dare a friend" / "Meydan oku" (text + exact-board link, live at once). "Share clip" sits on the clip preview and stays hidden until the MP4/WebM is encoded (no MediaRecorder: the captioned still is offered at once). A tap can no longer send a still by accident.
+- QA: 101a asserts clip button hidden while encoding; 101b2-clip-punch frame; 101e / 101h2 assert Share clip shows once encoded.
+- Not done: real iOS/Android share-sheet link survival is unverified (WhatsApp/iMessage may drop text when a file is attached; Dare a friend sends text + link only, which is the safer path).
+
+## Retention + virality (r9, sol-r8 findings)
+- Hub thread: the build card names the next resident with their portrait and the stars still to spend ("Biscuit moves in after 3 stars" / "3 y��ld��z sonra Biscuit ta�Y��n��yor"); a piece that brings a resident keeps "moves in". The resident row left the goals strip (no duplicate).
+- Goals strip cut from 3 rows to 2. Order: claimable, a newcomer's first request, today's Daily puzzle (until played), this week's Cat Show medals (0/2, opens Events > Show), then the nearest of outfit/season/party.
+- First request after arrival: live.reqArrive gives the new resident an easy ask at once (Win 2 levels, else Fill carriers; skipped if 2 requests already wait). The arrival card shows "Luna asks: Win 2 levels"; back in the hub that request leads the goals with an orange border (cleared on claim).
+- Dare recipient: landing text "Tap a cat to send it. Only the front carrier boards. The others wait on cushions." (TR natural). On the challenge board the hint card says the rule, and the front carrier ("Boards here") and first cushion ("Waits here") get dashed gold rings until the first tap (static under reduced motion).
+- Clipboard: shareFile returns 'saved-nolink' when the clipboard write fails; "Link copied" only after writeText resolves. Otherwise a bar at the top shows the link plus "Copy challenge link" (TR "Davet linkini kopyala"); the tap is a fresh gesture, falls back to execCommand, and if that fails too, says "Press and hold the link to copy it" with the link selected.
+- QA: 90a hub thread, 90b arrival with first request, 90c hub led by that request, 90d/90e Daily + Cat Show goals (EN/TR), 91a copy bar after a refused clipboard (asserts no "copied" toast), 91b success toast + copied text carries ?c=, 91c TR bar at 375x667. 101g asserts the dare rule card + rings. 40a now expects 2 goals.
+- Not done: real iOS/Android iMessage/WhatsApp link delivery still untested (needs devices). No analytics funnel for the three handoffs yet.
+
+## Round 10 (sol-r9-3 findings: juice, virality, retention)
+### Juice (high)
+- Send reads at game speed: crouch is 100 ms (was 60) and deeper (head pulls back 0.28 cells, body 1.32x wide), released over the first 80 ms. Front paws shoot out on the spring, gallop (alternating) along the board, sit wide of the ears and reach 0.34 cells ahead across the gap. Hind legs kick back on take-off and tuck forward as the rear catches up in the fold. Reduced motion: no crouch/kick/tuck. Strip: qa/_leap-strip.jpg (100 ms = crouch with paws out, 160-210 ms = paws leading).
+- Chain counter moved off the carrier to the strip of air under the bench (centre). It appears with the first landing and ticks per landing (x1, x2, ...), not per jump; the last landing gets the full words in gold ("Chain x3!"), a 1.3x pop, a gold sparkle burst, star sound + success haptic. The combo popup stays quiet for the counter's whole life. Strip: qa/_chain-strip.jpg; frame 103a.
+### Virality (high)
+- One share path: after Share clip goes out (or saves without a link) a bar offers "Send the dare link too" with a preview of what the friend gets (goal A� board A� seats) and one Send link button (text + link only). EN/TR, fits 375x667 (103b, 103c).
+- Dares are checked on the exact board + seat count the link carries: the sender's move log is replayed on generate(n) with b seats. A run that bought a seat or used a Scoop, or that does not replay to the same result, falls back to "clear it with these seats" (always reachable).
+- Match vs beat: core/search.js maxChain() searches every winning line (all boards < 1 ms). When the sender's chain is already the board's best, the link carries x=1: "Match my chain x2 on Level 2! It is the best this board allows." / landing "Match a chain x2"; the friend's tie reads "You matched ...". L13 keeps "Beat" (its best is x5).
+- Funnel on one share id (link field i, random per share): dare_handoff (via clip/link), dare_open, dare_play, dare_first_move, dare_done (clear), dare_reshare (from -> to). Local counters only (kit/analytics.js stub); session-1 funnel adds first_chain and first_request next to l1/l3/l4_start/l10_reach/first_resident.
+### Retention (medium)
+- Newcomer loop in the room: the newcomer's first ask sits over the cat (task, progress bar, reward +coins +hearts); the Claim bubble shows its reward too; right after a claim the resident says the next reason to come back ("Next: Fill 6 carriers for Luna" or "New request in 3h. See you soon!") until the next level starts (103f-103i).
+- Bug fixed: req.fresh was missing from the save defaults, so the newcomer thread was dropped on every reload.
+- Cat Street first repeat lap: each shop's keeper takes a kitten apprentice (6 new sprites, appr_<id>.webp: Bun, Dewey, Sprout, Sugar, Button, Tempo). The house under construction shows the apprentice's silhouette ("An apprentice moves in"); finishing it plays the arrival with keeper + kitten ("Page's apprentice Dewey moved in!"); finished lap-2 shops show the kitten beside the keeper (103j, 103k).
+### Still weak / not done
+- Real iOS/Android share-sheet delivery (iMessage, WhatsApp) still untested; needs devices. The follow-up link bar is the mitigation.
+- Analytics are local counters, no backend: the funnel exists but nothing is collected off-device. Phone first-session tests not run.
+- The newcomer's ask also shows in the goals strip (duplicate when the resident is in the current room).
+- Lap 3+ of Cat Street still repeats keepers + apprentices.
+
+ succeeded in 694ms:
+
+package.json
+qa\101f2-dare-landing-tr.png
+qa\101f-dare-landing.png
+qa\101e-share-card-video.png
+qa\101d-clip-end.jpg
+qa\101c-clip-peak.jpg
+qa\101b2-clip-punch.jpg
+qa\101b-clip-setup.jpg
+qa\101a-share-card.png
+qa\101i-dare-result-tr.png
+qa\101h2-dare-result-clip-ready.png
+qa\101h-dare-result.png
+qa\101g-dare-board.png
+qa\101k-667-dare-landing-tr.png
+qa\101j-after-dare-l1.png
+qa\101l-667-share-card-tr.png
+qa\_leap-strip.jpg
+qa\_codex-r9.log
+qa\_codex-r9-4.log
+qa\_codex-r9-3.log
+qa\_codex-r9-2.log
+qa\_chain-strip.jpg
+qa\sol-r9-4.md
+qa\sol-r9-3.md
+qa\sol-r9-2.md
+qa\sol-r9-1.md
+qa\sol-r8.md
+qa\r9-notes.md
+Path                                                
+----                                                
+C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files qa | rg '10[023]|econom|result|first|report|rush|show|dare|90[abcd]|r9-notes'; Get-ChildItem -Force -Name" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Encoding utf8 -LiteralPath 'package.json'; git status --short; rg --files -g '"'!qa/**'"' -g '"'!assets/**'"' -g '"'!node_modules/**'"' -g '"'!dist/**'"' -g '"'!public/**'"' -g '"'!*.webp'"' -g '"'!*.png'"' -g '"'!*.jpg'"' | Select-Object -First 100" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 704ms:
+qa\r9-notes.md
+.git
+art-src
+data
+dist
+node_modules
+public
+qa
+scripts
+src
+store
+.gitignore
+ASSETS-V2.md
+ASSETS.md
+CREDITS.md
+DESIGN-HYBRID.md
+DESIGN-V2.md
+DESIGN.md
+index.html
+package-lock.json
+package.json
+RELEASE.md
+STYLE.md
+vite.config.js
+
+ succeeded in 784ms:
+{
+  "name": "long-cat-out",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs && node scripts/check-sfx.mjs && node scripts/check-dare.mjs"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}
+fatal: detected dubious ownership in repository at 'C:/Users/Admin/Documents/Msjelly/studio/long-cat-out'
+'C:/Users/Admin/Documents/Msjelly/studio/long-cat-out' is owned by:
+	BUILTIN/Administrators (S-1-5-32-544)
+but the current user is:
+	DESKTOP-RE8NLHR/Admin (S-1-5-21-675752366-3970861131-3817781662-1000)
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory C:/Users/Admin/Documents/Msjelly/studio/long-cat-out
+vite.config.js
+STYLE.md
+DESIGN.md
+CREDITS.md
+ASSETS.md
+DESIGN-V2.md
+ASSETS-V2.md
+DESIGN-HYBRID.md
+store\listing.md
+data\street.js
+data\live.js
+data\events.js
+data\cafe.json
+package.json
+package-lock.json
+index.html
+art-src\bg_room.art.txt
+art-src\bg-teal.art.txt
+art-src\app_icon.art.txt
+art-src\head_black.art.txt
+art-src\head_calico.art.txt
+scripts\store-shots.mjs
+scripts\qa.mjs
+scripts\check-web.mjs
+scripts\check-sfx.mjs
+scripts\check-econ.mjs
+scripts\check-dare.mjs
+scripts\check-core.mjs
+RELEASE.md
+art-src\_pal.pkl
+src\ui\ui.js
+src\ui\ui.css
+src\ui\r7.css
+src\ui\live.js
+src\ui\live.css
+src\ui\dare.css
+src\main.js
+src\kit\save.js
+src\kit\pwa.js
+src\kit\notify.js
+src\kit\iap.js
+src\kit\haptics.js
+src\kit\dare.js
+src\kit\clock.js
+src\kit\clip.js
+src\kit\audio.js
+src\kit\analytics.js
+src\kit\ads.js
+src\i18n.js
+src\i18n-live.js
+src\i18n-dare.js
+src\game\street.js
+src\game\render.js
+src\game\live.js
+src\game\game.js
+src\game\econ.js
+src\game\cafe.js
+src\game\breeds.js
+src\game\assets.js
+src\core\solver.js
+src\core\search.js
+src\core\rules.js
+src\core\rng.js
+src\core\generate.js
+src\core\board.js
+art-src\ui_hint.art.txt
+art-src\ui_heart.art.txt
+art-src\ui_coin.art.txt
+art-src\tail_orange.art.txt
+art-src\stars.art.txt
+art-src\v2\carrier_closed.art.txt
+art-src\v2\cafe_window_seat.art.txt
+art-src\v2\cafe_window_rug.art.txt
+art-src\v2\cafe_window_plants.art.txt
+art-src\v2\cafe_window_lights.art.txt
+art-src\v2\cafe_window_cattree.art.txt
+art-src\v2\cafe_window_bookshelf.art.txt
+art-src\v2\cafe_teaser_cushion.art.txt
+art-src\v2\cafe_shell_window.art.txt
+art-src\v2\cafe_shell_counter.art.txt
+art-src\v2\cafe_counter_tables.art.txt
+art-src\v2\cafe_counter_plant.art.txt
+art-src\v2\cafe_counter_pastry.art.txt
+art-src\v2\cafe_counter_lamps.art.txt
+art-src\v2\cafe_counter_counter.art.txt
+art-src\v2\cafe_counter_chalkboard.art.txt
+art-src\v2\batch3.sh
+art-src\v2\batch3.out
+art-src\v2\batch2.sh
+art-src\v2\batch2.out
+art-src\v2\batch1.sh
+art-src\v2\batch1.out
+art-src\v2\app_icon_v2.art.txt
+art-src\ui_star.art.txt
+art-src\v2\head_purple.art.txt
+art-src\v2\head_pink.art.txt
+art-src\v2\head_orange_sleepy.art.txt
+art-src\v2\head_orange.art.txt
+art-src\v2\head_mint.art.txt
+art-src\v2\head_green.art.txt
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'npm.cmd run check' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Encoding utf8 -LiteralPath 'qa/r9-notes.md'; rg -n '103[a-k]|Café Rush|newcomer|lap-2|first_chain|dare_handoff' scripts/qa.mjs src/kit/analytics.js src/ui/ui.js src/game/street.js" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-ChildItem qa -Name | Select-Object -Last 100; Get-Content -Encoding utf8 -LiteralPath 'scripts/qa.mjs' -TotalCount 115; Get-Content -Encoding utf8 -LiteralPath 'vite.config.js'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 717ms:
+# Round 9 notes (for Sol)
+
+## Juice
+- Signature send: 60ms crouch, noodle stretch (head 1.6x tail speed, body thins), sideways leap arc with ground shadow, paws land first, accordion body (120ms), white-tip tail snap. ~510ms, taps overlap. Land sound/haptic/counter pop fire on paw landing. Carrier grate door swings. Legs reduced to front/back pair.
+- Chain: slow-mo 0.6x for 0.25s only on 2nd+ hops; glowing trail, gold screen edge glow, rising sparkles.
+- Bodies (render.js): code-made knit texture, edge stitches, inner belly shadow, soft sheen, tapered tail.
+
+## Fun / readability
+- Press preview while holding a free cat: exit lane with chevrons, speech bubble showing destination (carrier pattern badge or cushion + wait count), amber "LAST SEAT" tag (TR "SON MINDER") or red "!" if no seat. Blocked cats bonk with red lane + blocker highlight.
+- Last free cushion pulses amber with "!" tag.
+- L4: each free cat shows wait-count badge before first tap; tut4 text updated EN+TR.
+- QA asserts L1 first carrier leaves < 10s (measured 2.6s).
+
+## Virality
+- Clip from replay (src/kit/clip.js): offscreen 720x1280 9:16 replay, skips to 2 moves before best moment (biggest chain or final clear), captions (seats taken, CHAIN xN, game strip), 2.2s end card "Can you beat it?" + link. MediaRecorder MP4 preferred, WebM fallback; PNG peak-frame fallback. L13 clip ~6.3s, ~0.75MB.
+- Win card: 9:16 preview then looping video; pink "Share clip" on chain x3+ or no-park clear on 10+ cat boards; Web Share with file/text/link, else download + copy text. Challenge landing link.
+- Old live-filming code removed.
+
+## Retention
+- (report pending at time of writing)
+
+## Checks
+- build, check, full QA pass (0 console errors, no scroll failures at 375x667). Nothing committed.
+
+## Virality (r8 high finding)
+- Clip (src/kit/clip.js): opens on the tight bench. Window reaches up to 4 moves back, then setup moves made with 2+ free seats are fast-forwarded, so frame 1 reads "Only ONE seat left!" (TR "Tek minder kaldi!"); caption latches through the deciding tap.
+- Punch-in on the deciding tap (camera leans 1.16x on the tap, slides to the bench at 1.10x while the cushions empty, eases out before the end card). Recorded frame is a separate canvas: zoomed world, then unzoomed caption bands.
+- One chain caption: the in-game "Chain x3!" stamp is off in the clip (Game.noStamp); only the top band counts CHAIN x1..x3.
+- Win card: the labelled pink button is now "Dare a friend" / "Meydan oku" (text + exact-board link, live at once). "Share clip" sits on the clip preview and stays hidden until the MP4/WebM is encoded (no MediaRecorder: the captioned still is offered at once). A tap can no longer send a still by accident.
+- QA: 101a asserts clip button hidden while encoding; 101b2-clip-punch frame; 101e / 101h2 assert Share clip shows once encoded.
+- Not done: real iOS/Android share-sheet link survival is unverified (WhatsApp/iMessage may drop text when a file is attached; Dare a friend sends text + link only, which is the safer path).
+
+## Retention + virality (r9, sol-r8 findings)
+- Hub thread: the build card names the next resident with their portrait and the stars still to spend ("Biscuit moves in after 3 stars" / "3 yildiz sonra Biscuit tasiniyor"); a piece that brings a resident keeps "moves in". The resident row left the goals strip (no duplicate).
+- Goals strip cut from 3 rows to 2. Order: claimable, a newcomer's first request, today's Daily puzzle (until played), this week's Cat Show medals (0/2, opens Events > Show), then the nearest of outfit/season/party.
+- First request after arrival: live.reqArrive gives the new resident an easy ask at once (Win 2 levels, else Fill carriers; skipped if 2 requests already wait). The arrival card shows "Luna asks: Win 2 levels"; back in the hub that request leads the goals with an orange border (cleared on claim).
+- Dare recipient: landing text "Tap a cat to send it. Only the front carrier boards. The others wait on cushions." (TR natural). On the challenge board the hint card says the rule, and the front carrier ("Boards here") and first cushion ("Waits here") get dashed gold rings until the first tap (static under reduced motion).
+- Clipboard: shareFile returns 'saved-nolink' when the clipboard write fails; "Link copied" only after writeText resolves. Otherwise a bar at the top shows the link plus "Copy challenge link" (TR "Davet linkini kopyala"); the tap is a fresh gesture, falls back to execCommand, and if that fails too, says "Press and hold the link to copy it" with the link selected.
+- QA: 90a hub thread, 90b arrival with first request, 90c hub led by that request, 90d/90e Daily + Cat Show goals (EN/TR), 91a copy bar after a refused clipboard (asserts no "copied" toast), 91b success toast + copied text carries ?c=, 91c TR bar at 375x667. 101g asserts the dare rule card + rings. 40a now expects 2 goals.
+- Not done: real iOS/Android iMessage/WhatsApp link delivery still untested (needs devices). No analytics funnel for the three handoffs yet.
+
+## Round 10 (sol-r9-3 findings: juice, virality, retention)
+### Juice (high)
+- Send reads at game speed: crouch is 100 ms (was 60) and deeper (head pulls back 0.28 cells, body 1.32x wide), released over the first 80 ms. Front paws shoot out on the spring, gallop (alternating) along the board, sit wide of the ears and reach 0.34 cells ahead across the gap. Hind legs kick back on take-off and tuck forward as the rear catches up in the fold. Reduced motion: no crouch/kick/tuck. Strip: qa/_leap-strip.jpg (100 ms = crouch with paws out, 160-210 ms = paws leading).
+- Chain counter moved off the carrier to the strip of air under the bench (centre). It appears with the first landing and ticks per landing (x1, x2, ...), not per jump; the last landing gets the full words in gold ("Chain x3!"), a 1.3x pop, a gold sparkle burst, star sound + success haptic. The combo popup stays quiet for the counter's whole life. Strip: qa/_chain-strip.jpg; frame 103a.
+### Virality (high)
+- One share path: after Share clip goes out (or saves without a link) a bar offers "Send the dare link too" with a preview of what the friend gets (goal � board � seats) and one Send link button (text + link only). EN/TR, fits 375x667 (103b, 103c).
+- Dares are checked on the exact board + seat count the link carries: the sender's move log is replayed on generate(n) with b seats. A run that bought a seat or used a Scoop, or that does not replay to the same result, falls back to "clear it with these seats" (always reachable).
+- Match vs beat: core/search.js maxChain() searches every winning line (all boards < 1 ms). When the sender's chain is already the board's best, the link carries x=1: "Match my chain x2 on Level 2! It is the best this board allows." / landing "Match a chain x2"; the friend's tie reads "You matched ...". L13 keeps "Beat" (its best is x5).
+- Funnel on one share id (link field i, random per share): dare_handoff (via clip/link), dare_open, dare_play, dare_first_move, dare_done (clear), dare_reshare (from -> to). Local counters only (kit/analytics.js stub); session-1 funnel adds first_chain and first_request next to l1/l3/l4_start/l10_reach/first_resident.
+### Retention (medium)
+- Newcomer loop in the room: the newcomer's first ask sits over the cat (task, progress bar, reward +coins +hearts); the Claim bubble shows its reward too; right after a claim the resident says the next reason to come back ("Next: Fill 6 carriers for Luna" or "New request in 3h. See you soon!") until the next level starts (103f-103i).
+- Bug fixed: req.fresh was missing from the save defaults, so the newcomer thread was dropped on every reload.
+- Cat Street first repeat lap: each shop's keeper takes a kitten apprentice (6 new sprites, appr_<id>.webp: Bun, Dewey, Sprout, Sugar, Button, Tempo). The house under construction shows the apprentice's silhouette ("An apprentice moves in"); finishing it plays the arrival with keeper + kitten ("Page's apprentice Dewey moved in!"); finished lap-2 shops show the kitten beside the keeper (103j, 103k).
+### Still weak / not done
+- Real iOS/Android share-sheet delivery (iMessage, WhatsApp) still untested; needs devices. The follow-up link bar is the mitigation.
+- Analytics are local counters, no backend: the funnel exists but nothing is collected off-device. Phone first-session tests not run.
+- The newcomer's ask also shows in the goals strip (duplicate when the resident is in the current room).
+- Lap 3+ of Cat Street still repeats keepers + apprentices.
+src/ui/ui.js:594:        // a newcomer's first ask, over the cat itself: what, how far, and what it pays (a tap opens the request list)
+scripts/qa.mjs:1142:  // ---- r9 retention + virality: the next resident as the hub's thread, a newcomer's first request, Daily and the
+scripts/qa.mjs:1167:    if (!(await ev('!!document.querySelector(".goals .goal.fresh")'))) throw new Error("the newcomer's first request should lead the goals");
+scripts/qa.mjs:1214:  // newcomer's ask over the cat with its reward, the "come back" note after a claim, Cat Street's apprentices.
+scripts/qa.mjs:1232:    await shot('103a-chain-counter-last');
+scripts/qa.mjs:1256:    await shot('103b-dare-link-after-clip');
+scripts/qa.mjs:1263:    if ((c1.dare_handoff || 0) - (c0.dare_handoff || 0) !== 2) throw new Error('two handoffs (clip + link) should be tracked');
+scripts/qa.mjs:1276:      await shot('103c-667-dare-link-tr');
+scripts/qa.mjs:1287:    await shot('103d-dare-landing-match');
+scripts/qa.mjs:1295:    await shot('103e-dare-matched');
+scripts/qa.mjs:1298:    // retention: the newcomer's first ask over the cat, the reward on the claim, the "come back" note
+scripts/qa.mjs:1310:    if (!(await ev('!!document.querySelector(".rqbub.ask .rqrw")'))) throw new Error("the newcomer's ask should show over the cat with its reward");
+scripts/qa.mjs:1311:    await shot('103f-room-newcomer-ask');
+scripts/qa.mjs:1314:    await shot('103g-room-claim-reward');
+scripts/qa.mjs:1318:    await shot('103h-room-next-goal');
+scripts/qa.mjs:1325:    await shot('103i-667-room-ask-tr');
+scripts/qa.mjs:1334:    await shot('103j-street-apprentice');
+scripts/qa.mjs:1336:    if (!(await ev('!!document.querySelector("#arrival .arkit")'))) throw new Error('a lap-2 house should bring its apprentice');
+scripts/qa.mjs:1337:    await shot('103k-apprentice-arrival');
+
+ succeeded in 771ms:
+40b-cafe-tips.png
+40c-jar-burst.png
+40d-request-claimed.png
+40e-daily-sheet.png
+40f-events-show.png
+40g-events-rush.png
+40h-events-season.png
+40i-events-archive.png
+40j-show-play.png
+40k-show-win.png
+40l-rush-play.png
+40m-rush-win.png
+40n-residents-wardrobe.png
+40o-hub-live-tr.png
+40p-season-tr.png
+40q-tips-tr.png
+40r-show-tr.png
+40s-667-hub-live.png
+40t-667-arch.png
+40t-667-daily.png
+40t-667-rush.png
+40t-667-season.png
+40t-667-show.png
+40t-667-tips.png
+40u-667-residents.png
+50a-board-sweep.png
+50b-win-compact.png
+50c-win-compact-tr.png
+50d-fail-hearts.png
+60a-l4-clue.png
+60b-l4-press-blue.png
+60c-last-cushion.png
+60d-press-last-seat.png
+60e-press-carrier.png
+60f-l12-lane.png
+60g-show-pill.png
+60h-show-pill-tr.png
+60i-daily-shield.png
+60j-daily-shield-tr.png
+60k-daily-fail-free.png
+70a-request-bubble.png
+70b-jar-on-counter.png
+70c-jar-collect.png
+70d-hub-spotlight-build.png
+70e-house-next-floor.png
+70f-street-house2.png
+70g-street-built.png
+70h-reno-nooks.png
+70i-season-preview.png
+70j-visitor-arrival-walk.png
+70k-visitor-arrival-card.png
+70l-visitor-nook.png
+70m-street-tr.png
+70n-room-tr.png
+70o-667-street.png
+70p-667-season.png
+90a-hub-thread.png
+90b-arrive-first-request.png
+90c-hub-first-request.png
+90d-hub-daily-show.png
+90e-hub-daily-show-tr.png
+91a-copy-link-bar.png
+91b-link-copied.png
+91c-667-copy-link-bar-tr.png
+core-metrics.txt
+errors.txt
+r7-capture.mjs
+r9-notes.md
+round3-reviews.md
+round5-reviews.md
+round7-reviews.md
+sol-ideas.log
+sol-ideas.md
+sol-presentation.log
+sol-presentation.md
+sol-r1.md
+sol-r2.log
+sol-r2.md
+sol-r3.md
+sol-r4.md
+sol-r5.md
+sol-r6.log
+sol-r6.md
+sol-r7.md
+sol-r8.md
+sol-r9-1.md
+sol-r9-2.md
+sol-r9-3.md
+sol-r9-4.md
+sol-review.md
+sol.err
+zz-debug.png
+_chain-strip.jpg
+_codex-r9-2.log
+_codex-r9-3.log
+_codex-r9-4.log
+_codex-r9.log
+_leap-strip.jpg
+_r7-compare.jpg
+_sheet.jpg
+// Headless QA: vite dev + chrome-headless-shell over raw CDP, 375x812 @2x, real touch taps.
+// Frames land in qa/. Usage: node scripts/qa.mjs   (PORT env, default 5193)
+import { spawn } from 'node:child_process';
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
+import net from 'node:net';
+
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+const CHROME = process.env.CHROME_PATH || 'C:/Users/Admin/AppData/Local/ms-playwright/chromium_headless_shell-1248/chrome-headless-shell-win64/chrome-headless-shell.exe';
+const OUT = join(ROOT, 'qa');
+const PORT = +(process.env.PORT || 5193);
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+mkdirSync(OUT, { recursive: true });
+const profile = mkdtempSync(join(tmpdir(), 'lco-qa-'));
+const procs = [];
+const errs = [];
+const kill = () => { for (const p of procs.splice(0)) { try { spawn('taskkill', ['/PID', String(p), '/T', '/F'], { stdio: 'ignore' }); } catch { /* gone */ } } };
+const bye = (code) => { kill(); setTimeout(() => { try { rmSync(profile, { recursive: true, force: true }); } catch { /* locked */ } process.exit(code); }, 1000); };
+setTimeout(() => { console.log('hard timeout'); bye(2); }, 150 * 60 * 1000).unref();
+
+try {
+  const vite = spawn(process.execPath, [join(ROOT, 'node_modules/vite/bin/vite.js'), '--port', String(PORT), '--strictPort'], { cwd: ROOT, stdio: 'ignore' });
+  procs.push(vite.pid);
+  const origin = `http://localhost:${PORT}`;
+  for (let i = 0; ; i++) { try { if ((await fetch(origin + '/')).ok) break; } catch { /* not yet */ } if (i > 150) throw new Error('vite did not start'); await sleep(200); }
+  const cport = await new Promise((res) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => res(p)); }); });
+  const ch = spawn(CHROME, [`--remote-debugging-port=${cport}`, `--user-data-dir=${profile}`, '--headless', '--mute-audio', ...(process.env.QA_NOGPU ? ['--disable-gpu'] : ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist']), '--window-size=375,812', '--disable-extensions', '--no-first-run', '--hide-scrollbars', 'about:blank'], { stdio: 'ignore' });
+  procs.push(ch.pid);
+  let targets;
+  for (let i = 0; ; i++) { try { targets = await (await fetch(`http://127.0.0.1:${cport}/json/list`)).json(); if (targets.some((t) => t.type === 'page')) break; } catch { /* not yet */ } if (i > 100) throw new Error('chrome did not start'); await sleep(200); }
+  const ws = new WebSocket(targets.find((t) => t.type === 'page').webSocketDebuggerUrl);
+  await new Promise((r) => { ws.onopen = r; });
+  let id = 0;
+  const cb = new Map();
+  ws.onmessage = (m) => {
+    const d = JSON.parse(m.data);
+    if (d.id && cb.has(d.id)) { const c = cb.get(d.id); cb.delete(d.id); if (d.error) c.rej(new Error(d.error.message)); else c.res(d.result); }
+    else if (d.method === 'Runtime.exceptionThrown') errs.push(d.params.exceptionDetails.exception?.description || d.params.exceptionDetails.text);
+    else if (d.method === 'Runtime.consoleAPICalled' && d.params.type === 'error') errs.push(d.params.args.map((a) => a.value ?? a.description ?? '').join(' '));
+  };
+  const send = (method, params = {}) => new Promise((res, rej) => { const i = ++id; cb.set(i, { res, rej }); ws.send(JSON.stringify({ id: i, method, params })); });
+  for (const d of ['Page', 'Runtime']) await send(d + '.enable');
+  await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+  await send('Emulation.setTouchEmulationEnabled', { enabled: true, maxTouchPoints: 1 });
+
+  const ev = async (expr) => {
+    const r = await send('Runtime.evaluate', { expression: expr, returnByValue: true, awaitPromise: true });
+    if (r.exceptionDetails) throw new Error('eval: ' + (r.exceptionDetails.exception?.description || r.exceptionDetails.text).split('\n')[0]);
+    return r.result.value;
+  };
+  // r7 hard rule: no screen scrolls. Every frame checks the page, panels, sheet bodies, cards and the hub (an element
+  // still animating in is skipped); the sheet scrolled on purpose (21f) is exempt.
+  const scrollFails = [];
+  const NOSCROLL = `(() => { const bad = []; const se = document.scrollingElement; if (se.scrollHeight > innerHeight + 1) bad.push('page ' + se.scrollHeight + '>' + innerHeight);
+    for (const el of document.querySelectorAll('.panel, .pbody, #cafe, #resi, .card, .rgrid, .room')) { if (el.getAnimations().some((x) => x.playState === 'running')) continue;
+      const nm = (el.id || el.className).slice(0, 28); if (el.scrollHeight > el.clientHeight + 2) bad.push(nm + ' ' + el.scrollHeight + '>' + el.clientHeight);
+      const r = el.getBoundingClientRect(); if (r.height && (r.bottom > innerHeight + 1 || r.top < -1)) bad.push(nm + ' off-screen ' + Math.round(r.top) + '..' + Math.round(r.bottom)); }
+    return bad; })()`;
+  const shot = async (name) => {
+    const r = await send('Page.captureScreenshot', { format: 'png' });
+    writeFileSync(join(OUT, name + '.png'), Buffer.from(r.data, 'base64'));
+    const bad = name === '21f-shop-bottom' ? [] : await ev(NOSCROLL).catch(() => []);
+    if (bad.length) scrollFails.push(name + ': ' + bad.join(', '));
+    console.log('  shot ' + name + (bad.length ? '  SCROLL ' + bad.join(', ') : ''));
+  };
+  const touch = (type, x, y) => send('Input.dispatchTouchEvent', { type, touchPoints: type === 'touchEnd' ? [] : [{ x, y, id: 1 }] });
+  const tap = async (x, y) => { await touch('touchStart', x, y); await sleep(40); await touch('touchEnd', x, y); };
+  const waitFor = async (expr, ms = 10000) => { const t0 = Date.now(); while (Date.now() - t0 < ms) { try { if (await ev(expr)) return true; } catch { /* busy */ } await sleep(100); } throw new Error('timeout ' + expr); };
+  globalThis.__dbg = async () => { try { await shot('zz-debug'); console.log('state', JSON.stringify(await ev('window.__qa.state()'))); } catch (e) { console.log('dbg failed ' + e.message); } };
+  const qa = (expr) => ev('window.__qa.' + expr);
+  const tapCat = async (cid) => { const p = await qa(`pos(${cid})`); await tap(p.x, p.y); };
+  const boot = async (query = '') => { await send('Page.navigate', { url: origin + '/' + query }); await sleep(500); await waitFor('!!window.__qa && !!document.querySelector("#menu.on, #cafe.on, #hud.on")', 20000); await sleep(900); };
+
+  await send('Page.navigate', { url: origin + '/' });
+  await ev('localStorage.clear()').catch(() => {});
+  await boot();
+
+  // ---- juice strips: the signature send (crouch, noodle stretch, leap, paws-first landing, fold, tail flick) and a
+  // bench chain, frame by frame on a stepped clock. QA_STRIPS=1 runs only these. ----
+  const strips = async () => {
+    const save = (name, url) => writeFileSync(join(OUT, name), Buffer.from(url.split(',')[1], 'base64'));
+    await qa('lang("en")');
+    await qa('level(1)'); await sleep(900);
+    const mid = await qa('matchId()');
+    if (mid == null) throw new Error('L1 should start with a free cat of the front colour');
+    let r = await qa(`strip(${mid}, [0.04, 0.1, 0.16, 0.21, 0.26, 0.31, 0.37, 'end'], 4)`);
+    save('_leap-strip.jpg', r.url);
+    console.log('  strip _leap-strip.jpg ' + r.times.map((x) => Math.round(x * 1000)).join(','));
+    await waitFor('!window.__qa.state().busy', 8000);
+    // L2: park the two blues, then the orange carrier's cat sets off the 2-chain
+    await qa('level(2)'); await sleep(700);
+    for (const id of [0, 1, 2]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(250); }
+    await waitFor('!window.__qa.state().busy', 8000); await sleep(400);
+    r = await qa('strip(3, [0.35, 0.7, 0.95, 1.12, 1.3, 1.5, 1.7, 1.95, 2.3], 3, true)');
+    save('_chain-strip.jpg', r.url);
+    console.log('  strip _chain-strip.jpg');
+    await waitFor('!window.__qa.state().busy', 8000);
+  };
+  if (process.env.QA_STRIPS) { await strips(); console.log(`errors: ${errs.length}`); for (const e of errs.slice(0, 8)) console.log('  ' + e.split(String.fromCharCode(10))[0].slice(0, 220)); bye(errs.length ? 1 : 0); await new Promise(() => {}); }
+
+  // QA_FROM=14 skips the play-board sections 1-13 and QA_FROM=21 also the caf� ones (a slow machine); the default runs everything
+  if (+(process.env.QA_FROM || 0) < 14) {
+  // 1 home EN (levels 1-3 boot straight into play; the plain home stays reachable with the Home button)
+  if ((await qa('state()')).mode !== 'play') throw new Error('fresh save should boot into level 1');
+  await qa('home()');
+  await sleep(1500);
+  await shot('01-home-en');
+
+  // 2 level 1 (tap hit area test: tap the body, not the head)
+  await qa('level(1)'); await sleep(700);
+  await shot('02-level1');
+
+import { defineConfig } from 'vite';
+import { readdirSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { join, relative, sep } from 'node:path';
+
+// After the build: write dist/sw.js that precaches every built file under a cache name derived from the file contents
+// (a new build = a new cache; the old one is deleted on activate). Relative URLs, so it works in a subfolder.
+function offlineSw() {
+  let outDir = 'dist';
+  return {
+    name: 'lco-offline-sw',
+    apply: 'build',
+    configResolved(c) { outDir = c.build.outDir; },
+    closeBundle() {
+      const files = [];
+      const walk = (d) => {
+        for (const n of readdirSync(d)) {
+          const f = join(d, n);
+          if (statSync(f).isDirectory()) walk(f);
+          else files.push(relative(outDir, f).replaceAll(sep, '/'));
+        }
+      };
+      walk(outDir);
+      const list = files.filter((f) => f !== 'sw.js' && f !== 'privacy.html').sort();
+      const hash = createHash('sha1').update(list.join('|') + list.map((f) => statSync(join(outDir, f)).size).join(',')).digest('hex').slice(0, 10);
+      const urls = ['./', ...list.filter((f) => f !== 'index.html')];
+      writeFileSync(join(outDir, 'sw.js'), `// generated by vite.config.js: do not edit
+const CACHE = 'lco-${hash}';
+const URLS = ${JSON.stringify(urls)};
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(URLS)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('lco-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', (e) => {
+  const r = e.request;
+  if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return; // fonts and ad scripts go straight to the network
+  e.respondWith(caches.match(r, { ignoreSearch: true }).then((hit) => hit || fetch(r).catch(() => (r.mode === 'navigate' ? caches.match('./') : Response.error()))));
+});
+`);
+    },
+  };
+}
+
+export default defineConfig({
+  base: './',
+  plugins: [offlineSw()],
+});
+
+ succeeded in 11235ms:
+
+> long-cat-out@0.1.0 check
+> node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs && node scripts/check-sfx.mjs && node scripts/check-dare.mjs
+
+
+level  size   kind    cats  carriers  colors  bench  peak  detours  gen_ms
+1      5x6    normal  3     1         -       5      0     0        0.3
+5      6x8    normal  12    4         4       5      4     4        9.6
+10     6x8    normal  12    4         4       5      4     3        17.6
+15     7x9    hard    15    5         5       5      4     5        1.4
+30     7x9    normal  15    5         4       5      4     3        13.2
+60     8x11   normal  18    6         4       5      4     5        18.9
+100    8x11   normal  18    6         5       5      4     5        8.6
+250    8x11   normal  18    6         5       5      4     4        12.6
+500    8x10   normal  15    5         4       5      4     3        0.6
+
+mechanics per range (levels carrying each, total pieces)
+  L1-7: dog 0, yarn 0, mystery 0, frozen 0, mixed 0, pieces 0
+  L8-11: dog 2, yarn 0, mystery 0, frozen 0, mixed 0, pieces 2
+  L12-39: dog 6, yarn 13, mystery 0, frozen 0, mixed 5, pieces 23
+  L40-54: dog 2, yarn 4, mystery 7, frozen 0, mixed 3, pieces 17
+  L55-69: dog 1, yarn 6, mystery 3, frozen 8, mixed 7, pieces 21
+  L70-600: dog 113, yarn 166, mystery 66, frozen 175, mixed 166, pieces 688
+
+kinds {"normal":532,"hard":48,"super":20}; hard at 15,25,42,52,59,77,87,106...; super at 34,67,96,122,149,175...
+
+decisions per range (averages; dead = losing taps / legal taps, long = share of cats 4+ cells)
+  L5-14 normal n=10   traps 2.30  late 0.60  chains 1.50  3-chains 0.60  dead 0.088  free 3.05  startSafe 4.7  fill 0.74  long 0.26  colours 4.0  cats 12.3
+  L15-39 normal n=22   traps 4.45  late 2.41  chains 1.82  3-chains 0.77  dead 0.136  free 3.52  startSafe 5.9  fill 0.75  long 0.34  colours 4.5  cats 15.1
+  L15-39 hard   n=3    traps 6.33  late 2.67  chains 1.33  3-chains 1.00  dead 0.178  free 3.12  startSafe 6.0  fill 0.76  long 0.31  colours 5.7  cats 17.0
+  L40-99 normal n=53   traps 4.91  late 2.85  chains 1.74  3-chains 0.77  dead 0.146  free 3.56  startSafe 6.6  fill 0.76  long 0.39  colours 4.7  cats 17.0
+  L40-99 hard   n=7    traps 5.71  late 3.00  chains 2.00  3-chains 1.43  dead 0.185  free 3.43  startSafe 5.7  fill 0.74  long 0.43  colours 4.7  cats 17.1
+  L100-249 normal n=133  traps 5.05  late 3.06  chains 1.77  3-chains 0.71  dead 0.189  free 3.19  startSafe 5.7  fill 0.75  long 0.36  colours 4.8  cats 17.3
+  L100-249 hard   n=17   traps 5.94  late 3.82  chains 1.71  3-chains 1.06  dead 0.220  free 3.19  startSafe 5.1  fill 0.72  long 0.36  colours 4.9  cats 17.6
+  L250-600 normal n=310  traps 4.97  late 3.11  chains 1.64  3-chains 0.71  dead 0.190  free 3.15  startSafe 5.4  fill 0.74  long 0.36  colours 4.9  cats 17.4
+  L250-600 hard   n=41   traps 5.24  late 3.24  chains 1.78  3-chains 1.12  dead 0.240  free 3.26  startSafe 5.7  fill 0.75  long 0.38  colours 4.7  cats 17.6
+levels missing the full band (floor still held): 94; normal levels from L10 with a delayed trap: 445/455
+search misses 0 (avg 14 nodes)
+gen avg 7.67ms, worst 31.5ms (level 35), total 4600ms for 600 levels
+all checks passed
+  120-day street: 19 shops, 2/8 of Library 4, 6 renovation sets
+  120-day sim: L499 on day 120 (house done after L60); collection 11 on day 14 -> 58 on day 120 (visitors 6, outfits 24, rosettes 3, cups 0); requests done 320; jar coins 26068
+  café pacing: residents after L3 mochi, L5 biscuit, L11 luna, L16 pudding, L25 noodle, L39 pepper, L46 clover, L60 captain; areas done after L8, L18, L33, L46, L60
+econ checks passed
+check-web ok
+check-sfx ok (20 sfx + music)
+check-dare ok
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'Rush|rush|streak|shield|rotate|tier|daily' src/game/live.js data/live.js data/events.js src/ui/live.js | Select-Object -First 110; rg -n 'fail\\(|takeBack|life|miniWin|winCompact|showFail|showWin|dare_play|dare_first_move' src/game/game.js src/main.js src/ui/ui.js | Select-Object -First 100" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Encoding utf8 -LiteralPath 'qa/core-metrics.txt','qa/errors.txt' -TotalCount 45; rg --files qa -g '*103*'; rg -n 'L1|L2|L3|L4|authored|difficulty|retry|assist' src/core/generate.js data/events.js | Select-Object -First 90; Get-Content -Encoding utf8 -LiteralPath 'src/kit/analytics.js'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 665ms:
+src/ui/live.js:2:// requests), the daily puzzle sheet, the Events sheet (Cat Show mastery, Café Rush, season + visitors, archive) and the
+src/ui/live.js:23:// Café Rush trophies won (top 3 of a week) stand on the café floor, tinted by place
+src/ui/live.js:31:// L: { jar, daily, season, dots: { jar, season, events } }
+src/ui/live.js:36:  const d = L.daily;
+src/ui/live.js:37:  const daily = `<button class="rr lr" data-act="dailysheet" aria-label="${t('dailyLevel')}">${r7('hud_medal')}${d.done ? '<i class="rok">&#10003;</i>' : d.streak ? `<i class="rnum">${d.streak}</i>` : ''}${dot(!d.done && L.dots.daily)}<span>${d.done ? fmtShort(d.ms) : t('daily')}</span></button>`;
+src/ui/live.js:42:  return daily + jar + season;
+src/ui/live.js:59:    else if (g.k === 'daily') { icon = r7('hud_medal'); label = t('g_daily'); act = 'dailysheet'; }
+src/ui/live.js:78:// ---- daily puzzle sheet: streak flames, the escalating chest, play ----
+src/ui/live.js:79:// info: { streak, done, ms (to midnight), chests: [7 rewards], stamp: bool }
+src/ui/live.js:80:export function dailySheet(info) {
+src/ui/live.js:81:  const cur = info.done ? info.streak : info.streak + 1; // the box today's clear opens
+src/ui/live.js:87:  const shield = `<div class="shieldchip ${info.shield ? 'on' : 'used'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path class="ck" d="m8 12 3 3 5-6"/></svg>${t(info.shield ? 'shieldReady' : 'shieldUsed')}</div>`;
+src/ui/live.js:88:  const body = `<div class="streakhead">${r7('hud_medal', 'flame')}<b>${t('streakDays', { n: info.streak })}</b>${shield}<small>${t('streakRule')}</small></div>
+src/ui/live.js:90:${info.done ? `<div class="lnote">${t('dailyDoneTil', { t: fmtLong(info.ms) })}</div>` : `<button class="btn green sm" data-act="dailyplay">${t('play')}</button><div class="lnote small">${t('dailyEnds', { t: fmtLong(info.ms) })}${info.stamp ? ' · ' + t('dailyStamp') : ''}</div>`}`;
+src/ui/live.js:91:  openSheet('dailysheet', 'quests lsheet', t('dailyLevel'), body);
+src/ui/live.js:94:// ---- Events sheet: Cat Show | Café Rush | Season (+ the Show archive) ----
+src/ui/live.js:104:  const tabs = `<div class="stabs">${tab('show', t('show'), info.show.dot)}${tab('rush', t('rush'), info.rush.dot)}${tab('season', t('season'), info.season.dot)}</div>`;
+src/ui/live.js:108:  else if (evTab === 'rush') body = rushTab(info.rush);
+src/ui/live.js:131:function rushTab(r) {
+src/ui/live.js:133:  const pend = r.pend ? `<div class="qrow ready"><div class="qt"><b>${t('rushLastWeek', { n: r.pend.rank })}</b>${chips(r.pend.prize)}</div><button class="btn green xs" data-act="rushclaim">${t('claim')}</button></div>` : '';
+src/ui/live.js:134:  return `<div class="theme lth" style="--th:#e2843c"><b>${t('rush')}</b><span>${t('showEnds', { t: fmtLong(r.endsMs) })}</span></div>
+src/ui/live.js:136:<div class="sbcard">${r7('icon_trophy', 'medal')}<div class="sbt"><b>${t('rushGoal')}</b><small>${r.best ? t('rushBest', { t: fmtTime(r.best), n: r.rank }) : t('rushNone')}</small></div><button class="btn green xs" data-act="rushplay">${r.best ? t('replay') : t('play')}</button></div>
+src/ui/live.js:138:<div class="lnote small">${t('rushBots')} · ${t('rushPrizes')}</div>`;
+data/live.js:1:// Long-term retention data (src/game/live.js): seasons, visiting cats, resident requests, outfits, Café Rush bots.
+data/live.js:2:// Seasons rotate every 4 weeks through this list; each season invites two permanent visiting cats with stamps.
+data/live.js:32:  { k: 'daily', need: 1, coins: 35, hearts: 2 },
+data/live.js:49:// Café Rush practice bots: clearly bots, never shown as people. Their times are simulated per week (live.rushBots).
+src/game/live.js:1:// Long-term retention systems: the café tip jar, resident requests, affection hearts + outfits, the daily-puzzle streak
+src/game/live.js:2:// chest, Cat Show mastery medals, the weekly Café Rush, 4-week seasons with stamps and visiting cats.
+src/game/live.js:10:export const EVENTS_FROM = 10; // Cat Show, Café Rush, seasons and notifications open after level 10 (d.level > 10)
+src/game/live.js:115:export function reqEvent(d, ev, n = 1, color = -1) { // ev: win | cat | carrier | tidy | daily -> true when progress moved
+src/game/live.js:140:// ---- daily puzzle streak chest (the streak itself lives in d.daily: a missed day resets it) ----
+src/game/live.js:141:export function streakChest(streak) {
+src/game/live.js:142:  const s = Math.max(1, Math.min(7, streak));
+src/game/live.js:158:  let n = d.season.daily[s] || 0;
+src/game/live.js:193:  for (const s of Object.keys(d.season.daily)) seen.add(+s);
+src/game/live.js:196:export const addDailyStamp = (d, week) => { const s = seasonOf(week); d.season.daily[s] = (d.season.daily[s] || 0) + 1; };
+src/game/live.js:198:// the visitor who drops by today (rotates), its daily gift once per day
+src/game/live.js:231:// ---- Café Rush: one board a week vs 19 practice bots with simulated, honest times ----
+src/game/live.js:236:export function rushBots(week, cats) {
+src/game/live.js:245:export const rushRank = (bots, ms) => (ms > 0 ? 1 + bots.filter((b) => b.ms < ms).length : 0);
+src/game/live.js:246:export function rushPrize(rank) {
+src/game/live.js:252:export function rushRoll(d, week, cats) {
+src/game/live.js:253:  const R = d.rush;
+src/game/live.js:255:  if (R.week && R.best > 0 && !R.pend) R.pend = { week: R.week, rank: rushRank(rushBots(R.week, R.cats || cats), R.best) };
+src/game/live.js:261:export function rushResult(d, ms) { // -> true on a new best
+src/game/live.js:263:  if (d.rush.best && d.rush.best <= ms) return false;
+src/game/live.js:264:  d.rush.best = Math.round(ms);
+src/game/live.js:267:export function rushClaim(d) {
+src/game/live.js:268:  const p = d.rush.pend;
+src/game/live.js:270:  d.rush.pend = null;
+src/game/live.js:271:  const prize = rushPrize(p.rank);
+src/game/live.js:274:  if (prize.cup) d.rush.cups[prize.cup] = (d.rush.cups[prize.cup] || 0) + 1;
+src/game/live.js:285:  if (d.rush.week > w) { d.rush.week = w; hit = true; }
+src/game/live.js:292:// c: { stars, resident, res: [ids], week, streak, dailyDone, party (star cost), show: {have, need} | null }
+src/game/live.js:299:  if (!c.dailyDone) add({ k: 'daily', have: Math.min(7, c.streak || 0), need: 7 }, 1);
+src/game/live.js:316:// c: { claim: 'quests'|'season'|'rush'|'', req: index of a ready request or -1, jarFull, build: affordable next build }
+src/ui/ui.js:480:  fail(info) {
+src/ui/ui.js:485:    const back = info.freeBack ? opt('takeback', 'mint', img('v2/ui_undo.webp', 'oi'), t('takeBack'), t('free'), 'freeback') : '';
+src/ui/ui.js:494:    const takeBack = back && !info.practice ? `<button class="btn green sm tb" data-act="takeback">${img('v2/ui_undo.webp', 'mini')}<b>${t('takeBack')}</b><small>${t('free')}</small></button>` : '';
+src/ui/ui.js:499:  ${info.lifeLost ? `<div class="lifeline">&#9829; ${t('lifeLost')}</div>` : ''}
+src/ui/ui.js:501:  <div class="row frow">${takeBack}<button class="btn ${takeBack ? 'teal' : ''} sm" data-act="retry">${t('retry')}</button><button class="round" data-act="home" aria-label="${t('home')}"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button></div>
+src/ui/ui.js:841:<div class="lt">${t('nextLife', { t: `<b id="life-t">${fmtMs(info.ms)}</b>` })}</div>
+src/ui/ui.js:842:${info.ad === false ? '' : `<button class="btn green sm" data-act="adlife">${adSvg}<b>${t('adLife')}</b></button>`}
+src/ui/ui.js:843:<button class="btn gold sm ${info.coins >= info.cost ? '' : 'dim'}" data-act="liferefill">${img('ui_coin.webp', 'mini')}<b>${t('refillLives', { n: info.cost })}</b></button>
+src/ui/ui.js:853:    const lt = document.getElementById('life-t');
+src/main.js:95:  lives: lifeGate() ? econ.lives(save.data, now()) : null, // hearts only matter once the first resident has moved in
+src/main.js:139:const lifeGate = () => cafe.RESIDENTS.some((r) => cafe.isBuilt(r.task.id)); // lives only matter once the first resident has moved in
+src/main.js:143:// roll the day/week/life timers forward (clock-guarded), persist when something changed
+src/main.js:352:  if (lifeGate() && d.lives.n < econ.MAX_LIVES) list.push({ tag: 'lives', ms: econ.livesMs(d, now()) + (econ.MAX_LIVES - d.lives.n - 1) * econ.REGEN_MS, title: t('nLivesTitle'), body: t('nLivesBody') });
+src/main.js:360:// a lost bench ends the attempt; taking a continue gives the life back (and the attempt is no longer a first-try win)
+src/main.js:363:  if (S.lifeLost) { econ.addLife(save.data, 1); S.lifeLost = false; }
+src/main.js:367:// start a level unless the life gate is shut
+src/main.js:370:  if (daily) { startLevel(n, true); return true; } // the daily puzzle: retries are free, no life is spent // Cat Show / Café Rush retries are free and unlimited: no life is spent
+src/main.js:371:  if (lifeGate() && econ.lives(save.data, now()) <= 0) {
+src/main.js:445:  S.lifeLost = false;
+src/main.js:519:  if (S.show && S.show.kind === 'friend' && !S.dareMoved) { S.dareMoved = true; track('dare_first_move', { i: S.show.i || '', m: S.show.m }); }
+src/main.js:766:  track('dare_play', { m: d.m, i: d.i || '' });
+src/main.js:806:    lifeLost: !!S.lifeLost,
+src/main.js:828:  if (!S.show && !S.daily) { // Cat Show practice and the daily puzzle are free to retry: no life, no streak
+src/main.js:831:    S.lifeLost = lifeGate() && econ.loseLife(save.data, now());
+src/main.js:834:  if (S.lifeLost) track('life_lost', { n: S.n });
+src/main.js:835:  if (S.lifeLost) { // the HUD heart count drops at once, not on the next 1 s tick
+src/main.js:842:  ui.fail(info);
+src/main.js:1005:    if (ui.screen === 'fail' && S.mode === 'play' && game.over) { ui.hideModal(); ui.fail(failInfo()); } // coins bought from the continue card: show what is now affordable
+src/main.js:1150:  adlife: guarded(async () => {
+src/main.js:1152:    if (!(await ads.rewarded('life'))) return ui.toast(t('adNone'));
+src/main.js:1156:    track('life_ad');
+src/main.js:1160:  liferefill() {
+src/main.js:1166:    track('life_refill');
+src/game/game.js:826:        this.parts.push({ kind: 'paw', x: px, y: py, delay: this.clock + i * 0.035, max: 0.7, life: 0.7, s: c * 0.42 });
+src/game/game.js:954:      this.parts.push({ kind: 'spark', x: p.x, y: p.y, vx: Math.cos(a) * v * 1.4, vy: Math.sin(a) * v * 0.7, life: 0.55, max: 0.6, color: i % 2 ? '#fff3b0' : '#ffd43b', s: 5 + Math.random() * 4 });
+src/game/game.js:971:        this.parts.push({ kind: 'spark', x, y: y0 + Math.random() * (y1 - y0), vx: (side ? -1 : 1) * (20 + Math.random() * 40), vy: -60 - Math.random() * 90, life: 0.5 + Math.random() * 0.35, max: 0.85, color: i % 2 ? '#fff3b0' : '#ffd43b', s: 4 + Math.random() * 5 });
+src/game/game.js:1024:    if (this.on.fail) this.on.fail();
+src/game/game.js:1042:      if (x > this.ox - this.cell * 0.3 && x < this.ox + this.board.w * this.cell + this.cell * 0.3) this.parts.push({ kind: 'paw', x, y, delay: now, max: 1.2, life: 1.2, s: this.cell * 0.36, dog: true });
+src/game/game.js:1083:        p.life -= dt;
+src/game/game.js:1089:        p.life -= dt;
+src/game/game.js:1095:        p.life -= dt;
+src/game/game.js:1096:      } else if (now >= p.delay) p.life -= dt;
+src/game/game.js:1098:    this.parts = this.parts.filter((p) => p.life > 0);
+src/game/game.js:1149:      this.parts.push({ kind: 'dust', x: x + (Math.random() - 0.5) * 10, y: y - Math.random() * 6, vx: 40 + Math.random() * 60, vy: -20 - Math.random() * 30, life: 0.45 + Math.random() * 0.2, max: 0.6, s: this.cs * (0.12 + Math.random() * 0.08) });
+src/game/game.js:1161:        rot: Math.random() * 6, vr: (Math.random() - 0.5) * 12, life: 0.5 + Math.random() * 0.3,
+src/game/game.js:1172:      this.parts.push({ kind: 'spark', x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 0.4 + Math.random() * 0.2, max: 0.6, color: i % 2 ? '#ffffff' : color, s: 5 + Math.random() * 4 });
+src/game/game.js:1182:        rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, life: 0.8 + Math.random() * 0.5,
+src/game/game.js:1197:        rot: Math.random() * 6, vr: (Math.random() - 0.5) * 14, life: 1.8 + Math.random() * 0.8,
+src/game/game.js:1252:      if (p.kind === 'paw' && now >= p.delay) drawPaw(ctx, p.x, p.y, p.s, Math.min(1, p.life / p.max) * 0.8, p.dog ? '#b97a3c' : undefined);
+src/game/game.js:1261:        ctx.globalAlpha = Math.min(1, p.life * 1.5);
+src/game/game.js:1268:        const u = 1 - p.life / p.max;
+src/game/game.js:1278:        ctx.globalAlpha = Math.min(1, p.life / p.max * 1.4);
+src/game/game.js:1281:        const s = p.s * (0.5 + p.life / p.max);
+src/game/game.js:1327:        if (px > x0 && px < x0 + bw) this.parts.push({ kind: 'spark', x: px, y: py, vx: (Math.random() - 0.5) * 60, vy: -40 - Math.random() * 60, life: 0.5, max: 0.6, color: i ? '#ffffff' : '#ffd43b', s: 5 + Math.random() * 4 });
+src/game/game.js:1964:  // idle life: blink every few seconds, ear twitch, tail wag
+
+ succeeded in 734ms:
+
+> long-cat-out@0.1.0 check
+> node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs
+
+
+level  size   kind    cats  carriers  colors  bench  peak  detours  gen_ms
+1      5x6    normal  3     1         -       5      0     0        0.5
+5      6x8    normal  12    4         4       5      4     3        12.4
+10     6x8    normal  12    4         4       5      4     5        32.4
+15     7x9    hard    15    5         5       5      4     5        2.9
+30     7x9    normal  15    5         5       5      4     5        9.0
+60     8x11   normal  18    6         4       5      4     5        30.9
+100    8x11   normal  18    6         5       5      4     5        10.9
+250    8x11   normal  18    6         5       5      4     4        16.0
+500    8x10   normal  15    5         4       5      4     3        1.3
+
+mechanics per range (levels carrying each, total pieces)
+  L1-7: dog 0, yarn 0, mystery 0, frozen 0, mixed 0, pieces 0
+  L8-11: dog 3, yarn 0, mystery 0, frozen 0, mixed 0, pieces 3
+  L12-39: dog 4, yarn 11, mystery 0, frozen 0, mixed 3, pieces 19
+  L40-54: dog 2, yarn 4, mystery 7, frozen 0, mixed 3, pieces 17
+  L55-69: dog 1, yarn 6, mystery 3, frozen 8, mixed 7, pieces 21
+  L70-600: dog 113, yarn 166, mystery 66, frozen 175, mixed 166, pieces 688
+
+kinds {"normal":532,"hard":48,"super":20}; hard at 15,25,42,52,59,77,87,106...; super at 34,67,96,122,149,175...
+
+decisions per range (averages; dead = losing taps / legal taps, long = share of cats 4+ cells)
+  L5-14 normal n=10   traps 2.80  late 0.80  chains 1.60  3-chains 0.50  dead 0.091  free 2.91  startSafe 4.4  fill 0.75  long 0.28  colours 4.0  cats 12.3
+  L15-39 normal n=22   traps 3.86  late 1.86  chains 1.50  3-chains 0.68  dead 0.106  free 3.45  startSafe 5.9  fill 0.75  long 0.35  colours 4.5  cats 15.1
+  L15-39 hard   n=3    traps 6.33  late 2.67  chains 1.33  3-chains 1.00  dead 0.178  free 3.12  startSafe 6.0  fill 0.76  long 0.31  colours 5.7  cats 17.0
+  L40-99 normal n=53   traps 4.91  late 2.85  chains 1.74  3-chains 0.77  dead 0.146  free 3.56  startSafe 6.6  fill 0.76  long 0.39  colours 4.7  cats 17.0
+  L40-99 hard   n=7    traps 5.71  late 3.00  chains 2.00  3-chains 1.43  dead 0.185  free 3.43  startSafe 5.7  fill 0.74  long 0.43  colours 4.7  cats 17.1
+  L100-249 normal n=133  traps 5.05  late 3.06  chains 1.77  3-chains 0.71  dead 0.189  free 3.19  startSafe 5.7  fill 0.75  long 0.36  colours 4.8  cats 17.3
+  L100-249 hard   n=17   traps 5.94  late 3.82  chains 1.71  3-chains 1.06  dead 0.220  free 3.19  startSafe 5.1  fill 0.72  long 0.36  colours 4.9  cats 17.6
+  L250-600 normal n=310  traps 4.97  late 3.11  chains 1.64  3-chains 0.71  dead 0.190  free 3.15  startSafe 5.4  fill 0.74  long 0.36  colours 4.9  cats 17.4
+  L250-600 hard   n=41   traps 5.24  late 3.24  chains 1.78  3-chains 1.12  dead 0.240  free 3.26  startSafe 5.7  fill 0.75  long 0.38  colours 4.7  cats 17.6
+levels missing the full band (floor still held): 94; normal levels from L10 with a delayed trap: 445/455
+search misses 0 (avg 14 nodes)
+gen avg 11.49ms, worst 51.2ms (level 200), total 6894ms for 600 levels
+all checks passed
+  caf� pacing: residents after L3 mochi, L5 biscuit, L11 luna, L16 pudding, L25 noodle, L39 pepper, L46 clover, L60 captain; areas done after L8, L18, L33, L46, L60
+econ checks passed
+check-web ok
+no console errors
+qa\103k-apprentice-arrival.png
+qa\103j-street-apprentice.png
+qa\103i-667-room-ask-tr.png
+qa\103h-room-next-goal.png
+qa\103g-room-claim-reward.png
+qa\103f-room-newcomer-ask.png
+qa\103e-dare-matched.png
+qa\103d-dare-landing-match.png
+qa\103c-667-dare-link-tr.png
+qa\103b-dare-link-after-clip.png
+qa\103a-chain-counter-last.png
+src/core/generate.js:9://    built and the one that best fits the level's difficulty band is kept.
+src/core/generate.js:20:// ---- difficulty schedule: hard every 7-10 levels from L15, super hard about every 30 ----
+src/core/generate.js:45:// kitten = a parade of mother + kitten pairs, yarn = a yarn alley (two balls on the line, from L13)
+src/core/generate.js:74:  // about 40% of the normal levels from L10 are 'medium': more dead ends and two or more delayed traps
+src/core/generate.js:82:  const benchSize = kind === 'super' ? 4 : 5; // a 5-seat bench from L4 (breathers too: 6 seats made them free wins)
+src/core/generate.js:83:  // 4 colours up to L14, 5 from L15, 6 from L30 (hard levels one more), never above 6 so each reads at a glance
+src/core/generate.js:122:    // L4-9: the bench fills to 3 of 5 at least once, a first small scare
+src/core/generate.js:201:    // so the moment the pair parks, before any trap is fatal (the first irreversible trap waits for L4).
+// Local analytics stub: console + counters in the save. Funnel = first time each milestone was reached (a timestamp, for D1/D7 style reads).
+import { save } from './save.js';
+import { now } from './clock.js';
+
+export function track(name, props = {}) {
+  const c = save.data.counters;
+  c[name] = (c[name] || 0) + 1;
+  save.commit();
+  if (import.meta.env.DEV) console.log('[an]', name, JSON.stringify(props));
+}
+
+// session-1 funnel milestones: l1, l3, first_resident, l10
+export function funnel(step) {
+  const f = save.data.meta.funnel;
+  if (f[step]) return;
+  f[step] = now();
+  track('funnel_' + step, { session: save.data.meta.sessions });
+}
+
+// D1 / D7 proxies: days since the first open, checked on every app open
+export function retention() {
+  const m = save.data.meta;
+  if (!m.firstOpen) return;
+  const days = Math.floor((now() - m.firstOpen) / 86400000);
+  for (const [k, n] of [['d1', 1], ['d7', 7]]) {
+    if (days >= n && !m.ret[k]) {
+      m.ret[k] = now();
+      track('retention_' + k, { days });
+    }
+  }
+}
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'end card|location|shareFile|canShare|prepare|href|title|chain' src/kit/clip.js src/kit/dare.js src/kit/pwa.js | Select-Object -Last 80; rg -n 'rushwin|rushResult|showWin|showwin|t\\(.rush' src/main.js src/ui/ui.js src/ui/live.js" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 707ms:
+src/kit/dare.js:4://     m: 'chain' | 'seats' | 'time', g: target (chain size, seats used, or tenths of a second), nm?: sender name,
+src/kit/dare.js:5://     x?: 1 = the chain goal is already the board's best (the recipient is asked to match it, not beat it),
+src/kit/dare.js:7:export const MODES = ['chain', 'seats', 'time'];
+src/kit/dare.js:52:  if (m === 'chain') g = int(o.g, 2, 8);
+src/kit/dare.js:57:  if (m === 'chain' && o.x === 1) out.x = 1;
+src/kit/dare.js:65:// how the run went against the goal: 'beat' | 'tie' | 'miss' (v = the player's own chain / seats / tenths)
+src/kit/dare.js:67:  if (m === 'chain') return v > g ? 'beat' : v === g ? 'tie' : 'miss';
+src/kit/clip.js:4:// full bench), the chain tap and the cascade play at real speed with a tap ripple, a big chain counter and captions,
+src/kit/clip.js:5:// and a short end card ("Can you beat it?") closes it. Reads with sound off. MediaRecorder turns it into an MP4 /
+src/kit/clip.js:16:const END = 2.2; // end card seconds
+src/kit/clip.js:21:// which moment to show: the biggest bench chain of the attempt (2+ parked cats hopping in on one tap), else the final
+src/kit/clip.js:27:  let kind = 'chain';
+src/kit/clip.js:38:  return { from, peak: p, kind, n: kind === 'chain' ? best : 0 };
+src/kit/clip.js:41:// src: { board, log, plan, text: { combo[], chainX(n), lastSeat, title, board, result, can, link, bench(u, n), chain } }
+src/kit/clip.js:47:  g.chainText = text.chainX;
+src/kit/clip.js:49:  g.noStamp = true; // one chain caption only: the clip's top band counts the hops
+src/kit/clip.js:64:    const d = dt * rush * (g.chainSlow() ? 0.6 : 1);
+src/kit/clip.js:90:  let peakSeen = null; // the clip time the full chain (or the clear) is on screen: the still / PNG frame
+src/kit/clip.js:98:      // of the hops on screen), until the chain counter takes over
+src/kit/clip.js:110:      const f = g.chainFx;
+src/kit/clip.js:112:      if (peakSeen == null && t > peakAt && (plan.kind === 'chain' ? f && f.k >= plan.n && t - counter.t > 0.25 : t > peakAt + 0.7)) peakSeen = t;
+src/kit/clip.js:145:  // back out before the end card
+src/kit/clip.js:191:    // top band: the bench before the move, then the chain counter counting up, hop by hop
+src/kit/clip.js:193:    const f = g.chainFx;
+src/kit/clip.js:195:    if (k >= 1 && plan.kind === 'chain') {
+src/kit/clip.js:202:      label(ctx, `${text.chain} x${k}`, 0, 2, 38, '#fff6e5', 210);
+src/kit/clip.js:218:    label(ctx, text.title, CLIP_W / 2, CLIP_H - BOT / 2 - 4, 26, '#ffd43b');
+src/kit/clip.js:223:    // end card: the result, the dare, the name of the game
+src/kit/clip.js:236:      label(ctx, text.title, 0, 150, 34, '#ffd43b', CLIP_W - 40, '#0e1630');
+src/kit/clip.js:255:    // fast-forward (no drawing) to a clip time ('tap' = the punch-in on the deciding tap, 'peak' = the full chain on
+src/kit/clip.js:256:    // screen, 'end' = the end card), then draw it
+src/kit/clip.js:374:export async function shareFile({ blob, ext }, name, text, url) {
+src/kit/clip.js:376:  if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+src/kit/clip.js:384:  const href = URL.createObjectURL(blob);
+src/kit/clip.js:386:  a.href = href;
+src/kit/clip.js:391:  setTimeout(() => URL.revokeObjectURL(href), 4000);
+src/ui/live.js:104:  const tabs = `<div class="stabs">${tab('show', t('show'), info.show.dot)}${tab('rush', t('rush'), info.rush.dot)}${tab('season', t('season'), info.season.dot)}</div>`;
+src/ui/live.js:133:  const pend = r.pend ? `<div class="qrow ready"><div class="qt"><b>${t('rushLastWeek', { n: r.pend.rank })}</b>${chips(r.pend.prize)}</div><button class="btn green xs" data-act="rushclaim">${t('claim')}</button></div>` : '';
+src/ui/live.js:134:  return `<div class="theme lth" style="--th:#e2843c"><b>${t('rush')}</b><span>${t('showEnds', { t: fmtLong(r.endsMs) })}</span></div>
+src/ui/live.js:136:<div class="sbcard">${r7('icon_trophy', 'medal')}<div class="sbt"><b>${t('rushGoal')}</b><small>${r.best ? t('rushBest', { t: fmtTime(r.best), n: r.rank }) : t('rushNone')}</small></div><button class="btn green xs" data-act="rushplay">${r.best ? t('replay') : t('play')}</button></div>
+src/ui/live.js:138:<div class="lnote small">${t('rushBots')} · ${t('rushPrizes')}</div>`;
+src/main.js:501:  ui.play({ ...hudInfo(), level: n, daily, show: show ? (show.kind === 'friend' ? t('dareTitle') : show.kind === 'rush' ? t('rush') : t('showBoardN', { k: show.k.toUpperCase() })) : false, rush: !!show && (show.kind === 'rush' || (show.kind === 'friend' && show.m === 'time')), tut });
+src/main.js:547:    const best = sh.w === weekNum() && live.rushResult(d, ms);
+src/main.js:554:    ui.win({ stars: 1, title: best ? 'winTitle' : 'winTitle2', coins: 0, peek, purr: t('rushTime', { t: (ms / 1000).toFixed(1), n: rank }) + (best ? ' · ' + t('showBest') : '') + split, ach: [], show: true, again: true, showTag: t('rush') });
+src/main.js:691:const srcName = (k, n) => (k === 'd' ? t('dailyLevel') : k === 's' ? t('showBoard') : k === 'r' ? t('rush') : t('level', { n }));
+src/main.js:692:const boardName = () => (S.show ? (S.show.kind === 'friend' ? srcName(S.show.k, S.n) : S.show.kind === 'rush' ? t('rush') : t('showBoardN', { k: S.show.k.toUpperCase() })) : S.daily ? t('dailyLevel') : t('level', { n: S.n }));
+
+codex
+The notes include a later pass that makes the leap more readable and adds playable dares. I’m checking the latest captures and implementation to see which gaps are still visible and which need phone or player evidence.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Item 'dist/index.html','src/game/game.js','src/main.js','qa/103a-chain-counter-last.png' | Select-Object Name,LastWriteTime; Get-Content -Encoding utf8 -LiteralPath 'data/events.js' -TotalCount 115; rg -n 'const .*rush|showTag|again|win\\(info\\)|press|blocked' src/ui/ui.js src/game/game.js | Select-Object -First 50" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 791ms:
+
+Name                        LastWriteTime         
+----                        -------------         
+index.html                  11/23/2026 10:25:40 AM
+game.js                     11/23/2026 10:06:12 AM
+main.js                     11/23/2026 10:14:15 AM
+103a-chain-counter-last.png 11/23/2026 10:35:59 AM
+// Weekly Cat Show themes. Rotates by week number (see econ.themeOf). `decor` is the exclusive cafe decor id earned on step 10.
+export const EVENT_THEMES = [
+  { id: 'spring_picnic', name: { en: 'Spring Picnic', tr: 'Bahar Piknigi' }, decor: 'picnic_blanket', color: '#7bd66b' },
+  { id: 'pajama_party', name: { en: 'Pajama Party', tr: 'Pijama Partisi' }, decor: 'pajama_pillows', color: '#8f8cff' },
+  { id: 'beach_day', name: { en: 'Beach Day', tr: 'Plaj G�n�' }, decor: 'beach_umbrella', color: '#ffb23f' },
+  { id: 'starry_night', name: { en: 'Starry Night', tr: 'Yildizli Gece' }, decor: 'star_lantern', color: '#4d6bd6' },
+  { id: 'pumpkin_patch', name: { en: 'Pumpkin Patch', tr: 'Balkabagi Bah�esi' }, decor: 'pumpkin_stack', color: '#ff7a1a' },
+  { id: 'snow_globe', name: { en: 'Snow Globe', tr: 'Kar K�resi' }, decor: 'snow_globe', color: '#59c7ee' },
+];
+src/ui/ui.js:400:  win(info) {
+src/ui/ui.js:427:    const compact = !info.show && !info.again && info.stars < 2 && !(nr && nr.left <= 0); // a chain loops as a thumbnail in it
+src/ui/ui.js:449:  ${info.show ? `<div class="purr showtag">${ribbonSvg}${info.showTag || t('showBoard')}</div>` : `<div class="stars n${info.stars}">${stars}</div>`}
+src/ui/ui.js:455:  ${info.friend ? (info.friend.res === 'miss' ? `<button class="btn" data-act="retry">${t('retry')}</button>` : `<button class="btn pink" data-act="share">${SHARE_SVG}<span>${t('dareBack')}</span></button>`) : info.again ? `<button class="btn" data-act="retry">${t('runAgain')}</button>` : info.canBuild ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${info.show ? t('show') : t('next')}</button>`}
+src/game/game.js:78:      const rush = this.state && !this.demo && !this.calm && this.state.aliveCount === 0 && !this.over ? 1.8 : 1; // nothing left to tap: the carriers wrap up faster
+src/game/game.js:79:      const dt = Math.min(0.05, (now - this.last) / 1000) * this.timeScale * rush * (this.chainSlow() ? 0.6 : 1); // a bench chain plays in slow motion
+src/game/game.js:192:    this.press = null;
+src/game/game.js:385:    this.press = null;
+src/game/game.js:396:    this.press = null;
+src/game/game.js:413:        this.press = { id, pid: e.pointerId, t: this.clock, dest: this.destOf(id) };
+src/game/game.js:420:    const p = this.press;
+src/game/game.js:422:    this.press = null;
+src/game/game.js:429:    const p = this.press;
+src/game/game.js:432:    if (this.hitCat(e.clientX - r.left, e.clientY - r.top) !== p.id) this.press = null; // dragged off: cancelled
+src/game/game.js:458:  // the press preview's lane: the cat's way out to the edge, cell by cell, with chevrons running outward
+src/game/game.js:478:  // a speech bubble over the pressed cat: where it is headed (its carrier's pattern, or a cushion and how many
+src/game/game.js:533:    if (!this.waitTags || this.demo || this.press || this.busy()) return;
+src/game/game.js:550:    if (!this.rulesTeach || this.demo || this.press || !this.board) return;
+src/game/game.js:592:  // the pressed cat's destination: pulsing rings with the arrival number
+src/game/game.js:594:    const p = this.press;
+src/game/game.js:632:  // drawn over the board (after the cats): the lane out and the destination bubble of the pressed cat
+src/game/game.js:634:    const p = this.press;
+src/game/game.js:2429:      // show what blocked the cat: lane to the blocker, blocker flashed
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Encoding utf8 -LiteralPath 'index.html' -TotalCount 90; Get-Content -Encoding utf8 -LiteralPath 'src/core/search.js' -TotalCount 125; Get-Content -Encoding utf8 -LiteralPath 'src/core/generate.js' | Select-Object -Skip 147 -First 108" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Encoding utf8 -LiteralPath 'src/ui/ui.js' | Select-Object -Skip 478 -First 29; rg -n 'data-act=\"dash|floorDone|completedFloor|floorComplete|reqArrive|selectedFloor|activeFloor' src/ui/ui.js src/main.js src/game/live.js; rg -n 'function .*Share|dare_handoff|dare_open|dare_done|clipLink' src/main.js" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 728ms:
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <meta name="theme-color" content="#03dbcc" />
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" type="image/png" href="./icons/icon-192.png" />
+  <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png" />
+  <title>Long Cat Out! Arrow Puzzle</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@700&display=swap" media="print" onload="this.media='all'" />
+  <style>
+    html, body { margin: 0; height: 100%; overflow: hidden; background: #ffd9a8; overscroll-behavior: none; touch-action: none; -webkit-user-select: none; user-select: none; }
+    #game { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+    #ui { position: fixed; inset: 0; pointer-events: none; }
+  </style>
+</head>
+<body>
+  <canvas id="game"></canvas>
+  <div id="ui"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
+// Fast search model: the same rules as rules.js on a compact state, for the generator's decision metrics and hints.
+// Every obstacle state is a pure function of WHICH cats have left (a dog counts nearby exits, a frozen cat counts its
+// neighbours, a yarn ball goes once any cat passed beside it), and carrier progress follows from how many cats left
+// minus how many sit on the bench. So a search state is just (cats gone, bench colour counts), and memo results are
+// shared across every query on one board.
+import { createState, exitRay, catsNear, edgeNeighbours, DOG_WAKE, DOG_NEAR, THAW_NEED } from './rules.js';
+
+const rootOf = (board, id) => {
+  let c = board.cats[id];
+  while (c.kittenOf != null) c = board.cats[c.kittenOf];
+  return c.id;
+};
+
+function liftOrder(st, id, out) {
+  out.push(id);
+  for (const k of st.kittens[id]) liftOrder(st, k, out);
+}
+
+export function compile(board) {
+  const { w, h, cats } = board;
+  const objs = board.objs || [];
+  const st = createState(board);
+  const unitOf = new Int16Array(cats.length).fill(-1);
+  const units = [];
+  for (const c of cats) if (c.kittenOf == null) { unitOf[c.id] = units.length; units.push(c.id); }
+  for (const c of cats) if (c.kittenOf != null) unitOf[c.id] = unitOf[rootOf(board, c.id)];
+  const N = units.length;
+  const ucats = units.map((p) => { const out = []; liftOrder(st, p, out); return out; });
+  const len = ucats.map((ids) => ids.reduce((t, id) => t + cats[id].cells.length, 0));
+  const rayU = [];
+  const rayO = [];
+  units.forEach((p) => {
+    const su = new Set();
+    const so = new Set();
+    for (const [x, y] of exitRay(cats[p], w, h)) {
+      const o = st.grid[y * w + x];
+      if (o >= 0) su.add(unitOf[o]);
+      else if (o <= -2) so.add(-2 - o);
+    }
+    rayU.push(Int16Array.from(su));
+    rayO.push(Int16Array.from(so));
+  });
+  // obstacles: obj k is gone once cnt[k] >= need[k]; frozen unit f thaws once thaw[f] >= THAW_NEED
+  const need = new Int16Array(objs.length);
+  const hitsO = cats.map(() => []);
+  objs.forEach((o, k) => {
+    if (o.kind === 'dog') {
+      const near = catsNear(board, o.cells, DOG_NEAR);
+      need[k] = near.length ? Math.min(DOG_WAKE, near.length) : 9999;
+      for (const id of near) hitsO[id].push(k);
+    } else {
+      need[k] = 1;
+      const [yx, yy] = o.cells[0];
+      for (const c of cats) {
+        const lane = c.cells.concat(exitRay(c, w, h));
+        if (lane.some(([x, y]) => Math.abs(x - yx) + Math.abs(y - yy) === 1)) hitsO[c.id].push(k);
+      }
+    }
+  });
+  const frozenOf = new Int16Array(N).fill(-1);
+  const hitsF = cats.map(() => []);
+  let nf = 0;
+  units.forEach((p, u) => {
+    if (cats[p].mech !== 'frozen') return;
+    frozenOf[u] = nf;
+    for (const id of edgeNeighbours(board, cats[p])) hitsF[id].push(nf);
+    nf++;
+  });
+  const carriers = board.carriers || [];
+  return {
+    board, N, units, unitOf, ucats, len, rayU, rayO, need, nObj: objs.length, frozenOf, nFrozen: nf,
+    color: Int8Array.from(cats.map((c) => c.color)),
+    hitsO: hitsO.map((a) => Int16Array.from(a)),
+    hitsF: hitsF.map((a) => Int16Array.from(a)),
+    cc: Int8Array.from(carriers.map((c) => c.color)),
+    cap: Int8Array.from(carriers.map((c) => c.cap || 3)),
+    memo: new Map(),
+  };
+}
+
+const KEYBUF = new Uint16Array(256);
+
+// A mutable search state over a compiled board, with an undo stack.
+export class Sim {
+  constructor(C, B) {
+    this.C = C;
+    this.B = B;
+    this.alive = new Uint8Array(C.N).fill(1);
+    this.left = C.N;
+    this.cnt = new Int16Array(C.nObj);
+    this.thaw = new Int16Array(C.nFrozen);
+    this.bench = new Int8Array(8);
+    this.used = 0;
+    this.ci = 0;
+    this.fill = 0;
+    this.dead = false;
+    this.trail = [];
+    this.boards = []; // bench cats boarded per carrier arrival during the last apply (chain metrics)
+  }
+
+  // From a live rules.js state (mid-game, after scoops or extra seats too).
+  static fromState(C, st) {
+    const s = new Sim(C, st.benchSize);
+    C.units.forEach((p, u) => { if (!st.alive[p]) { s.alive[u] = 0; s.left--; } });
+    for (let k = 0; k < C.nObj; k++) s.cnt[k] = !st.objAlive[k] ? C.need[k] : st.objs[k].kind === 'dog' ? st.dogCount[k] : 0;
+    C.units.forEach((p, u) => { const f = C.frozenOf[u]; if (f >= 0) s.thaw[f] = st.frozen[p] ? st.thaw[p] : THAW_NEED; });
+    for (const id of st.bench) if (id >= 0) { s.bench[C.color[id]]++; s.used++; }
+    s.ci = st.carriers.length ? st.carriers[0].uid : C.cc.length;
+    s.fill = st.carriers.length ? st.carriers[0].fill : 0;
+    s.dead = !!st.failed;
+    return s;
+  }
+
+  frozen(u) {
+    const f = this.C.frozenOf[u];
+    return f >= 0 && this.thaw[f] < THAW_NEED;
+  }
+
+  objAlive(k) {
+    return this.cnt[k] < this.C.need[k];
+  }
+
+  canExit(u) {
+    const C = this.C;
+    if (!this.alive[u] || this.frozen(u)) return false;
+  const meta = { n, tutorial: true, kind: 'normal', benchSize: 5 };
+  let cats;
+  let carriers;
+  if (n === 1) {
+    cats = mk([
+      { cells: [[1, 4], [1, 3], [1, 2]], breed: 'tabby' }, // orange
+      { cells: [[3, 5], [3, 4], [3, 3], [3, 2]], breed: 'tabby' }, // orange
+      { cells: [[2, 5], [2, 4], [2, 3]], breed: 'tabby' }, // orange
+    ]);
+    carriers = [{ color: 0, cap: 3 }]; // three quick taps fill it: the first door-snap and drive-off
+    meta.order = [0, 1, 2];
+  } else if (n === 2) {
+    // A forced zigzag that teaches the bench by hand: blue, orange, blue, orange, blue. Each cat frees only the next.
+    // The two blues park; the second orange sends the orange carrier off, the blue one rolls in and BOTH parked cats
+    // hop in by themselves (the first chain), then the last blue fills it.
+    cats = mk([
+      { cells: [[1, 1], [2, 1], [3, 1]], breed: 'tuxedo' }, // 0 blue, the only free cat: parks
+      { cells: [[2, 3], [2, 2]], breed: 'tabby' }, // 1 orange, held by 0
+      { cells: [[4, 3], [3, 3]], breed: 'tuxedo' }, // 2 blue, held by 1: parks
+      { cells: [[3, 5], [3, 4]], breed: 'tabby' }, // 3 orange, held by 2: fills the orange carrier, the chain fires
+      { cells: [[0, 5], [1, 5], [2, 5]], breed: 'tuxedo' }, // 4 blue, held by 3: fills the blue carrier
+    ]);
+    carriers = [{ color: 0, cap: 2 }, { color: 1, cap: 3 }];
+    meta.order = [0, 1, 2, 3, 4];
+  } else if (n === 4) {
+    // A packed 5x6 board (no empty rows) built around one real choice: no pink cat is free, so something must park.
+    // Free at the start: green 7 (green is the NEXT carrier: it hops in soon) and blue 2 (blue comes LAST: it squats
+    // on a seat all level). Exhaustive search: random play wins 72% overall, 85% after parking green first, 59% after
+    // blue first; the best line peaks at 4 of 5 seats. The hint card states the rule, never the tap.
+    cats = mk([
+      { cells: [[3, 5], [2, 5]], breed: 'calico' }, // 0 pink
+      { cells: [[2, 2], [2, 3]], breed: 'tabby' }, // 1 orange
+      { cells: [[0, 2], [0, 1], [0, 0]], breed: 'tuxedo' }, // 2 blue, free (comes last)
+      { cells: [[1, 5], [0, 5], [0, 4]], breed: 'tabby' }, // 3 orange
+      { cells: [[1, 1], [2, 1]], breed: 'tuxedo' }, // 4 blue
+      { cells: [[1, 3], [1, 4], [2, 4]], breed: 'gray' }, // 5 green
+      { cells: [[3, 0], [4, 0], [4, 1]], breed: 'calico' }, // 6 pink
+      { cells: [[4, 4], [4, 5]], breed: 'gray' }, // 7 green, free (comes next)
+      { cells: [[2, 0], [1, 0]], breed: 'gray' }, // 8 green
+      { cells: [[4, 2], [4, 3]], breed: 'tuxedo' }, // 9 blue
+      { cells: [[3, 3], [3, 4]], breed: 'calico' }, // 10 pink
+      { cells: [[3, 1], [3, 2]], breed: 'tabby' }, // 11 orange
+    ]);
+    carriers = [{ color: 2, cap: 3 }, { color: 3, cap: 3 }, { color: 0, cap: 3 }, { color: 1, cap: 3 }]; // pink, green, orange, blue
+    meta.order = [2, 3, 0, 7, 9, 6, 10, 5, 1, 8, 11, 4]; // a winning line that peaks at 4 of 5 seats
+    meta.detours = 4;
+    meta.colors = 4;
+    return makeBoard(5, 6, cats, meta, carriers);
+  } else {
+    // Mother + kitten AND a first real choice on a cramped 4-seat bench. Free at the start: the orange mother (her
+    // kitten trails, 2 of 3 orange seats in one tap) and a big pink mother + kitten whose carrier comes LAST. Orange
+    // first sets up the chain (two blues park, the last orange fills, both blues hop in). Pink first is survivable but
+    // the pair squats on 2 seats for the whole level and the two blues fill the bench to 4 of 4: the lesson card says
+    // so the moment the pair parks, before any trap is fatal (the first irreversible trap waits for L4).
+    cats = mk([
+      { cells: [[2, 0], [3, 0], [4, 0]], breed: 'tabby' }, // 0 orange mother, free
+      { cells: [[0, 0], [1, 0]], breed: 'tabby', kittenOf: 0 }, // 1 her kitten
+      { cells: [[1, 2], [1, 1]], breed: 'tuxedo' }, // 2 blue, held by the kitten: parks
+      { cells: [[3, 1], [2, 1]], breed: 'tuxedo' }, // 3 blue, held by 2: parks
+      { cells: [[3, 3], [3, 2]], breed: 'tabby' }, // 4 orange, held by 3: fills orange, both blues hop in, blue departs too
+      { cells: [[4, 3], [4, 4], [4, 5]], breed: 'calico' }, // 5 pink mother, free from the start (the tempting wrong tap)
+      { cells: [[4, 1], [4, 2]], breed: 'calico', kittenOf: 5 }, // 6 her kitten
+    ]);
+    carriers = [{ color: 0, cap: 3 }, { color: 1, cap: 2 }, { color: 2, cap: 2 }];
+    meta.benchSize = 4;
+    meta.order = [0, 2, 3, 4, 5];
+  }
+  return makeBoard(5, 6, cats, meta, carriers);
+}
+
+// ---- one generation attempt ----
+function runAttempt(P, rng) {
+  const W = P.w;
+  const H = P.h;
+  const N = W * H;
+  const occ = new Int16Array(N).fill(-1);
+  const stamp = new Int32Array(N);
+  let cur = 0;
+  const rayOwn = Array.from({ length: N }, () => []);
+  const units = [];
+  const down = [];
+  const bm = [];
+  const pm = [];
+  let evalStamp = 0;
+  let filled = 0;
+  const cap = P.depthTarget + 1;
+
+  const pickLen = () => (rng.chance(P.longP) ? rng.int(4, P.maxLen) : rng.int(P.minLen, 3));
+
+  const free = (x, y) => x >= 0 && y >= 0 && x < W && y < H && occ[y * W + x] < 0 && stamp[y * W + x] !== cur;
+
+  // Grow a body backwards from the head; d = facing. Returns cells tail-first/head-last.
+  function grow(hx, hy, d, len) {
+    const path = [[hx, hy]];
+    stamp[hy * W + hx] = cur;
+    let sx = -d[0];
+    let sy = -d[1];
+    let x = hx;
+    let y = hy;
+    for (let i = 1; i < len; i++) {
+      let pick = null;
+      if (i === 1) {
+        if (!free(x + sx, y + sy)) return null;
+        pick = [sx, sy];
+      } else {
+        const turns = rng.shuffle([[-sy, sx], [sy, -sx]]);
+        const opts = rng.chance(P.bendP) ? [...turns, [sx, sy]] : [[sx, sy], ...turns];
+        for (const o of opts) {
+
+ succeeded in 733ms:
+
+  fail(info) {
+    cur = { screen: 'fail', info, hud: cur.hud };
+    const scoopOk = info.scoop > 0 || info.coins >= info.scoopCost;
+    const opt = (act, tone, icon, b, sm, cls = '') => `<button class="opt ${tone} ${cls}" data-act="${act}">${icon}<b>${b}</b><small>${sm}</small></button>`;
+    // the first lost bench on a level: one free Take Back (the losing tap undone) leads the options
+    const back = info.freeBack ? opt('takeback', 'mint', img('v2/ui_undo.webp', 'oi'), t('takeBack'), t('free'), 'freeback') : '';
+    const scoop = scoopOk ? opt('offerscoop', 'mint', img('v2/ui_scoop.webp', 'oi'), t('scoop'), info.scoop > 0 ? t('scoopUse', { n: info.scoop }) : `${img('ui_coin.webp', 'mini')}${info.scoopCost}`) : '';
+    // only what can be paid looks like a button: a seat the purse cannot cover is a quiet "Get coins" link instead
+    const seat = info.canSeat ? opt('coinseat', 'gold', img('v2/ui_coin.webp', 'oi'), t('extraSeat'), `${img('ui_coin.webp', 'mini')}${info.seatCost}`) : '';
+    const short = !info.canSeat && info.store ? `<button class="link getc" data-act="shop">${t('seatShort', { n: info.seatCost, h: info.coins })} � <b>${t('getCoins')}</b></button>` : '';
+    const ad = info.ad ? opt('adheart', 'green', adSvg, t('adSeatShort'), t('watchAd')) : '';
+    const tag = info.stuckAt ? `<div class="stucktag" style="left:${info.stuckAt.x}px;top:${info.stuckAt.y}px">${t('stuckWhy')}</div>` : '';
+    const more = info.practice ? [] : [scoop, seat, ad].filter(Boolean);
+    const offer = info.offer ? `<button class="offercard slimoffer" data-act="starter"><i class="ribbon">${t('bestValue')}</i><span class="oc-t"><b>${t('starterBundle')}</b><small>${t('starterLine', { c: info.offer.coins.toLocaleString(lang()), s: info.offer.scoop })}</small></span><span class="oc-p">${info.offer.price}</span></button>` : '';
+    const takeBack = back && !info.practice ? `<button class="btn green sm tb" data-act="takeback">${img('v2/ui_undo.webp', 'mini')}<b>${t('takeBack')}</b><small>${t('free')}</small></button>` : '';
+    root.insertAdjacentHTML('beforeend', `
+<div class="backdrop offerb" id="modal">${tag}<div class="card cream offer slim r7fail">
+  <h2 class="title navy">${t('offerTitle')}</h2>
+  <div class="why">${info.why || t('offerSub')}</div>
+  ${info.lifeLost ? `<div class="lifeline">&#9829; ${t('lifeLost')}</div>` : ''}
+  ${info.tip ? `<div class="tip">${info.tip}</div>` : ''}
+  <div class="row frow">${takeBack}<button class="btn ${takeBack ? 'teal' : ''} sm" data-act="retry">${t('retry')}</button><button class="round" data-act="home" aria-label="${t('home')}"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button></div>
+  ${more.length ? `<button class="morechip" data-act="morehelp"><b>${t('moreHelp')}</b><i>&#9662;</i></button><div class="opts morebox n${more.length}">${more.join('')}</div>` : ''}
+  ${info.practice ? '' : short}
+  ${offer}
+</div></div>`);
+  },
+
+665:    text: { combo: [t('purrfect'), t('combo2'), t('combo3')], chainX: (n) => t('chainX', { n }), lastSeat: t('lastSeat'), title: t('title'), board: boardName(), result, can: t('clipCan'), link: t('clipLink'), bench: (u, n) => t('clipBench', { u, n }), oneSeat: t('clipOneSeat'), chain: t('clipChain') },
+755:  track(d ? 'dare_open' : 'dare_bad', d ? { m: d.m, k: d.k, i: d.i || '' } : {});
+785:  track('dare_done', { m: sh.m, res, i: sh.i || '' }); // the funnel's clear step
+1327:async function doShare(withClip) {
+1340:      track('dare_handoff', { i: d.i, via: 'clip', how });
+1352:  track('dare_handoff', { i: id, via: 'link' });
+
+codex
+**Overall 8/10, up from 7/10.** Long Cat Out! now meets your top-100 benchmark as a design. The paws-first leap gives the game a recognizable move, and watching a full bench empty after one good decision is its best payoff. The biggest remaining gaps are giving players a fresh reason to return and getting a shared clip to turn into a friend’s first move.
+
+| Dimension | Previous | Current | Assessment |
+|---|---:|---:|---|
+| Presentation | 8 | **8** | The café, street, and puzzle board feel like one world. On short phones, the rails and world labels still crowd each other. |
+| Appeal | 8 | **8** | The faces, sleeping bench cats, and resident arrivals sell the fantasy. The straight bodies still read as patterned tubes at rest. |
+| Juice | 6 | **8** | The crouch, reaching paws, and fold give the send a clear rhythm. The chain counter now leaves the carrier mouth visible. |
+| Fun | 7 | **8** | Choosing which cat can afford to wait gives the puzzle real stakes. The press preview makes those stakes easier to read, and the first four boards teach distinct decisions. |
+| Retention | 7 | **7** | The first resident request gives the next win a purpose, and apprentices make the second Cat Street lap worth seeing. Completed floors and later laps still offer weaker reasons to return. |
+| Virality | 5 | **7** | The clip tells a clear one-seat-left story. The exact-board dare gives friends an achievable goal, including a match target when the sender has already hit the board maximum. The clip-to-link handoff still adds friction. |
+| **Overall** | **7** | **8** | The biggest gain is in the move players repeat every few seconds. |
+
+I scored from the captures and current implementation, including the later changes in [the R9 notes](qa/r9-notes.md). `npm run check` passed. I didn’t play on a physical phone or verify share delivery, and the analytics are local, so retention and virality are design scores without player outcome data.
+
+### Highest-priority fixes
+
+1. **Presentation — fix the 375×667 hub layout.** Collapse completed and locked floors into a single picker in Cat Street. Give building names a lane below the façades and reserve space beside Tasks for the claim badge. The current street capture has names under rail buttons, and the café capture has the build cost tucked behind the currency row.
+2. **Appeal — make the resting cat silhouette read at board size.** Start with the orange tabby. Give it shoulders under the head, a softer belly contour, and a tapered rump. Wrap the stripes around those forms, then check straight cats and tight bends at 375 px before applying the treatment to other breeds.
+3. **Juice — make the landing move the objects it touches.** Anchor the front paws to the carrier lip for a beat, compress the mat as the body folds, and give the loaded carrier a small settle. Give occupied cushions a quick rebound as each cat springs off. Fit those reactions into the existing timing.
+4. **Fun — teach the recovery at the first full-bench loss.** Keep the failed cat, all occupied cushions, and the carrier queue visible above a shorter sheet. Highlight the carrier the cat needs and show how many departures away it is. Lead with **Take back** and **Retry**, and put the Starter Bundle behind **More help**. In a fresh-phone test, check whether players change their next choice after undoing.
+5. **Retention — always show what the next win can build.** Replace the large **Floor complete!** card with the next available build and a tap to that room. Give an in-room resident request one home by removing its duplicate goal tile. For Cat Street lap three, give each shop a visible renovation and a shop-specific resident request so the next completion changes something players can see or do.
+6. **Virality — make a single message sufficient.** Give **Dare a friend** a rich link preview with the actual chain goal, seat count, and peak frame. Keep the video export available for posting. Verify the link from send to first move on iOS and Android in iMessage and WhatsApp, and collect the existing share-ID events off-device so you can see where recipients drop out.
+tokens used
+70,271
+**Overall 8/10, up from 7/10.** Long Cat Out! now meets your top-100 benchmark as a design. The paws-first leap gives the game a recognizable move, and watching a full bench empty after one good decision is its best payoff. The biggest remaining gaps are giving players a fresh reason to return and getting a shared clip to turn into a friend’s first move.
+
+| Dimension | Previous | Current | Assessment |
+|---|---:|---:|---|
+| Presentation | 8 | **8** | The café, street, and puzzle board feel like one world. On short phones, the rails and world labels still crowd each other. |
+| Appeal | 8 | **8** | The faces, sleeping bench cats, and resident arrivals sell the fantasy. The straight bodies still read as patterned tubes at rest. |
+| Juice | 6 | **8** | The crouch, reaching paws, and fold give the send a clear rhythm. The chain counter now leaves the carrier mouth visible. |
+| Fun | 7 | **8** | Choosing which cat can afford to wait gives the puzzle real stakes. The press preview makes those stakes easier to read, and the first four boards teach distinct decisions. |
+| Retention | 7 | **7** | The first resident request gives the next win a purpose, and apprentices make the second Cat Street lap worth seeing. Completed floors and later laps still offer weaker reasons to return. |
+| Virality | 5 | **7** | The clip tells a clear one-seat-left story. The exact-board dare gives friends an achievable goal, including a match target when the sender has already hit the board maximum. The clip-to-link handoff still adds friction. |
+| **Overall** | **7** | **8** | The biggest gain is in the move players repeat every few seconds. |
+
+I scored from the captures and current implementation, including the later changes in [the R9 notes](qa/r9-notes.md). `npm run check` passed. I didn’t play on a physical phone or verify share delivery, and the analytics are local, so retention and virality are design scores without player outcome data.
+
+### Highest-priority fixes
+
+1. **Presentation — fix the 375×667 hub layout.** Collapse completed and locked floors into a single picker in Cat Street. Give building names a lane below the façades and reserve space beside Tasks for the claim badge. The current street capture has names under rail buttons, and the café capture has the build cost tucked behind the currency row.
+2. **Appeal — make the resting cat silhouette read at board size.** Start with the orange tabby. Give it shoulders under the head, a softer belly contour, and a tapered rump. Wrap the stripes around those forms, then check straight cats and tight bends at 375 px before applying the treatment to other breeds.
+3. **Juice — make the landing move the objects it touches.** Anchor the front paws to the carrier lip for a beat, compress the mat as the body folds, and give the loaded carrier a small settle. Give occupied cushions a quick rebound as each cat springs off. Fit those reactions into the existing timing.
+4. **Fun — teach the recovery at the first full-bench loss.** Keep the failed cat, all occupied cushions, and the carrier queue visible above a shorter sheet. Highlight the carrier the cat needs and show how many departures away it is. Lead with **Take back** and **Retry**, and put the Starter Bundle behind **More help**. In a fresh-phone test, check whether players change their next choice after undoing.
+5. **Retention — always show what the next win can build.** Replace the large **Floor complete!** card with the next available build and a tap to that room. Give an in-room resident request one home by removing its duplicate goal tile. For Cat Street lap three, give each shop a visible renovation and a shop-specific resident request so the next completion changes something players can see or do.
+6. **Virality — make a single message sufficient.** Give **Dare a friend** a rich link preview with the actual chain goal, seat count, and peak frame. Keep the video export available for posting. Verify the link from send to first move on iOS and Android in iMessage and WhatsApp, and collect the existing share-ID events off-device so you can see where recipients drop out.

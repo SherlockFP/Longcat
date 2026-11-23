@@ -98,6 +98,19 @@ export function reqTick(d, now, res) { // -> true when a request was added
   if (R.list.length >= REQ_MAX) R.next = Math.max(R.next, now + REQ_EVERY_H * H_MS); // full: the clock waits (no pile of catch-up requests)
   return added;
 }
+// a resident who just moved in asks for something at once (their first request is the next thread on the hub);
+// a full list keeps its requests and the newcomer asks with the next one
+export function reqArrive(d, id) { // -> the new request or null
+  const R = d.req;
+  if (R.list.length >= REQ_MAX || R.list.some((x) => x.who === id)) return null;
+  R.n++;
+  // an easy first ask the next levels fill on their own: win two, else fill carriers
+  const kd = REQ_KINDS.find((k) => (k.k === 'win' || k.k === 'carrier') && !R.list.some((x) => x.k === k.k)) || REQ_KINDS[0];
+  const x = { k: kd.k, who: id, need: kd.need, p: 0, c: 0, s: R.n };
+  R.list.push(x);
+  R.fresh = id;
+  return x;
+}
 export const reqDef = (k) => REQ_KINDS.find((x) => x.k === k);
 export function reqEvent(d, ev, n = 1, color = -1) { // ev: win | cat | carrier | tidy | daily -> true when progress moved
   let hit = false;
@@ -115,11 +128,12 @@ export function reqClaim(d, i, now) { // -> { coins, hearts, who } or null
   if (!x || x.p < x.need) return null;
   const def = reqDef(x.k);
   d.req.list.splice(i, 1);
+  if (d.req.fresh === x.who) d.req.fresh = '';
   d.coins += def.coins;
   addHearts(d, x.who, def.hearts);
   d.req.done = (d.req.done || 0) + 1;
   if (!(d.req.next > now)) d.req.next = now + REQ_EVERY_H * H_MS; // the open slot fills one interval from now
-  return { coins: def.coins, hearts: def.hearts, who: x.who };
+  return { coins: def.coins, hearts: def.hearts, who: x.who, first: d.req.done === 1 };
 }
 export const reqReady = (d) => d.req.list.some((x) => x.p >= x.need);
 
@@ -215,12 +229,16 @@ export function archiveWeeks(d, week) {
 }
 
 // ---- Café Rush: one board a week vs 19 practice bots with simulated, honest times ----
-// Bot times scale with the board's cat count: a spread from a quick 1.0 s per cat to a slow 3.8 s per cat.
+// Bot times scale with the board's cat count: a spread from a brisk 1.6 s per cat (a sharp human pace: every send is
+// a ~0.5 s animation plus the read) to a slow 4.2 s per cat, plus a short reading pause, rounded to tenths. A board
+// whose size is not known yet counts as 30 cats, so a bot never shows a 2-second clear.
+export const RUSH_PER = [1.6, 4.2];
 export function rushBots(week, cats) {
   const r = rng(week * 7919 + 13);
+  const n = cats > 0 ? cats : 30;
   const out = RUSH_BOTS.map((name, i) => {
-    const per = 1.0 + (2.8 * (i + r())) / RUSH_BOTS.length;
-    return { name, ms: Math.round(cats * per * 1000 + r() * 2500) };
+    const per = RUSH_PER[0] + ((RUSH_PER[1] - RUSH_PER[0]) * (i + r())) / RUSH_BOTS.length;
+    return { name, ms: Math.round((n * per * 1000 + 1500 + r() * 2500) / 100) * 100 };
   });
   return out.sort((a, b) => a.ms - b.ms);
 }
@@ -270,14 +288,16 @@ export function clampAheadLive(d, now) {
   return hit;
 }
 
-// ---- the hub's "next goals" strip: the nearest goals with progress, claimable ones first ----
-// c: { stars, resident: {id, name, left, need}, res: [ids], week, streak, dailyDone, party (star cost) }
+// ---- the hub's "next goals" strip: at most 2 rows, claimable ones first ----
+// c: { stars, resident, res: [ids], week, streak, dailyDone, party (star cost), show: {have, need} | null }
+// The next resident is the thread of the hub and lives on the build card, so it is not repeated here. Pinned after the
+// claimable rows: a newcomer's first request, today's puzzle (until played), this week's Cat Show medals; then the nearest.
 export function goals(d, now, c) {
   const out = [];
-  const add = (g) => { if (g.need > 0) out.push({ ...g, pct: Math.min(1, g.have / g.need) }); };
-  // (the next build has its own card under the room; the strip shows what that card does not)
-  if (c.resident && c.resident.need > 0) add({ k: 'resident', have: c.resident.need - c.resident.left, need: c.resident.need, name: c.resident.name, id: c.resident.id });
-  d.req.list.forEach((x, i) => add({ k: 'req', i, have: x.p, need: x.need, who: x.who, req: x }));
+  const add = (g, pin = 9) => { if (g.need > 0) out.push({ ...g, pct: Math.min(1, g.have / g.need), pin }); };
+  d.req.list.forEach((x, i) => add({ k: 'req', i, have: x.p, need: x.need, who: x.who, req: x, fresh: d.req.fresh === x.who }, d.req.fresh === x.who ? 0 : 9));
+  if (!c.dailyDone) add({ k: 'daily', have: Math.min(7, c.streak || 0), need: 7 }, 1);
+  if (c.show && c.show.have < c.show.need) add({ k: 'show', have: c.show.have, need: c.show.need }, 2);
   const o = nextOutfit(d, c.res);
   if (o) add({ k: 'outfit', have: o.have, need: o.need, who: o.id, outfit: o.outfit });
   if (eventsOpen(d)) {
@@ -287,11 +307,20 @@ export function goals(d, now, c) {
     const step = seasonSteps(s, st)[done];
     if (step) add({ k: 'season', have: Math.min(st, step.at), need: step.at, visitor: step.visitor || '' });
   }
-  const streak = c.streak || 0;
-  if (!c.dailyDone) add({ k: 'daily', have: Math.min(7, streak), need: 7 });
   if (c.party) add({ k: 'party', have: Math.min(c.stars, c.party), need: c.party });
-  // claimable first, then the nearest (largest share done); ties keep the order above
-  return out.map((g, i) => ({ g, i })).sort((a, b) => (b.g.pct >= 1) - (a.g.pct >= 1) || b.g.pct - a.g.pct || a.i - b.i).map((x) => x.g).slice(0, 3);
+  // claimable first, then the pinned rows in order, then the nearest (largest share done); ties keep the order above
+  return out.map((g, i) => ({ g, i })).sort((a, b) => (b.g.pct >= 1) - (a.g.pct >= 1) || a.g.pin - b.g.pin || b.g.pct - a.g.pct || a.i - b.i).map((x) => x.g).slice(0, 2);
+}
+
+// ---- the hub's one spotlight: the single most useful thing to do now (r10 retention) ----
+// c: { claim: 'quests'|'season'|'rush'|'', req: index of a ready request or -1, jarFull, build: affordable next build }
+// priority: a reward waiting to be claimed > a finished resident request > a full tip jar > the next build > nothing
+export function spotlight(c) {
+  if (c.claim) return { k: 'claim', what: c.claim };
+  if (c.req >= 0) return { k: 'req', i: c.req };
+  if (c.jarFull) return { k: 'jar' };
+  if (c.build) return { k: 'build' };
+  return null;
 }
 
 export const dayMs = DAY_MS;

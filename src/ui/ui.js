@@ -5,8 +5,10 @@ import { save } from '../kit/save.js';
 import { PRODUCTS } from '../kit/iap.js';
 import { AREAS, TEASER, RESIDENTS, loc, isBuilt, pending, canAfford, nextResident, perkKind, perkValue, loveOf, treatCost, LOVE_COSTS, guestsFor, clutterLevel } from '../game/cafe.js';
 import './r7.css';
+import './dare.css';
 import { railHtml as liveRail, goalsHtml } from './live.js';
 import { OUTFITS } from '../game/live.js';
+import { house as streetHouse, HOUSE_TASKS, SHOPS } from '../game/street.js';
 
 const root = document.getElementById('ui');
 let actions = {};
@@ -17,6 +19,11 @@ const img = (name, cls = '') => `<img class="${cls}" src="${assetUrl(name)}" alt
 const colorHead = (color, cls = '') => img(`v2/head_${color}.webp`, cls);
 // round 7 art (public/assets/r7, see art-src/r7/assets.md)
 const r7 = (name, cls = '') => img(`r7/${name}.webp`, cls);
+const SHARE_SVG = '<svg class="shi" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke-width="3" stroke-linecap="round"/></svg>';
+// Share clip: sits on the clip preview, hidden until the video is encoded (main.js reveals it), so a tap never sends a still
+const CLIP_BTN = () => `<button class="clipshare" data-act="shareclip" hidden aria-label="${t('shareClipBtn')}">${SHARE_SVG}<span>${t('shareClipBtn')}</span></button>`;
+const SHARE_ROUND = () => `<button class="round share" data-act="share" aria-label="${t('share')}">${SHARE_SVG.replace(' class="shi"', '')}</button>`;
+const escHtml = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const r7c = (name, cls = '') => `<img class="${cls} cfb" src="${assetUrl('r7/' + name + '.webp')}" alt="" draggable="false">`;
 const reduced = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
 // local view state (not game state): hub view, shop tab, residents page, an open "More help" on the fail sheet
@@ -34,6 +41,8 @@ const D7 = {
 const FLAT = /_rug$/; // rugs lie on the floor under everything
 // resident floor spots per room (same order as the area's data spots)
 const RS7 = { counter: [[0.47, 0.99, 0.25], [0.84, 0.8, 0.18]], window: [[0.42, 0.82, 0.21], [0.74, 0.99, 0.2]], cushion: [[0.52, 0.8, 0.2], [0.5, 0.99, 0.21]], patio: [[0.36, 0.76, 0.19], [0.62, 0.99, 0.21]], rooftop: [[0.56, 0.74, 0.19], [0.66, 0.99, 0.21]] };
+const NOOK7 = { counter: [[0.29, 0.995, 0.19], [0.7, 0.84, 0.16]], window: [[0.3, 0.995, 0.19], [0.7, 0.8, 0.16]], cushion: [[0.3, 0.995, 0.19], [0.72, 0.84, 0.16]], patio: [[0.28, 0.995, 0.19], [0.75, 0.84, 0.16]], rooftop: [[0.3, 0.995, 0.19], [0.74, 0.8, 0.16]] };
+const fmtShort = (ms) => { const m = Math.ceil(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)}${t('hShort')}` : `${m}${t('mShort')}`; };
 const floorName = (i) => (i === 0 ? t('groundFloor') : t('floorN', { n: i }));
 const paw = () => '<svg class="pawi" viewBox="0 0 24 24"><ellipse cx="12" cy="16" rx="5.5" ry="4.5"/><ellipse cx="5" cy="11" rx="2.2" ry="2.8"/><ellipse cx="9.5" cy="6.5" rx="2.2" ry="2.8"/><ellipse cx="14.5" cy="6.5" rx="2.2" ry="2.8"/><ellipse cx="19" cy="11" rx="2.2" ry="2.8"/></svg>';
 const boost = (k, icon, tone) => `<button class="bst ${tone}" id="b-${k}" data-act="${k}"><img class="bi" src="${assetUrl('v2/' + icon)}" alt="" draggable="false"><b>${t(k)}</b><i class="badge"></i></button>`;
@@ -183,7 +192,7 @@ function flyStar(cn, n) {
 
 // zoomed-out townhouse: floors stacked from the street up, the floor under construction with its crane and star cost,
 // the next one as a blueprint ghost, the roof on top
-function houseHtml(curFloor, ai) {
+function houseHtml(curFloor, ai, St = {}) {
   const n = AREAS.length;
   const roofI = n - 1; // the last area is the rooftop terrace
   const done = (i) => AREAS[i].tasks.every((x) => isBuilt(x.id));
@@ -193,17 +202,40 @@ function houseHtml(curFloor, ai) {
     const st = done(i) ? 'done' : i === curFloor ? 'cur' : curFloor >= 0 && i === curFloor + 1 ? 'ghost' : '';
     if (!st) break;
     const art = st === 'done' ? (i === 0 ? 'floor_ground' : 'floor_lit') : st === 'cur' ? (i === 0 && AREAS[0].tasks.some((x) => isBuilt(x.id)) ? 'floor_ground' : 'floor_scaffold') : 'floor_ghost';
-    const tag = st === 'cur' ? `<i class="hcost">${r7('hud_star')}<b>${starsLeft(i)}</b></i>${r7('crane', 'crane')}` : '';
+    const tag = st === 'cur' ? `<i class="hcost">${r7('hud_star')}<b>${starsLeft(i)}</b></i>${r7('crane', 'crane')}` : st === 'ghost' ? nextTag(i) : '';
     fl.push(`<button class="hf ${st} ${i === ai ? 'sel' : ''}" data-act="cafearea" data-d="${i - ai}" data-view="room" ${st === 'ghost' ? 'disabled' : ''} aria-label="${loc(AREAS[i].name)}">${r7(art)}${tag}<span>${floorName(i)}</span></button>`);
   }
   // the top: the rooftop terrace once it is reached, else the gable roof over the highest floor
   const rs = done(roofI) ? 'done' : roofI === curFloor ? 'cur' : '';
   const roof = rs
     ? `<button class="hf roof ${rs} ${roofI === ai ? 'sel' : ''}" data-act="cafearea" data-d="${roofI - ai}" data-view="room" aria-label="${loc(AREAS[roofI].name)}">${r7('roof_terrace')}${rs === 'cur' ? `<i class="hcost">${r7('hud_star')}<b>${starsLeft(roofI)}</b></i>${r7('crane', 'crane')}` : ''}</button>`
-    : `<div class="hf roof gable">${r7('roof_gable')}</div>`;
-  const all = curFloor < 0;
-  const units = fl.length * 0.5 + (rs ? 0.52 : 0.56) + (all ? 0.5 : 0);
-  return `${r7('building_base', 'hbg')}<div class="tower" style="--u:${units.toFixed(2)}">${all ? `<div class="hf ghost next">${r7('floor_ghost')}<span>${t('nextFloorSoon')}</span></div>` : ''}${roof}${fl.reverse().join('')}</div>`;
+    : `<div class="hf roof gable">${r7('roof_gable')}${curFloor === roofI - 1 ? nextTag(roofI) : ''}</div>`;
+  const units = fl.length * 0.5 + (rs ? 0.52 : 0.56) + (curFloor >= 0 && curFloor < roofI ? 0.25 : 0); // room for the next-floor tag
+  const sign = `<button class="streetbtn ${St.open ? 'open' : ''}" data-act="cafeview" data-view="street">${r7('street_bakery', 'sbimg')}<b>${t('streetTitle')}</b><small>${St.open ? t('streetShops', { n: St.done }) : t('streetLocked')}</small></button>`;
+  return `${r7('building_base', 'hbg')}<div class="tower" style="--u:${units.toFixed(2)}">${roof}${fl.reverse().join('')}</div>${sign}`;
+}
+// the next floor's preview tag: its name and the resident who moves in there
+function nextTag(i) {
+  const a = AREAS[i];
+  const r = a && a.tasks.find((x) => x.resident);
+  return `<i class="hnext">${r ? r7c('res7_' + r.resident.id + '_idle', 'hnres') : ''}<span><b>${t('nextUp', { room: loc(a.name) })}</b>${r ? `<small>${t('unlocksX', { name: r.resident.name })}</small>` : ''}</span></i>`;
+}
+
+// Cat Street: the shop houses past the rooftop. The finished house before (or the cat house) on the left with its
+// shopkeeper, the house under construction in the middle (built from the ground up as pieces go in, crane and stars
+// left on it), the next one as a silhouette on the right.
+function streetHtml(St, fresh) {
+  const k = St.open ? St.done : 0;
+  const cur = streetHouse(k);
+  const pct = St.open ? St.at / HOUSE_TASKS : 0;
+  const prev = k > 0 ? streetHouse(k - 1) : null;
+  const left = prev
+    ? `<div class="sh sl">${r7('street_' + prev.id, 'shimg')}${r7c('keeper_' + prev.id, 'keeper')}${prev.apprentice ? r7c('appr_' + prev.id, 'appr') : ''}<span>${loc(prev.name)}</span></div>`
+    : `<div class="sh sl home">${r7('floor_ground', 'shimg')}<span>${t('houseTitle')}</span></div>`;
+  const mid = `<div class="sh sc ${fresh ? 'fresh' : ''} ${St.open ? '' : 'locked'}" style="--p:${(1 - pct) * 100}%">${r7('street_' + cur.id, 'shimg ghost')}${r7('street_' + cur.id, 'shimg built')}${St.open ? `${r7('crane', 'crane')}<i class="hcost">${r7('hud_star')}<b>${St.left}</b></i>` : `<i class="hcost lk">${r7('icon_lock')}</i>`}<span>${loc(cur.name)}</span>${cur.apprentice && St.open ? `<i class="apnext">${r7c('appr_' + cur.id, 'appr sil')}<b>${t('apprNext')}</b></i>` : ''}${fresh ? '<i class="puff p1"></i><i class="puff p2"></i><i class="puff p3"></i>' : ''}</div>`;
+  const nx = streetHouse(k + 1);
+  const right = `<div class="sh sr">${r7('street_' + nx.id, 'shimg sil')}<span>${t('streetNext', { house: loc(nx.name) })}</span></div>`;
+  return `${r7c('street_bg', 'hbg')}<div class="street">${left}${mid}${right}</div>`;
 }
 
 // "new floor" ceremony after a floor's last piece: zoom out to the house, the scaffold rises, the crane drops the
@@ -323,7 +355,7 @@ export const ui = {
     <div class="hud-r"><div class="hud-lives" id="hud-lives" ${info.lives != null ? '' : 'hidden'}>${r7('hud_heart')}<b>${info.lives ?? 0}</b></div><button class="pill coin" data-act="shop">${r7('hud_coin')}<b id="coins">${info.coins}</b></button></div>
   </div>
   <div class="tut" id="tut" ${info.tut ? '' : 'hidden'}>${info.tut || ''}</div>
-  ${info.show ? (info.rush ? `<div class="rushclock" id="rushclock" aria-live="off">0.0s</div>` : '') : `<div class="boosters">${bst('hint')}${bst('scoop')}${bst('undo')}</div>`}
+  ${info.show ? (info.rush ? `<div class="rushclock" id="rushclock" aria-live="off">0.0s</div>` : `<div class="goalpill" id="goalpill" hidden>${r7('hud_medal')}<b></b></div>`) : `<div class="boosters">${bst('hint')}${bst('scoop')}${bst('undo')}</div>`}
 </div>`);
     ui.setHud(info);
   },
@@ -336,6 +368,11 @@ export const ui = {
     if (c) c.textContent = i.coins;
     const hl = document.getElementById('hud-lives');
     if (hl) { hl.hidden = i.lives == null; const hb = hl.querySelector('b'); if (hb) hb.textContent = i.lives; }
+    const gp = document.getElementById('goalpill');
+    if (gp) {
+      gp.hidden = !i.goal;
+      if (i.goal) { const gb = gp.querySelector('b'); if (gb.textContent !== i.goal.text) gb.textContent = i.goal.text; gp.dataset.st = i.goal.state; }
+    }
     for (const k of ['hint', 'scoop', 'undo']) {
       const b = document.getElementById('b-' + k);
       if (!b) continue;
@@ -362,6 +399,10 @@ export const ui = {
   // ---- cards ----
   win(info) {
     cur = { screen: 'win', info };
+    // Share: a round icon; at a real high (chain x3+, a clean sweep, a friend challenge) a labelled "Share clip" pill
+    // (the compact card then drops its Home circle: the HUD Home stays), and on the very first chain x3 a "Show a
+    // friend!" bubble on it
+    const shareBtn = info.dare ? `<button class="btn pink sm sharebtn" data-act="share">${SHARE_SVG}<span>${t('shareDareBtn')}</span>${info.nudge ? `<i class="nudge">${t('shareNudge')}</i>` : ''}</button>` : SHARE_ROUND();
     // only the stars that were earned (1 normal, 2 hard, 3 super hard): a clean clear never shows grey slots
     const stars = Array.from({ length: info.stars }, (_, i) => img('ui_star.webp', 'star on').replace('<img ', `<img style="--i:${i}" `)).join('');
     // a moved-in resident peeks over the card and cheers (by how clean the clear was); before that, a cat of the level
@@ -377,9 +418,29 @@ export const ui = {
     const ach = (info.ach || []).map((a) => `<li class="a-${a.k}">${a.text}</li>`).join('');
     // where the coins came from (base, tidy bench, hard level, café perks): a low payout explains itself
     const pay = info.pay ? `<div class="paybd">${info.pay}</div>` : '';
+    const dres = info.friend ? `<div class="dres ${info.friend.res}">${info.friend.line}</div>` : ''; // a friend challenge: how it went
     const hilite = info.chain
-      ? `<div class="hilite"><div class="chainclip"><canvas width="240" height="300" aria-hidden="true"></canvas></div><div class="hcol">${rrow}${pay}${ach ? `<ul class="ach">${ach}</ul>` : ''}</div></div>`
+      ? `<div class="hilite"><div class="chainclip"><canvas width="180" height="320" aria-hidden="true"></canvas>${CLIP_BTN()}</div><div class="hcol">${dres}${rrow}${pay}${ach ? `<ul class="ach">${ach}</ul>` : ''}</div></div>`
       : `${pay}${ach ? `<ul class="ach inline">${ach}</ul>` : ''}`;
+    // an ordinary clear gets a compact result low on the screen: one thumb action (Next / Build); the big card is kept
+    // for hard levels, a chain replay, a resident ready to move in, the daily and the Show / Rush boards
+    const compact = !info.show && !info.again && info.stars < 2 && !(nr && nr.left <= 0); // a chain loops as a thumbnail in it
+    if (compact) {
+      const cbar = cn ? `<div class="cafebar slim"><span class="ticon">${cnTask ? r7c('decor_' + cnTask.id) : cimg(cn.sprite)}</span><div class="cbtxt"><small>${t('cafeNext', { name: cn.name })}</small><div class="bar"><i style="width:${Math.min(100, Math.round((cn.stars / cn.cost) * 100))}%"></i><em>${img('ui_star.webp')}${Math.min(cn.stars, cn.cost)}/${cn.cost}</em></div></div></div>` : '';
+      const head = info.chain ? `<div class="chainclip mini"><canvas width="180" height="320" aria-hidden="true"></canvas>${CLIP_BTN()}</div>` : info.res ? r7c('res7_' + info.res + '_idle', 'cpeek') : r7c('cat_head_' + info.peek + '_happy', 'cpeek');
+      root.insertAdjacentHTML('beforeend', `
+<div class="backdrop winb" id="modal"><div class="card teal win compact ${info.chain ? 'haschain' : ''}">
+  <div class="cwtop">${head}<div class="cwt"><h2 class="title yellow">${t(info.title)}</h2>${info.pay ? `<div class="paybd">${info.pay}</div>` : ''}</div><div class="stars n${info.stars}">${stars}</div></div>
+  ${rrow}
+  ${ach ? `<ul class="ach inline">${ach}</ul>` : ''}
+  ${cbar}
+  ${info.purr ? `<div class="purr">${info.purr}</div>` : ''}
+  <div class="row r7row">${info.canBuild ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${t('next')}</button>`}${info.dare ? '' : `<button class="round" data-act="home" aria-label="${t('home')}"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button>`}${shareBtn}</div>
+</div></div>`);
+      if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);
+      if (cn && info.cafeStars) flyStar(cn, info.cafeStars);
+      return;
+    }
     const cafeBar = cn ? `<div class="cafebar"><span class="ticon">${cnTask ? r7c('decor_' + cnTask.id) : cimg(cn.sprite)}</span><div class="cbtxt"><small>${t('cafeNext', { name: cn.name })}</small><div class="bar"><i style="width:${Math.min(100, Math.round((cn.stars / cn.cost) * 100))}%"></i><em>${img('ui_star.webp')}${Math.min(cn.stars, cn.cost)}/${cn.cost}</em></div>${resChip}</div></div>` : '';
     root.insertAdjacentHTML('beforeend', `
 <div class="backdrop" id="modal"><div class="card teal win ${info.chain ? 'withclip' : (info.ach || []).length || info.pay ? 'tight' : ''}">
@@ -390,8 +451,9 @@ export const ui = {
   ${hilite}
   ${cafeBar}
   ${info.purr ? `<div class="purr">${info.purr}</div>` : ''}
-  ${info.again ? `<button class="btn" data-act="retry">${t('runAgain')}</button>` : info.canBuild ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${info.show ? t('show') : t('next')}</button>`}
-  <div class="row r7row"><button class="btn teal sm" data-act="home">${t('home')}</button><button class="round share" data-act="share" aria-label="${t('share')}"><svg viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke-width="3" stroke-linecap="round"/></svg></button></div>
+  ${info.chain ? '' : dres}
+  ${info.friend ? (info.friend.res === 'miss' ? `<button class="btn" data-act="retry">${t('retry')}</button>` : `<button class="btn pink" data-act="share">${SHARE_SVG}<span>${t('dareBack')}</span></button>`) : info.again ? `<button class="btn" data-act="retry">${t('runAgain')}</button>` : info.canBuild ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${info.show ? t('show') : t('next')}</button>`}
+  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? SHARE_ROUND() : ''}` : `<button class="btn teal sm" data-act="home">${t('home')}</button>${shareBtn}`}</div>
 </div></div>`);
     if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);
     if (cn && info.cafeStars) flyStar(cn, info.cafeStars);
@@ -399,6 +461,22 @@ export const ui = {
 
   // continue offer: first the why (the stuck cat stays visible above the bench with a "No seat left!" tag and the
   // card explains seats vs the missing carrier), then the ways out. Options the player cannot pay lead to the shop.
+  // a friend's challenge link: who dares, the goal, the board, and (a new player) the one rule; Play goes straight in
+  dare(info) {
+    document.getElementById('modal')?.remove();
+    root.insertAdjacentHTML('beforeend', `
+<div class="backdrop" id="modal"><div class="card teal dare">
+  ${r7c('cat_head_' + info.peek + '_happy', 'peek')}
+  <div class="purr showtag">${t('dareTitle')}</div>
+  <h2 class="title yellow">${escHtml(t('dareFrom', { name: info.who }))}</h2>
+  <div class="dgoal">${r7('hud_medal')}<b>${info.goal}</b></div>
+  <div class="dboard">${escHtml(t('dareBoard', { board: info.board, n: info.seats }))}</div>
+  ${info.fresh ? `<p class="dhow">${t('dareHow')}</p>` : ''}
+  <button class="btn" data-act="dareplay">${t('darePlay')}</button>
+  <button class="link" data-act="dareskip">${t('dareSkip')}</button>
+</div></div>`);
+  },
+
   fail(info) {
     cur = { screen: 'fail', info, hud: cur.hud };
     const scoopOk = info.scoop > 0 || info.coins >= info.scoopCost;
@@ -471,7 +549,9 @@ export const ui = {
     const done = (i) => AREAS[i].tasks.every((x) => isBuilt(x.id));
     const curFloor = AREAS.findIndex((_, i) => !done(i)); // -1: the whole house is built
     const open = (i) => i < AREAS.length && (done(i) || i === curFloor);
-    const house = cafeView === 'house' || !area;
+    const St = info.street || { open: false, done: 0, at: 0 };
+    const view = !area ? (St.open ? 'street' : 'house') : cafeView === 'street' ? 'street' : cafeView === 'house' ? 'house' : 'room';
+    const house = view !== 'room';
     const left = pending(ai);
     const justTask = tasks.find((x) => x.id === info.justBuilt);
     // a floor's last piece just went in: the "new floor" ceremony plays once the room settles
@@ -489,28 +569,58 @@ export const ui = {
         if (!isBuilt(x.id)) {
           if (x.id !== nextId) return '';
           // the next build: a glowing ghost of the piece on its real spot, with its star cost
-          return `<button class="d7 tbd ${canAfford(x) ? 'ok' : ''}" data-act="build" data-id="${x.id}" style="${st};z-index:60" aria-label="${loc(x.name)}">${r7c('decor_' + x.id)}<i class="tbd-tag">${r7('hud_star')}<b>${x.cost || 1}</b></i></button>`;
+          // (a piece hung high, like the pendant lamps, keeps its tag just under it, clear of the top HUD and Claim)
+          return `<button class="d7 tbd ${p[1] < 0.4 ? 'hi' : ''} ${canAfford(x) ? 'ok' : ''} ${L && L.spot && L.spot.k === 'build' ? 'spot' : ''}" data-act="build" data-id="${x.id}" style="${st};z-index:60" aria-label="${loc(x.name)}">${r7c('decor_' + x.id)}<i class="tbd-tag">${r7('hud_star')}<b>${x.cost || 1}</b></i></button>`;
         }
         const fresh = info.justBuilt === x.id;
         return `<div class="d7 ${fresh ? 'fresh' : ''}" style="${st}">${r7c('decor_' + x.id)}${fresh ? '<i class="puff p1"></i><i class="puff p2"></i><i class="puff p3"></i><i class="spk s1"></i><i class="spk s2"></i><i class="spk s3"></i>' : ''}</div>`;
       }).join('');
       const freshRes = tasks.find((x) => x.id === info.justBuilt && x.resident);
       const spots = RS7[area.id] || [];
-      const guests = guestsFor(ai, info.day || 0).map((g, i) => {
+      const sp = (L && L.spot) || {};
+      const readyReq = L ? L.reqs.find((x) => x.ready) : null;
+      const bubbles = [];
+      const guests = guestsFor(ai, info.day || 0, readyReq ? readyReq.who : '').map((g, i) => {
         const lines = g.idle && g.idle.length ? g.idle : [g.line];
         const line = lines[((info.day || 0) + ai * 2 + i) % lines.length];
         const k = Math.max(0, (area.spots || []).indexOf(g.spot));
         const s = spots[k] || [g.spot.x, g.spot.y + g.spot.w * 0.5, g.spot.w];
         const fresh = freshRes && freshRes.resident.id === g.id;
+        // a finished request: a speech bubble over its resident, claimed with one tap ("Help Mochi earn a beanie!")
+        const rq = L && L.reqs.find((x) => x.who === g.id && x.ready);
+        const bst = `left:${Math.min(66, Math.max(34, s[0] * 100))}%;top:${(s[1] - s[2] * 1.02) * 100}%`;
+        const rw = (r) => `<i class="rqrw">${r7('hud_coin')}+${r.coins} ${r7('hud_heart')}+${r.hearts}</i>`; // the reward, in sight before the tap
+        const ask = !rq && L && L.reqs.find((x) => x.who === g.id && x.fresh && !x.ready);
+        if (rq) bubbles.push(`<button class="rqbub ${sp.k === 'req' && sp.i === rq.i ? 'spot' : ''}" data-act="reqtap" data-i="${rq.i}" style="${bst}">${r7('res7_' + g.id + '_' + (rq.outfit || 'idle'), 'rqo')}<span class="rqt"><b>${rq.outfit ? t('helpEarn', { name: g.name, o: t('o_' + rq.outfit) }) : t('reqTreat', { name: g.name })}</b>${rw(rq)}</span><em>${t('claim')}</em></button>`);
+        // a newcomer's first ask, over the cat itself: what, how far, and what it pays (a tap opens the request list)
+        else if (ask) bubbles.push(`<button class="rqbub ask" data-act="reqtap" data-i="${ask.i}" style="${bst}"><span class="rqt"><b>${escHtml(t('reqFirst', { name: g.name, what: ask.task }))}</b><i class="rqp"><i style="width:${Math.round((ask.p / ask.need) * 100)}%"></i></i><small>${ask.p}/${ask.need}</small>${rw(ask)}</span></button>`);
+        // just thanked: the resident names the next reason to come back
+        else if (L && L.after && L.after.who === g.id) bubbles.push(`<div class="rqbub next" style="${bst}"><span class="rqt"><b>${escHtml(L.after.text)}</b></span></div>`);
         return `<button class="guest g7 ${fresh ? 'fresh' : ''}" data-act="pet" data-id="${g.id}" aria-label="${g.name}" style="left:${s[0] * 100}%;top:${s[1] * 100}%;width:${s[2] * 100}%;z-index:${Math.round(s[1] * 100) + 1};--d:${(-i * 3.7).toFixed(1)}s">${L && L.wear[g.id] ? r7c(`res7_${g.id}_${L.wear[g.id]}`, 'gimg') : `${r7c(`res7_${g.id}_idle`, 'gimg')}${r7c(`res7_${g.id}_job`, 'gimg job')}`}${L && L.pet[g.id] ? '<i class="pheart">&#9829;</i>' : ''}<i class="gbub ${s[0] > 0.62 ? 'l' : s[0] < 0.3 ? 'r' : ''}">${loc(line)}</i></button>`;
       }).join('');
       const ros = (info.rosettes || []).length ? `<div class="rosettes">${info.rosettes.map((r) => ribbonSvg.replace('class="rib"', `class="rib" style="--rc:${r.color}" aria-label="${r.name}"`)).join('')}</div>` : '';
-      // today's visiting cat (seasons) sits by the door; one tap a day gives its gift
+      // visiting cats live here: each has a furnished nook (its season's bed) in a room and idles on it; today's visitor
+      // carries the daily gift (one tap). A visitor whose nook is in another room drops by at the door.
       const v = L && L.visitor;
-      const vis = v ? `<button class="guest g7 visitor" data-act="visitor" data-id="${v.id}" aria-label="${v.name}" style="left:28%;top:99%;width:17%;z-index:99">${r7c('vis7_' + v.id, 'gimg')}${v.gift ? '<i class="pheart gift">+</i>' : ''}<i class="gbub r">${loc(v.line)}</i></button>` : '';
-      scene = `<div class="stage">${r7c(`room_${area.id}_bare`, 'rbg')}${decor}${guests}${vis}${ros}${L && L.cups ? L.cups : ''}</div>`;
+      const here = L ? L.nooks.filter((x) => x.area === ai) : [];
+      const NK = NOOK7[area.id] || NOOK7.counter;
+      const nooks = here.slice(0, NK.length).map((x, j) => {
+        const p = NK[j];
+        const gift = v && v.id === x.id && v.gift;
+        return `<div class="nook7" style="left:${p[0] * 100}%;top:${p[1] * 100}%;width:${p[2] * 100}%;z-index:${Math.round(p[1] * 100)}">${r7c('nook_' + x.set, 'nkbed')}</div><button class="guest g7 visitor idle7 ${j ? 'b' : ''}" data-act="visitor" data-id="${x.id}" aria-label="${x.name}" style="left:${p[0] * 100}%;top:${(p[1] - p[2] * 0.18) * 100}%;width:${p[2] * 0.8 * 100}%;z-index:${Math.round(p[1] * 100) + 1}">${r7c('vis7_' + x.id, 'gimg')}${gift ? '<i class="pheart gift">+</i>' : ''}<i class="gbub ${p[0] > 0.6 ? 'l' : 'r'}">${loc(x.line)}</i></button>`;
+      }).join('');
+      const vis = v && !here.some((x) => x.id === v.id) ? `<button class="guest g7 visitor" data-act="visitor" data-id="${v.id}" aria-label="${v.name}" style="left:28%;top:99%;width:17%;z-index:99">${r7c('vis7_' + v.id, 'gimg')}${v.gift ? '<i class="pheart gift">+</i>' : ''}<i class="gbub r">${loc(v.line)}</i></button>` : '';
+      // the tip jar is a real jar on the café counter: tap to collect
+      const J = L && L.jar;
+      const jar = J && J.on && area.id === 'counter' && isBuilt('counter_counter') ? `<button class="jar7 ${J.pct >= 1 ? 'full' : ''} ${sp.k === 'jar' ? 'spot' : ''}" data-act="jartap" aria-label="${t('tipJar')}" style="left:47%;top:50.5%;width:10%;z-index:70">${r7c('tipjar_' + J.stage)}<i class="jtag">${J.pct >= 1 ? t('tipsReady') : J.coins > 0 ? '+' + J.coins : fmtShort(J.fullMs)}</i></button>` : '';
+      // a renovation set (garland + rug) restyles a finished room
+      const st7 = info.reno && info.reno.style;
+      const reno = st7 ? `<img class="reno-r cfb ${info.justBuilt === 'reno' ? 'fresh' : ''}" src="${assetUrl('r7/reno_' + st7 + '_rug.webp')}" alt="" draggable="false"><img class="reno-g cfb ${info.justBuilt === 'reno' ? 'fresh' : ''}" src="${assetUrl('r7/reno_' + st7 + '_garland.webp')}" alt="" draggable="false">` : '';
+      scene = `<div class="stage">${r7c(`room_${area.id}_bare`, 'rbg')}${reno}${decor}${guests}${nooks}${vis}${jar}${bubbles.join('')}${ros}${L && L.cups ? L.cups : ''}</div>`;
+    } else if (view === 'street') {
+      scene = streetHtml(St, info.justBuilt === 'street');
     } else {
-      scene = houseHtml(curFloor, ai);
+      scene = houseHtml(curFloor, ai, St);
     }
 
     // floor rail (left): the house view toggle on top, then the floors from the roof down
@@ -519,14 +629,35 @@ export const ui = {
       const on = !house && i === ai ? 'on' : '';
       return `<button class="fl ${st} ${on}" data-act="cafearea" data-d="${i - ai}" data-view="room" ${open(i) ? '' : 'disabled'} aria-label="${loc(a.name)}">${st === 'locked' ? r7('icon_lock') : `<b>${i === 0 ? 'G' : i}</b>`}${st === 'done' ? `<i class="ck">${checkSvg0}</i>` : ''}</button>`;
     }).reverse().join('');
-    const railHtml = `<div class="frail"><button class="fl hs ${house ? 'on' : ''}" data-act="cafeview" data-view="${house ? 'room' : 'house'}" aria-label="${t(house ? 'roomView' : 'houseView')}">${r7('icon_home')}</button>${rail}</div>`;
-    const rrail = `<div class="rrail"><button class="rr" data-act="quests" aria-label="${t('tasks')}">${r7('icon_calendar')}${dot(info.dots && info.dots.quests)}<span>${t('tasks')}</span></button>${L ? liveRail(L) : `<button class="rr" data-act="daily" aria-label="${t('daily')}">${r7('hud_medal')}<span>${t('daily')}</span></button>`}</div>`;
+    const railHtml = `<div class="frail"><button class="fl hs ${house ? 'on' : ''}" data-act="${area ? 'cafeview' : 'cafearea'}" data-d="${area ? 0 : -1}" data-view="${house ? 'room' : 'house'}" aria-label="${t(house ? 'roomView' : 'houseView')}">${r7('icon_home')}</button>${rail}</div>`;
+    const spk = L && L.spot && L.spot.k === 'claim' ? L.spot.what : '';
+    const sptag = (k) => (spk === k ? `<em class="sptag">${t('spotClaim')}</em>` : '');
+    const jarOnCounter = !house && area && area.id === 'counter' && isBuilt('counter_counter');
+    const rrail = `<div class="rrail"><button class="rr ${spk === 'quests' ? 'spot' : ''}" data-act="quests" aria-label="${t('tasks')}">${r7('icon_calendar')}${dot(info.dots && info.dots.quests)}<span>${t('tasks')}</span>${sptag('quests')}</button>${L ? liveRail({ ...L, jar: jarOnCounter || !(L.jar.coins > 0 || L.spot && L.spot.k === 'jar') ? null : L.jar, jarSpot: L.spot && L.spot.k === 'jar', spot: spk, sptag }) : `<button class="rr" data-act="daily" aria-label="${t('daily')}">${r7('hud_medal')}<span>${t('daily')}</span></button>`}</div>`;
 
     // one next-build card: the piece, the floor's progress in segments, the star cost
     const segs = area ? `<i class="segs">${tasks.map((x) => `<i class="${isBuilt(x.id) ? 'on' : ''}"></i>`).join('')}</i>` : '';
     const pt = info.party;
     let card;
-    if (pt && !left.length) {
+    const R = info.reno;
+    if (view === 'street' && St.open) {
+      const h = St.next.house;
+      card = `<button class="trow ${St.ok ? 'ok' : 'dim'} ${L && L.spot && L.spot.k === 'build' ? 'spot' : ''}" data-act="streetbuild">
+  <span class="ticon">${r7c('street_' + h.id)}</span>
+  <span class="tname"><b>${loc(St.next.name)}</b><small>${t('streetPiece', { house: loc(h.name), n: St.at + 1, m: HOUSE_TASKS })}</small><i class="segs">${Array.from({ length: HOUSE_TASKS }, (_, i) => `<i class="${i < St.at ? 'on' : ''}"></i>`).join('')}</i></span>
+  <span class="cost">${r7('hud_star')}<b>${St.next.cost}</b></span>
+</button>`;
+    } else if (view === 'street') {
+      card = `<div class="trow empty"><span class="tname"><b>${t('streetTitle')}</b><small>${t('streetLocked')}</small></span></div>`;
+    } else if (R && !house && area && ai < AREAS.length - 1) {
+      card = R.set
+        ? `<button class="trow ${R.set.ok ? 'ok' : 'dim'}" data-act="reno">
+  <span class="ticon">${r7c('reno_' + R.set.id + '_rug')}</span>
+  <span class="tname"><b>${t('renoTitle', { set: R.set.name })}</b><small>${R.set.featured ? t('renoFeatured') : t('renoSub', { room: loc(area.name) })}</small></span>
+  <span class="cost">${r7('hud_star')}<b>${R.set.cost}</b></span>
+</button>`
+        : `<button class="trow ok" data-act="reno"><span class="ticon">${r7c('reno_' + (R.style || R.owned[0]) + '_rug')}</span><span class="tname"><b>${t('renoSwitch')}</b><small>${t('renoSwitchSub', { n: R.owned.length })}</small></span></button>`;
+    } else if (pt && !left.length) {
       card = `<button class="trow ${pt.ok ? 'ok' : 'dim'}" data-act="party">
   <span class="ticon">${r7c('decor_roof_grill')}</span>
   <span class="tname"><b>${t('partyTask', { n: pt.n + 1 })}</b><small>${img('ui_coin.webp', 'mini-res')}${t('partySub', { c: pt.coins })}</small></span>
@@ -534,8 +665,11 @@ export const ui = {
 </button>`;
     } else if (area && left.length) {
       const x = left[0];
-      const sub = x.resident ? `<small>${r7c('res7_' + x.resident.id + '_idle', 'mini-res')}${t('movesIn', { name: x.resident.name })}</small>` : `<small>${floorName(ai)} · ${loc(area.name)}</small>`;
-      card = `<button class="trow ${canAfford(x) ? 'ok' : 'dim'}" data-act="build" data-id="${x.id}">
+      // the hub's thread: this piece brings a resident, or the card names the next one and the stars still to go
+      const nx = L && L.nextRes;
+      const sub = x.resident ? `<small class="thread">${r7c('res7_' + x.resident.id + '_idle', 'mini-res')}${t('movesIn', { name: x.resident.name })}</small>`
+        : nx ? `<small class="thread">${r7c('res7_' + nx.id + '_idle', 'mini-res')}${t('resThread', { name: nx.name, n: nx.left })}</small>` : `<small>${floorName(ai)} · ${loc(area.name)}</small>`;
+      card = `<button class="trow ${canAfford(x) ? 'ok' : 'dim'} ${L && L.spot && L.spot.k === 'build' ? 'spot' : ''}" data-act="build" data-id="${x.id}">
   <span class="ticon">${r7c('decor_' + x.id)}</span>
   <span class="tname"><b>${loc(x.name)}</b>${sub}${segs}</span>
   <span class="cost">${r7('hud_star')}<b>${x.cost || 1}</b></span>
@@ -545,19 +679,19 @@ export const ui = {
     }
     const tab = (act, icon, label, extra = '', on = false, view = '') => `<button class="tab ${on ? 'on' : ''}" data-act="${act}" ${view ? `data-view="${view}"` : ''} aria-label="${label}">${r7(icon)}<span>${label}</span>${extra}</button>`;
     mount(`
-<div id="cafe" class="screen on r7hub ${house ? 'vhouse' : 'vroom'}">
+<div id="cafe" class="screen on r7hub ${house ? 'vhouse' : 'vroom'} ${view === 'street' ? 'vstreet' : ''}">
   <div class="room ${house ? 'house' : ''} ${L && L.goals.length ? 'goaled' : ''}" style="--fh:${area && area.hue ? area.hue : 0}deg">${scene}
     <div class="cafe-top">
       <button class="round" data-act="settings" aria-label="${t('settings')}">${gearSvg}</button>
       <div class="tr">${livesPill(info.lives)}<button class="pill sm" data-act="shop">${r7('hud_coin')}<b id="coins">${info.coins}</b></button><div class="pill sm cstar">${r7('hud_star')}<b id="cstars">${info.stars}</b></div></div>
     </div>
     ${railHtml}${rrail}
-    <div class="fname ${L && L.goals.length ? 'up' : ''}">${house ? t('houseTitle') : `${floorName(ai)} · ${loc(area.name)}`}</div>
+    <div class="fname ${L && L.goals.length ? 'up' : ''}">${view === 'street' ? `${t('streetTitle')} · ${t('streetShops', { n: St.done })}` : house ? t('houseTitle') : `${floorName(ai)} · ${loc(area.name)}`}</div>
     ${L ? goalsHtml(L.goals) : ''}
   </div>
   <div class="nbcard">${card}</div>
   <button class="btn play cafe-play" data-act="play"><b>${t('play')}</b><small>${t('level', { n: info.level })}</small></button>
-  <nav class="tabbar">${tab('cafeview', 'icon_home', t('home'), '', true, 'room')}${tab('residents', 'icon_paw', t('residents'))}${tab('shop', 'icon_shop', t('shop'), info.offer ? `<i class="otag">${t('offerBadge')}</i>` : '')}${tab('show', 'icon_trophy', t('events'), dot(info.dots && info.dots.show))}</nav>
+  <nav class="tabbar">${tab('cafeview', 'icon_home', t('home'), '', true, 'room')}${tab('residents', 'icon_paw', t('residents'))}${tab('shop', 'icon_shop', t('shop'), info.offer ? `<i class="otag">${t('offerBadge')}</i>` : '')}${tab('show', 'icon_trophy', t('events'), dot(info.dots && info.dots.show) + (spk === 'rush' ? `<em class="sptag">${t('spotClaim')}</em>` : ''))}</nav>
 </div>`);
     if (floorQ) waitFloor();
   },
@@ -588,6 +722,7 @@ export const ui = {
       <div class="rtxt"><h2>${t('movedIn', { name: r.name })}</h2><p>${loc(r.line)}</p></div>
     </div>
     <div class="perk"><em>${t('perkLabel')}</em><b>${perkText(r)}</b></div>
+    ${info.ask ? `<p class="firstreq">${info.ask}</p>` : ''}
     <button class="btn" data-act="arriveplay"><b>${t('play')}</b><small>${t('level', { n: info.level })}</small></button>
     <button class="link" data-act="arriveclose">${t('toCafe')}</button>
   </div>
@@ -756,6 +891,41 @@ ${info.ad === false ? '' : `<button class="btn green sm" data-act="adlife">${adS
     if (tut && !tut.hidden) tut.style.visibility = 'hidden';
     document.body.appendChild(el);
     setTimeout(() => { el.remove(); if (tut && !document.querySelector('.toast.inplay')) tut.style.visibility = ''; }, 1400);
+  },
+
+  // the challenge link when the platform could not copy it on its own: one tap copies it (a fresh user gesture), and
+  // "Link copied" shows only after the write succeeded; else the link stays selected in the field to copy by hand
+  copyLink(text, url) {
+    document.getElementById('linkbar')?.remove();
+    const el = document.createElement('div');
+    el.id = 'linkbar';
+    el.className = 'linkbar';
+    el.innerHTML = `<input readonly aria-label="${t('copyLinkBtn')}"><button class="btn pink sm" type="button" data-copy>${t('copyLinkBtn')}</button><button class="lbx" type="button" aria-label="${t('close')}">&times;</button>`;
+    const inp = el.querySelector('input');
+    inp.value = url;
+    el.querySelector('.lbx').addEventListener('click', () => el.remove());
+    el.querySelector('[data-copy]').addEventListener('click', async () => {
+      let ok = false;
+      try { if (navigator.clipboard) { await navigator.clipboard.writeText(text + ' ' + url); ok = true; } } catch { /* no permission */ }
+      if (!ok) { inp.focus(); inp.select(); try { ok = document.execCommand('copy'); } catch { ok = false; } }
+      if (ok) { el.remove(); this.toast(t('linkCopied')); } else this.toast(t('copyHold'));
+    });
+    root.appendChild(el);
+    return el;
+  },
+
+  // after a clip went out: chat apps often keep the video and drop the text beside it, so the playable link follows as
+  // its own message, with a preview of what the friend will get (the goal, the board, the seats)
+  dareLink(info, onSend) {
+    document.getElementById('linkbar')?.remove();
+    const el = document.createElement('div');
+    el.id = 'linkbar';
+    el.className = 'linkbar dlink';
+    el.innerHTML = `${r7c('cat_head_' + info.peek + '_happy', 'dlpeek')}<span class="dltx"><b>${t('dareLinkTitle')}</b><small>${escHtml(info.goal)} · ${escHtml(t('dareBoard', { board: info.board, n: info.seats }))}</small></span><button class="btn pink sm" type="button" data-send>${t('dareLinkBtn')}</button><button class="lbx" type="button" aria-label="${t('close')}">&times;</button>`;
+    el.querySelector('.lbx').addEventListener('click', () => el.remove());
+    el.querySelector('[data-send]').addEventListener('click', () => { el.remove(); onSend(); });
+    root.appendChild(el);
+    return el;
   },
 
   setTut(text) {

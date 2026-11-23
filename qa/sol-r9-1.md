@@ -1,0 +1,23 @@
+**Long Cat Out! is an 8/10 overall, up from 7/10 in Round 8.** The stretch, leap, and fold into the carrier finally give the game a move you can recognize. The limited bench makes that move a decision, and Cat Street gives players somewhere to take their progress after the rooftop. The biggest remaining gap is how clearly those payoffs read on a small phone and in a shared clip.
+
+| Dimension | Round 8 → 9 | Round 9 assessment |
+|---|---:|---|
+| Presentation | 8 → **8** | The café, puzzle room, and street feel like one world. At 375×667, the hub still has competing badges, and the Level 90 Season rail overlaps the Flower Shop label. |
+| Appeal | 8 → **8** | The expressive faces and sleeping bench cats sell the fantasy. In crowded boards, the bright patterns and stitched bodies can still read as tubes with cat heads. |
+| Juice | 6 → **8** | The crouch, stretch, paws-first landing, fold, and tail snap make a satisfying sequence. Bench chains have a distinct rhythm, though banners and sparkles still compete with the cats. |
+| Fun | 7 → **8** | Choosing which cat can afford to wait is a good puzzle. The press preview and last-seat warning make the risk more legible. Quick tappers can still miss the preview before committing. |
+| Retention | 7 → **8** | Cat Street, renovations, visitor arrivals, and the Daily shield give players reasons to return at different points. The street adds runway, though its shops share most construction steps and eventually repeat. |
+| Virality | 5 → **7** | The vertical replay now has stakes, and the exact-board dare gives recipients something to play. The Level 13 export shows two chain banners at once, and tapping **Share clip** before encoding finishes can send a still. |
+| **Overall** | **7 → 8** | On par with a solid top-100 hybrid-casual puzzle game on the design evidence. |
+
+I reviewed the captures, replay frames, Round 8 review, Round 9 notes, and relevant code. `npm run check` passed. I did not play on a physical phone, verify native sharing, or measure player behavior. [Round 8 review](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/sol-r8.md>) · [Round 9 notes](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/r9-notes.md>)
+
+### Highest-priority fixes
+
+- **Presentation.** Reserve space for street labels clear of the right rail and give the hub one highlighted action at a time. On the compact loss sheet, tuck the Starter Bundle under **More help** and use the space to keep the overflowing cat, bench, and carrier queue visible.
+- **Appeal.** Give the orange, blue, and pink cats distinct tail silhouettes and idle poses. Soften the body pattern fills while keeping their symbols readable. Check the result on a full board at phone size, where the cats are hardest to distinguish.
+- **Juice.** Let the paws-first landing and tail snap read before the chain celebration. Put a single chain counter beside the belt, keep the carrier mouth clear, and build the crescendo around each cushion emptying.
+- **Fun.** When one seat remains, mark visible cats that would take it with their carrier’s queue distance before touch. Keep the full path preview on hold. Reuse the same cat and carrier symbols on failure so **Take back** leads to an informed second try.
+- **Retention.** Give each Cat Street shop a signature milestone with a visible scene change halfway through construction. Let players see the next keeper and what opening the shop adds. Measure first-shop starts, completions, and return visits with cohort telemetry. The current analytics store counters locally. [Street configuration](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/data/street.js>) · [Analytics implementation](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/kit/analytics.js>)
+- **Virality.** Open the clip on **one seat left**, punch in on the deciding tap, and show the bench emptying with one chain caption. Make **Share challenge** available immediately and show **Share clip** when the video is ready. Verify that the link survives real sends on iOS and Android. [Level 13 clip peak](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/101c-clip-peak.jpg>)
+- **Overall.** Put the next playtest on Levels 1–10 and the friend-dare flow. Watch whether new players predict the last-seat outcome unaided, then send the clip to fresh recipients and see whether they can explain the move and start the exact board. Those are the two places I’d look for evidence that the signature move can carry the game to a 9.

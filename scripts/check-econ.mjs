@@ -5,6 +5,7 @@ globalThis.localStorage = { getItem: () => stored.v, setItem: (k, v) => { stored
 const { save } = await import('../src/kit/save.js');
 const E = await import('../src/game/econ.js');
 const L = await import('../src/game/live.js');
+const ST = await import('../src/game/street.js');
 const { applyPurchase, PRODUCTS } = await import('../src/kit/iap.js');
 
 let failures = 0;
@@ -254,7 +255,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   eq(bots.length, 19, '19 practice bots');
   eq(JSON.stringify(bots), JSON.stringify(L.rushBots(w, 30)), 'bot times are fixed for the week');
   ok(bots.every((b, i) => i === 0 || b.ms >= bots[i - 1].ms), 'sorted by time');
-  ok(bots[0].ms >= 30 * 1000 && bots[18].ms <= 30 * 3800 + 2500, 'bot times stay in an honest human range');
+  ok(bots[0].ms >= 30 * L.RUSH_PER[0] * 1000 && bots[18].ms <= 30 * L.RUSH_PER[1] * 1000 + 4100, 'bot times stay in an honest human range');
   eq([L.rushRank(bots, 1), L.rushRank(bots, 1e9), L.rushRank(bots, 0)], [1, 20, 0], 'ranks: fastest 1st, slowest 20th, no time no rank');
   const r = fresh();
   L.rushRoll(r, w, 30);
@@ -276,7 +277,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   ok(f.jar.t === T0 && f.req.next <= T0 + L.REQ_EVERY_H * H && f.rush.week === E.weekOf(E.dayOf(T0)) && f.cafe.petDay.mochi === E.dayOf(T0), 'each one pulled back');
 }
 
-// ---------------- 60-day simulated player: always something to do, the house keeps growing past L60 ----------------
+// ---------------- 120-day simulated player: always something to do, the house then Cat Street keep growing ----------------
 // A steady player: 10 levels on day 1, 6 a day in the first week, then 4 a day; two visits a day (9:00 and 20:00),
 // the daily puzzle 6 days out of 7, both Show boards each week (gold on board A, gold on B every other week), a
 // mid Café Rush time (2.4 s per cat), pets 2 residents a day, collects the jar and claims what is ready.
@@ -294,9 +295,10 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   const start = at(2026, 0, 5, 9); // a Monday
   d.meta.firstOpen = start;
   const days = [];
-  const collection = () => L.visitorsOwned(d).length + L.outfitsOwned(d, resAt(d.level)) + E.earnedDecor(d).length + Object.values(d.rush.cups).reduce((a, b) => a + b, 0);
+  let stars = 0;
+  const collection = () => ST.housesDone(d) + ST.renoCount(d) + L.visitorsOwned(d).length + L.outfitsOwned(d, resAt(d.level)) + E.earnedDecor(d).length + Object.values(d.rush.cups).reduce((a, b) => a + b, 0);
   let doneDay = -1;
-  for (let dd = 0; dd < 60; dd++) {
+  for (let dd = 0; dd < 120; dd++) {
     const earn = new Set();
     const ticking = new Set();
     const levels = dd === 0 ? 10 : dd < 7 ? 6 : 4;
@@ -316,6 +318,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
       // play this visit's half of the day's levels
       for (let k = 0; k < levels / 2; k++) {
         d.level++;
+        { const k = levelKind(d.level - 1); stars += k === 'super' ? 3 : k === 'hard' ? 2 : 1; }
         L.reqEvent(d, 'win');
         L.reqEvent(d, 'carrier', 4);
         for (let c = 0; c < 15; c++) L.reqEvent(d, 'cat', 1, (d.level * 7 + c * 3) % 8);
@@ -339,22 +342,65 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
         if (L.rushClaim(d)) earn.add('rush');
       }
       for (let i = d.req.list.length - 1; i >= 0; i--) if (L.reqClaim(d, i, now)) earn.add('request');
+      // past the finished house the stars go to Cat Street, with a renovation set every few street pieces
+      if (d.level > houseDone) {
+        d.cafe.stars += stars; stars = 0;
+        for (let guard = 0; guard < 50; guard++) {
+          const area = C.areas[(d.cafe.street + guard) % (C.areas.length - 1)].id;
+          const ti = ST.renoNext(d, area, '');
+          if (d.cafe.street % 3 === 2 && ST.renoCount(d) * 3 < d.cafe.street && ti >= 0 && ST.renoBuy(d, area, ti)) { earn.add('build'); continue; }
+          if (!ST.streetBuild(d)) break;
+          earn.add('build');
+        }
+      } else stars = 0; // (the house itself is paced by the cafe sim below)
       for (const x of d.quests.list) if (E.questClaim(d, x.id, day)) earn.add('task');
       for (const s of L.seasonsReady(d)) while (L.seasonClaim(d, s, day)) earn.add('season');
       const j = L.jarState(d, now, res.length, 0);
       if (j.on && j.fullMs > 0) ticking.add('jar');
       if (d.req.next > now) ticking.add('request');
     }
-    days.push({ dd, level: d.level, earn: [...earn], ticking: [...ticking], items: collection() });
+    days.push({ dd, level: d.level, earn: [...earn], ticking: [...ticking], items: collection(), street: d.cafe.street });
   }
   days.forEach((x) => ok(x.earn.length >= 3, `day ${x.dd + 1}: at least 3 things to collect or do (got ${x.earn.join(', ') || 'none'})`));
   days.slice(1).forEach((x) => ok(x.ticking.length >= 1, `day ${x.dd + 1}: a timer ticks toward the next reward`));
   const after = days.filter((x) => x.level > houseDone);
   ok(after.length >= 21, `the sim reaches past the finished house (L${houseDone}) with weeks to spare`);
   for (let i = 7; i < after.length; i++) ok(after[i].items > after[i - 7].items, `past L${houseDone}, the collection grows every week (day ${after[i].dd + 1}: ${after[i - 7].items} -> ${after[i].items})`);
+  for (let i = 7; i < after.length; i++) ok(after[i].street > after[i - 7].street, `Cat Street gains pieces every week (day ${after[i].dd + 1})`);
   const last = days[days.length - 1];
+  ok(ST.housesDone(d) >= 6, `by day 120 the street has a few shops (got ${ST.housesDone(d)})`);
+  ok(ST.housesDone(d) <= 40, `the street does not race ahead of the art (got ${ST.housesDone(d)} houses)`);
+  console.log(`  120-day street: ${ST.housesDone(d)} shops, ${d.cafe.street % ST.HOUSE_TASKS}/8 of ${ST.curHouse(d).name.en}, ${ST.renoCount(d)} renovation sets`);
   ok(L.visitorsOwned(d).length >= 2, `visiting cats by day 60: ${L.visitorsOwned(d).length}`);
-  console.log(`  60-day sim: L${last.level} on day 60 (house done after L${houseDone}); collection ${days[13].items} on day 14 -> ${last.items} on day 60 (visitors ${L.visitorsOwned(d).length}, outfits ${L.outfitsOwned(d, resAt(d.level))}, rosettes ${E.earnedDecor(d).length}, cups ${Object.values(d.rush.cups).reduce((a, b) => a + b, 0)}); requests done ${d.req.done}; jar coins ${d.jar.total}`);
+  console.log(`  120-day sim: L${last.level} on day 120 (house done after L${houseDone}); collection ${days[13].items} on day 14 -> ${last.items} on day 120 (visitors ${L.visitorsOwned(d).length}, outfits ${L.outfitsOwned(d, resAt(d.level))}, rosettes ${E.earnedDecor(d).length}, cups ${Object.values(d.rush.cups).reduce((a, b) => a + b, 0)}); requests done ${d.req.done}; jar coins ${d.jar.total}`);
+}
+
+// ---------------- Cat Street, renovation, spotlight, Rush bots (round 10) ----------------
+{
+  const d = fresh();
+  eq([ST.house(0).id, ST.house(1).id, ST.house(6).name.en, ST.house(7).name.tr], ['bakery', 'library', 'Bakery 2', 'Kütüphane 2'], 'the street laps forever');
+  ok(ST.house(0).tasks.length === ST.HOUSE_TASKS && ST.house(0).tasks.every((x) => x.cost >= 2 && x.cost <= 5 && x.name.en && x.name.tr), 'every street piece has a cost and EN+TR names');
+  ok(ST.house(9).tasks[0].cost > ST.house(0).tasks[0].cost, 'later houses cost a bit more');
+  d.cafe.stars = 1;
+  ok(ST.streetBuild(d) === null && d.cafe.street === 0, 'no stars, no build');
+  d.cafe.stars = 100; const c0 = d.coins;
+  let r;
+  for (let i = 0; i < ST.HOUSE_TASKS; i++) r = ST.streetBuild(d);
+  ok(r.houseDone && ST.housesDone(d) === 1 && d.coins === c0 + ST.HOUSE_REWARD.coins, 'the 8th piece finishes the house and pays');
+  eq(ST.keepers(d), ['bakery'], 'its shopkeeper moves in');
+  const s0 = d.cafe.stars;
+  ok(ST.renoBuy(d, 'counter', 1) && d.cafe.style.counter === 'cocoa' && d.cafe.stars === s0 - 5, 'a renovation set is bought and applied');
+  ok(!ST.renoBuy(d, 'counter', 1), 'a set is bought once per room');
+  eq(ST.renoNext(d, 'counter', 'blossom'), 2, 'the featured (season) set is offered first');
+  eq([ST.renoCycle(d, 'counter'), ST.renoCycle(d, 'counter')], ['', 'cocoa'], 'owned sets cycle with "none"');
+  eq(L.spotlight({ claim: 'quests', req: 0, jarFull: true, build: true }).k, 'claim', 'spotlight: a claimable reward first');
+  eq(L.spotlight({ claim: '', req: 1, jarFull: true, build: true }), { k: 'req', i: 1 }, 'then a finished request');
+  eq(L.spotlight({ claim: '', req: -1, jarFull: true, build: true }).k, 'jar', 'then a full jar');
+  eq(L.spotlight({ claim: '', req: -1, jarFull: false, build: true }).k, 'build', 'then the next build');
+  eq(L.spotlight({ claim: '', req: -1, jarFull: false, build: false }), null, 'else nothing competes with Play');
+  const bots = L.rushBots(2900, 20);
+  ok(bots[0].ms >= 20 * 1600 && bots.every((b) => b.ms % 100 === 0), `Rush bots: no superhuman time (fastest ${bots[0].ms} ms for 20 cats)`);
+  ok(L.rushBots(2900, 0)[0].ms >= 30 * 1600, 'an unknown board size never shows a 2-second bot');
 }
 
 // ---------------- wrong device date: stamps in the future are pulled back to today ----------------

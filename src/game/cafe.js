@@ -129,14 +129,17 @@ export function clutterLevel(ai) {
 
 // who lounges on the floor of area ai: its own moved-in residents first, then other residents visit the free spots
 // (rotating by day). A spot under the next unbuilt piece stays empty so a cat never sits on a building site.
-export function guestsFor(ai, day = 0) {
+// `prefer`: a resident id that should be in the room if it can (the one with a finished request: its bubble shows)
+export function guestsFor(ai, day = 0, prefer = '') {
   const area = AREAS[ai];
   if (!area || !Array.isArray(area.spots)) return [];
   const owned = RESIDENTS.filter((r) => isBuilt(r.task.id));
   const home = owned.filter((r) => r.task.area === ai);
   const away = owned.filter((r) => r.task.area !== ai);
   const k = away.length ? day % away.length : 0;
-  const order = [...home, ...away.slice(k), ...away.slice(0, k)];
+  let order = [...home, ...away.slice(k), ...away.slice(0, k)];
+  const pi = order.findIndex((r) => r.id === prefer);
+  if (pi > 0) order = [order[pi], ...order.slice(0, pi), ...order.slice(pi + 1)];
   const next = pending(ai)[0];
   const cl = area.clutter && clutterLevel(ai) > 0.34 ? area.clutter : null; // nobody naps in the paint while it is still a mess
   const near = (s, o) => o && Math.abs(s.x - o.x) < o.w * 0.45 && Math.abs(s.y - o.y) < o.w * 0.45;

@@ -35,10 +35,10 @@ export function railHtml(L) {
   const ring = (p) => `style="--p:${Math.round(Math.min(1, p) * 100)}"`;
   const d = L.daily;
   const daily = `<button class="rr lr" data-act="dailysheet" aria-label="${t('dailyLevel')}">${r7('hud_medal')}${d.done ? '<i class="rok">&#10003;</i>' : d.streak ? `<i class="rnum">${d.streak}</i>` : ''}${dot(!d.done && L.dots.daily)}<span>${d.done ? fmtShort(d.ms) : t('daily')}</span></button>`;
-  const j = L.jar;
-  const jar = j && j.on ? `<button class="rr lr ring ${j.pct >= 1 ? 'full' : ''}" data-act="cafesheet" ${ring(j.pct)} aria-label="${t('tipJar')}">${r7('tipjar_' + j.stage, 'jarimg')}${dot(L.dots.jar)}<span>${j.pct >= 1 ? t('jarFull') : j.coins > 0 ? j.coins : fmtShort(j.fullMs)}</span></button>` : '';
+  const j = L.jar; // null: the jar stands on the counter in this room (or is empty), not on the rail
+  const jar = j && j.on ? `<button class="rr lr ring ${j.pct >= 1 ? 'full' : ''}  ${L.jarSpot ? 'spot' : ''}" data-act="jartap" ${ring(j.pct)} aria-label="${t('tipJar')}">${r7('tipjar_' + j.stage, 'jarimg')}${dot(L.dots.jar)}<span>${j.pct >= 1 ? t('jarFull') : j.coins > 0 ? j.coins : fmtShort(j.fullMs)}</span></button>` : '';
   const s = L.season;
-  const season = s ? `<button class="rr lr" data-act="events" data-tab="season" aria-label="${t('season')}">${r7('hud_rosette')}<i class="rnum">${s.stamps}</i>${dot(L.dots.season)}<span>${t('season')}</span></button>` : '';
+  const season = s ? `<button class="rr lr ${L.spot === 'season' ? 'spot' : ''}" data-act="events" data-tab="season" aria-label="${t('season')}">${r7('hud_rosette')}<i class="rnum">${s.stamps}</i>${dot(L.dots.season)}<span>${t('season')}</span>${L.sptag ? L.sptag('season') : ''}</button>` : '';
   return daily + jar + season;
 }
 const fmtShort = (ms) => { const m = Math.ceil(ms / 60000); return m >= 60 ? `${Math.floor(m / 60)}${t('hShort')}` : `${m}${t('mShort')}`; };
@@ -56,10 +56,11 @@ export function goalsHtml(list) {
     else if (g.k === 'req') { icon = resImg(g.who) + r7(g.req.k === 'color' ? `cat_head_${COLORS[g.req.c]}_happy` : 'hud_yarn', 'sub'); label = t('g_' + g.req.k, { n: g.req.need }); act = 'cafesheet'; }
     else if (g.k === 'outfit') { icon = resImg(g.who, g.outfit); label = t('outfit_' + g.outfit); act = 'residents'; }
     else if (g.k === 'season') { icon = g.visitor ? r7('vis7_' + g.visitor) : r7('hud_rosette'); label = g.visitor ? t('goalVisitor', { name: g.vname }) : t('goalGift'); act = 'events'; extra = 'data-tab="season"'; }
-    else if (g.k === 'daily') { icon = r7('hud_medal'); label = t('goalStreak'); act = 'dailysheet'; }
+    else if (g.k === 'daily') { icon = r7('hud_medal'); label = t('g_daily'); act = 'dailysheet'; }
+    else if (g.k === 'show') { icon = r7('icon_trophy'); label = t('goalShow'); act = 'events'; extra = 'data-tab="show"'; }
     else if (g.k === 'party') { icon = r7('hud_star'); label = t('goalParty'); }
     const ready = g.pct >= 1;
-    return `<button class="goal ${ready ? 'ready' : ''}" data-act="${act}" ${extra} ${act === 'cafeview' ? 'data-view="room"' : ''}><span class="gi">${icon}</span><span class="gt"><b>${label}</b>${bar(g.have, g.need)}</span></button>`;
+    return `<button class="goal ${ready ? 'ready' : ''} ${g.fresh ? 'fresh' : ''}" data-act="${act}" ${extra} ${act === 'cafeview' ? 'data-view="room"' : ''}><span class="gi">${icon}</span><span class="gt"><b>${label}</b>${bar(g.have, g.need)}</span></button>`;
   }).join('');
   return `<div class="goals">${row}</div>`;
 }
@@ -83,7 +84,8 @@ export function dailySheet(info) {
     const st = n < cur || (info.done && n === cur) ? 'done' : n === cur ? 'today' : '';
     return `<div class="sday ${st}"><small>${n}</small>${st === 'done' ? '<i class="ok">&#10003;</i>' : chips(r)}</div>`;
   }).join('');
-  const body = `<div class="streakhead">${r7('hud_medal', 'flame')}<b>${t('streakDays', { n: info.streak })}</b><small>${t('streakRule')}</small></div>
+  const shield = `<div class="shieldchip ${info.shield ? 'on' : 'used'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path class="ck" d="m8 12 3 3 5-6"/></svg>${t(info.shield ? 'shieldReady' : 'shieldUsed')}</div>`;
+  const body = `<div class="streakhead">${r7('hud_medal', 'flame')}<b>${t('streakDays', { n: info.streak })}</b>${shield}<small>${t('streakRule')}</small></div>
 <div class="sdays">${boxes}</div>
 ${info.done ? `<div class="lnote">${t('dailyDoneTil', { t: fmtLong(info.ms) })}</div>` : `<button class="btn green sm" data-act="dailyplay">${t('play')}</button><div class="lnote small">${t('dailyEnds', { t: fmtLong(info.ms) })}${info.stamp ? ' · ' + t('dailyStamp') : ''}</div>`}`;
   openSheet('dailysheet', 'quests lsheet', t('dailyLevel'), body);
@@ -141,10 +143,30 @@ function seasonTab(s) {
   return `<div class="theme lth" style="--th:${s.color}"><b>${s.name}</b><span>${t('seasonEnds', { t: fmtLong(s.endsMs) })}</span></div>
 <div class="sprog"><div class="strack"><i style="width:${Math.min(100, (s.stamps / s.max) * 100)}%"></i></div>${steps}</div>
 <div class="lnote">${t('stampsN', { n: s.stamps })} · ${t('stampHow')}</div>
+${s.preview && !s.claim ? `<div class="vprev"><span class="vpp">${r7('nook_' + s.preview.set, 'vpn')}${r7('vis7_' + s.preview.id, 'vpc')}</span><span class="vpt"><b>${t('previewTitle', { name: s.preview.name, n: s.preview.at })}</b><small>${t('previewBody', { room: s.preview.room, c: s.preview.gift })}</small>${bar(Math.min(s.stamps, s.preview.at), s.preview.at)}</span></div>` : ''}
 ${s.claim ? `<button class="btn green sm" data-act="seasonclaim">${s.claim.visitor ? t('inviteX', { name: s.claim.name }) : t('claimGift')}</button>` : ''}
 <div class="qsec">${t('visitors')} ${s.owned}/${s.all.length}</div>
 <div class="vgrid">${vis}</div>`;
 }
+
+// ---- arrival scene: a new visiting cat (or a Cat Street shopkeeper) walks in, waves, and a card says where it lives ----
+// a: { kind: 'visitor'|'keeper'|'apprentice', id, name, line, place, reward, keeper? }. Tap anywhere (or the button) closes. Reduced motion:
+// no walk, the card shows at once.
+export function arrival(a) {
+  closeArrival();
+  const shop = a.kind === 'keeper' || a.kind === 'apprentice';
+  const art = a.kind === 'apprentice' ? r7('keeper_' + a.id, 'arcat') + r7('appr_' + a.id, 'arcat arkit') : a.kind === 'keeper' ? r7('keeper_' + a.id, 'arcat') : r7('vis7_' + a.id, 'arcat');
+  const title = shop ? t('keeperArrive', { place: a.place }) : t('visitorArrive', { name: a.name });
+  const sub = a.kind === 'apprentice' ? t('apprMoved', { name: a.name, keeper: a.keeper }) : a.kind === 'keeper' ? t('keeperMoved', { name: a.name }) : a.place ? t('nookIn', { room: a.place }) : '';
+  const el = document.createElement('div');
+  el.id = 'arrival';
+  el.className = 'arrival' + (reduced() ? ' calm' : '');
+  el.dataset.act = 'arrivalclose'; // a tap anywhere closes it
+  el.innerHTML = `<div class="arwalk">${art}</div>
+<div class="arcard"><b>${title}</b><p>&ldquo;${loc(a.line)}&rdquo;</p><small>${sub}</small>${a.kind === 'visitor' ? `<small class="argift">${r7('hud_coin', 'mini')}${t('visitGift')}</small>` : a.reward ? chips(a.reward) : ''}<button class="btn green sm" data-act="arrivalclose">${t('yay')}</button></div>`;
+  (document.getElementById('ui') || document.body).appendChild(el); // inside #ui: its taps reach the action handler
+}
+export function closeArrival() { document.getElementById('arrival')?.remove(); }
 
 // ---- floating coin burst: from an element to the coin pill, then the counter ticks up ----
 export function coinBurst(fromEl, from, to) {

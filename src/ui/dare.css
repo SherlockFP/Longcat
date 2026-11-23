@@ -1,0 +1,58 @@
+/* share clip + friend challenge: the Share clip pill, the first-share nudge, the 9:16 preview, the challenge cards */
+.btn.pink { background: linear-gradient(#ff9fbf, #ff5d8f); box-shadow: 0 5px 0 #c23a68; text-shadow: 0 2px 0 rgba(140,20,60,.45); }
+.btn.pink:active { box-shadow: 0 1px 0 #c23a68; }
+.btn .shi { width: 24px; height: 24px; flex: none; fill: none; stroke: #fff; }
+.btn.sharebtn { flex: 0 1 auto; width: auto; padding: 0 14px 0 12px; gap: 6px; font-size: 19px; white-space: nowrap; }
+.card.win.compact .r7row .btn.sharebtn { flex: 0 1 auto; min-height: 54px; font-size: 20px; padding: 0 10px; gap: 5px; }
+.card.win.compact .r7row .btn.sharebtn .shi { width: 21px; height: 21px; }
+.sharebtn .nudge { position: absolute; right: 4px; bottom: calc(100% + 9px); padding: 5px 11px; border-radius: 12px; background: #fffaf0; border: 3px solid var(--ink, #1d2b53); color: var(--ink, #1d2b53); font: 700 15px/1.1 var(--font); font-style: normal; white-space: nowrap; text-shadow: none; box-shadow: 0 3px 0 rgba(0,0,0,.18); pointer-events: none; animation: nudgeBob 1.6s ease-in-out infinite; }
+.sharebtn .nudge::after { content: ''; position: absolute; right: 28px; top: 100%; width: 10px; height: 10px; background: #fffaf0; border-right: 3px solid var(--ink, #1d2b53); border-bottom: 3px solid var(--ink, #1d2b53); transform: translateY(-6px) rotate(45deg); }
+.card.win .sharebtn:has(.nudge) { animation: sharePulse 1.6s ease-in-out infinite; }
+@keyframes nudgeBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes sharePulse { 0%, 100% { box-shadow: 0 5px 0 #c23a68, 0 0 0 0 rgba(255,93,143,.55); } 50% { box-shadow: 0 5px 0 #c23a68, 0 0 0 8px rgba(255,93,143,0); } }
+@media (prefers-reduced-motion: reduce) { .sharebtn .nudge, .card.win .sharebtn:has(.nudge) { animation: none; } }
+/* the preview is the clip itself: 9:16, video once encoded */
+.chainclip video { display: block; width: auto; }
+.card.win.withclip .chainclip canvas, .card.win.withclip .chainclip video { height: 160px; width: 90px; }
+.card.win.compact .chainclip.mini canvas, .card.win.compact .chainclip.mini video { height: 92px; width: 52px; }
+@media (max-height: 700px) { .card.win.withclip .chainclip canvas, .card.win.withclip .chainclip video { height: 132px; width: 74px; } }
+/* Share clip: the whole preview becomes the button once the video is encoded (a pink pill on its foot; icon only on
+   the compact thumbnail) */
+.chainclip { position: relative; }
+.clipshare { position: absolute; inset: 0; display: flex; align-items: flex-end; justify-content: center; padding: 0 0 6px; border: 0; background: linear-gradient(transparent 55%, rgba(29,43,83,.55)); cursor: pointer; }
+.clipshare[hidden] { display: none; }
+.clipshare .shi { width: 15px; height: 15px; fill: none; stroke: #fff; flex: none; margin-bottom: 5px; }
+.clipshare span, .clipshare .shi { position: relative; }
+.clipshare::before { content: ''; position: absolute; left: 50%; bottom: 4px; transform: translateX(-50%); width: calc(100% - 8px); height: 26px; border-radius: 13px; background: linear-gradient(#ff9fbf, #ff5d8f); border: 2px solid var(--ink, #1d2b53); box-sizing: border-box; }
+.clipshare span { margin-left: 3px; font: 700 11px/26px var(--font); color: #fff; white-space: nowrap; text-shadow: 0 1px 0 rgba(140,20,60,.5); }
+.clipshare { animation: clipIn .35s ease-out; }
+.chainclip.mini .clipshare span { display: none; }
+.chainclip.mini .clipshare::before { width: 28px; height: 28px; border-radius: 50%; }
+.chainclip.mini .clipshare .shi { margin-bottom: 4px; }
+@keyframes clipIn { from { opacity: 0; transform: scale(.9); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .clipshare { animation: none; } }
+/* friend challenge result line on the win card */
+.dres { font: 700 19px/1.2 var(--font); text-align: center; padding: 8px 14px; border-radius: 14px; background: #fffaf0; border: 3px solid var(--ink, #1d2b53); color: var(--ink, #1d2b53); max-width: 100%; }
+.dres.beat, .dres.tie { background: #fff2b8; }
+/* landing card of a challenge link */
+.card.dare { display: flex; flex-direction: column; align-items: center; gap: 10px; padding-top: 62px; text-align: center; max-width: 360px; }
+.card.dare .peek { width: 112px; height: 112px; top: -58px; }
+.card.dare .title { font-size: 30px; line-height: 1.1; margin: 0; }
+.card.dare .dgoal { display: flex; align-items: center; gap: 8px; padding: 8px 16px 8px 10px; border-radius: 999px; background: #fffaf0; border: 3px solid var(--ink, #1d2b53); box-shadow: 0 3px 0 rgba(0,0,0,.18); color: var(--ink, #1d2b53); font: 700 20px/1.1 var(--font); }
+.card.dare .dgoal img { width: 30px; height: 30px; flex: none; }
+.card.dare .dboard { font: 600 16px/1.2 var(--font); opacity: .9; }
+.card.dare .dhow { margin: 0; font: 600 16px/1.3 var(--font); background: rgba(255,255,255,.55); border-radius: 12px; padding: 8px 12px; }
+.card.dare .btn { margin-top: 4px; }
+.hcol .dres { font-size: 17px; padding: 8px 10px; }
+/* the challenge link, when the platform could not copy it: a bar over the win card, one tap copies it */
+.linkbar { pointer-events: auto; position: fixed; left: 12px; right: 12px; top: calc(12px + env(safe-area-inset-top, 0px)); z-index: 90; display: flex; align-items: center; gap: 8px; padding: 8px; border-radius: 18px; background: #fffaf0; border: 3px solid var(--ink, #1d2b53); box-shadow: 0 4px 0 rgba(0,0,0,.25); }
+.linkbar input { flex: 1 1 0; min-width: 0; height: 40px; padding: 0 10px; border-radius: 12px; border: 2px solid #e7d7bf; background: #fff; color: var(--ink, #1d2b53); font: 600 14px/1 var(--font); }
+.linkbar .btn { flex: none; width: auto; min-height: 44px; padding: 0 12px; font-size: 16px; white-space: nowrap; }
+.linkbar .lbx { flex: none; width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; color: var(--ink, #1d2b53); font: 700 24px/1 var(--font); }
+/* the dare link after a clip: a preview of the challenge and one Send link button */
+.linkbar.dlink { gap: 6px; padding: 6px 6px 6px 8px; }
+.linkbar.dlink .dlpeek { position: static; width: 40px; height: 40px; flex: none; }
+.linkbar.dlink .dltx { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px; color: var(--ink, #1d2b53); }
+.linkbar.dlink .dltx b { font: 700 15px/1.1 var(--font); }
+.linkbar.dlink .dltx small { font: 600 12px/1.2 var(--font); opacity: .85; overflow-wrap: anywhere; }
+.linkbar.dlink .btn { padding: 0 10px; font-size: 15px; }

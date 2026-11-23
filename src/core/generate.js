@@ -40,12 +40,23 @@ export const TEACH = { 8: 'dog', 12: 'yarn', 40: 'mystery', 55: 'frozen' };
 const MECH_FROM = { dog: 8, yarn: 12, mystery: 40, frozen: 55 };
 const TEACH_COUNT = { dog: 1, yarn: 2, mystery: 2, frozen: 1 };
 
+// ---- mid-game flavours (normal L5-30): neighbouring boards lean on different decisions so the run never repeats.
+// chain = a bench chain is the showpiece (two 2-chains on the line), tight = more deliberate parks held longer,
+// kitten = a parade of mother + kitten pairs, yarn = a yarn alley (two balls on the line, from L13)
+export function flavourOf(n) {
+  if (n < 5 || n > 30 || TEACH[n] || levelKind(n) !== 'normal') return null;
+  if (n > 15 && levelKind(n - 1) !== 'normal') return null; // the breather after a hard level stays plain
+  const F = n > 12 ? ['chain', 'tight', 'kitten', 'yarn'] : ['chain', 'tight', 'kitten'];
+  return F[(n + (n > 12 ? 0 : 1)) % F.length]; // offsets picked so every flavoured board keeps its trap floor
+}
+
 // How many of each mechanic level n asks for (placement may fall short on non-teaching levels).
 export function mechPlan(n) {
   if (TEACH[n]) return { [TEACH[n]]: TEACH_COUNT[TEACH[n]] };
   const rng = makeRng(hashSeed('mechplan', n));
   const names = Object.keys(MECH_FROM).filter((k) => n > MECH_FROM[k]);
   const plan = {};
+  if (flavourOf(n) === 'yarn') return { yarn: 2 };
   names.forEach((k, i) => {
     const fresh = i === names.length - 1 && n < 70;
     if (!rng.chance(fresh ? 0.8 : n >= 70 ? 0.55 : 0.45)) return; // asked for often: a piece that never matters on the line is dropped
@@ -80,10 +91,12 @@ export function params(n) {
     : after ? { traps: 0, maxTraps: 2, late: 1, chains: 1, chain3: 0, dead: 0.15, deadMin: 0.03 }
     : medium ? { traps: 2, late: n < 40 ? 2 : 3, chains: 1, chain3: 0, dead: 0.36, deadMin: 0.15 }
     : { traps: n < 40 ? 1 : 2, late: n < 10 ? 0 : n < 40 ? 1 : 2, chains: 1, chain3: 0, dead: n < 40 ? 0.25 : 0.32, deadMin: n < 10 ? 0 : n < 40 ? 0.07 : 0.1 };
-  return {
+  const flav = flavourOf(n);
+  const P = {
     n,
     kind,
     medium,
+    flavour: flav,
     w,
     h,
     fillTarget,
@@ -112,6 +125,18 @@ export function params(n) {
     holdUntil: 0.6,
     pAbsorb: teach ? 0.6 : kind === 'super' ? 0.35 : hard ? 0.5 : medium ? 0.55 : 0.72 - 0.15 * Math.min(1, n / 100), // lower = parked cats wait longer: a wrong park costs later
   };
+  if (flav === 'chain') {
+    P.band = { ...band, chains: 2 };
+    P.pAbsorb -= 0.12;
+  } else if (flav === 'tight') {
+    P.minDetours += 1;
+    P.hold = 3;
+    P.detourP += 0.06;
+  } else if (flav === 'kitten') {
+    P.kittenMax = 3;
+    P.pairs = 3;
+  }
+  return P;
 }
 
 // ---- hand-made tutorials (5x6) ----
@@ -927,6 +952,7 @@ export function generate(n) {
     startSafe: d.startSafe,
     forced: d.forced,
     band: inBand,
+    flavour: P.flavour === 'yarn' && !board.objs.some((o) => o.kind === 'yarn') ? null : P.flavour, // a yarn alley whose balls never mattered shipped plain
   });
   return board;
 }

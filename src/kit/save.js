@@ -10,26 +10,26 @@ const defaults = () => ({
   coins: 50,
   bestStars: {},
   settings: { sound: true, music: true, haptics: true, lang: guessLang(), notify: false }, // music: older saves get it on through the defaults merge
-  daily: { last: '', streak: 0, doneDay: '' },
+  daily: { last: '', streak: 0, doneDay: '', shieldW: -1 }, // shieldW: the week whose one free missed day is spent
   ads: { wins: 0, lastInterstitial: 0, removeAds: false },
   counters: {},
   boosters: { hint: 3, scoop: 2, undo: 3 },
-  cafe: { stars: 0, built: {}, hintDay: '', hintN: 0, scoopLevel: 0, love: {}, party: 0, hearts: {}, wear: {}, petDay: {} }, // hintN: free perk hints used on hintDay; love: resident id -> affection level 0..3 (treats)
+  cafe: { stars: 0, built: {}, hintDay: '', hintN: 0, scoopLevel: 0, love: {}, party: 0, hearts: {}, wear: {}, petDay: {}, street: 0, reno: {}, style: {} }, // street: Cat Street pieces built (src/game/street.js); reno: area id -> owned theme-set bits; style: area id -> shown set // hintN: free perk hints used on hintDay; love: resident id -> affection level 0..3 (treats)
   lives: { n: 5, t: 0 }, // t = when the next life regen started (0 while full)
   purr: { n: 0, pend: 0, lost: 0, seatLv: 0 }, // Purr Streak count + the bonus waiting for the next level (0/1/2) + the level last lost (so a restart cannot fake a first try) + the level whose bonus bench seat is still owed
   quests: { day: 0, list: [], chest: 0 }, // 3 daily tasks: { id, p: progress, c: claimed }
   login: { last: 0, idx: 0 }, // 7-day calendar: last claimed day number, claims in this cycle
   show: { week: 0, decor: {}, marks: {}, goals: {}, from: 0 }, // weekly Cat Show: decor = rosettes won (theme id), marks = board key ('<week>a|b') -> medal bits (1 bronze, 2 gold), goals = computed board goals, from = first Show week (archive start)
-  shop: { starterShown: false },
+  shop: { starterShown: false, offerDay: -1 }, // offerDay: the day the hub's Shop 'Offer' badge was last seen (once a day)
   iap: { owned: {}, tx: [] }, // non-consumables owned + recent transaction ids (no double grants)
   clock: { max: 0 }, // highest time ever seen: the rollback guard
   // v8 retention (src/game/live.js): tip jar fill start, resident requests, Café Rush, season stamps/claims, visiting cats
   jar: { t: 0, total: 0 },
-  req: { list: [], next: 0, n: 0, done: 0 },
+  req: { list: [], next: 0, n: 0, done: 0, fresh: '' }, // fresh: the newcomer whose first request leads the hub (kept across reloads)
   rush: { week: 0, best: 0, cats: 0, pend: null, cups: {} },
   season: { daily: {}, claim: {}, visDay: 0 },
   vis: {},
-  meta: { firstOpen: 0, sessions: 0, funnel: {}, ret: {} },
+  meta: { firstOpen: 0, sessions: 0, funnel: {}, ret: {}, shareNudge: 0, dares: 0 }, // shareNudge: the first "show a friend" prompt was shown; dares: friend challenges played
 });
 
 function guessLang() {
@@ -101,6 +101,7 @@ function validate(d) {
   d.daily.last = String(d.daily.last ?? '');
   d.daily.doneDay = String(d.daily.doneDay ?? '');
   d.daily.streak = num(d.daily.streak, 0, 0);
+  d.daily.shieldW = num(d.daily.shieldW, -1, -1);
   d.ads.wins = num(d.ads.wins, 0, 0);
   d.ads.lastInterstitial = num(d.ads.lastInterstitial, 0, 0);
   d.ads.removeAds = !!d.ads.removeAds;
@@ -111,6 +112,11 @@ function validate(d) {
   for (const k of Object.keys(c.love)) c.love[k] = Number.isInteger(c.love[k]) ? Math.min(3, Math.max(0, c.love[k])) : 0;
   c.hintDay = String(c.hintDay ?? '');
   c.scoopLevel = num(c.scoopLevel, 0, 0);
+  c.street = Number.isInteger(c.street) && c.street >= 0 ? Math.min(c.street, 1e5) : 0;
+  if (!isObj(c.reno)) c.reno = {};
+  for (const k of Object.keys(c.reno)) if (!(Number.isInteger(c.reno[k]) && c.reno[k] > 0 && c.reno[k] <= 7)) delete c.reno[k];
+  if (!isObj(c.style)) c.style = {};
+  for (const k of Object.keys(c.style)) if (!['lantern', 'cocoa', 'blossom'].includes(c.style[k])) delete c.style[k];
   c.party = Number.isInteger(c.party) && c.party >= 0 ? c.party : 0; // rooftop parties hosted after the last area
   c.hintN = Number.isInteger(c.hintN) ? Math.min(9, Math.max(0, c.hintN)) : 0; // older saves: a set hintDay counts as 1 used (see main.js hintsUsed)
   const L = d.lives;
@@ -160,12 +166,15 @@ function validate(d) {
   se.visDay = num(se.visDay, 0, 0);
   if (!isObj(d.vis)) d.vis = {};
   d.shop.starterShown = !!d.shop.starterShown;
+  d.shop.offerDay = Number.isInteger(d.shop.offerDay) ? d.shop.offerDay : -1;
   if (!isObj(d.iap.owned)) d.iap.owned = {};
   d.iap.tx = Array.isArray(d.iap.tx) ? d.iap.tx.filter((x) => typeof x === 'string').slice(-30) : [];
   d.clock.max = num(d.clock.max, 0, 0);
   const m = d.meta;
   m.firstOpen = num(m.firstOpen, 0, 0);
   m.sessions = num(m.sessions, 0, 0);
+  m.shareNudge = m.shareNudge ? 1 : 0;
+  m.dares = num(m.dares, 0, 0);
   if (!isObj(m.funnel)) m.funnel = {};
   if (!isObj(m.ret)) m.ret = {};
   for (const k of ['hint', 'scoop', 'undo']) d.boosters[k] = Number.isInteger(d.boosters[k]) && d.boosters[k] >= 0 ? d.boosters[k] : 0;
@@ -186,7 +195,7 @@ function load() {
       if (isObj(m.counters)) d.counters = m.counters;
       if (isObj(m.cafe) && isObj(m.cafe.built)) d.cafe.built = m.cafe.built;
       if (isObj(m.cafe) && isObj(m.cafe.love)) d.cafe.love = m.cafe.love;
-      for (const k of ['hearts', 'wear', 'petDay']) if (isObj(m.cafe) && isObj(m.cafe[k])) d.cafe[k] = m.cafe[k];
+      for (const k of ['hearts', 'wear', 'petDay', 'reno', 'style']) if (isObj(m.cafe) && isObj(m.cafe[k])) d.cafe[k] = m.cafe[k];
       if (isObj(m.show) && isObj(m.show.marks)) d.show.marks = m.show.marks;
       if (isObj(m.show) && isObj(m.show.goals)) d.show.goals = m.show.goals;
       if (isObj(m.season)) for (const k of ['daily', 'claim']) if (isObj(m.season[k])) d.season[k] = m.season[k];

@@ -78,6 +78,29 @@ try {
   await ev('localStorage.clear()').catch(() => {});
   await boot();
 
+  // ---- juice strips: the signature send (crouch, noodle stretch, leap, paws-first landing, fold, tail flick) and a
+  // bench chain, frame by frame on a stepped clock. QA_STRIPS=1 runs only these. ----
+  const strips = async () => {
+    const save = (name, url) => writeFileSync(join(OUT, name), Buffer.from(url.split(',')[1], 'base64'));
+    await qa('lang("en")');
+    await qa('level(1)'); await sleep(900);
+    const mid = await qa('matchId()');
+    if (mid == null) throw new Error('L1 should start with a free cat of the front colour');
+    let r = await qa(`strip(${mid}, [0.04, 0.1, 0.16, 0.21, 0.26, 0.31, 0.37, 'end'], 4)`);
+    save('_leap-strip.jpg', r.url);
+    console.log('  strip _leap-strip.jpg ' + r.times.map((x) => Math.round(x * 1000)).join(','));
+    await waitFor('!window.__qa.state().busy', 8000);
+    // L2: park the two blues, then the orange carrier's cat sets off the 2-chain
+    await qa('level(2)'); await sleep(700);
+    for (const id of [0, 1, 2]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(250); }
+    await waitFor('!window.__qa.state().busy', 8000); await sleep(400);
+    r = await qa('strip(3, [0.35, 0.7, 0.95, 1.12, 1.3, 1.5, 1.7, 1.95, 2.3], 3, true)');
+    save('_chain-strip.jpg', r.url);
+    console.log('  strip _chain-strip.jpg');
+    await waitFor('!window.__qa.state().busy', 8000);
+  };
+  if (process.env.QA_STRIPS) { await strips(); console.log(`errors: ${errs.length}`); for (const e of errs.slice(0, 8)) console.log('  ' + e.split(String.fromCharCode(10))[0].slice(0, 220)); bye(errs.length ? 1 : 0); await new Promise(() => {}); }
+
   // QA_FROM=14 skips the play-board sections 1-13 and QA_FROM=21 also the café ones (a slow machine); the default runs everything
   if (+(process.env.QA_FROM || 0) < 14) {
   // 1 home EN (levels 1-3 boot straight into play; the plain home stays reachable with the Home button)
@@ -494,7 +517,7 @@ try {
     await sleep(6800); // the clip encodes (real time) and starts looping inside the Share button
     await shot('28d-win-card');
     const cl = await qa('clip()');
-    if (!cl.has || cl.score < 2) throw new Error('L4 share clip should hold its chain: ' + JSON.stringify(cl));
+    if (!cl.has || !cl.plan || cl.plan.n < 2) throw new Error('L4 share clip should hold its chain: ' + JSON.stringify(cl));
     const enc = await qa('clipEncode()');
     console.log('  clip', JSON.stringify(cl), JSON.stringify(enc));
     if (!enc || enc.size < 2000) throw new Error('share clip did not encode');
@@ -685,10 +708,10 @@ try {
       localStorage.setItem('lco_save', JSON.stringify(d)); })()`);
     await boot();
     await shot('40a-hub-live');
-    if ((await ev('document.querySelectorAll(".goals .goal").length')) !== 3) throw new Error('the hub should show 3 next goals');
-    if (!(await ev('!!document.querySelector(".rr.ring[data-act=cafesheet]")'))) throw new Error('tip jar badge missing');
+    if ((await ev('document.querySelectorAll(".goals .goal").length')) !== 2) throw new Error('the hub should show 2 next goals (the next resident sits on the build card)');
+    if (!(await ev('!!document.querySelector(".rr.ring[data-act=jartap], .jar7")'))) throw new Error('tip jar missing (rail or counter)');
     if ((await ev('document.querySelectorAll("#cafe .dot:not([hidden])").length')) > 3) throw new Error('more than 3 red dots on the hub');
-    await tapSel('[data-act=cafesheet]'); await sleep(600);
+    await qa('act("cafesheet")'); await sleep(600);
     if ((await qa('state()')).sheet !== 'cafesheet') throw new Error('tips sheet did not open');
     await shot('40b-cafe-tips');
     let c0 = (await lsave()).coins;
@@ -759,6 +782,563 @@ try {
     await qa('home()'); await sleep(400); await qa('screen("residents")'); await sleep(600); await shot('40u-667-residents');
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
   }
+  // ---- round 10 retention: hub spotlight, tip jar on the counter, request bubble, house view with the next floor,
+  // Cat Street with house 2, renovation, visitor arrival + nook, Pip preview. QA_FROM=96 runs these and later. ----
+  if (+(process.env.QA_FROM || 0) <= 96) {
+    const lsave = () => ev('JSON.parse(localStorage.getItem("lco_save"))');
+    const ground = ['counter_counter', 'counter_pastry', 'counter_lamps', 'counter_chalkboard', 'counter_tables', 'counter_plant', 'window_seat', 'window_plants', 'window_bookshelf', 'window_cattree', 'window_rug', 'window_lights'];
+    const upper = ['cushion_rug', 'cushion_lamp', 'cushion_shelf', 'cushion_hammock', 'cushion_bench', 'cushion_pile', 'patio_planters', 'patio_pergola', 'patio_fountain', 'patio_lights', 'patio_lounger', 'patio_tables', 'roof_canopy', 'roof_telescope', 'roof_lemon', 'roof_tower', 'roof_beanbags', 'roof_grill'];
+    const edit = (js) => ev(`(() => { const d = JSON.parse(localStorage.getItem('lco_save')); const day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000); ${js}; localStorage.setItem('lco_save', JSON.stringify(d)); })()`);
+    // nothing else claimable (tasks, calendar, daily done), so the spotlight shows what the seed sets up
+    const calm = `Object.assign(d, { quests: { day, list: [], chest: 1 }, login: { last: day, idx: 1 }, daily: { last: String(day), streak: 1, doneDay: String(day) } })`;
+    const seed = async (extra) => {
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 8, level: 40, coins: 400, meta: { sessions: 4 }, cafe: { stars: 0, built: ${JSON.stringify(Object.fromEntries(ground.map((k) => [k, 1])))} } }))`);
+      await boot();
+      await edit(calm + '; ' + extra);
+      await boot();
+    };
+    const fits = (sel) => ev(`[...document.querySelectorAll(${JSON.stringify(sel)})].every((e) => e.scrollWidth <= e.clientWidth + 1 && e.scrollHeight <= e.clientHeight + 1)`);
+    const ground0 = async () => { await qa('act("cafearea", { d: -9 })'); await sleep(900); };
+    await qa('lang("en")');
+    // a finished request: Mochi's bubble in the ground floor room is the one spotlight
+    await seed(`d.req = { list: [{ k: 'win', who: 'mochi', need: 2, p: 2, c: 0, s: 1 }], next: Date.now() + 3600000, n: 1, done: 0 }; d.jar = { t: Date.now() - 600000, total: 0 }; d.cafe.hearts = { mochi: 5 }`);
+    await ground0();
+    await shot('70a-request-bubble');
+    if (!(await ev('!!document.querySelector(".rqbub.spot")'))) throw new Error('the ready request should be a spotlit bubble over its resident');
+    if ((await ev('document.querySelectorAll("#cafe .spot").length')) !== 1) throw new Error('exactly one spotlight on the hub');
+    if ((await ev('document.querySelectorAll(".rrail .rr").length')) > 4) throw new Error('the right rail keeps at most 4 icons');
+    let c0 = (await lsave()).coins;
+    await ev('document.querySelector(".rqbub").click()'); await sleep(1700);
+    if ((await lsave()).coins !== c0 + 30) throw new Error('the bubble should claim the request');
+    // a full tip jar on the counter is the spotlight
+    await seed(`d.jar = { t: Date.now() - 5 * 3600000, total: 0 }`);
+    await ground0();
+    await shot('70b-jar-on-counter');
+    if (!(await ev('!!document.querySelector(".jar7.full.spot")'))) throw new Error('a full jar should sit spotlit on the counter');
+    c0 = (await lsave()).coins;
+    await ev('document.querySelector(".jar7").click()'); await sleep(350);
+    await shot('70c-jar-collect');
+    await sleep(1500);
+    if (!((await lsave()).coins > c0)) throw new Error('tapping the counter jar should collect');
+    // nothing claimable: the affordable next build is the spotlight
+    await seed(`d.cafe.stars = 5; d.jar = { t: Date.now() - 600000, total: 0 }`);
+    await shot('70d-hub-spotlight-build');
+    if (!(await ev('!!document.querySelector(".nbcard .trow.spot")'))) throw new Error('the affordable next build should be the spotlight');
+    if (!(await fits('.goal .gt b'))) throw new Error('a goal label overflows');
+    // house view: the next floor shows early with what it unlocks, and the sign to Cat Street
+    await ev('document.querySelector(".fl.hs").click()'); await sleep(800);
+    await shot('70e-house-next-floor');
+    if (!(await ev('!!document.querySelector(".hnext")'))) throw new Error('the next floor preview is missing');
+    if (!(await ev('!!document.querySelector(".streetbtn")'))) throw new Error('the Cat Street sign is missing');
+    await ev('document.querySelector(".fl.hs").click()'); await sleep(300);
+    // Cat Street: the Bakery done (Crumb in front), the Library under construction, the Florist as a silhouette
+    await edit(`for (const k of ${JSON.stringify(upper)}) d.cafe.built[k] = 1; d.cafe.street = 11; d.cafe.stars = 4; d.level = 90; d.vis = { maple: 1, hazel: 2 }; d.jar = { t: Date.now() - 600000, total: 0 }`);
+    await boot();
+    await shot('70f-street-house2');
+    if (!(await ev('!!document.querySelector(".vstreet .sh.sc") && !!document.querySelector(".sh .keeper")'))) throw new Error('street view with house 2 missing');
+    const s0 = (await lsave()).cafe.street;
+    await ev('document.querySelector("[data-act=streetbuild]").click()'); await sleep(1200);
+    if ((await lsave()).cafe.street !== s0 + 1) throw new Error('the street build did not add a piece');
+    await shot('70g-street-built');
+    // a finished room: a renovation set restyles it; the visitors live on their nooks there
+    await edit('d.cafe.stars = 9');
+    await boot(); await ground0();
+    await ev('document.querySelector("[data-act=reno]").click()'); await sleep(1300);
+    await shot('70h-reno-nooks');
+    if (!(await ev('!!document.querySelector(".reno-g") && !!document.querySelector(".nook7")'))) throw new Error('renovation set or visitor nook missing');
+    if (!(await lsave()).cafe.style.counter) throw new Error('renovation style not stored');
+    // the season: what inviting the next visitor changes, then the arrival scene
+    await edit(`const s = Math.floor(window.__qa.week() / 4); d.vis = {}; d.season = { daily: { [s]: 5 }, claim: {}, visDay: 0 }`);
+    await boot();
+    await qa('act("events", { tab: "season" })'); await sleep(800);
+    await shot('70i-season-preview');
+    if (!(await ev('!!document.querySelector(".vprev")'))) throw new Error('visitor preview card missing');
+    await edit(`const s = Math.floor(window.__qa.week() / 4); d.season.daily[s] = 9`);
+    await boot();
+    await qa('act("seasonclaim")'); await sleep(650);
+    await shot('70j-visitor-arrival-walk');
+    await sleep(1700);
+    await shot('70k-visitor-arrival-card');
+    if (!(await ev('!!document.querySelector("#arrival .arcard")'))) throw new Error('visitor arrival scene missing');
+    await ev('document.querySelector("#arrival .arcard [data-act=arrivalclose]").click()'); await sleep(900);
+    await shot('70l-visitor-nook');
+    if (!(await ev('!!document.querySelector(".guest.visitor.idle7")'))) throw new Error('the new visitor should idle on its nook');
+    // Turkish: the labels fit
+    await qa('lang("tr")'); await qa('home()'); await sleep(800);
+    await shot('70m-street-tr');
+    await ground0();
+    await shot('70n-room-tr');
+    if (!(await fits('.goal .gt b, .nbcard .tname b, .rqbub b'))) throw new Error('a Turkish hub label overflows');
+    await qa('lang("en")');
+    // 375x667: the street and the season sheet fit (the no-scroll check runs on every shot)
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await qa('home()'); await sleep(800);
+    await shot('70o-667-street');
+    await qa('act("events", { tab: "season" })'); await sleep(700);
+    await shot('70p-667-season');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+  }
+  // ---- round 9 juice: send/chain strips, board-clear sweep, compact win card, hearts drop at once on a lost life ----
+  if (+(process.env.QA_FROM || 0) <= 99) {
+    await strips();
+    await qa('lang("en")');
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:30,coins:900,meta:{sessions:3},cafe:{stars:0,built:{counter_counter:1,counter_pastry:1}}}))');
+    await boot();
+    // an ordinary first clear (no chain replay, normal level): the first such board from L30 on
+    let lvc = 30;
+    for (; lvc < 40; lvc++) {
+      await ev(`(() => { const d = JSON.parse(localStorage.getItem('lco_save')); d.level = ${lvc}; localStorage.setItem('lco_save', JSON.stringify(d)); })()`);
+      await boot();
+      await qa(`level(${lvc})`); await sleep(600);
+      await qa('winNow()');
+      await waitFor('window.__qa.sweep()', 30000); await sleep(330);
+      if (lvc === 30) await shot('50a-board-sweep');
+      await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1400);
+      if (await ev('!!document.querySelector("#modal .card.win.compact")')) break;
+    }
+    if (lvc >= 40) throw new Error('no ordinary clear in L30-39 showed the compact win card');
+    console.log('  compact win on L' + lvc);
+    const nb = await ev('(() => { const b = document.querySelector("#modal .card.win.compact [data-act=next], #modal .card.win.compact [data-act=cafe]").getBoundingClientRect(); return b.top > innerHeight * 0.6 && b.height >= 48; })()');
+    if (!nb) throw new Error('compact win: the one action should sit low (thumb) and be >= 48px tall');
+    await shot('50b-win-compact');
+    await qa('lang("tr")');
+    await ev(`(() => { const d = JSON.parse(localStorage.getItem('lco_save')); d.level = ${lvc}; localStorage.setItem('lco_save', JSON.stringify(d)); })()`);
+    await qa(`level(${lvc})`); await sleep(600); await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1400);
+    const clip = await ev('[...document.querySelectorAll("#modal .card.win *")].filter((e) => e.children.length === 0 && e.textContent.trim() && e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent.trim()).slice(0, 4)');
+    if (clip.length) throw new Error('compact win TR text clipped: ' + clip.join(' | '));
+    await shot('50c-win-compact-tr');
+    await qa('lang("en")');
+    // a lost life: the HUD hearts count drops the moment the bench overflows
+    await qa('save({ lives: { n: 5, t: Date.now() } })');
+    await qa('level(49)'); await sleep(700);
+    const h0 = +(await ev('document.querySelector("#hud-lives b")?.textContent || -1'));
+    await qa('failNow()');
+    await waitFor('window.__qa.state().screen === "fail"', 30000); await sleep(500);
+    const h1 = +(await ev('document.querySelector("#hud-lives b")?.textContent || -1'));
+    if (!(h0 === 5 && h1 === 4)) throw new Error('HUD hearts should drop 5 -> 4 on a lost life, got ' + h0 + ' -> ' + h1);
+    await shot('50d-fail-hearts');
+    await qa('save({ lives: { n: 5, t: Date.now() } })');
+    await qa('home()'); await sleep(400);
+  }
+  // ---- round 9 (fun + readability): L1 pace, the L4 clue, the press preview (lane, destination, LAST SEAT), the Show
+  // goal pill, the daily shield and free retry, one shared lane on L12. QA_FROM=100 runs only these and the 667 frames.
+  if (+(process.env.QA_FROM || 0) <= 100) {
+    await qa('lang("en")');
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:4,coins:300,meta:{sessions:3}}))');
+    await boot();
+    const idle = () => waitFor('!window.__qa.state().busy', 10000);
+    // L1: the first carrier departs well inside 10 s of the board opening (three prompt taps)
+    await qa('level(1)');
+    const t1 = Date.now();
+    await sleep(900); // a first look at the board
+    for (let k = 0; k < 3; k++) { await waitFor(`window.__qa.state().alive === ${3 - k} && window.__qa.state().free.length > 0`, 8000); const f = (await qa('state()')).free[0]; await tapCat(f); await sleep(350); }
+    await waitFor('window.__qa.state().departed >= 1', 10000);
+    const dep = (Date.now() - t1) / 1000;
+    console.log('  L1 first departure ' + dep.toFixed(1) + 's');
+    if (dep > 10) throw new Error('L1 first carrier departure took ' + dep.toFixed(1) + 's (> 10s)');
+    // L4: before the first tap each free cat shows how many carriers it would wait on a cushion (green 1, blue 3)
+    await qa('level(4)'); await sleep(900);
+    if (!(await qa('waitTags()'))) throw new Error('L4 should show its wait clue before the first tap');
+    await shot('60a-l4-clue');
+    const pb = await qa('pos(2)');
+    await touch('touchStart', pb.x, pb.y); await sleep(450);
+    const pi = await qa('pressInfo()');
+    if (!pi || pi.dest[0] !== 'seat:3') throw new Error('L4 press on blue should preview a cushion, wait 3: ' + JSON.stringify(pi));
+    await shot('60b-l4-press-blue');
+    await touch('touchMove', pb.x, pb.y - 260); await sleep(60); await touch('touchEnd', pb.x, pb.y - 260); await sleep(250);
+    if (await qa('pressInfo()')) throw new Error('sliding off a pressed cat should cancel it');
+    if ((await qa('state()')).bench[0] !== 0) throw new Error('a cancelled press must not park the cat');
+    // press preview on a crowded board: park seat-bound cats until a tap would take the LAST free cushion, then hold it
+    let lid = null;
+    for (const lv of [6, 9, 13, 16]) {
+      await qa(`level(${lv})`); await sleep(800);
+      for (let k = 0; k < 8; k++) {
+        await idle();
+        lid = await qa('pressFind("last")');
+        if (lid != null) break;
+        const sid = await qa('pressFind("seat")');
+        if (sid == null) break;
+        await qa(`tap(${sid})`); await sleep(200);
+      }
+      if (lid != null) { console.log('  last-cushion press on L' + lv); break; }
+    }
+    if (lid == null) throw new Error('no board reached a last-cushion press');
+    await idle(); await sleep(500);
+    await shot('60c-last-cushion');
+    const pl = await qa(`pos(${lid})`);
+    await touch('touchStart', pl.x, pl.y); await sleep(450);
+    if (!(await qa('pressInfo()'))?.last) throw new Error('holding that cat should flag LAST SEAT');
+    await shot('60d-press-last-seat');
+    await touch('touchMove', pl.x, 40); await sleep(60); await touch('touchEnd', pl.x, 40); await sleep(250);
+    // the press preview on a cat headed for its carrier: the lane out plus the carrier's pattern in the bubble
+    const cid = await qa('pressFind("carrier")');
+    if (cid != null) {
+      const pc = await qa(`pos(${cid})`);
+      await touch('touchStart', pc.x, pc.y); await sleep(450);
+      await shot('60e-press-carrier');
+      await touch('touchMove', pc.x, 40); await sleep(60); await touch('touchEnd', pc.x, 40); await sleep(250);
+    }
+    // L12: a status toast while the hint card is up never stacks on it (one shared lane)
+    await qa('level(12)'); await sleep(900);
+    await qa('toast("Bench: 5 seats")'); await sleep(250);
+    const lap = await ev(`(() => { const a = document.getElementById('tut'), b = document.querySelector('.toast.inplay'); if (!a || a.hidden || getComputedStyle(a).visibility === 'hidden' || !b) return false;
+      const r = a.getBoundingClientRect(), q = b.getBoundingClientRect(); return !(r.right < q.left || q.right < r.left || r.bottom < q.top || q.bottom < r.top); })()`);
+    if (lap) throw new Error('L12: the toast overlaps the hint card');
+    await shot('60f-l12-lane');
+    await sleep(1500);
+    // Cat Show: the gold goal pill in the HUD (seat limit board A, chain board B), live as the bench fills
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:30,coins:900,meta:{sessions:3},cafe:{stars:0,built:{counter_counter:1,counter_pastry:1}}}))');
+    await boot();
+    await qa('showBoard("a")'); await sleep(900);
+    const gp = await ev('(() => { const g = document.getElementById("goalpill"); return g && !g.hidden ? g.textContent : null; })()');
+    if (!gp || !gp.includes('/')) throw new Error('Show board A should show its goal pill, got ' + gp);
+    await qa('benchTo(2)'); await sleep(1800); await idle();
+    await shot('60g-show-pill');
+    await qa('lang("tr")');
+    await qa('showBoard("b")'); await sleep(900);
+    const gclip = await ev('(() => { const g = document.getElementById("goalpill"); return !g || g.hidden ? "missing" : g.scrollWidth > g.clientWidth + 1 || g.getBoundingClientRect().right > innerWidth ? "clipped" : ""; })()');
+    if (gclip) throw new Error('Show goal pill (TR) ' + gclip);
+    await shot('60h-show-pill-tr');
+    await qa('lang("en")');
+    // daily: a two-day gap is covered by the weekly shield (streak 4 survives); the sheet says so
+    const today = await qa('today()');
+    await qa(`save({ daily: { last: String(${today - 2}), streak: 4, doneDay: '', shieldW: -1 } })`);
+    await qa('home()'); await sleep(500);
+    await qa('act("dailysheet")'); await sleep(700);
+    const sh = await ev('(() => { const c = document.querySelector(".shieldchip.on"); const b = document.querySelector(".streakhead b"); return c && b ? b.textContent : null; })()');
+    if (!sh || !sh.includes('4')) throw new Error('daily sheet should show the ready shield and the kept streak 4, got ' + sh);
+    await shot('60i-daily-shield');
+    await qa('lang("tr")'); await qa('home()'); await sleep(400); await qa('act("dailysheet")'); await sleep(700);
+    const sclip = await ev('[...document.querySelectorAll(".streakhead *")].filter((e) => e.children.length === 0 && e.textContent.trim() && e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent.trim())');
+    if (sclip.length) throw new Error('daily sheet TR clipped: ' + sclip.join(' | '));
+    await shot('60j-daily-shield-tr');
+    await qa('lang("en")');
+    // daily: a lost bench costs no life (free retry)
+    await qa('save({ lives: { n: 5, t: Date.now() } })');
+    await qa('daily()'); await sleep(800);
+    const l0 = await qa('lives()');
+    await qa('failNow()');
+    await waitFor('window.__qa.state().screen === "fail"', 30000); await sleep(600);
+    const l1 = await qa('lives()');
+    if (l0 !== l1) throw new Error('a lost daily should cost no life: ' + l0 + ' -> ' + l1);
+    await shot('60k-daily-fail-free');
+    await qa('home()'); await sleep(400);
+  }
+  // ---- share clip + friend challenge: the Share clip card at the first chain x3, three frames of the offscreen 9:16
+  // clip (setup, peak, end card), the encode, the challenge landing on a fresh save, the board, the result, the normal
+  // flow after it, a hostile link. QA_FROM=101 runs only these and the 667 frames. ----
+  if (+(process.env.QA_FROM || 0) <= 101) {
+    const saveImg = (name, url) => writeFileSync(join(OUT, name), Buffer.from(url.split(',')[1], 'base64'));
+    const idle = async () => { await waitFor('!window.__qa.state().busy', 10000); await sleep(150); };
+    const playLine = async () => { for (const id of await qa('order()')) { await idle(); if (await qa(`alive(${id})`)) await qa(`tap(${id})`); } };
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:60,coins:500,meta:{sessions:3}}))');
+    await boot();
+    await qa('lang("en")'); await qa('slow(1)');
+    await qa('level(13)'); await sleep(700);
+    await playLine();
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1200);
+    const cl = await qa('clip()');
+    console.log('  clip', JSON.stringify(cl));
+    if (!cl.has || !cl.plan || cl.plan.kind !== 'chain' || cl.plan.n < 3) throw new Error('L13 share clip should hold its 3-chain: ' + JSON.stringify(cl));
+    if (!(await ev('!!document.querySelector("#modal .sharebtn .nudge")'))) throw new Error('the first chain x3 should show the Share clip nudge');
+    // Dare a friend is live at once; Share clip stays hidden until the video is encoded (never a still by accident)
+    if (!(await ev('!!document.querySelector("#modal .sharebtn")'))) throw new Error('Dare a friend should show at once');
+    if (cl.canRecord && cl.encoding && !(await ev('document.querySelector("#modal [data-act=shareclip]").hidden'))) throw new Error('Share clip should wait for the encoded video');
+    await shot('101a-share-card');
+    const fr = await qa('clipFrames([0.3, "tap", "peak", "end"])');
+    if (!fr || fr.length !== 4) throw new Error('clip frames missing');
+    saveImg('101b-clip-setup.jpg', fr[0].url); saveImg('101b2-clip-punch.jpg', fr[1].url); saveImg('101c-clip-peak.jpg', fr[2].url); saveImg('101d-clip-end.jpg', fr[3].url);
+    console.log('  clip frames at ' + fr.map((f) => f.at).join(', ') + ' s');
+    const enc = await qa('clipEncode()');
+    console.log('  clip encode', JSON.stringify(enc));
+    if (!enc || enc.size < 2000) throw new Error('share clip did not encode');
+    await sleep(600);
+    if (!(await ev('!document.querySelector("#modal [data-act=shareclip]").hidden'))) throw new Error('Share clip should show once the video is ready');
+    await shot('101e-share-card-video');
+    console.log('  preview is now ' + (await ev('document.querySelector("#modal .chainclip video") ? "the encoded video" : "the canvas"')));
+    const dl = await qa('dareLink()');
+    console.log('  dare', JSON.stringify(dl));
+    if (dl.d.m !== 'chain' || dl.d.g < 3 || !/Beat my chain x\d on Level 13!/.test(dl.text) || !/\?c=[A-Za-z0-9_-]+$/.test(dl.url)) throw new Error('dare link/text wrong: ' + JSON.stringify(dl));
+    // a long board: the replay of every move before the moment stays cheap (it runs on the win card)
+    await qa('level(45)'); await sleep(600); await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 60000); await sleep(400);
+    const perf = await ev('(() => { const t0 = performance.now(); const f = window.__qa.clipFrames(["peak"]); return { ms: Math.round(performance.now() - t0), ok: !!(f && f[0]), plan: window.__qa.clip().plan }; })()');
+    console.log('  L45 clip seek-to-peak', JSON.stringify(perf));
+    if (perf.plan && perf.ms > 1500) throw new Error('clip replay too slow: ' + perf.ms + ' ms');
+    // a later chain x3 never nudges again
+    await qa('level(13)'); await sleep(700); await playLine();
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(900);
+    if (await ev('!!document.querySelector("#modal .sharebtn .nudge")')) throw new Error('the share nudge should show only once');
+    if (!(await ev('!!document.querySelector("#modal .sharebtn")'))) throw new Error('chain x3 should still offer Share clip');
+    // the challenge link on a fresh save: one intro card, then the exact board with its goal
+    const code = await qa(`dareCode({ n: 13, b: ${dl.d.b}, k: 'l', m: 'chain', g: 2, nm: 'Ana' })`);
+    await ev('localStorage.clear()');
+    await boot('?c=' + code);
+    await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(500);
+    if ((await ev('location.search')).includes('c=')) throw new Error('the challenge code should leave the address bar');
+    const land = await ev('document.querySelector("#modal .card.dare").textContent');
+    if (!/Ana dares you!/.test(land) || !/Beat a chain x2/.test(land) || !/Tap a cat/.test(land)) throw new Error('landing text: ' + land);
+    await shot('101f-dare-landing');
+    await qa('lang("tr")');
+    await boot('?c=' + code);
+    await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(500);
+    await shot('101f2-dare-landing-tr');
+    await qa('lang("en")');
+    await boot('?c=' + code);
+    await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(400);
+    await ev('document.querySelector("[data-act=dareplay]").click()'); await sleep(900);
+    const ds = await qa('state()');
+    if (ds.mode !== 'play' || ds.level !== 13) throw new Error('Play should open the challenge board: ' + JSON.stringify(ds));
+    if (await ev('document.getElementById("goalpill").hidden')) throw new Error('the challenge board should show its goal pill');
+    if (!/Only the front carrier boards/.test(await ev('document.getElementById("tut").textContent')) || !(await qa('teach()'))) throw new Error('the challenge board should teach the front carrier + cushion');
+    await shot('101g-dare-board');
+    await playLine();
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1500);
+    const res = await ev('document.querySelector("#modal .dres")?.textContent || ""');
+    if (!/You beat Ana's chain x2!/.test(res)) throw new Error('challenge result line: ' + res);
+    await shot('101h-dare-result');
+    // the big card: Share clip appears on the preview once the clip is encoded
+    await qa('clipEncode()'); await sleep(700);
+    if ((await qa('clip()')).canRecord && (await ev('document.querySelector("#modal [data-act=shareclip]")?.hidden !== false'))) throw new Error('big card: Share clip should show once encoded');
+    await shot('101h2-dare-result-clip-ready');
+    await qa('lang("tr")');
+    await boot('?c=' + code);
+    await waitFor('!!document.querySelector("#modal .card.dare")', 8000);
+    await ev('document.querySelector("[data-act=dareplay]").click()'); await sleep(700);
+    await playLine();
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1500);
+    const resTr = await ev('document.querySelector("#modal .dres")?.textContent || ""');
+    if (!/Ana'nın x2 zincirini geçtin!/.test(resTr)) throw new Error('TR challenge result line: ' + resTr);
+    const cut = await ev('[...document.querySelectorAll("#modal .card *")].filter((e) => e.children.length === 0 && e.textContent.trim() && (e.scrollWidth > e.clientWidth + 1)).map((e) => e.textContent.trim()).slice(0, 4)');
+    if (cut.length) throw new Error('TR result text clipped: ' + cut.join(' | '));
+    await shot('101i-dare-result-tr');
+    // Continue: a new player goes on into level 1
+    await ev('document.querySelector("#modal [data-act=next]").click()'); await sleep(900);
+    const after = await qa('state()');
+    if (after.mode !== 'play' || after.level !== 1) throw new Error('after the challenge a new player should start level 1: ' + JSON.stringify(after));
+    await shot('101j-after-dare-l1');
+    await qa('lang("en")'); await ev('document.querySelector("#modal")?.remove()');
+    // a hostile link is ignored: normal boot, no card
+    await ev('localStorage.clear()');
+    await boot('?c=PGltZyBzcmM9eCBvbmVycm9yPWFsZXJ0KDEpPg');
+    if (await ev('!!document.querySelector("#modal .card.dare")')) throw new Error('a bad challenge code should be ignored');
+    // 375x667: the landing and the share card fit without scrolling
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await qa('lang("tr")');
+    await boot('?c=' + code);
+    await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(500);
+    await shot('101k-667-dare-landing-tr');
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:60,coins:500,meta:{sessions:3}}))');
+    await boot(); await qa('lang("tr")');
+    await qa('level(13)'); await sleep(700); await playLine();
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1500);
+    await shot('101l-667-share-card-tr');
+    const fitBad = await ev('(() => { const c = document.querySelector("#modal .card").getBoundingClientRect(); return [...document.querySelectorAll("#modal .r7row > *, #modal .nudge")].filter((e) => { const r = e.getBoundingClientRect(); return r.right > c.right - 2 || r.left < c.left + 2 || e.scrollWidth > e.clientWidth + 1; }).map((e) => e.className); })()');
+    if (fitBad.length) throw new Error('TR share card buttons overflow: ' + fitBad.join(', '));
+    await qa('lang("en")');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+  }
+  // ---- r9 retention + virality: the next resident as the hub's thread, a newcomer's first request, Daily and the
+  // weekly Cat Show pinned in the goals, the challenge link copied only on a real clipboard write. QA_FROM=102. ----
+  if (+(process.env.QA_FROM || 0) <= 102) {
+    const lsave = () => ev('JSON.parse(localStorage.getItem("lco_save"))');
+    await qa('lang("en")');
+    // the hub thread: the next piece has no resident, so the card names who moves in next and the stars to go
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:8,coins:120,meta:{sessions:3},cafe:{stars:1,built:{counter_counter:1,counter_pastry:1}}}))');
+    await boot(); await sleep(500);
+    const th = await ev('document.querySelector(".nbcard .thread")?.textContent || ""');
+    if (!/moves in after \d+ stars/.test(th)) throw new Error('build card thread: ' + th);
+    await shot('90a-hub-thread');
+    // the arrival: the next resident moves in and asks for something at once; back in the hub that request leads the goals
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:8,coins:120,meta:{sessions:3},cafe:{stars:9,built:{counter_counter:1,counter_pastry:1,counter_lamps:1,counter_chalkboard:1,counter_tables:1,counter_plant:1,window_seat:1}}}))');
+    await boot(); await sleep(400);
+    let guard = 0;
+    while ((await qa('state()')).screen !== 'arrive' && guard++ < 6) {
+      const bid = await ev('document.querySelector(".nbcard .trow[data-act=build]")?.dataset.id || ""');
+      if (!bid) throw new Error('no build card to reach the next resident');
+      await qa(`act("build", { id: "${bid}" })`); await sleep(1600);
+    }
+    await waitFor('window.__qa.state().screen === "arrive"', 6000); await sleep(900);
+    const ask = await ev('document.querySelector(".firstreq")?.textContent || ""');
+    if (!/asks: /.test(ask)) throw new Error('the arrival card should carry the first request: ' + ask);
+    await shot('90b-arrive-first-request');
+    await ev('document.querySelector("[data-act=arriveclose]").click()'); await sleep(1200);
+    if (!(await ev('!!document.querySelector(".goals .goal.fresh")'))) throw new Error("the newcomer's first request should lead the goals");
+    if ((await lsave()).req.list.length < 1) throw new Error('first request not stored');
+    await shot('90c-hub-first-request');
+    // a new day with Events open: today's puzzle and this week's Cat Show medals are the two goals
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:8,level:64,coins:300,meta:{sessions:5},cafe:{stars:0,built:{}}}))');
+    await boot();
+    await ev(`(() => { const d = JSON.parse(localStorage.getItem('lco_save')); const day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
+      Object.assign(d, { daily: { last: String(day - 1), streak: 3, doneDay: '' }, quests: { day, list: [], chest: 1 }, login: { last: day, idx: 1 } });
+      localStorage.setItem('lco_save', JSON.stringify(d)); })()`);
+    await boot(); await sleep(400);
+    const gl = await ev('[...document.querySelectorAll(".goals .goal")].map((g) => g.dataset.act + ":" + (g.dataset.tab || ""))');
+    if (gl[0] !== 'dailysheet:' || gl[1] !== 'events:show') throw new Error('Daily then Cat Show should lead the goals: ' + gl.join(','));
+    await shot('90d-hub-daily-show');
+    await qa('lang("tr")'); await qa('home()'); await sleep(700);
+    await shot('90e-hub-daily-show-tr');
+    await qa('lang("en")');
+    // the challenge link: with no share sheet and a refused clipboard, no "Link copied" toast; a bar offers the copy
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:60,coins:500,meta:{sessions:3}}))');
+    await boot(); await qa('lang("en")');
+    await qa('level(2)'); await sleep(500); await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1200);
+    await ev(`(() => { try { Object.defineProperty(navigator, 'share', { value: undefined, configurable: true }); } catch {}
+      window.__clipOk = false; window.__clipText = '';
+      Object.defineProperty(navigator, 'clipboard', { value: { writeText: (x) => window.__clipOk ? (window.__clipText = x, Promise.resolve()) : Promise.reject(new Error('denied')) }, configurable: true });
+      document.execCommand = () => false; })()`);
+    if (!(await ev('!!document.querySelector("#modal [data-act=share]")'))) throw new Error('win card should offer Share');
+    await ev('document.querySelector("#modal [data-act=share]").click()'); await sleep(400);
+    if (await ev('[...document.querySelectorAll(".toast")].some((t) => /copied/i.test(t.textContent))')) throw new Error('"Link copied" shown although the clipboard write failed');
+    if (!(await ev('!!document.querySelector("#linkbar input") && /\\?c=/.test(document.querySelector("#linkbar input").value)'))) throw new Error('the copy-link bar should show the challenge link');
+    await shot('91a-copy-link-bar');
+    if (!(await ev('(() => { const b = document.querySelector("#linkbar [data-copy]"); const r = b.getBoundingClientRect(); return b.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })()'))) throw new Error('a real tap on #linkbar [data-copy] should reach it, not the sheet behind');
+    await ev('window.__clipOk = true; document.querySelector("#linkbar [data-copy]").click()'); await sleep(250);
+    if (!(await ev('[...document.querySelectorAll(".toast")].some((t) => /Link copied/.test(t.textContent))')) || (await ev('!!document.getElementById("linkbar")'))) throw new Error('a successful copy should toast Link copied and close the bar');
+    if (!/\?c=/.test(await ev('window.__clipText'))) throw new Error('the copied text should carry the link');
+    await shot('91b-link-copied');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await qa('lang("tr")'); await qa('level(2)'); await sleep(500); await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1200);
+    await ev('window.__clipOk = false; document.querySelector("#modal [data-act=share]").click()'); await sleep(400);
+    const lbFit = await ev('(() => { const b = document.querySelector("#linkbar [data-copy]"); const r = document.getElementById("linkbar").getBoundingClientRect(); return b.scrollWidth <= b.clientWidth + 1 && r.right <= innerWidth && r.left >= 0; })()');
+    if (!lbFit) throw new Error('TR copy-link bar does not fit');
+    await shot('91c-667-copy-link-bar-tr');
+    await ev('document.getElementById("linkbar")?.remove()');
+    await qa('lang("en")');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+  }
+  // ---- r10 juice + virality + retention: the chain counter under the bench (ticks per landing, gold on the last), the
+  // dare checked against the exact board (match vs beat, fallback), the dare link after a clip, the share funnel, the
+  // newcomer's ask over the cat with its reward, the "come back" note after a claim, Cat Street's apprentices.
+  // QA_FROM=103 runs only these and the 667 frames. ----
+  if (+(process.env.QA_FROM || 0) <= 103) {
+    const lsave = () => ev('JSON.parse(localStorage.getItem("lco_save"))');
+    const idle = async () => { await waitFor('!window.__qa.state().busy', 10000); await sleep(150); };
+    const playLine = async () => { for (const id of await qa('order()')) { await idle(); if (await qa(`alive(${id})`)) await qa(`tap(${id})`); } };
+    const mockShare = 'window.__shared = []; navigator.canShare = () => true; navigator.share = async (o) => { window.__shared.push({ text: o.text || "", url: o.url || "", files: (o.files || []).length }); };';
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:60,coins:500,meta:{sessions:3}}))');
+    await boot();
+    await qa('lang("en")'); await qa('slow(1)');
+    // juice: L2's chain, the counter beside the bench on the last landing
+    await qa('level(2)'); await sleep(600);
+    for (const id of [0, 1, 2]) { await idle(); await qa(`tap(${id})`); await sleep(250); }
+    await idle(); await sleep(300);
+    await qa('tap(3)');
+    await waitFor('(window.__qa.chainFx() || {}).land >= 1', 8000);
+    const mid = await qa('chainFx()');
+    await waitFor('(() => { const f = window.__qa.chainFx() || {}; return f.land && f.land === f.n; })()', 8000); await sleep(120);
+    await shot('103a-chain-counter-last');
+    console.log('  chain counter', JSON.stringify(mid), JSON.stringify(await qa('chainFx()')));
+    await playLine();
+    await waitFor('window.__qa.state().screen === "win"', 20000); await sleep(900);
+    // virality: L2's x2 is the best that board allows: the dare asks to match it
+    let dl = await qa('dareLink()');
+    console.log('  L2 dare', JSON.stringify(dl.d), dl.text);
+    if (dl.d.m !== 'chain' || dl.d.x !== 1 || !/Match my chain x2/.test(dl.text)) throw new Error('L2 x2 should be a "match" dare: ' + JSON.stringify(dl));
+    // a run that bought a seat cannot be promised on the link's seats: it falls back to clearing the board
+    await qa('level(13)'); await sleep(700); await playLine();
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(600);
+    await qa('logSeat()');
+    dl = await qa('dareLink()');
+    if (dl.d.m !== 'seats' || dl.d.g !== dl.d.b) throw new Error('a seat bought mid-run should fall back to a plain clear dare: ' + JSON.stringify(dl.d));
+    // a clean L13 run keeps its chain dare; after Share clip, the link follows as its own message
+    await qa('level(13)'); await sleep(700); await playLine();
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1200);
+    dl = await qa('dareLink()');
+    if (dl.d.m !== 'chain' || dl.d.x) throw new Error('L13 x3 should be a "beat" dare (the board allows more): ' + JSON.stringify(dl.d));
+    await qa('clipEncode()'); await sleep(700);
+    await ev(mockShare);
+    const c0 = await qa('counters()');
+    await ev('document.querySelector("#modal [data-act=shareclip]").click()'); await sleep(700);
+    if (!(await ev('!!document.querySelector("#linkbar.dlink")'))) throw new Error('after a clip share the dare link should be offered on its own');
+    await shot('103b-dare-link-after-clip');
+    const dlFit = await ev('(() => { const r = document.getElementById("linkbar").getBoundingClientRect(); const b = document.querySelector("#linkbar [data-send]"); return r.left >= 0 && r.right <= innerWidth && b.scrollWidth <= b.clientWidth + 1; })()');
+    if (!dlFit) throw new Error('dare link bar does not fit');
+    if (!(await ev('(() => { const b = document.querySelector("#linkbar [data-send]"); const r = b.getBoundingClientRect(); return b.contains(document.elementFromPoint(r.x + r.width / 2, r.y + r.height / 2)); })()'))) throw new Error('a real tap on #linkbar [data-send] should reach it, not the sheet behind');
+    await ev('document.querySelector("#linkbar [data-send]").click()'); await sleep(500);
+    const sh = await ev('window.__shared');
+    if (sh.length !== 2 || !sh[0].files || sh[1].files || !/\?c=[A-Za-z0-9_-]+$/.test(sh[1].url)) throw new Error('clip then link expected: ' + JSON.stringify(sh));
+    const c1 = await qa('counters()');
+    if ((c1.dare_handoff || 0) - (c0.dare_handoff || 0) !== 2) throw new Error('two handoffs (clip + link) should be tracked');
+    // TR bar at 375x667
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await qa('lang("tr")'); await ev('document.getElementById("linkbar")?.remove()');
+    await qa('level(13)'); await sleep(700); await playLine(); // lang() opens Settings over the card: win the board again in TR
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1200);
+    await qa('clipEncode()'); await sleep(700);
+    await ev(mockShare);
+    await ev('(() => { const b = document.querySelector("#modal [data-act=shareclip]"); if (b) { b.hidden = false; b.click(); } })()'); await sleep(700); // the 667 resize redraws the card
+    if (!(await ev('!!document.querySelector("#linkbar.dlink")'))) throw new Error('TR: the dare link should follow the clip');
+    {
+      const ok = await ev('(() => { const r = document.getElementById("linkbar").getBoundingClientRect(); return [...document.querySelectorAll("#linkbar b, #linkbar small, #linkbar .btn")].every((e) => e.scrollWidth <= e.clientWidth + 1) && r.right <= innerWidth; })()');
+      if (!ok) throw new Error('TR dare link bar clipped');
+      await shot('103c-667-dare-link-tr');
+    }
+    await ev('document.getElementById("linkbar")?.remove()');
+    await qa('lang("en")');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    // the recipient: a "match" link, the funnel (open, first move, clear, reshare) on one share id
+    const code = await qa(`dareCode({ n: 2, b: 5, k: 'l', m: 'chain', g: 2, nm: 'Ana', x: 1, i: 'qa1234' })`);
+    await ev('localStorage.clear()');
+    await boot('?c=' + code);
+    await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(500);
+    if (!/Match a chain x2/.test(await ev('document.querySelector("#modal .card.dare").textContent'))) throw new Error('match landing text');
+    await shot('103d-dare-landing-match');
+    await ev('document.querySelector("[data-act=dareplay]").click()'); await sleep(900);
+    await playLine();
+    await waitFor('window.__qa.state().screen === "win"', 30000); await sleep(1200);
+    const res = await ev('document.querySelector("#modal .dres")?.textContent || ""');
+    if (!/You matched Ana's chain x2!/.test(res)) throw new Error('match result: ' + res);
+    await ev(mockShare);
+    await ev('document.querySelector("#modal [data-act=share]")?.click()'); await sleep(500);
+    await shot('103e-dare-matched');
+    const fc = await qa('counters()');
+    for (const k of ['dare_open', 'dare_play', 'dare_first_move', 'dare_done', 'dare_reshare']) if (!fc[k]) throw new Error('funnel step not tracked: ' + k + ' ' + JSON.stringify(fc));
+    // retention: the newcomer's first ask over the cat, the reward on the claim, the "come back" note
+    const ground = ['counter_counter', 'counter_pastry', 'counter_lamps', 'counter_chalkboard', 'counter_tables', 'counter_plant', 'window_seat', 'window_plants', 'window_bookshelf', 'window_cattree', 'window_rug', 'window_lights'];
+    const edit = (js) => ev(`(() => { const d = JSON.parse(localStorage.getItem('lco_save')); const day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000); ${js}; localStorage.setItem('lco_save', JSON.stringify(d)); })()`);
+    const calm = `Object.assign(d, { quests: { day, list: [], chest: 1 }, login: { last: day, idx: 1 }, daily: { last: String(day), streak: 1, doneDay: String(day) } })`;
+    const seed = async (extra) => {
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 8, level: 40, coins: 400, meta: { sessions: 4 }, cafe: { stars: 0, built: ${JSON.stringify(Object.fromEntries(ground.map((k) => [k, 1])))} } }))`);
+      await boot();
+      await edit(calm + '; ' + extra);
+      await boot();
+      await qa('act("cafearea", { d: -9 })'); await sleep(900);
+    };
+    await seed(`d.req = { list: [{ k: 'win', who: 'mochi', need: 2, p: 1, c: 0, s: 1 }], next: Date.now() + 3 * 3600000, n: 1, done: 0, fresh: 'mochi' }; d.jar = { t: Date.now() - 600000, total: 0 }`);
+    if (!(await ev('!!document.querySelector(".rqbub.ask .rqrw")'))) throw new Error("the newcomer's ask should show over the cat with its reward");
+    await shot('103f-room-newcomer-ask');
+    await seed(`d.req = { list: [{ k: 'win', who: 'mochi', need: 2, p: 2, c: 0, s: 1 }], next: Date.now() + 3 * 3600000, n: 1, done: 0, fresh: 'mochi' }; d.jar = { t: Date.now() - 600000, total: 0 }; d.cafe.hearts = { mochi: 5 }`);
+    if (!(await ev('!!document.querySelector(".rqbub.spot .rqrw")'))) throw new Error('the Claim bubble should show its reward');
+    await shot('103g-room-claim-reward');
+    await ev('document.querySelector(".rqbub").click()'); await sleep(1800);
+    const nx = await ev('document.querySelector(".rqbub.next")?.textContent || ""');
+    if (!/New request in/.test(nx)) throw new Error('after a claim the resident should name the next return: ' + nx);
+    await shot('103h-room-next-goal');
+    if (!(await lsave()).meta.funnel.first_request) throw new Error('first request claim should be a funnel step');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await qa('lang("tr")');
+    await seed(`d.req = { list: [{ k: 'carrier', who: 'mochi', need: 6, p: 2, c: 0, s: 1 }], next: Date.now() + 3 * 3600000, n: 1, done: 0, fresh: 'mochi' }; d.jar = { t: Date.now() - 600000, total: 0 }`);
+    const askFit = await ev('(() => { const b = document.querySelector(".rqbub.ask"); if (!b) return false; const r = b.getBoundingClientRect(); return r.left >= 0 && r.right <= innerWidth && r.top >= 0 && [...b.querySelectorAll("b, small, .rqrw")].every((e) => e.scrollWidth <= e.clientWidth + 1); })()');
+    if (!askFit) throw new Error('TR ask bubble does not fit at 375x667');
+    await shot('103i-667-room-ask-tr');
+    await qa('lang("en")');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    // Cat Street, first repeat lap: Bakery 2 done (Crumb + apprentice Bun), Library 2 building with its apprentice
+    // silhouette; finishing it brings the apprentice's arrival scene
+    const upper = ['cushion_rug', 'cushion_lamp', 'cushion_shelf', 'cushion_hammock', 'cushion_bench', 'cushion_pile', 'patio_planters', 'patio_pergola', 'patio_fountain', 'patio_lights', 'patio_lounger', 'patio_tables', 'roof_canopy', 'roof_telescope', 'roof_lemon', 'roof_tower', 'roof_beanbags', 'roof_grill'];
+    await seed(`for (const k of ${JSON.stringify(upper)}) d.cafe.built[k] = 1; d.cafe.street = 7 * 8 + 7; d.cafe.stars = 9; d.level = 200; d.jar = { t: Date.now() - 600000, total: 0 }`);
+    await qa('home()'); await sleep(900);
+    if (!(await ev('!!document.querySelector(".sh.sl .appr") && !!document.querySelector(".sh.sc .apnext")'))) throw new Error('street lap 2 should show the apprentice and the next one');
+    await shot('103j-street-apprentice');
+    await ev('document.querySelector("[data-act=streetbuild]").click()'); await sleep(2900);
+    if (!(await ev('!!document.querySelector("#arrival .arkit")'))) throw new Error('a lap-2 house should bring its apprentice');
+    await shot('103k-apprentice-arrival');
+    await ev('document.querySelector("#arrival [data-act=arrivalclose]")?.click()'); await sleep(500);
+  }
   // ---- round 7: every screen at 375x667 fits without scrolling; cells stay >= 40 CSS px ----
   if (!process.env.QA_SKIP667) {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
@@ -770,6 +1350,12 @@ try {
     await shot('30b-667-house');
     await ev('document.querySelector(".fl.hs").click()'); await sleep(300);
     for (const s7 of ['quests', 'show', 'shop', 'residents', 'settings', 'starter']) { await qa('home()'); await sleep(500); await qa(`screen("${s7}")`); await sleep(700); await shot('30c-667-' + s7); }
+    // TR settings: the toggles (and a fourth reminders toggle) stay inside the card; ON/OFF words never sit under the knob
+    await qa('lang("tr")'); await qa('home()'); await sleep(400); await qa('screen("settings")'); await sleep(900);
+    const setFit = await ev('(() => { const c = document.querySelector(".card.settings").getBoundingClientRect(); return [...document.querySelectorAll(".setgrid .setrow")].every((r) => { const a = r.getBoundingClientRect(); const b = r.querySelector(".toggle b"); const k = r.querySelector(".toggle i").getBoundingClientRect(); const w = b.getBoundingClientRect(); return a.left >= c.left && a.right <= c.right && b.scrollWidth <= b.clientWidth + 1 && (w.right <= k.left || w.left >= k.right); }); })()');
+    if (!setFit) throw new Error('TR settings: a toggle row overflows the card or its word sits under the knob');
+    await shot('30c-667-settings-tr');
+    await qa('lang("en")');
     await qa('home()'); await sleep(400);
     await qa('save({ lives: { n: 0, t: Date.now() } })'); await qa('screen("nolives")'); await sleep(600); await shot('30d-667-nolives');
     await qa('save({ lives: { n: 5, t: Date.now() } })');

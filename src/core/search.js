@@ -282,6 +282,36 @@ export function searchWin(sim, budget = 2000, wantLine = true) {
   return r;
 }
 
+// The biggest bench chain (bench cats boarded on one tap) reachable anywhere on the board with sim.B seats, over every
+// line of taps that still clears the board. Returns { best, complete }: complete = false when the node budget ran out (best
+// is then only a lower bound). A friend challenge uses it to ask "match" instead of "beat" when the goal is the best.
+export function maxChain(sim, budget = 30000) {
+  const memo = new Map();
+  let nodes = 0;
+  let complete = true;
+  const dfs = () => {
+    if (sim.left === 0) return 0;
+    const key = sim.key();
+    const m = memo.get(key);
+    if (m !== undefined) return m;
+    if (++nodes > budget) { complete = false; return -1; }
+    let best = -1; // -1: no winning way on from here
+    for (const u of sim.free()) {
+      if (sim.apply(u)) {
+        let here = 0;
+        for (let i = 0; i < sim.boards.length; i++) here += sim.boards[i];
+        const rest = dfs();
+        if (rest >= 0) best = Math.max(best, here, rest);
+      }
+      sim.undo();
+    }
+    memo.set(key, best);
+    return best;
+  };
+  const best = sim.dead ? 0 : Math.max(0, dfs());
+  return { best, complete };
+}
+
 // A memoised win was reached: follow memoised winning children so the caller still gets a full line (pushed reversed).
 function cachedTail(sim, rev) {
   const memo = sim.C.memo;

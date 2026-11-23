@@ -146,7 +146,7 @@ function drawTail(ctx, path, a, o, rim = NAVY) {
     const v = 1 - u;
     return [v * v * x0 + 2 * u * v * cx + u * u * ex, v * v * y0 + 2 * u * v * cy + u * u * ey];
   };
-  const wid = (u) => w * (0.42 - 0.14 * u);
+  const wid = (u) => w * (0.46 - 0.3 * u); // thick root, slim tip: a tail, not a pipe
   ctx.lineCap = 'round';
   for (const pass of [0, 1, 2]) {
     for (let k = 0; k < N; k++) {
@@ -161,6 +161,62 @@ function drawTail(ctx, path, a, o, rim = NAVY) {
       ctx.stroke();
     }
   }
+}
+
+// a tiny tiled knit texture: rows of soft "v" stitches plus speckle noise (made once, in code)
+let knitPat = null;
+function knitPattern(ctx) {
+  if (knitPat !== null) return knitPat;
+  try {
+    const cv = document.createElement('canvas');
+    cv.width = cv.height = 24;
+    const g = cv.getContext('2d');
+    g.fillStyle = '#808080';
+    g.fillRect(0, 0, 24, 24);
+    g.lineCap = 'round';
+    for (let y = 0; y < 24; y += 6) for (let x = 0; x < 24; x += 6) {
+      g.strokeStyle = 'rgba(255,255,255,0.45)';
+      g.lineWidth = 1.3;
+      g.beginPath(); g.moveTo(x + 0.8, y + 1); g.lineTo(x + 3, y + 4.6); g.lineTo(x + 5.2, y + 1); g.stroke();
+      g.strokeStyle = 'rgba(0,0,0,0.35)';
+      g.lineWidth = 0.9;
+      g.beginPath(); g.moveTo(x + 3, y + 5.2); g.lineTo(x + 3, y + 5.8); g.stroke();
+    }
+    let r = 7;
+    for (let i = 0; i < 90; i++) {
+      r = (r * 9301 + 49297) % 233280;
+      const v = r / 233280;
+      g.fillStyle = v > 0.5 ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)';
+      g.fillRect((i * 37 + v * 13) % 24, (i * 11 + v * 29) % 24, 1, 1);
+    }
+    knitPat = ctx.createPattern(cv, 'repeat');
+  } catch { knitPat = undefined; }
+  return knitPat;
+}
+
+// running stitches just inside both edges of a body window (offset polylines, dashed)
+function seam(ctx, path, a, b, w, c, al) {
+  const s0 = a + c * 0.18, s1 = b - c * 0.42;
+  if (s1 - s0 < c * 0.3) return;
+  const step = Math.max(2, c * 0.07);
+  const taper = Math.min(b - a, c * 0.7);
+  ctx.save();
+  ctx.globalAlpha = al * 0.8;
+  ctx.strokeStyle = 'rgba(255,246,226,0.95)';
+  ctx.lineWidth = Math.max(1, w * 0.045);
+  ctx.setLineDash([Math.max(2.4, w * 0.1), Math.max(2.4, w * 0.09)]);
+  ctx.lineCap = 'round';
+  for (const sg of [-1, 1]) {
+    ctx.beginPath();
+    for (let s = s0; s <= s1; s += step) {
+      const p = sample(path, s);
+      const k = s - a < taper ? 0.8 + 0.2 * ((s - a) / taper) : 1;
+      const off = (w * 0.5 * k - w * 0.13) * sg;
+      if (s === s0) ctx.moveTo(p.x - p.ty * off, p.y + p.tx * off); else ctx.lineTo(p.x - p.ty * off, p.y + p.tx * off);
+    }
+    ctx.stroke();
+  }
+  ctx.restore();
 }
 
 // o: { pal (COLOR_PAL entry), c (cell px), w (body width px), alpha, glow, collar, seed, run (leg phase or null), wag (tail angle) }
@@ -192,15 +248,15 @@ export function drawBody(ctx, path, a, b, o) {
 
   // little legs (behind the body) while sprinting: they stick out past the fur and swing
   if (o.run != null && len > c * 0.6) {
-    const step = c * 0.7;
     let k = 0;
-    for (let s = a + c * 0.3; s < b - c * 0.35; s += step, k++) {
+    for (const s of len > c * 1.3 ? [a + c * 0.32, b - c * 0.5] : [b - c * 0.45]) {
+      k++;
       const p = sample(path, s);
       const nx = -p.ty, ny = p.tx;
       for (const sg of [-1, 1]) {
         const ph = Math.sin(o.run + k * 1.7 + (sg > 0 ? Math.PI : 0));
-        const fx = p.x + nx * sg * w * 0.78 + p.tx * ph * c * 0.22;
-        const fy = p.y + ny * sg * w * 0.78 + p.ty * ph * c * 0.22;
+        const fx = p.x + nx * sg * w * 0.62 + p.tx * (ph - 0.4) * c * 0.2;
+        const fy = p.y + ny * sg * w * 0.62 + p.ty * (ph - 0.4) * c * 0.2;
         for (const [col, lw] of [[rim, w * 0.3 + 4], [pal.base, w * 0.3]]) {
           ctx.strokeStyle = col;
           ctx.lineWidth = lw;
@@ -241,14 +297,46 @@ export function drawBody(ctx, path, a, b, o) {
       ctx.restore();
     }
   }
-  // top highlight for a chunky look, plus a warm rim light on the upper-right edge
+  // top highlight for a chunky look, plus a warm rim light on the upper-right edge (felt: a soft wide sheen, never a
+  // glossy band, so the body reads as plush, not a tube)
   ctx.save();
   ctx.translate(-w * 0.12, -w * 0.2);
   ctx.strokeStyle = pal.light;
-  ctx.globalAlpha = al * 0.6;
-  ctx.lineWidth = w * 0.2;
-  strokeSlice(ctx, path, a + c * 0.1, Math.max(a + c * 0.15, b - c * 0.5));
+  if (felt) {
+    ctx.globalAlpha = al * 0.14;
+    ctx.lineWidth = w * 0.5;
+    strokeSlice(ctx, path, a + c * 0.15, Math.max(a + c * 0.2, b - c * 0.45));
+    ctx.globalAlpha = al * 0.16;
+    ctx.lineWidth = w * 0.26;
+    strokeSlice(ctx, path, a + c * 0.2, Math.max(a + c * 0.25, b - c * 0.5));
+  } else {
+    ctx.globalAlpha = al * 0.6;
+    ctx.lineWidth = w * 0.2;
+    strokeSlice(ctx, path, a + c * 0.1, Math.max(a + c * 0.15, b - c * 0.5));
+  }
   ctx.restore();
+  if (felt && len > c * 0.4) {
+    // knit: fine yarn grain over the fur
+    const kp = knitPattern(ctx);
+    if (kp) {
+      ctx.save();
+      ctx.globalCompositeOperation = 'soft-light';
+      ctx.globalAlpha = al * 0.9;
+      ctx.strokeStyle = kp;
+      ctx.lineWidth = w;
+      strokeTaper(ctx, path, a, b, c);
+      ctx.restore();
+    }
+    // inner shadow along the belly edge, then running stitches just inside both edges: a sewn plush seam
+    ctx.save();
+    ctx.globalAlpha = al * 0.22;
+    ctx.translate(w * 0.1, w * 0.16);
+    ctx.strokeStyle = shade(pal.base, -0.45);
+    ctx.lineWidth = w * 0.18;
+    strokeSlice(ctx, path, a + c * 0.25, Math.max(a + c * 0.3, b - c * 0.3));
+    ctx.restore();
+    seam(ctx, path, a, b, w, c, al);
+  }
   if (felt) {
     ctx.save();
     ctx.translate(w * 0.3, -w * 0.3);

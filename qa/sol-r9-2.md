@@ -1,0 +1,23 @@
+**Long Cat Out! R9 scores 8/10 overall, up from 7.** The stretch-and-fold send gives the game a move worth remembering. The strongest puzzle payoff is still turning a nearly full bench into a cascade, and R9 makes both the decision and the payoff easier to read.
+
+| Dimension | R8 → R9 | Assessment |
+|---|---:|---|
+| Presentation | 8 → **8** | The café, house, and puzzle board feel like one world. At 375×667, the hub has too many focal points, and the loss sheet hides much of the board the player needs to review. |
+| Appeal | 8 → **8** | The expressive faces, curled bench cats, and named residents give the game warmth. The cats’ personalities come through more strongly in portraits than in repeated play. |
+| Juice | 6 → **8** | The crouch, stretch, paws-first landing, and accordion fold make an ordinary tap satisfying. Chain hops have a rhythm of their own. A routine ×2 can still take longer than its payoff warrants. |
+| Fun | 7 → **8** | Spending a bench seat now to free the right cat later is a good recurring decision. Press previews help explain the immediate consequence. The first time that decision becomes irreversible is still the onboarding seam to watch. |
+| Retention | 7 → **7** | Daily, Cat Show, and building give players distinct reasons to return. Cat Street, renovation, and visitor nooks extend the progression. The hub still makes players sort through several competing goals to find their next one. |
+| Virality | 5 → **7** | The vertical clip opens with readable stakes, and the text-only dare lets a friend play the exact board. The recipient tutorial and mobile share handoff still need work. |
+| Overall | 7 → **8** | The core experience now meets your solid top-100 bar. The largest gap to 9 is carrying that quality through the first consequential mistake and the first return to the café. |
+
+I scored the captures, timing strips, and implementation. `npm run check` passed. I did not play on a phone or verify player behavior or share delivery on real devices. [R8 review](/C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/sol-r8.md) · [R9 notes](/C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/r9-notes.md)
+
+### Most important remaining fixes
+
+- **Presentation.** At 375×667, pin Play and let one contextual action carry the accent color. Mute the locked-floor stack, inactive goals, and persistent Offer badge. On a loss, put the overflow marker beside the bench and use a shorter sheet led by **Take back** and **Retry**. Move the starter bundle under **More help**.
+- **Appeal.** Give three early cats distinct reactions players can recognize at board scale. Try a sleepy cat that startles awake when its carrier arrives, an eager cat that kneads its cushion, and a shy cat that peeks out after landing. Carry those reactions into their café idles so players recognize the same cat across both modes.
+- **Juice.** Keep the new send and tune the cascade around it. Play routine ×2 chains at full speed, reserve the slowdown and gold edge glow for ×3 and above, and move the chain label outside the landing area. Test three rapid sends on a mid-range phone and check that every paw landing and counter increment remains legible.
+- **Fun.** Teach the press preview once on Level 4, where carrier order first matters enough to punish a plausible move. Briefly show **Hold to check · slide off to cancel** and pair the wait count with the matching carrier pattern. On the first overflow, mark the cat and its place in the queue, then return the player to that decision with **Take back**. Test whether a new player can explain the mistake and choose a different move unaided.
+- **Retention.** Make the next resident the thread between sessions. Put the resident and the room upgrade that brings them in on the build card, then surface their first request in the room after arrival. Give Daily a visible place on the next visit and keep Cat Show as the weekly mastery goal. Measure second-session starts and how many players finish that first request.
+- **Virality.** Change the dare tutorial to **“Only the front carrier boards. The others wait on cushions.”** Highlight the front carrier and one cushion on the recipient’s first turn. Test exact-board link delivery through iMessage and WhatsApp on iOS and Android. In the download fallback, report **Link copied** only after the clipboard write succeeds, and show a **Copy challenge link** action if it fails. [Share fallback code](/C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/kit/clip.js:374)
+- **Overall.** Put the next playtest around three handoffs: Level 4’s first bench mistake, the first resident request, and a friend opening a dare on a fresh phone. Track recovery and completion at each handoff before adding more content.

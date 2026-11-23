@@ -6,7 +6,15 @@ addStrings({
     secShort: 's', hShort: 'h', mShort: 'm',
     // hub
     tipJar: 'Tip jar', jarFull: 'Full!', season: 'Season',
-    goalResident: 'New: {name}', g_win: 'Win {n} levels', g_color: 'Free {n} cats', g_carrier: 'Fill {n} carriers', g_tidy: 'Tidy win', g_daily: 'Daily puzzle', outfit_hat: 'Beanie', outfit_scarf: 'Scarf', outfit_crown: 'Crown', goalVisitor: '{name} visits', goalGift: 'Season gift', goalStreak: 'Daily streak', goalParty: 'Rooftop party',
+    // r10 retention: hub spotlight, request bubbles, Cat Street, renovation, visitor nooks and arrivals
+    helpEarn: 'Help {name} earn a {o}!', reqTreat: '{name} has a treat for you!', tipsReady: 'Tips!', spotClaim: 'Claim!',
+    o_hat: 'beanie', o_scarf: 'scarf', o_crown: 'crown',
+    streetTitle: 'Cat Street', streetLocked: 'Opens after the rooftop', streetShops: 'Shops open: {n}', streetPiece: '{house} · {n}/{m}', streetNext: 'Next: {house}',
+    keeperArrive: '{place} is open!', keeperMoved: '{name} moved in to run it.', apprMoved: "{keeper}'s apprentice {name} moved in!", apprNext: 'An apprentice moves in', visitorArrive: '{name} moved in!', nookIn: 'Cosy nook: {room}', visitGift: 'Drops by with a gift every day', yay: 'Yay!',
+    previewTitle: '{name} at {n} stamps', previewBody: 'Cosy nook: {room} · +{c} coins a day',
+    renoTitle: '{set}', renoFeatured: "Restyle · this season's set", renoSub: 'Restyle the {room}', renoSwitch: 'Switch style', renoSwitchSub: 'Free · {n} sets owned', renoDone: 'New look: {set}!',
+    nextUp: 'Next: {room}', unlocksX: '{name} moves in',
+    goalResident: 'New: {name}', g_win: 'Win {n} levels', g_color: 'Free {n} cats', g_carrier: 'Fill {n} carriers', g_tidy: 'Tidy win', g_daily: 'Daily puzzle', outfit_hat: 'Beanie', outfit_scarf: 'Scarf', outfit_crown: 'Crown', goalVisitor: '{name} visits', goalGift: 'Season gift', goalStreak: 'Daily streak', goalParty: 'Rooftop party', goalShow: 'Cat Show medals', resThread: '{name} moves in after {n} stars', reqFirst: '{name} asks: {what}', nextAskNow: 'Next: {task} for {name}', nextAskIn: 'New request in {t}. See you soon!',
     petHeart: '{name} loves you! ♥{n}',
     outfitGift: 'New outfit: {o} for {name}!',
     // tips sheet
@@ -16,7 +24,7 @@ addStrings({
     reqThanks: '{name} is so happy! +{h} ♥',
     req_win: 'Win {n} levels', req_color: 'Free {n} {c} cats', req_carrier: 'Fill {n} carriers', req_tidy: 'Win using at most 2 seats', req_daily: 'Clear the daily puzzle',
     // daily puzzle
-    streakDays: 'Streak: {n} days', streakRule: 'Miss a day and the streak starts over', streakChest: 'Streak chest {n}',
+    streakDays: 'Streak: {n} days', streakRule: 'Missed a day? A shield saves your streak once a week', shieldReady: 'Shield ready', shieldUsed: 'Shield used this week', streakChest: 'Streak chest {n}',
     dailyDoneTil: 'Done for today! A new puzzle in {t}', dailyEnds: 'New puzzle in {t}', dailyStamp: '+1 season stamp', payStreak: 'Streak chest',
     // events
     eventsLocked: 'Opens after level {n}', eventsLockedSub: 'Cat Show boards, Café Rush and seasons with visiting cats.',
@@ -41,7 +49,14 @@ addStrings({
   tr: {
     secShort: 'sn', hShort: 'sa', mShort: 'dk',
     tipJar: 'Bahşiş kavanozu', jarFull: 'Doldu!', season: 'Sezon',
-    goalResident: 'Yeni: {name}', g_win: '{n} galibiyet', g_color: '{n} kedi çıkar', g_carrier: '{n} taşıyıcı', g_tidy: 'Temiz galibiyet', g_daily: 'Günlük bulmaca', outfit_hat: 'Bere', outfit_scarf: 'Atkı', outfit_crown: 'Taç', goalVisitor: '{name} ziyarete geliyor', goalGift: 'Sezon hediyesi', goalStreak: 'Günlük seri', goalParty: 'Çatı partisi',
+    helpEarn: '{name} {o} istiyor!', reqTreat: '{name} sana ikram hazırladı!', tipsReady: 'Bahşiş!', spotClaim: 'Al!',
+    o_hat: 'bere', o_scarf: 'atkı', o_crown: 'taç',
+    streetTitle: 'Kedi Sokağı', streetLocked: 'Çatı katından sonra açılır', streetShops: 'Açık dükkan: {n}', streetPiece: '{house} · {n}/{m}', streetNext: 'Sırada: {house}',
+    keeperArrive: '{place} açıldı!', keeperMoved: 'Dükkanı {name} işletecek.', apprMoved: '{keeper} yanına çırak aldı: {name} taşındı!', apprNext: 'Bir çırak taşınacak', visitorArrive: '{name} taşındı!', nookIn: 'Köşesi: {room}', visitGift: 'Her gün hediyeyle uğrar', yay: 'Yaşasın!',
+    previewTitle: '{n} pulda {name}', previewBody: '{room} odasında bir köşe · günde +{c} altın',
+    renoTitle: '{set}', renoFeatured: 'Yeni stil · bu sezonun seti', renoSub: '{room} için yeni stil', renoSwitch: 'Stili değiştir', renoSwitchSub: 'Ücretsiz · {n} set var', renoDone: 'Yeni görünüm: {set}!',
+    nextUp: 'Sırada: {room}', unlocksX: '{name} taşınır',
+    goalResident: 'Yeni: {name}', g_win: '{n} galibiyet', g_color: '{n} kedi çıkar', g_carrier: '{n} taşıyıcı', g_tidy: 'Temiz galibiyet', g_daily: 'Günlük bulmaca', outfit_hat: 'Bere', outfit_scarf: 'Atkı', outfit_crown: 'Taç', goalVisitor: '{name} geliyor', goalGift: 'Sezon hediyesi', goalStreak: 'Günlük seri', goalParty: 'Çatı partisi', goalShow: 'Kedi Şovu madalyası', resThread: '{n} yıldız sonra {name} taşınıyor', reqFirst: '{name} senden istiyor: {what}', nextAskNow: 'Sırada: {name} için {task}', nextAskIn: '{t} sonra yeni istek var. Görüşürüz!',
     petHeart: '{name} seni çok sevdi! ♥{n}',
     outfitGift: 'Yeni kıyafet: {name} için {o}!',
     cafeChores: 'Kafe bahşişleri', jarRate: 'Sakinlerin saatte {n} altın bahşiş bırakıyor', collect: 'Topla', jarIsFull: 'Kavanoz doldu: topla!', jarFullIn: '{t} sonra dolu',
@@ -49,7 +64,7 @@ addStrings({
     reqHow: 'Her sakini günde bir kez sev, bir kalp kazan. Kalpler kıyafet açar.',
     reqThanks: '{name} çok mutlu! +{h} ♥',
     req_win: '{n} seviye kazan', req_color: '{n} {c} kedi çıkar', req_carrier: '{n} taşıyıcı doldur', req_tidy: 'En fazla 2 minder kullanarak kazan', req_daily: 'Günlük bulmacayı çöz',
-    streakDays: 'Seri: {n} gün', streakRule: 'Bir gün kaçırırsan seri baştan başlar', streakChest: 'Seri sandığı {n}',
+    streakDays: 'Seri: {n} gün', streakRule: 'Bir gün mü kaçırdın? Kalkan haftada bir serini korur', shieldReady: 'Kalkan hazır', shieldUsed: 'Kalkan bu hafta kullanıldı', streakChest: 'Seri sandığı {n}',
     dailyDoneTil: 'Bugünlük bitti! Yeni bulmaca {t} sonra', dailyEnds: 'Yeni bulmaca {t} sonra', dailyStamp: '+1 sezon pulu', payStreak: 'Seri sandığı',
     eventsLocked: '{n}. seviyeden sonra açılır', eventsLockedSub: 'Kedi Şovu tahtaları, Kafe Yarışı ve misafir kedili sezonlar.',
     rush: 'Kafe Yarışı', showBoardN: 'Şov tahtası {k}', goalLoading: '...',
