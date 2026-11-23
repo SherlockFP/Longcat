@@ -197,7 +197,10 @@ button.pill { color: var(--ink); }
 .r7hub .guest.g7 { position: absolute; aspect-ratio: auto; transform: translate(-50%, -100%); }
 .r7hub .guest.g7 .gimg { width: 100%; height: auto; display: block; transform-origin: 50% 95%; filter: drop-shadow(-4px 6px 4px rgba(60,30,10,.3)); }
 .r7hub .guest.g7 .gimg.job { position: absolute; left: 0; top: 0; opacity: 0; animation: jobSwap 9s ease-in-out infinite; animation-delay: var(--d, 0s); }
-@keyframes jobSwap { 0%, 45% { opacity: 0; } 50%, 92% { opacity: 1; } 97%, 100% { opacity: 0; } }
+@keyframes jobSwap { 0%, 47% { opacity: 0; } 50%, 94% { opacity: 1; } 97%, 100% { opacity: 0; } }
+/* the idle pose hands over to the job pose instead of showing under it (two cats on top of each other) */
+.r7hub .guest.g7 .gimg:has(+ .gimg.job) { animation: jobSwapOut 9s ease-in-out infinite; animation-delay: var(--d, 0s); }
+@keyframes jobSwapOut { 0%, 44% { opacity: 1; } 47%, 97% { opacity: 0; } 100% { opacity: 1; } }
 .r7hub .guest.g7::after { display: none; }
 .r7hub .guest.g7.fresh { animation: guestIn7 .9s .5s cubic-bezier(.2,1.5,.4,1) both; }
 @keyframes guestIn7 { from { transform: translate(-50%, -100%) scale(0); opacity: 0; } }
@@ -292,7 +295,7 @@ button.pill { color: var(--ink); }
 .floorfx.calm .fx { animation: fade .6s ease-out both !important; }
 
 @media (prefers-reduced-motion: reduce) {
-  .d7.fresh, .d7.tbd img, .d7.tbd::before, .r7hub .stage::after, .r7hub .guest.g7 .gimg.job, .hf .crane, .tbd-tag, .d7.tbd.ok .tbd-tag { animation: none !important; }
+  .d7.fresh, .d7.tbd img, .d7.tbd::before, .r7hub .stage::after, .r7hub .guest.g7 .gimg.job, .r7hub .guest.g7 .gimg:has(+ .gimg.job),.hf .crane, .tbd-tag, .d7.tbd.ok .tbd-tag { animation: none !important; }
   .card.r7fail { animation: fade .12s ease-out; }
 }
 
