@@ -1,0 +1,587 @@
+{
+  "areas": [
+    {
+      "id": "counter",
+      "name": {
+        "en": "Counter",
+        "tr": "Tezgah"
+      },
+      "shell": "cafe_shell_counter.webp",
+      "tasks": [
+        {
+          "id": "counter_counter",
+          "name": {
+            "en": "Wooden counter",
+            "tr": "Ahşap tezgah"
+          },
+          "cost": 1,
+          "sprite": "cafe_counter_counter.webp",
+          "x": 0.31,
+          "y": 0.48,
+          "w": 0.38
+        },
+        {
+          "id": "counter_pastry",
+          "name": {
+            "en": "Pastry display",
+            "tr": "Pasta vitrini"
+          },
+          "cost": 1,
+          "sprite": "cafe_counter_pastry.webp",
+          "x": 0.45,
+          "y": 0.4,
+          "w": 0.26,
+          "resident": {
+            "id": "mochi",
+            "name": "Mochi",
+            "line": {
+              "en": "Mrrp! This place smells like fresh pastry.",
+              "tr": "Mırr! Burası taze pasta kokuyor."
+            },
+            "perk": "coins_bonus"
+          }
+        },
+        {
+          "id": "counter_lamps",
+          "name": {
+            "en": "Pendant lamps",
+            "tr": "Sarkıt lambalar"
+          },
+          "cost": 1,
+          "sprite": "cafe_counter_lamps.webp",
+          "x": 0.36,
+          "y": 0.22,
+          "w": 0.26
+        },
+        {
+          "id": "counter_chalkboard",
+          "name": {
+            "en": "Chalkboard menu",
+            "tr": "Kara tahta menü"
+          },
+          "cost": 2,
+          "sprite": "cafe_counter_chalkboard.webp",
+          "x": 0.17,
+          "y": 0.3,
+          "w": 0.18,
+          "resident": {
+            "id": "biscuit",
+            "name": "Biscuit",
+            "line": {
+              "en": "Chef Biscuit reporting for duty!",
+              "tr": "Şef Bisküvi göreve hazır!"
+            },
+            "perk": "hint_discount"
+          }
+        },
+        {
+          "id": "counter_tables",
+          "name": {
+            "en": "Tables and stools",
+            "tr": "Masalar ve tabureler"
+          },
+          "cost": 1,
+          "sprite": "cafe_counter_tables.webp",
+          "x": 0.57,
+          "y": 0.62,
+          "w": 0.3
+        },
+        {
+          "id": "counter_plant",
+          "name": {
+            "en": "Monstera plant",
+            "tr": "Monstera çiçeği"
+          },
+          "cost": 2,
+          "sprite": "cafe_counter_plant.webp",
+          "x": 0.84,
+          "y": 0.58,
+          "w": 0.2
+        }
+      ],
+      "spots": [
+        {
+          "pose": "sit",
+          "x": 0.4,
+          "y": 0.8,
+          "w": 0.17
+        },
+        {
+          "pose": "loaf",
+          "x": 0.73,
+          "y": 0.76,
+          "w": 0.15
+        }
+      ]
+    },
+    {
+      "id": "window",
+      "name": {
+        "en": "Sunny Window",
+        "tr": "Güneşli Pencere"
+      },
+      "shell": "cafe_shell_window.webp",
+      "tasks": [
+        {
+          "id": "window_seat",
+          "name": {
+            "en": "Window seat",
+            "tr": "Cam kenarı koltuğu"
+          },
+          "cost": 1,
+          "sprite": "cafe_window_seat.webp",
+          "x": 0.26,
+          "y": 0.46,
+          "w": 0.34
+        },
+        {
+          "id": "window_plants",
+          "name": {
+            "en": "Hanging plants",
+            "tr": "Asma bitkiler"
+          },
+          "cost": 2,
+          "sprite": "cafe_window_plants.webp",
+          "x": 0.55,
+          "y": 0.27,
+          "w": 0.18,
+          "resident": {
+            "id": "luna",
+            "name": "Luna",
+            "line": {
+              "en": "A good book and a sunny spot. Purrfect.",
+              "tr": "İyi bir kitap, güneşli bir köşe. Mükemmel."
+            },
+            "perk": "extra_undo"
+          }
+        },
+        {
+          "id": "window_bookshelf",
+          "name": {
+            "en": "Bookshelf",
+            "tr": "Kitaplık"
+          },
+          "cost": 2,
+          "sprite": "cafe_window_bookshelf.webp",
+          "x": 0.74,
+          "y": 0.38,
+          "w": 0.24
+        },
+        {
+          "id": "window_cattree",
+          "name": {
+            "en": "Cat tree",
+            "tr": "Kedi ağacı"
+          },
+          "cost": 2,
+          "sprite": "cafe_window_cattree.webp",
+          "x": 0.82,
+          "y": 0.56,
+          "w": 0.26
+        },
+        {
+          "id": "window_rug",
+          "name": {
+            "en": "Paw rug",
+            "tr": "Pati halısı"
+          },
+          "cost": 2,
+          "sprite": "cafe_window_rug.webp",
+          "x": 0.56,
+          "y": 0.62,
+          "w": 0.36,
+          "resident": {
+            "id": "pudding",
+            "name": "Pudding",
+            "line": {
+              "en": "Fluffy and fancy, that is me!",
+              "tr": "Tüylü ve şık, işte benim!"
+            },
+            "perk": "star_bonus"
+          }
+        },
+        {
+          "id": "window_lights",
+          "name": {
+            "en": "String lights",
+            "tr": "Işık zinciri"
+          },
+          "cost": 2,
+          "sprite": "cafe_window_lights.webp",
+          "x": 0.64,
+          "y": 0.2,
+          "w": 0.3
+        }
+      ],
+      "spots": [
+        {
+          "pose": "loaf",
+          "x": 0.42,
+          "y": 0.68,
+          "w": 0.15
+        },
+        {
+          "pose": "sit",
+          "x": 0.76,
+          "y": 0.76,
+          "w": 0.17
+        }
+      ]
+    },
+    {
+      "id": "cushion",
+      "name": {
+        "en": "Cushion Corner",
+        "tr": "Minder Köşesi"
+      },
+      "shell": "cafe_shell_cushion.webp",
+      "tasks": [
+        {
+          "id": "cushion_rug",
+          "name": {
+            "en": "Fluffy round rug",
+            "tr": "Yuvarlak tüylü halı"
+          },
+          "cost": 2,
+          "sprite": "cafe_cushion_rug.webp",
+          "x": 0.52,
+          "y": 0.72,
+          "w": 0.36
+        },
+        {
+          "id": "cushion_lamp",
+          "name": {
+            "en": "Fabric floor lamp",
+            "tr": "Kumaş abajurlu lamba"
+          },
+          "cost": 3,
+          "sprite": "cafe_cushion_lamp.webp",
+          "x": 0.5,
+          "y": 0.45,
+          "w": 0.15
+        },
+        {
+          "id": "cushion_shelf",
+          "name": {
+            "en": "Cubby bookshelf",
+            "tr": "Kedi yuvalı kitaplık"
+          },
+          "cost": 3,
+          "sprite": "cafe_cushion_shelf.webp",
+          "x": 0.77,
+          "y": 0.5,
+          "w": 0.26,
+          "resident": {
+            "id": "noodle",
+            "name": "Noodle",
+            "line": {
+              "en": "Stretching out is my whole personality.",
+              "tr": "Uzanıp gerinmek benim tüm kişiliğim."
+            },
+            "perk": "extra_undo",
+            "value": 2
+          }
+        },
+        {
+          "id": "cushion_hammock",
+          "name": {
+            "en": "Cat hammock",
+            "tr": "Kedi hamağı"
+          },
+          "cost": 2,
+          "sprite": "cafe_cushion_hammock.webp",
+          "x": 0.76,
+          "y": 0.7,
+          "w": 0.26
+        },
+        {
+          "id": "cushion_bench",
+          "name": {
+            "en": "Window bench",
+            "tr": "Cam kenarı bankı"
+          },
+          "cost": 3,
+          "sprite": "cafe_cushion_bench.webp",
+          "x": 0.25,
+          "y": 0.5,
+          "w": 0.28
+        },
+        {
+          "id": "cushion_pile",
+          "name": {
+            "en": "Giant cushion pile",
+            "tr": "Dev minder yığını"
+          },
+          "cost": 3,
+          "sprite": "cafe_cushion_pile.webp",
+          "x": 0.3,
+          "y": 0.71,
+          "w": 0.2
+        }
+      ],
+      "spots": [
+        {
+          "pose": "loaf",
+          "x": 0.5,
+          "y": 0.72,
+          "w": 0.15
+        },
+        {
+          "pose": "sit",
+          "x": 0.5,
+          "y": 0.82,
+          "w": 0.16
+        }
+      ],
+      "clutter": {
+        "sprite": "cafe_clutter_cushion.webp",
+        "x": 0.5,
+        "y": 0.86,
+        "w": 0.24
+      }
+    },
+    {
+      "id": "patio",
+      "name": {
+        "en": "Garden Patio",
+        "tr": "Bahçe Terası"
+      },
+      "shell": "cafe_shell_patio.webp",
+      "tasks": [
+        {
+          "id": "patio_planters",
+          "name": {
+            "en": "Flower planters",
+            "tr": "Çiçek saksılıkları"
+          },
+          "cost": 2,
+          "sprite": "cafe_patio_planters.webp",
+          "x": 0.22,
+          "y": 0.52,
+          "w": 0.26
+        },
+        {
+          "id": "patio_pergola",
+          "name": {
+            "en": "Vine pergola",
+            "tr": "Sarmaşıklı çardak"
+          },
+          "cost": 3,
+          "sprite": "cafe_patio_pergola.webp",
+          "x": 0.5,
+          "y": 0.46,
+          "w": 0.34
+        },
+        {
+          "id": "patio_fountain",
+          "name": {
+            "en": "Little fountain",
+            "tr": "Küçük çeşme"
+          },
+          "cost": 3,
+          "sprite": "cafe_patio_fountain.webp",
+          "x": 0.26,
+          "y": 0.73,
+          "w": 0.22,
+          "resident": {
+            "id": "pepper",
+            "name": "Pepper",
+            "line": {
+              "en": "My tomatoes are almost ready. Almost.",
+              "tr": "Domateslerim neredeyse hazır. Neredeyse."
+            },
+            "perk": "coins_bonus",
+            "value": 2
+          }
+        },
+        {
+          "id": "patio_lights",
+          "name": {
+            "en": "String-light post",
+            "tr": "Işık zincirli direk"
+          },
+          "cost": 2,
+          "sprite": "cafe_patio_lights.webp",
+          "x": 0.82,
+          "y": 0.5,
+          "w": 0.22
+        },
+        {
+          "id": "patio_lounger",
+          "name": {
+            "en": "Sun lounger",
+            "tr": "Güneşlenme şezlongu"
+          },
+          "cost": 3,
+          "sprite": "cafe_patio_lounger.webp",
+          "x": 0.78,
+          "y": 0.74,
+          "w": 0.26
+        },
+        {
+          "id": "patio_tables",
+          "name": {
+            "en": "Umbrella table set",
+            "tr": "Şemsiyeli masa takımı"
+          },
+          "cost": 3,
+          "sprite": "cafe_patio_tables.webp",
+          "x": 0.52,
+          "y": 0.74,
+          "w": 0.26,
+          "resident": {
+            "id": "clover",
+            "name": "Clover",
+            "line": {
+              "en": "Every petal has a story to tell.",
+              "tr": "Her taçyaprağının anlatacak bir hikâyesi var."
+            },
+            "perk": "hint_discount",
+            "value": 2
+          }
+        }
+      ],
+      "spots": [
+        {
+          "pose": "sit",
+          "x": 0.37,
+          "y": 0.6,
+          "w": 0.15
+        },
+        {
+          "pose": "loaf",
+          "x": 0.66,
+          "y": 0.88,
+          "w": 0.15
+        }
+      ],
+      "clutter": {
+        "sprite": "cafe_clutter_patio.webp",
+        "x": 0.5,
+        "y": 0.86,
+        "w": 0.24
+      }
+    },
+    {
+      "id": "rooftop",
+      "name": {
+        "en": "Rooftop",
+        "tr": "Çatı Katı"
+      },
+      "shell": "cafe_shell_rooftop.webp",
+      "tasks": [
+        {
+          "id": "roof_canopy",
+          "name": {
+            "en": "Fairy-light canopy",
+            "tr": "Peri ışıklı gölgelik"
+          },
+          "cost": 2,
+          "sprite": "cafe_rooftop_canopy.webp",
+          "x": 0.5,
+          "y": 0.5,
+          "w": 0.36
+        },
+        {
+          "id": "roof_telescope",
+          "name": {
+            "en": "Telescope",
+            "tr": "Teleskop"
+          },
+          "cost": 3,
+          "sprite": "cafe_rooftop_telescope.webp",
+          "x": 0.22,
+          "y": 0.56,
+          "w": 0.18
+        },
+        {
+          "id": "roof_lemon",
+          "name": {
+            "en": "Potted lemon tree",
+            "tr": "Saksıda limon ağacı"
+          },
+          "cost": 3,
+          "sprite": "cafe_rooftop_lemon.webp",
+          "x": 0.85,
+          "y": 0.52,
+          "w": 0.2
+        },
+        {
+          "id": "roof_tower",
+          "name": {
+            "en": "Cat climbing tower",
+            "tr": "Kedi tırmanma kulesi"
+          },
+          "cost": 2,
+          "sprite": "cafe_rooftop_tower.webp",
+          "x": 0.8,
+          "y": 0.72,
+          "w": 0.24
+        },
+        {
+          "id": "roof_beanbags",
+          "name": {
+            "en": "Bean bags",
+            "tr": "Pufler"
+          },
+          "cost": 3,
+          "sprite": "cafe_rooftop_beanbags.webp",
+          "x": 0.3,
+          "y": 0.74,
+          "w": 0.24
+        },
+        {
+          "id": "roof_grill",
+          "name": {
+            "en": "Snack grill cart",
+            "tr": "Atıştırmalık mangal arabası"
+          },
+          "cost": 3,
+          "sprite": "cafe_rooftop_grill.webp",
+          "x": 0.55,
+          "y": 0.7,
+          "w": 0.2,
+          "resident": {
+            "id": "captain",
+            "name": "Captain",
+            "line": {
+              "en": "Cleared for landing, right on this bean bag.",
+              "tr": "İnişe izin verildi, tam şu pufun üstüne."
+            },
+            "perk": "star_bonus",
+            "value": 2
+          }
+        }
+      ],
+      "spots": [
+        {
+          "pose": "sit",
+          "x": 0.5,
+          "y": 0.6,
+          "w": 0.15
+        },
+        {
+          "pose": "loaf",
+          "x": 0.62,
+          "y": 0.86,
+          "w": 0.15
+        }
+      ],
+      "clutter": {
+        "sprite": "cafe_clutter_rooftop.webp",
+        "x": 0.5,
+        "y": 0.86,
+        "w": 0.24
+      }
+    }
+  ],
+  "notes": "x,y = sprite center and w = sprite width, as fractions of the shell image (sprite webps are square, padded). hue = CSS hue-rotate degrees for a recoloured shell/sprite; flip = mirrored layout. spots = resident floor spots (sprite center x,y and width w; pose sit|loaf): residents of the area take them first, other moved-in residents visit the free ones. clutter = per-area renovation sprite (x,y,w like a task); show it only while the area has unbuilt tasks and fade it out as tasks complete. value on a resident = perk strength (default 1).",
+  "teaser": {
+    "id": "more",
+    "name": {
+      "en": "More corners",
+      "tr": "Yeni köşeler"
+    },
+    "image": "cafe_teaser_cushion.webp"
+  }
+}

@@ -1,0 +1,8 @@
+node_modules
+dist
+# big regenerable sources (GPT raw art, QA frames); processed assets live in public/
+art-src/**/*.png
+art-src/**/*.log
+qa/*.png
+qa/*.jpg
+!art-src/mockups/_*.jpg

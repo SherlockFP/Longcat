@@ -1,0 +1,23 @@
+## 6/10 combined
+
+I’d play through the dog and yarn levels. I don’t see a reason yet to play for months or send the game to a friend. The café now looks like somewhere I’d want to build, and the patterned cats have enough personality to carry a clip. But the most interesting decision is still easy to miss. Level 12 shows four cats on cushions, two open seats, three carriers, and a floating orange badge. The information is there, but I have to reconstruct what my next tap will do. Meanwhile, the win card’s Share thumbnail shows an almost empty board. It sells the aftermath of the game’s best moment.
+
+That’s a design score from the spec, frames, and prior review. The stills can’t verify tap feel, animation timing, or repeat play.
+
+## The eight fixes, in order
+
+1. **Hand-build Level 3 around a bench decision.** Give the player two legal exits. One off-color cat looks tempting and fills a cushion with no immediate payoff. The other waits on the bench and then jumps into the next carrier as soon as it arrives. Make both routes recoverable. By Level 3, the player should have caused an auto-boarding chain and understood why it happened. A generated bench detour in Level 4 doesn’t guarantee either.
+
+2. **Make every legal tap’s destination readable before release.** Give the current carrier and the next two fixed slots with full-size pattern badges. Put three fill pips on the active carrier and move departing carriers through their own animation lane. On touch-down, highlight the exact carrier or cushion the cat would use, then commit on release. Level 12 should read at a glance as “two free seats, green boards now, pink waits.” The floating fourth badge can go.
+
+3. **Reject generated boards that are solvable but dull.** The color quotas improved the mix, but four colors can still amount to a long stretch of obvious taps. For standard levels after the tutorial, require at least one state with two legal exits whose consequences differ after auto-boarding. One preserves a seat or accelerates a departure. The other uses a seat the player will need, with a clue visible in the queue or on the board. Track forced cleanup taps separately and reject boards where they dominate. Hand-curate Levels 4–10 while tuning those checks.
+
+4. **Turn the bench chain into the thing people share.** Start the replay on the setup tap. Keep the board, bench, and carriers in frame. Stagger the cushion jumps so viewers can count them, then give the second departure a bigger payoff. Buffer the next tap through that short beat so rapid play can’t erase it. Put a silent-readable 3–5 second replay on the win card in place of the tiny static preview. The clip should make sense to someone who’s never played.
+
+5. **Make the dog and yarn change the solution.** Moving them to Levels 8 and 12 was the right call. In the dog frame, “Dog wakes when 3 cats leave” describes a global countdown while the spec says nearby exits count. If proximity is the rule, mark the qualifying cells, tick the counter only on eligible exits, and have the dog visibly stand up and clear both cells. Give yarn the same cause-and-effect treatment. Follow each teaching board with a puzzle where using the mechanic early changes which carrier you can fill.
+
+6. **Make the café pay off past the first room.** Keep the cheaper tasks and early resident. Give Mochi a recurring free Hint with Mochi’s face on the booster when it’s available, and let players tap residents where they lounge. Ship a playable third area and fold Cozy Room breeds into the café as visitors. The Level 7 café frame already makes me want to place those tables. The next milestone should give me an equally concrete reason to come back.
+
+7. **Make a loss teach the player something before asking them to pay.** The Level 49 card pushes the three occupied cushions and the stranded green cat behind a shopping-height modal. Freeze the overflow, keep the bench and active carrier visible, and explain the consequence in one line: “All 3 seats are full. Green can’t board yet.” Give Retry the same visual weight as the rescue action. Show the 70-coin shortfall as secondary text so the unaffordable purchase doesn’t dominate the screen.
+
+8. **Make Cat Show a weekly puzzle worth talking about.** Replace the wins-to-ribbons quota with one authored board on a shared seed, unlimited practice, and a result friends can compare. Use peak bench occupancy as the score and award themed café décor for beating a visible target. “I cleared the Pajama Party board with one seat used” gives players a reason to trade solutions and send each other the board.

@@ -1,0 +1,3477 @@
+Reading additional input from stdin...
+OpenAI Codex v0.171.0
+--------
+workdir: C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+model: gpt-6.2-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a205c5-1e0f-75b0-989f-4e37bd09c6d8
+--------
+user
+You are co-director of our studio. Frames of Long Cat Out! v2 (spec DESIGN-V2.md; previous review qa/round5-reviews.md; level metrics qa/core-metrics.txt; generator src/core/generate.js). Score 1-10 for fun + long-term retention + virality (one combined score, explain), then the 8 most important concrete fixes, most important first. Brutal and specific.
+codex
+I’ll read the v2 spec, prior review, level metrics, and generator alongside the frames, then rank the eight fixes I’d make first.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content DESIGN-V2.md' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content qa/core-metrics.txt' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content src/core/generate.js' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content qa/round5-reviews.md' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Location; rg --files -g AGENTS.md -g DESIGN-V2.md -g round5-reviews.md -g core-metrics.txt -g generate.js' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 979ms:
+
+> long-cat-out@0.1.0 check
+> node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs
+
+
+level  size   kind    cats  carriers  colors  bench  peak  detours  gen_ms
+1      5x6    normal  3     1         -       5      0     0        0.4
+5      6x8    normal  12    4         4       5      4     3        21.8
+10     6x8    normal  12    4         4       5      4     4        17.2
+15     7x9    hard    15    5         5       5      4     5        2.1
+30     7x9    normal  15    5         5       5      4     4        3.5
+60     8x11   normal  21    7         4       6      3     5        3.7
+100    8x11   normal  18    6         5       5      4     4        1.8
+250    8x11   normal  18    6         5       5      4     4        3.2
+500    8x10   normal  15    5         4       5      4     4        1.2
+
+mechanics per range (levels carrying each, total pieces)
+  L1-7: dog 0, yarn 0, mystery 0, frozen 0, mixed 0, pieces 0
+  L8-11: dog 2, yarn 0, mystery 0, frozen 0, mixed 0, pieces 2
+  L12-39: dog 3, yarn 14, mystery 0, frozen 0, mixed 2, pieces 22
+  L40-54: dog 2, yarn 7, mystery 5, frozen 0, mixed 2, pieces 19
+  L55-69: dog 1, yarn 5, mystery 1, frozen 5, mixed 2, pieces 16
+  L70-600: dog 88, yarn 171, mystery 58, frozen 169, mixed 121, pieces 611
+
+kinds {"normal":532,"hard":48,"super":20}; hard at 15,25,42,52,59,77,87,106...; super at 34,67,96,122,149,175...
+
+decisions per range (averages; dead = losing taps / legal taps, long = share of cats 4+ cells)
+  L5-14 normal n=10   traps 1.70  chains 1.60  3-chains 0.90  dead 0.060  free 2.97  startSafe 5.2  fill 0.76  long 0.32  colours 4.0  cats 12.3
+  L15-39 normal n=22   traps 1.45  chains 1.45  3-chains 0.73  dead 0.036  free 3.66  startSafe 6.4  fill 0.75  long 0.33  colours 4.5  cats 15.3
+  L15-39 hard   n=3    traps 5.67  chains 2.00  3-chains 1.00  dead 0.197  free 2.84  startSafe 5.0  fill 0.75  long 0.33  colours 5.0  cats 16.0
+  L40-99 normal n=53   traps 2.43  chains 1.45  3-chains 0.75  dead 0.068  free 3.57  startSafe 6.8  fill 0.75  long 0.38  colours 4.7  cats 16.8
+  L40-99 hard   n=7    traps 4.29  chains 2.29  3-chains 1.29  dead 0.120  free 3.65  startSafe 6.9  fill 0.73  long 0.36  colours 5.0  cats 18.0
+  L100-249 normal n=133  traps 2.55  chains 1.56  3-chains 0.73  dead 0.077  free 3.39  startSafe 6.6  fill 0.75  long 0.34  colours 4.9  cats 17.9
+  L100-249 hard   n=17   traps 5.12  chains 1.88  3-chains 1.18  dead 0.145  free 3.74  startSafe 7.4  fill 0.78  long 0.35  colours 5.2  cats 19.2
+  L250-600 normal n=310  traps 2.49  chains 1.51  3-chains 0.66  dead 0.082  free 3.37  startSafe 6.5  fill 0.77  long 0.36  colours 4.9  cats 18.2
+  L250-600 hard   n=41   traps 4.61  chains 1.80  3-chains 1.07  dead 0.161  free 3.65  startSafe 6.9  fill 0.78  long 0.35  colours 5.3  cats 19.2
+levels missing the full band (floor still held): 0
+search misses 0 (avg 15 nodes)
+gen avg 3.12ms, worst 26.0ms (level 443), total 1870ms for 600 levels
+all checks passed
+  cafAc pacing: residents after L3 mochi, L5 biscuit, L11 luna, L16 pudding, L25 noodle, L39 pepper, L46 clover, L60 captain; areas done after L8, L18, L33, L46, L60
+econ checks passed
+check-web ok
+
+ succeeded in 979ms:
+# Long Cat Out! v2: the full game (supersedes the core rules in DESIGN.md; meta from DESIGN-HYBRID.md, refined here)
+
+Why v2: in the MVP critique the feel critic scored it 4/10 and Sol gave virality 4/10 and retention 5/10. The owner found it boring. His goal is fun, surprising, and played for months, not for 10 days. Visuals must match `STYLE.md` (direction B) and the GPT mockups, especially `art-src/mockups/play2-b.png` (gameplay) and `cafe-a.png` (hub).
+
+## 1. Core loop: tap-away + carrier Jam
+- Board: a grid with **color-coded long cats** in 8 colors (orange, blue, pink, green, purple, mint, yellow, red). Each color has its own body pattern so color-blind players can read it: stripes, polka dots, stars, hearts, clouds, zigzag, spots, plain. The head sits at the leading end, a chevron sits in front of the nose, and the tail is round with a white tip.
+- **Tap a cat**: if its exit lane (head to board edge) is clear, it sprints out on little legs, runs to the top and **leaps into a carrier**. If the lane is blocked it **bonks**: a red lane shows the blocker, the blocker wiggles. A bonk costs nothing; failure comes from the bench.
+- **Carriers**: a conveyor at the top shows a queue (the front carrier plus 2 previews). The front carrier takes 3 cats of its color. When full, its door closes, it drives off with a happy jingle, and the next carrier rolls in.
+- **Bench**: an exiting cat whose color does not match the front carrier sits on one of **5 bench cushions**. When a new carrier arrives, matching bench cats hop in automatically (chain reactions are the clip moment).
+- **Lose**: a cat needs a seat and the bench is full. This opens the continue offer: +1 bench seat via rewarded ad or coins, or a Scoop.
+- **Win**: board empty and all carriers gone. A win always pays **1 star** (hard: 2, super hard: 3) plus coins, with a bonus for empty bench seats.
+- **Kittens**: same color as their mother, trail her out (one tap = 2 cats, great for filling carriers).
+- **Undo** booster: undo the last tap (coins/IAP). **Scoop**: lift any cat directly into the bench or a matching carrier, ignoring blockers. **Hint**: highlights the best next tap.
+
+## 2. Level generation (always solvable, never boring)
+Per Sol, round 8: build a candidate board with the reverse-removal arrow generator, find a legal tap order, then assign colors and the carrier order **together** so that this order wins with bench �% 4 after resolving boardings. It should include a few deliberate bench detours, and on harder levels a tempting legal move that costs bench space, with a visible clue. Each color's count must be a multiple of 3. The solver simulates the real rules after every tap: boarding from the bench, consecutive departures, resolving before checking for a loss.
+- Sawtooth difficulty: a hard level every 7�?"10 levels from L15 (red "Hard" badge, 2 stars), super hard every ~30 levels (3 stars). Easier levels follow hard ones.
+- Board sizes 5x6 up to 9x11. Cell �%� 40 CSS px on a 375-wide phone; bigger boards scroll-free by limiting the size.
+
+## 3. New mechanics ramp (the main fix for "10 days and quit")
+One new mechanic per chapter, each introduced in a teaching level with a one-line hint:
+- L1�?"3 tutorial (tap �+' carrier, bench, kittens), L6 kittens in generated levels
+- L15 **Sleeping dog**: occupies 2 cells, wakes up and trots away after 3 cats exit nearby (watch the Zzz counter)
+- L25 **Yarn ball**: blocks a cell; a cat exiting past an adjacent yarn knocks it rolling off the board (chain clip)
+- L40 **Mystery cat**: color hidden ("?") until a neighbor leaves (borrowed from the Jam games' hidden blocks)
+- L55 **Frozen cat**: ice-covered; thaws after 2 neighbors leave
+- L70+ combos of the above; more mechanics later (spring cat, swivel bed) via data
+
+## 4. Meta: Cat CafAc (the reason to come back)
+- The **CafAc hub is the home screen** from level 4 (before that, the Play screen only). Layout from `cafe-a.png`: an isometric cafAc area at the top, a task list (task name, star-cost pill), a "Next resident" bubble, and a big Play pill "Level N".
+- **Areas**: Counter (6 tasks) �+' Sunny Window (6) �+' Cushion Corner �+' Garden Patio �+' Rooftop. This build ships the first 2 areas with art. Later areas show "Coming soon" with a teaser image.
+- Each task places a decor sprite with a build animation (dust puff, sparkle, bounce). The 3rd and 6th task of each area bring a **named resident** (portrait card "Mochi moved in!", name and a one-line personality). Residents then idle in the cafAc.
+- **Resident perks** (power progression): each resident gives a small permanent perk, such as +2 coins per win, a free Hint every day, +1 bench seat on the first try of hard levels, or starting with a Scoop every 5th level. The perks are shown on the resident card.
+
+## 5. Economy and long-term systems
+- **Lives**: 5, refill 1 per 25 min. A loss costs 1 life. The life gate only starts after the first resident (about L4).
+- **Purr Streak**: 3 first-try wins in a row �+' the next level starts with 1 free Hint + 1 bench seat. 5 in a row �+' + a Scoop. A loss resets it.
+- **Daily tasks**: 3 per day from a pool (fill 10 carriers, win 3 levels, use a booster, clear a hard level, free 50 cats), with a small chest. **7-day login calendar**.
+- **Weekly event "Cat Show"**: our own structure, not a copy. Wins drop paw ribbons, and a 10-step milestone track pays coins, boosters and an exclusive cafAc decor. The theme rotates weekly from data (Spring Picnic, Pajama Party, Beach Day...), and the track resets weekly.
+- **Coins**: earned from wins, tasks, events and perks. Spent on Undo/Scoop/Hint, continues and decor speed-ups (none for now).
+- **Monetization** (release): rewarded ads for continue +1 seat, double coins, and a free daily Scoop. Interstitials only after a win, from L8, at most 1 per 3 min, none in the first 5 minutes of the first session. IAP: No Ads $2.99, Starter Bundle $4.99 (shown once after L10), coin packs $0.99/$2.99/$6.99, Scoop packs $1.99/$4.99. These are stubs now (`src/kit/iap.js` and `ads.js`); the real plugins come at release.
+
+## 6. Feel (the critic's must-fixes)
+- The tap is instant: a 60ms squash anticipation, then a fast ease-out sprint with speed lines. Cats run on visible little legs to the carrier, then leap with an arc and a squash on landing. When a carrier departs: door snap, wiggle, drive-off, confetti puff, rising "boop" pitch ladder for consecutive carriers.
+- Idle life: blinks, ear twitches, tail wag at the tail tip, and an occasional yawn. Cats look toward a tapped neighbor.
+- Combo text above the board only: "Purrfect!", "Cat-tastic!", "Meow-velous!". The win card title depends on the result. The coin count-up flies coins to the HUD.
+- The cats must look like the mockup: chunky bodies with a navy outline, patterned fur, paws at the head end and a curled tail tip. No flat tubes.
+
+## 7. Analytics (local stub now)
+Session-1 funnel (L1, L3, first resident, L10), level start/win/lose/quit, bench-full losses, continue taken, booster use, task completion, daily task completion, D1/D7 proxies via saved timestamps.
+
+ succeeded in 996ms:
+# Round 5 reviews (critic, Sol, code) - scores [6, 6, 7]
+
+## critic 6
+- [high] The meta goes dead after about L20. CafAc areas 3-5 are hue-rotated copies of areas 1-2 (data/cafe.json: cushion = window sprites @300, patio = counter sprites @80, rooftop = window sprites @200), so the patio gets an indoor espresso counter and pastry case tinted green. All 4 residents sit in areas 1-2 ('2 of 4 residents' in 19-residents), so about 48 stars (roughly L20-L70) buy recoloured repeats with no new cat. Score: retention at 2 months is 3/10.
+  FIX: Give each area at least one new resident and its own sprite set. If that art is not ready, ship only 2 areas plus a teaser card ('Patio opens soon', with a silhouette resident) instead of the recolours.
+- [high] The combo popup still sits over the LEVEL pill. In 12-purrfect, 'Meow-velous!' is drawn over the pill, and 28c shows faded combo text behind it. The comment in game.js popup() says it shows 'in the band above the conveyor', but the frames show otherwise. This was reported in round 3 and is still unfixed.
+  FIX: Reserve a fixed band between the HUD row and the carriers (or draw the popup over the board's top third, under the HUD) and clamp the popup y to that band. Re-shoot 12 and 28c.
+- [high] The dog wake has no visible payoff. In 24c-dog-trots-away the counter is gone, but the dog still sleeps curled in the same cell with eyes closed. Players do not see the dog react, so the mechanic reads as a counter that disappears.
+  FIX: On the wake event, play an immediate beat of about 0.3 s: eyes open, a '!' or bark bubble and a stretch squash. Then play the 1.3 s trot with dust puffs. Have QA shoot the frame mid-trot.
+- [medium] The tutorial text goes stale. 28c-l4-chain still says '4 of 5 seats used!' while the bench holds only 2 cats.
+  FIX: Re-evaluate setTut on every bench change, and clear it once the count drops below the threshold.
+- [medium] Toasts cover the Scoop booster. 'Bench: 6 seats!' and 'Bench: 5 seats!' (05, 07, 24a, 28a) and 'Pudding brought a free Scoop!' (20) sit right on the Scoop button. They appear at level start, the moment a player might tap a booster.
+  FIX: Show the toast above the tutorial bar or as a pulse on the bench row, and give it pointer-events:none. Better: animate the new seat cushion popping in instead of showing text.
+- [medium] On the win card, the resident's speech bubble ('You are amazing!', 'That was close!') overlaps the lives and coin pills and the LEVEL pill (zz-debug, 28d), which makes the top of the card look cluttered.
+  FIX: Dim or hide the HUD while the win sheet is up, or move the bubble beside the resident inside the card frame.
+- [medium] The knocked yarn rolls straight over other cats. In 25b and 06 the grey ball is drawn on top of the orange cat's head as it rolls down. The rule removes it right away (rules.js exitEffects), but the animation shows it passing through cats, which looks like clipping.
+  FIX: Make the yarn hop in an arc away from the board, or draw it under the cats with a fade after one cell. Alternatively, roll it along the clear exit lane.
+- [medium] The kitten link is still drawn as red or blue collar bars with a yellow dot (L12 in 05/25a, L49 in 10, L55 in 27a). It reads as a strap glitch, and the mother-kitten relation is not readable on dense boards.
+  FIX: Replace the bars with a small paw-hold or tail-hook sprite between the mother's tail and the kitten's head, in the cat's own colour.
+- [medium] The starter bundle opens as a modal 700 ms after entering the cafAc (main.js:182). It covers the room the player came to decorate (22-starter-offer at L11 with 80 coins). A sale during the meta reward moment hurts goodwill.
+  FIX: Trigger it after the first fail/continue screen, or after a build animation finishes. Never trigger it on cafAc entry.
+- [medium] The cafAc still looks like a construction site. The paint cans, roller and dust sheet stay in the foreground across every state (17, 18b, 21, 28e). The cracked plaster is still there at Counter 4/6, and Mochi sits next to the paint cans. The room never reaches cafe-a warmth.
+  FIX: Move the scaffold to the next task's spot only. Shrink the crack at each build, and remove it at about 50% of the area's tasks. Give residents built-decor perches (a cushion on the window seat, the counter top) as soon as that decor exists.
+- [low] The board has no surprise or variety beyond 4 modifiers. Every cat uses the same grinning sticker head, and big boards (L49, L55) turn into noise made of repeated identical heads. Score: surprise 4/10. There are no idle reactions (yawn, peek) to the player's taps.
+  FIX: Add 2-3 cheap expression variants as head overlays (eyes closed, wink, 'O' mouth on the bench). Give a bonked cat a glare toward the blocker. Have a seated bench cat wave at its arriving carrier.
+- [low] Cat Show is still a pure ribbon quota fed by wins (21c, 23c): it is another progress bar on top of tasks, streak and cafAc stars, with no change to gameplay.
+  FIX: Use one authored Show board per theme (for example, all-yarn or frozen gauntlet) with unlimited practice and the exclusive decor as the prize.
+- [low] There is a stale comment in src/main.js onWin. It says 'perk: +2 coins on every win (Mochi)', but the code adds +5.
+  FIX: Update the comment.
+## Sol 6
+- [high] Level 3 does not force a bench decision; bench/auto-board chain not taught by hand-built level
+  FIX: Hand-build Level 3 with two legal exits (off-color cat fills a cushion vs waits on bench then auto-boards). Both recoverable.
+- [high] Tap destination unreadable before release (Level 12: 4 cats, 2 free seats, 3 carriers, floating orange badge)
+  FIX: Show current carrier + next two slots with full pattern badges, 3 fill pips on active carrier, separate departing lane, highlight exact target on touch-down and commit on release; drop floating 4th badge.
+- [high] Generated boards solvable but dull; four-colour stretches of obvious taps
+  FIX: Require after tutorial at least one state with two legal exits whose post-auto-boarding consequences differ; track forced cleanup taps and reject boards dominated by them; hand-curate levels 4-10.
+- [high] Share/win card shows nearly empty board and tiny static preview; bench chain is not the shareable moment
+  FIX: Replay starting at setup tap with board, bench and carriers in frame; stagger cushion jumps, bigger payoff on 2nd departure, buffer next tap; 3-5s silent-readable clip on win card.
+- [medium] Dog wake text says 'wakes when 3 cats leave' (global) but spec says nearby exits count; dog and yarn do not change solution
+  FIX: Mark qualifying cells, tick counter only on eligible exits, dog visibly stands and clears both cells; same cause/effect for yarn; follow each teaching board with a puzzle where early use changes which carrier fills.
+- [medium] Cafe has no pull beyond first room
+  FIX: Mochi recurring free Hint with face on booster, tap residents where they lounge, ship playable third area, fold Cozy Room breeds in as visitors.
+- [medium] Lose card (Level 49) hides bench/stranded cat behind shop-height modal and pushes paid rescue
+  FIX: Freeze overflow, keep bench and active carrier visible, one-line consequence ('All 3 seats are full. Green can't board yet.'), Retry equal weight to rescue, 70-coin shortfall as secondary text.
+- [low] Cat Show is a wins-to-ribbons quota with no social hook
+  FIX: Weekly authored board on shared seed, unlimited practice, comparable result (peak bench occupancy), themed cafe decor reward for beating target.
+## code 7
+- [medium] src/game/game.js visBoard() line 620-625 clears vis.bench[e.seat] = -1 unconditionally, at time arr_C+0.44 of the tap that triggered the hop-in. visBench() (line 612) for a LATER tap can land earlier than that (arrival = t0+0.07+T, T is 0.42-0.95 s, so any second tap within about 0.5-1 s). The rules give the freed seat (lowest free index) to the new cat, so the new cat's cushion is wiped from the visual bench while rules still hold it. Chain finishes are exactly when players tap fast. Self-heals only on syncVis (undo, resize, new level); later the cat hops in from an empty cushion. Rules fuzz (tap/scoop/undo/addSeat on levels 5-120) shows rules state is consistent, so this is purely a vis-model ordering bug.
+  FIX: In visBoard only clear the seat if this.vis.bench[e.seat] === e.id (and have visBench likewise skip if a pending board for that seat is still queued), or key the vis updates by cat id instead of seat index.
+- [medium] src/kit/ads.js loadH5() has no timeout. h5Rewarded/h5Interstitial await it BEFORE their own START/INTER timers start. If the adsbygoogle script request stalls (captive portal, silent drop, no onload/onerror), the promise never settles, main.js guarded() leaves busy = true forever, and every guarded action (next, hint, buy, restore, adlife, adheart, share) is dead. The win card Next button then does nothing. Only reachable with VITE_ADS_PROVIDER=h5, which is the planned release config.
+  FIX: Race loadH5() against a 4-5 s timer inside loadH5 itself (resolve(false) on timeout) and do not cache a timeout as a permanent failure; also make guarded() release after a max duration.
+- [medium] Production gating leaves dead UI. In a default production build (ADS_CONFIG.provider 'off', AD_TEST false, iap backend fail-closed) rewarded() always returns false and purchase() always fails, yet the fail card shows 'Watch ad: +1 seat', the no-lives sheet shows 'Watch ad: +1 life', hint falls to a toast, the shop lists $ prices, and the Starter Bundle ($4.99) is shown once after L10 and then burned (shop.starterShown = true). Every one ends in 'No ad right now' / 'Purchase failed'.
+  FIX: Expose ads.available() and iap.available() (provider configured or DEV) and hide or replace the ad buttons, the price tiles and the starter offer when false; do not set starterShown unless the offer was purchasable.
+- [low] src/ui/ui.js settings(): cur.screen becomes 'settings' and actions.close only calls hideModal(), so ui.screen stays 'settings' after the card is gone (cafe or home keeps showing). main.js restore() (line 445) and the pwa.onChange handler (line 669) then call ui.settings() when ui.screen === 'settings'. Repro: cafe > Settings > Close > Shop > Restore, and Settings pops open over the shop. appinstalled/beforeinstallprompt fired later does the same.
+  FIX: In actions.close (or ui.hideModal) restore cur to the underlying screen (cafe/home/play), or make restore/pwa check that #modal.settings really exists.
+- [low] Cat Show 'exclusive decor' is sold but never delivered. Step 10 sets show.decor[themeId] = 1 and the UI shows a decor chip plus the 'A-zel dekor / Exclusive decor: <theme>' note, but econ.earnedDecor() has no caller in src/ (cafe.js and ui.cafe never render it). The player earns a reward with no visible effect.
+  FIX: Render earned decor in ui.cafe (data/events.js already has a decor id per theme), or drop the chip and note until art exists.
+- [low] src/main.js share() is wrapped in guarded(), so busy stays true while clip.encode runs (about 44 frames at 10 fps, 4.4 s; much longer in a background tab where setTimeout is throttled to 1/s). During that time Next (also guarded) silently does nothing. After the await the user-activation window is also gone, so navigator.share often throws and the code falls back to a file download.
+  FIX: Do not hold the shared busy flag for share; use a separate 'sharing' flag, and show the PNG card immediately while the video encodes.
+- [low] src/kit/clip.js tick() runs every 100 ms for the whole level and also during the win card: it allocates a new canvas and downsamples the full DPR canvas (up to 1125x2436) each time, then keeps about 48 frames (about 20 MB) alive until the next level. Pure cost on low-end phones with no gameplay benefit outside the chain moment.
+  FIX: Reuse a small pool of frame canvases, stop ticking once recording is finished and the win card is up, and drop ring/best after the share or on startHome.
+- [low] src/main.js adheart/hint: the reward is dropped silently when the board state changed while the ad ran (adheart returns after the ad if game.state !== st; hint skips game.setHint() if !ok()). Player watched a full rewarded ad and got nothing and no toast. Also ads.js h5Rewarded: if START_TIMEOUT fires (9 s) just before beforeAd, finish(false) is already latched while showAd() still plays, so a full view is not rewarded.
+  FIX: Grant the hint/seat to the stock (or toast and refund) when the context changed; in h5Rewarded clear the start timer on the first beforeAd/beforeReward callback before any async work.
+- [low] TR/EN leftovers: noAdSvg in src/ui/ui.js is a hard-coded English 'AD' text inside the 'No Ads' badge (shown on the Turkish shop and starter card); index.html has lang='en' and an English title (the runtime sets documentElement.lang but not document.title). All i18n.js keys are present in both en and tr and the placeholders match; data/cafe.json and data/events.js have tr for every name.
+  FIX: Drop the text from the SVG (use a strike-through speaker/ad icon) or inject t('ad'); set document.title from t('title') on boot and on language change.
+
+ succeeded in 1035ms:
+// Level generator v2.
+// 1. reverse removal builds an arrow-solvable board (units = cat, or parent + kitten),
+// 2. a random legal tap order is drawn,
+// 3. colors and the carrier queue are assigned TOGETHER along that order (lazy carriers, deliberate
+//    bench detours), so the order wins under the real rules with bench <= benchSize - 1,
+// 4. the result is replayed on the real rules, mechanics are placed ON the winning line (each one must hold a cat
+//    that the line needs), and
+// 5. the solver measures the DECISIONS on that line (dead-end taps, traps, bench chains). Several candidates are
+//    built and the one that best fits the level's difficulty band is kept.
+import { makeRng, hashSeed, levelSeed } from './rng.js';
+import { DIRS, DIR_KEYS, BREEDS, makeBoard, makeCat, dirKey } from './board.js';
+import { exitRay, edgeNeighbours, catsNear, DOG_NEAR } from './rules.js';
+import { dependencyDepth, replay, kittenStats } from './solver.js';
+import { compile, Sim, decisions } from './search.js';
+
+const SIZES = [[5, 6], [6, 7], [6, 8], [7, 9], [7, 10], [8, 10], [8, 11]];
+const SIZE_FROM = [1, 4, 5, 12, 20, 34, 50]; // 6x8 from L5 so four colours of chunky cats fit
+const MAX_ATTEMPTS = 60;
+
+// ---- difficulty schedule: hard every 7-10 levels from L15, super hard about every 30 ----
+const sched = new Map();
+let nextSlot = 15;
+let lastSuper = 0;
+export function levelKind(n) {
+  if (n < 15) return 'normal';
+  while (nextSlot <= n) {
+    let kind = 'hard';
+    if (nextSlot >= 30 && nextSlot - lastSuper >= 26) {
+      kind = 'super';
+      lastSuper = nextSlot;
+    }
+    sched.set(nextSlot, kind);
+    nextSlot += 7 + (hashSeed('hardgap', nextSlot) % 4);
+  }
+  return sched.get(n) || 'normal';
+}
+
+// ---- mechanics ramp: one new thing per chapter, taught on a gentle level, then mixed ----
+export const TEACH = { 8: 'dog', 12: 'yarn', 40: 'mystery', 55: 'frozen' };
+const MECH_FROM = { dog: 8, yarn: 12, mystery: 40, frozen: 55 };
+const TEACH_COUNT = { dog: 1, yarn: 2, mystery: 2, frozen: 1 };
+
+// How many of each mechanic level n asks for (placement may fall short on non-teaching levels).
+export function mechPlan(n) {
+  if (TEACH[n]) return { [TEACH[n]]: TEACH_COUNT[TEACH[n]] };
+  const rng = makeRng(hashSeed('mechplan', n));
+  const names = Object.keys(MECH_FROM).filter((k) => n > MECH_FROM[k]);
+  const plan = {};
+  names.forEach((k, i) => {
+    const fresh = i === names.length - 1 && n < 70;
+    if (!rng.chance(fresh ? 0.6 : n >= 70 ? 0.42 : 0.3)) return;
+    plan[k] = k === 'dog' ? 1 + (n >= 70 && rng.chance(0.35) ? 1 : 0) : k === 'frozen' ? 1 + (n >= 80 && rng.chance(0.4) ? 1 : 0) : rng.int(1, n < 40 ? 2 : 3);
+  });
+  return plan;
+}
+
+export function params(n) {
+  const kind = levelKind(n);
+  const teach = !!TEACH[n];
+  const hard = kind !== 'normal';
+  const bonus = teach ? 0 : kind === 'super' ? 2 : hard ? 1 : 0;
+  const after = !hard && n > 15 && (levelKind(n - 1) !== 'normal' || levelKind(n - 2) !== 'normal');
+  let tier = 0;
+  for (let i = 0; i < SIZE_FROM.length; i++) if (n >= SIZE_FROM[i]) tier = i;
+  if (tier >= 3 && kind === 'normal' && makeRng(hashSeed('size', n)).chance(0.3)) tier -= 1;
+  if (kind === 'super') tier = Math.min(SIZES.length - 1, tier + 1);
+  const [w, h] = SIZES[tier];
+  const fillTarget = Math.min(0.84, (n < 10 ? 0.68 : 0.72 + 0.12 * Math.min(1, (n - 10) / 90)) + 0.03 * bonus);
+  const benchSize = kind === 'super' ? 4 : hard ? 5 : after || n <= 3 ? 6 : 5; // a 5-seat bench from L4
+  // 3 colours up to L7, 4 from L8, 5 from L15, 6 from L30 (hard levels one more), never above 6 so each reads at a glance
+  const colors = Math.min(6, (n < 15 ? 4 : n < 30 ? 5 : 6) + bonus);
+  // decision band (measured by the solver on the winning line): traps = steps where a tempting tap loses,
+  // chains = carrier arrivals that pull >= 2 bench cats, chain3 = a whole carrier filled from the bench
+  const band = kind === 'super' ? { traps: 4, chains: 2, chain3: 1, dead: 0.45 }
+    : hard ? { traps: 3, chains: 1, chain3: 1, dead: 0.4 }
+    : after ? { traps: 0, maxTraps: 1, chains: 1, chain3: 0, dead: 0.15 }
+    : { traps: n < 40 ? 1 : 2, chains: 1, chain3: 0, dead: n < 40 ? 0.25 : 0.32 };
+  return {
+    n,
+    kind,
+    w,
+    h,
+    fillTarget,
+    fillMin: n < 10 ? 0.55 : Math.min(0.68, 0.6 + 0.02 * bonus),
+    minLen: 2,
+    maxLen: n < 15 ? 6 : 8, // long and short cats mixed: about half are 4-8 cells
+    longP: n < 15 ? 0.35 : 0.5,
+    band,
+    after,
+    kittenMax: n < 30 ? 2 : 3,
+    bendP: 0.12 + 0.43 * Math.min(1, n / 60),
+    depthTarget: (n < 4 ? 1 : n < 25 ? 3 : n < 50 ? 4 : n < 100 ? 5 : n < 250 ? 6 : 7) + bonus,
+    depthMin: n >= 5 ? 2 : 1,
+    pairs: n < 20 ? 2 : n < 50 ? 2 : n < 120 ? 3 : 4,
+    breeds: Math.min(BREEDS.length, 3 + Math.floor(n / 10)),
+    benchSize,
+    colors,
+    teach,
+    detourP: teach ? 0.12 : kind === 'super' ? 0.38 : hard ? 0.3 : after ? 0.06 : 0.1 + 0.12 * Math.min(1, n / 80),
+    minDetours: teach ? 1 : kind === 'super' ? 4 : hard ? 3 : n >= 4 ? 2 : 1,
+    minChains: n >= 5 ? 1 : 0, // from L5 every level has a carrier that fills from the bench the moment it arrives
+    // L4-9: the bench fills to 3 of 5 at least once, a first small scare
+    minPeak: after ? 3 : benchSize - 1, // the line itself runs the bench to its last spare seat: a squatter there costs the level
+    hold: after ? 0 : kind === 'super' ? 3 : hard ? 3 : 2,
+    holdUntil: 0.6,
+    pAbsorb: teach ? 0.7 : kind === 'super' ? 0.35 : hard ? 0.5 : 0.8 - 0.2 * Math.min(1, n / 100),
+  };
+}
+
+// ---- hand-made tutorials (5x6) ----
+// 1: three cats, one carrier. 2: a forced zigzag, two blues park and hop in together when their carrier comes.
+// 3: mother + kitten, and a tempting big pink pair that fills the 3-seat bench if tapped early (hint arrow on orange).
+// 4: the first real bench choice (see below).
+function tutorial(n) {
+  const mk = (list) => list.map((c, i) => makeCat(i, c.cells, c.breed, c.kittenOf));
+  const meta = { n, tutorial: true, kind: 'normal', benchSize: 5 };
+  let cats;
+  let carriers;
+  if (n === 1) {
+    cats = mk([
+      { cells: [[1, 4], [1, 3], [1, 2]], breed: 'tabby' }, // orange
+      { cells: [[3, 5], [3, 4], [3, 3], [3, 2]], breed: 'tabby' }, // orange
+      { cells: [[2, 5], [2, 4], [2, 3]], breed: 'tabby' }, // orange
+    ]);
+    carriers = [{ color: 0, cap: 3 }]; // three quick taps fill it: the first door-snap and drive-off
+    meta.order = [0, 1, 2];
+  } else if (n === 2) {
+    // A forced zigzag that teaches the bench by hand: blue, orange, blue, orange, blue. Each cat frees only the next.
+    // The two blues park; the second orange sends the orange carrier off, the blue one rolls in and BOTH parked cats
+    // hop in by themselves (the first chain), then the last blue fills it.
+    cats = mk([
+      { cells: [[1, 1], [2, 1], [3, 1]], breed: 'tuxedo' }, // 0 blue, the only free cat: parks
+      { cells: [[2, 3], [2, 2]], breed: 'tabby' }, // 1 orange, held by 0
+      { cells: [[4, 3], [3, 3]], breed: 'tuxedo' }, // 2 blue, held by 1: parks
+      { cells: [[3, 5], [3, 4]], breed: 'tabby' }, // 3 orange, held by 2: fills the orange carrier, the chain fires
+      { cells: [[0, 5], [1, 5], [2, 5]], breed: 'tuxedo' }, // 4 blue, held by 3: fills the blue carrier
+    ]);
+    carriers = [{ color: 0, cap: 2 }, { color: 1, cap: 3 }];
+    meta.order = [0, 1, 2, 3, 4];
+  } else if (n === 4) {
+    // A packed 5x6 board (no empty rows) built around one real choice: no pink cat is free, so something must park.
+    // Free at the start: green 7 (green is the NEXT carrier: it hops in soon) and blue 2 (blue comes LAST: it squats
+    // on a seat all level). Exhaustive search: random play wins 72% overall, 85% after parking green first, 59% after
+    // blue first; the best line peaks at 4 of 5 seats. The hint card states the rule, never the tap.
+    cats = mk([
+      { cells: [[3, 5], [2, 5]], breed: 'calico' }, // 0 pink
+      { cells: [[2, 2], [2, 3]], breed: 'tabby' }, // 1 orange
+      { cells: [[0, 2], [0, 1], [0, 0]], breed: 'tuxedo' }, // 2 blue, free (comes last)
+      { cells: [[1, 5], [0, 5], [0, 4]], breed: 'tabby' }, // 3 orange
+      { cells: [[1, 1], [2, 1]], breed: 'tuxedo' }, // 4 blue
+      { cells: [[1, 3], [1, 4], [2, 4]], breed: 'gray' }, // 5 green
+      { cells: [[3, 0], [4, 0], [4, 1]], breed: 'calico' }, // 6 pink
+      { cells: [[4, 4], [4, 5]], breed: 'gray' }, // 7 green, free (comes next)
+      { cells: [[2, 0], [1, 0]], breed: 'gray' }, // 8 green
+      { cells: [[4, 2], [4, 3]], breed: 'tuxedo' }, // 9 blue
+      { cells: [[3, 3], [3, 4]], breed: 'calico' }, // 10 pink
+      { cells: [[3, 1], [3, 2]], breed: 'tabby' }, // 11 orange
+    ]);
+    carriers = [{ color: 2, cap: 3 }, { color: 3, cap: 3 }, { color: 0, cap: 3 }, { color: 1, cap: 3 }]; // pink, green, orange, blue
+    meta.order = [2, 3, 0, 7, 9, 6, 10, 5, 1, 8, 11, 4]; // a winning line that peaks at 4 of 5 seats
+    meta.detours = 4;
+    meta.colors = 4;
+    return makeBoard(5, 6, cats, meta, carriers);
+  } else {
+    // Mother + kitten AND a first real choice on a 3-seat bench. Free at the start: the orange mother (her kitten
+    // trails, 2 of 3 orange seats in one tap) and a big pink mother + kitten whose carrier comes LAST. Tapping pink
+    // early takes 2 seats for the whole level: the two blues that must park later then find no seat. The hint arrow
+    // points at orange; pink is only safe once its carrier rolls in.
+    cats = mk([
+      { cells: [[2, 0], [3, 0], [4, 0]], breed: 'tabby' }, // 0 orange mother, free
+      { cells: [[0, 0], [1, 0]], breed: 'tabby', kittenOf: 0 }, // 1 her kitten
+      { cells: [[1, 2], [1, 1]], breed: 'tuxedo' }, // 2 blue, held by the kitten: parks
+      { cells: [[3, 1], [2, 1]], breed: 'tuxedo' }, // 3 blue, held by 2: parks
+      { cells: [[3, 3], [3, 2]], breed: 'tabby' }, // 4 orange, held by 3: fills orange, both blues hop in, blue departs too
+      { cells: [[4, 3], [4, 4], [4, 5]], breed: 'calico' }, // 5 pink mother, free from the start (the tempting wrong tap)
+      { cells: [[4, 1], [4, 2]], breed: 'calico', kittenOf: 5 }, // 6 her kitten
+    ]);
+    carriers = [{ color: 0, cap: 3 }, { color: 1, cap: 2 }, { color: 2, cap: 2 }];
+    meta.benchSize = 3;
+    meta.order = [0, 2, 3, 4, 5];
+  }
+  return makeBoard(5, 6, cats, meta, carriers);
+}
+
+// ---- one generation attempt ----
+function runAttempt(P, rng) {
+  const W = P.w;
+  const H = P.h;
+  const N = W * H;
+  const occ = new Int16Array(N).fill(-1);
+  const stamp = new Int32Array(N);
+  let cur = 0;
+  const rayOwn = Array.from({ length: N }, () => []);
+  const units = [];
+  const down = [];
+  const bm = [];
+  const pm = [];
+  let evalStamp = 0;
+  let filled = 0;
+  const cap = P.depthTarget + 1;
+
+  const pickLen = () => (rng.chance(P.longP) ? rng.int(4, P.maxLen) : rng.int(P.minLen, 3));
+
+  const free = (x, y) => x >= 0 && y >= 0 && x < W && y < H && occ[y * W + x] < 0 && stamp[y * W + x] !== cur;
+
+  // Grow a body backwards from the head; d = facing. Returns cells tail-first/head-last.
+  function grow(hx, hy, d, len) {
+    const path = [[hx, hy]];
+    stamp[hy * W + hx] = cur;
+    let sx = -d[0];
+    let sy = -d[1];
+    let x = hx;
+    let y = hy;
+    for (let i = 1; i < len; i++) {
+      let pick = null;
+      if (i === 1) {
+        if (!free(x + sx, y + sy)) return null;
+        pick = [sx, sy];
+      } else {
+        const turns = rng.shuffle([[-sy, sx], [sy, -sx]]);
+        const opts = rng.chance(P.bendP) ? [...turns, [sx, sy]] : [[sx, sy], ...turns];
+        for (const o of opts) {
+          if (free(x + o[0], y + o[1])) {
+            pick = o;
+            break;
+          }
+        }
+        if (!pick) break;
+      }
+      x += pick[0];
+      y += pick[1];
+      stamp[y * W + x] = cur;
+      path.push([x, y]);
+      sx = pick[0];
+      sy = pick[1];
+    }
+    if (path.length < 2) return null;
+    return path.reverse();
+  }
+
+  function sampleHead() {
+    const idx = rng.int(0, N - 1);
+    if (occ[idx] >= 0) return null;
+    const x = idx % W;
+    const y = (idx / W) | 0;
+    const dk = DIR_KEYS[rng.int(0, 3)];
+    const d = DIRS[dk];
+    cur++;
+    stamp[idx] = cur;
+    const ray = [];
+    let rx = x + d[0];
+    let ry = y + d[1];
+    while (rx >= 0 && ry >= 0 && rx < W && ry < H) {
+      const ri = ry * W + rx;
+      if (occ[ri] >= 0) return null;
+      ray.push(ri);
+      stamp[ri] = cur;
+      rx += d[0];
+      ry += d[1];
+    }
+    return { x, y, d, dk, ray };
+  }
+
+  function sampleSingle() {
+    const hd = sampleHead();
+    if (!hd) return null;
+    const cells = grow(hd.x, hd.y, hd.d, pickLen());
+    if (!cells) return null;
+    return { parent: { cells, dir: hd.dk }, kitten: null, ray: hd.ray };
+  }
+
+  function samplePair() {
+    const hd = sampleHead();
+    if (!hd) return null;
+    const cells = grow(hd.x, hd.y, hd.d, pickLen());
+    if (!cells) return null;
+    const dx = cells[1][0] - cells[0][0];
+    const dy = cells[1][1] - cells[0][1];
+    const kx = cells[0][0] - dx;
+    const ky = cells[0][1] - dy;
+    if (!free(kx, ky)) return null;
+    const kc = grow(kx, ky, [dx, dy], rng.int(2, P.kittenMax));
+    if (!kc) return null;
+    return { parent: { cells, dir: hd.dk }, kitten: { cells: kc, dir: dirKey(dx, dy) }, ray: hd.ray };
+  }
+
+  function evaluate(c) {
+    const all = c.kitten ? c.parent.cells.concat(c.kitten.cells) : c.parent.cells;
+    evalStamp++;
+    let inRay = 0;
+    let compact = 0;
+    let maxDown = -1;
+    for (const [x, y] of all) {
+      const ow = rayOwn[y * W + x];
+      if (ow.length) {
+        inRay++;
+        for (const u of ow) {
+          if (bm[u] !== evalStamp) {
+            bm[u] = evalStamp;
+            if (down[u] > maxDown) maxDown = down[u];
+          }
+        }
+      }
+      for (const k of DIR_KEYS) {
+        const nx = x + DIRS[k][0];
+        const ny = y + DIRS[k][1];
+        if (nx < 0 || ny < 0 || nx >= W || ny >= H || occ[ny * W + nx] >= 0) compact++;
+      }
+    }
+    c.maxDown = maxDown;
+    c.matters = false;
+    if (c.kitten) {
+      for (const [x, y] of c.parent.cells) for (const u of rayOwn[y * W + x]) pm[u] = evalStamp;
+      for (const [x, y] of c.kitten.cells) {
+        for (const u of rayOwn[y * W + x]) if (pm[u] !== evalStamp) c.matters = true;
+      }
+    }
+    c.score = 2 * inRay + 3 * Math.min(maxDown + 1, cap) + 0.5 * compact + rng.next() * 2;
+  }
+
+  function bestOf(sampler, K, needMatter) {
+    let best = null;
+    for (let i = 0; i < K; i++) {
+      const c = sampler();
+      if (!c) continue;
+      evaluate(c);
+      if (needMatter && !c.matters) continue;
+      if (!best || c.score > best.score) best = c;
+    }
+    return best;
+  }
+
+  function place(c) {
+    const idx = units.length;
+    const all = c.kitten ? c.parent.cells.concat(c.kitten.cells) : c.parent.cells;
+    for (const [x, y] of all) occ[y * W + x] = idx;
+    filled += all.length;
+    down[idx] = c.maxDown + 1;
+    for (const ri of c.ray) rayOwn[ri].push(idx);
+    units.push(c);
+  }
+
+  let fails = 0;
+  let pairsPlaced = 0;
+  let pairFails = 0;
+  for (;;) {
+    const fill = filled / N;
+    const pairsLeft = P.pairs - pairsPlaced;
+    const pairOpen = pairsLeft > 0 && pairFails < 60;
+    let c = null;
+    let isPair = false;
+    if (pairOpen && fill >= (0.2 + 0.1 * pairsPlaced) * P.fillTarget) {
+      c = bestOf(samplePair, 24, true);
+      isPair = true;
+      if (!c) pairFails++;
+    }
+    if (!c) {
+      if (fill >= P.fillTarget) {
+        if (pairOpen) continue;
+        break;
+      }
+      c = bestOf(sampleSingle, 8, false);
+      isPair = false;
+      if (!c) {
+        if (++fails >= 30) break;
+        continue;
+      }
+    }
+    fails = 0;
+    place(c);
+    if (isPair) pairsPlaced++;
+  }
+
+  let depth = 0;
+  for (const d of down) depth = Math.max(depth, d);
+  return { units, occ, filled, fill: filled / N, depth, pairsPlaced };
+}
+
+// ---- helpers over units ----
+const totalCats = (units) => units.reduce((t, u) => t + (u.kitten ? 2 : 1), 0);
+
+// Temp board with ids in unit order (parent, then kitten).
+function tempBoard(P, units) {
+  const cats = [];
+  for (const u of units) {
+    const pid = cats.length;
+    cats.push(makeCat(pid, u.parent.cells, 'tabby', null));
+    if (u.kitten) cats.push(makeCat(pid + 1, u.kitten.cells, 'tabby', pid));
+  }
+  return makeBoard(P.w, P.h, cats);
+}
+
+const depthOf = (P, units) => dependencyDepth(tempBoard(P, units));
+
+// Cat count must be a multiple of 3: drop 1-2 single cats, keeping dependency depth when we can.
+function trim(P, units, rng) {
+  const rem = totalCats(units) % 3;
+  if (!rem) return units;
+  const base = depthOf(P, units);
+  const singles = [];
+  units.forEach((u, i) => {
+    if (!u.kitten) singles.push(i);
+  });
+  if (singles.length < rem) return null;
+  let best = null;
+  for (let t = 0; t < 6; t++) {
+    rng.shuffle(singles);
+    const drop = new Set(singles.slice(0, rem));
+    const kept = units.filter((_, i) => !drop.has(i));
+    const d = depthOf(P, kept);
+    if (!best || d > best.d) best = { kept, d };
+    if (d >= base) break;
+  }
+  return best.kept;
+}
+
+// Obstacle-aware "can the board be cleared at all" (bench ignored): removal only ever frees, so greedy is complete.
+function clearable(board) {
+  const C = compile(board);
+  const sim = new Sim(C, 9999);
+  for (let progress = true; progress && sim.left > 0;) {
+    progress = false;
+    for (const u of sim.free()) {
+      sim.apply(u);
+      progress = true;
+    }
+  }
+  return sim.left === 0;
+}
+
+// Put the level's dogs, yarn and frozen / mystery cats on the bare layout BEFORE the tap order is drawn, so the
+// order has to work around them (wake the dog, knock the yarn, thaw the ice before the cat behind can go).
+function placeObstacles(temp, n, rng) {
+  const { w, h } = temp;
+  const plan = mechPlan(n);
+  const placed = { dog: 0, yarn: 0, mystery: 0, frozen: 0 };
+  const taken = () => {
+    const g = new Uint8Array(w * h);
+    for (const c of temp.cats) for (const [x, y] of c.cells) g[y * w + x] = 1;
+    for (const o of temp.objs) for (const [x, y] of o.cells) g[y * w + x] = 1;
+    return g;
+  };
+  // empty cells on a cat's lane: a blocker there is what holds that cat. Lanes with no cat in the way come first:
+  // there the dog or yarn is the ONLY thing keeping that cat home.
+  const laneCells = () => {
+    const g = taken();
+    const out = [];
+    for (const c of temp.cats) {
+      if (c.kittenOf != null) continue;
+      const ray = exitRay(c, w, h);
+      const busy = ray.filter(([x, y]) => g[y * w + x]).length;
+      for (const [x, y] of ray) if (!g[y * w + x]) out.push({ cell: [x, y], busy, r: rng.next() });
+    }
+    return out.sort((a, b) => a.busy - b.busy || a.r - b.r).map((o) => o.cell);
+  };
+  for (let i = 0; i < (plan.dog || 0); i++) {
+    const cand = laneCells();
+    for (let t = 0; t < Math.min(24, cand.length); t++) {
+      const g = taken();
+      const [x, y] = cand[t];
+      const [dx, dy] = rng.pick([[1, 0], [0, 1], [-1, 0], [0, -1]]);
+      const x2 = x + dx;
+      const y2 = y + dy;
+      if (g[y * w + x] || x2 < 0 || y2 < 0 || x2 >= w || y2 >= h || g[y2 * w + x2]) continue;
+      const cells = [[x, y], [x2, y2]];
+      if (catsNear(temp, cells, DOG_NEAR).length < 4) continue;
+      temp.objs.push({ kind: 'dog', cells });
+      if (clearable(temp)) {
+        placed.dog++;
+        break;
+      }
+      temp.objs.pop();
+    }
+  }
+  for (let i = 0; i < (plan.yarn || 0); i++) {
+    const cand = laneCells();
+    for (let t = 0; t < Math.min(24, cand.length); t++) {
+      const [x, y] = cand[t];
+      if (taken()[y * w + x]) continue;
+      temp.objs.push({ kind: 'yarn', cells: [[x, y]] });
+      if (clearable(temp)) {
+        placed.yarn++;
+        break;
+      }
+      temp.objs.pop();
+    }
+  }
+  const plain = (c) => !c.mech && c.kittenOf == null && !temp.cats.some((k) => k.kittenOf === c.id);
+  for (const [kind, need] of [['frozen', 2], ['mystery', 1]]) {
+    const ids = rng.shuffle(temp.cats.filter((c) => plain(c) && edgeNeighbours(temp, c).length >= need).map((c) => c.id));
+    for (const id of ids.slice(0, 12)) {
+      if (placed[kind] >= (plan[kind] || 0)) break;
+      temp.cats[id].mech = kind;
+      if (kind === 'mystery' || clearable(temp)) placed[kind]++;
+      else delete temp.cats[id].mech;
+    }
+  }
+  return placed;
+}
+
+// Shuffled cat ids, obstacles, and a random legal tap order (as groups of arriving cat ids) under the real
+// obstacle rules. Hold-outs: a big mother + kitten free early waits until late in the line. Tapped early she and her
+// kitten squat on TWO seats while the line needs every seat: the tempting wrong tap the solver measures as a trap.
+function drawOrder(P, units, rng) {
+  const entries = [];
+  units.forEach((u, ui) => {
+    entries.push({ unit: ui, role: 'p', cells: u.parent.cells });
+    if (u.kitten) entries.push({ unit: ui, role: 'k', cells: u.kitten.cells });
+  });
+  rng.shuffle(entries);
+  const pid = new Map();
+  entries.forEach((e, i) => {
+    e.id = i;
+    if (e.role === 'p') pid.set(e.unit, i);
+  });
+  const temp = makeBoard(P.w, P.h, entries.map((e) => makeCat(e.id, e.cells, 'tabby', e.role === 'k' ? pid.get(e.unit) : null)));
+  const mechs = P.n >= 8 ? placeObstacles(temp, P.n, rng) : null;
+  const C = compile(temp);
+  const sim = new Sim(C, 9999);
+  const size = (u) => C.len[u] + (C.ucats[u].length > 1 ? 3 : 0);
+  const free0 = sim.free();
+  const hold = new Set(free0.sort((a, b) => size(b) - size(a) || a - b).slice(0, Math.min(1, free0.length - 2)));
+  const release = Math.floor(C.N * (P.holdUntil || 0.65));
+  let holdAt = -1;
+  const groups = [];
+  while (sim.left > 0) {
+    const free = sim.free();
+    if (!free.length) return null;
+    if (groups.length < release / 2) {
+      for (const u of free) if (hold.size < (P.hold || 0) && C.ucats[u].length > 1 && free.length - hold.size > 2) hold.add(u);
+    }
+    const pickable = groups.length >= release ? free : free.filter((u) => !hold.has(u));
+    const u = rng.pick(pickable.length ? pickable : free);
+    sim.apply(u);
+    if (hold.has(u) && holdAt < 0) holdAt = groups.length;
+    groups.push(C.ucats[u].slice());
+  }
+  return { entries, pid, groups, holdAt: holdAt < 0 ? groups.length : holdAt, temp, mechs };
+}
+
+// Colors + carrier queue along the arrival groups. Lazy carriers: a detour cat sits on the bench
+// until a carrier of its color rolls in. Keeps bench <= benchSize - 1 after every group.
+// holdAt: index of the first held-back group; the bench peak before it (peakPre) is the squeeze a held pair would break.
+function assignColors(groups, P, rng, holdAt = groups.length) {
+  const T = groups.reduce((t, g) => t + g.length, 0);
+  const Q = T / 3;
+  const B = P.benchSize;
+  const nCol = Math.max(2, P.colors);
+  const carriers = [];
+  const bench = [];
+  const groupColor = [];
+  let created = 0;
+  let lastColor = -1;
+  const usedCols = new Set();
+  let detours = 0;
+  let chains = 0; // a carrier that leaves and the next one filled from the bench alone = a 2-step chain
+  let peak = 0;
+  let front = null;
+  const benchCount = (c) => bench.filter((x) => x === c).length;
+  const distinct = () => new Set(bench).size;
+  const takeBench = (c) => {
+    let k = 0;
+    for (let i = bench.length - 1; i >= 0; i--) {
+      if (bench[i] === c) {
+        bench.splice(i, 1);
+        k++;
+      }
+    }
+    return k;
+  };
+
+  function nextFront(force) {
+    for (;;) {
+      front = null;
+      const q = Q - created;
+      if (q <= 0) return;
+      const bcs = [...new Set(bench)];
+      let color;
+      if (force != null) color = force;
+      else if (bcs.length && (bcs.length >= q || rng.chance(P.pAbsorb))) {
+        let most = -1;
+        let cand = [];
+        for (const c of bcs) {
+          const k = benchCount(c);
+          if (k > most) {
+            most = k;
+            cand = [c];
+          } else if (k === most) cand.push(c);
+        }
+        color = rng.pick(cand);
+      } else {
+        const cand = [];
+        for (let c = 0; c < nCol; c++) if (!bcs.includes(c) && c !== lastColor) cand.push(c);
+        if (!cand.length) for (let c = 0; c < nCol; c++) if (!bcs.includes(c)) cand.push(c);
+        const fresh = cand.filter((c) => !usedCols.has(c)); // spread over every colour the level asks for
+        const pool = fresh.length && rng.chance(0.85) ? fresh : cand;
+        color = pool.length ? rng.pick(pool) : rng.pick(bcs);
+      }
+      force = null;
+      usedCols.add(color);
+      created++;
+      carriers.push({ color, cap: 3 });
+      front = { color, fill: takeBench(color) };
+      if (front.fill < 3) return;
+      lastColor = color; // the bench alone filled it: it departs at once, chain on
+      chains++;
+    }
+  }
+
+  nextFront();
+  let peakPre = 0;
+  for (let gi = 0; gi < groups.length; gi++) {
+    const g = groups[gi];
+    if (!front) return null;
+    const s = g.length;
+    const futureQ = Q - created;
+    const need = 3 - front.fill;
+    const squeeze = s === 2 && need === 1 && futureQ < 1 + distinct();
+    let color = -1;
+    if (bench.length + s <= B - 1 && (squeeze || rng.chance(gi < holdAt ? Math.min(0.6, 2 * P.detourP) : P.detourP / 2))) {
+      const d = distinct();
+      const cand = [];
+      const stack = [];
+      for (let c = 0; c < nCol; c++) {
+        if (c === front.color) continue;
+        const k = benchCount(c);
+        if (k + s <= 3 && d + (k === 0 ? 1 : 0) <= futureQ) (k > 0 ? stack : cand).push(c);
+      }
+      const pool = stack.length && (!cand.length || rng.chance(0.45)) ? stack : cand;
+      if (pool.length) color = rng.pick(pool);
+    }
+    if (color >= 0) {
+      for (let i = 0; i < s; i++) bench.push(color);
+      detours++;
+    } else {
+      if (squeeze) return null;
+      color = front.color;
+      if (need >= s) {
+        front.fill += s;
+        if (front.fill >= 3) {
+          lastColor = color;
+          nextFront();
+        }
+      } else {
+        // the mother completes the carrier, the kitten rides in the next one of the same color
+        lastColor = color;
+        nextFront(color);
+        if (!front) return null;
+        front.fill += s - 1;
+      }
+    }
+    groupColor.push(color);
+    if (bench.length > peak) peak = bench.length;
+    if (gi < holdAt && bench.length > peakPre) peakPre = bench.length;
+  }
+  if (front || bench.length || created !== Q) return null;
+  return { groupColor, carriers, detours, peak, peakPre, chains };
+}
+
+// Walk the winning line on the fast model: does it still win (bench <= seats - 1), and does every mechanic piece
+// MATTER on it? A dog or yarn matters when, while it is still there, it is the only thing in some cat's way; a frozen
+// cat matters when its lane is clear but the ice still holds it; a mystery cat matters when it is free while still
+// hidden and the line reveals it before tapping it (the player has to wait for its colour).
+function lineCheck(board, order) {
+  const C = compile(board);
+  const sim = new Sim(C, board.meta.benchSize);
+  const cats = board.cats;
+  const objM = new Uint8Array(C.nObj);
+  const mysU = [];
+  C.units.forEach((p, u) => {
+    if (cats[p].mech === 'mystery') mysU.push({ u, nb: edgeNeighbours(board, cats[p]).map((id) => C.unitOf[id]), free: false, ok: false });
+  });
+  const frzU = C.units.map((p, u) => u).filter((u) => C.frozenOf[u] >= 0);
+  const frzM = new Map(frzU.map((u) => [u, false]));
+  let peak = 0;
+  for (const id of order) {
+    const lu = C.unitOf[id];
+    for (let u = 0; u < C.N; u++) {
+      if (!sim.alive[u]) continue;
+      let catIn = false;
+      for (const v of C.rayU[u]) if (sim.alive[v]) catIn = true;
+      if (catIn) continue;
+      const live = [];
+      for (const k of C.rayO[u]) if (sim.objAlive(k)) live.push(k);
+      if (sim.frozen(u)) {
+        if (!live.length) frzM.set(u, true);
+        continue;
+      }
+      if (live.length === 1) objM[live[0]] = 1;
+    }
+    for (const m of mysU) {
+      const hidden = !m.nb.some((v) => !sim.alive[v]);
+      if (hidden && sim.canExit(m.u)) m.free = true;
+      if (m.u === lu) m.ok = m.free && !hidden;
+    }
+    if (!sim.canExit(lu) || !sim.apply(lu)) return { won: false };
+    if (sim.used > peak) peak = sim.used;
+  }
+  const keepCat = new Set();
+  for (const [u, ok] of frzM) if (ok) keepCat.add(C.units[u]);
+  for (const m of mysU) if (m.ok) keepCat.add(C.units[m.u]);
+  return { won: sim.left === 0 && peak <= board.meta.benchSize - 1, peak, objM, keepCat };
+}
+
+// The obstacles were placed before the tap order was drawn; now that the line is fixed, keep only the pieces that
+// MATTER on it (removing a piece only frees cats, so the line still wins). The teaching level must keep its lesson.
+function finishMechanics(board, n) {
+  const r = lineCheck(board, board.meta.order);
+  if (!r.won) return false;
+  board.objs = board.objs.filter((o, k) => r.objM[k]);
+  for (const c of board.cats) if (c.mech && !r.keepCat.has(c.id)) delete c.mech;
+  const placed = { dog: 0, yarn: 0, mystery: 0, frozen: 0 };
+  for (const o of board.objs) placed[o.kind]++;
+  for (const c of board.cats) if (c.mech) placed[c.mech]++;
+  const tk = TEACH[n];
+  board.meta.mechs = placed;
+  board.meta.teach = tk || null;
+  if (tk && Object.keys(placed).some((k) => k !== tk && placed[k] > 0)) return false;
+  return !tk || placed[tk] >= 1;
+}
+
+// Colour spread: at least 3 colours from L5, 4 from L8, and no colour above 40% of the cats, so boards read at a glance.
+function spreadOk(groups, asg, n) {
+  const cnt = new Map();
+  let tot = 0;
+  groups.forEach((g, gi) => {
+    cnt.set(asg.groupColor[gi], (cnt.get(asg.groupColor[gi]) || 0) + g.length);
+    tot += g.length;
+  });
+  const minK = 4;
+  return cnt.size >= minK && Math.max(...cnt.values()) / tot <= 0.4;
+}
+
+// Build the board for one colouring of one tap order. Returns null when the line does not win with a spare seat.
+function build(P, units, ord, asg, aIdx) {
+  const color = new Array(ord.entries.length);
+  ord.groups.forEach((g, gi) => g.forEach((id) => (color[id] = asg.groupColor[gi])));
+  const cats = ord.entries.map((e) => {
+    const c = makeCat(e.id, e.cells, BREEDS[color[e.id]], e.role === 'k' ? ord.pid.get(e.unit) : null);
+    if (ord.temp.cats[e.id].mech) c.mech = ord.temp.cats[e.id].mech;
+    return c;
+  });
+  const order = ord.groups.map((g) => g[0]);
+  const board = makeBoard(
+    P.w,
+    P.h,
+    cats,
+    {
+      n: P.n,
+      tutorial: false,
+      kind: P.kind,
+      benchSize: P.benchSize,
+      order,
+      detours: asg.detours,
+      colors: new Set(color).size,
+      pairs: units.filter((u) => u.kitten).length,
+      attempts: aIdx + 1,
+    },
+    asg.carriers,
+  );
+  board.objs = ord.temp.objs.map((o) => ({ kind: o.kind, cells: o.cells.map((c) => c.slice()) }));
+  return board;
+}
+
+// How well the measured decisions fit the level's band. >= 1000 means every requirement holds.
+function bandScore(d, P) {
+  const b = P.band;
+  let s = 0;
+  let meets = d.startSafe >= 2 && d.traps >= b.traps && d.chains >= b.chains && d.chain3 >= b.chain3 && d.peak <= P.benchSize - 1;
+  if (b.maxTraps != null && d.traps > b.maxTraps) meets = false;
+  if (meets) s += 1000;
+  else if (d.startSafe >= 2 && d.traps >= 1 && d.chains >= 1 && d.peak <= P.benchSize - 1 && !(b.maxTraps != null && d.traps > b.maxTraps)) s += 500; // the floor every level keeps
+  s -= d.startSafe < 2 ? 400 : 0;
+  s += 40 * Math.min(d.traps, b.traps + 1) + 25 * Math.min(d.chains, b.chains + 1) + 30 * Math.min(d.chain3, b.chain3 + 1);
+  if (b.maxTraps != null) s -= 60 * Math.max(0, d.traps - b.maxTraps);
+  s -= 120 * Math.max(0, d.deadRatio - b.dead); // too punishing: most taps lose
+  s += 10 * Math.min(d.deadRatio, b.dead);
+  s -= 2 * d.unknown;
+  return s;
+}
+
+const MAX_EVALS = 14; // decision measurements per level (each is a few hundred solver nodes)
+
+export function generate(n) {
+  n = Number.isFinite(+n) ? Math.max(1, Math.floor(+n)) : 1;
+  if (n <= 4) return tutorial(n);
+  const P = params(n);
+  const needCats = 3 * Math.min(P.colors, 5);
+  // a layout (fill, depth, kitten pairs, long cats); ok = good enough to colour and measure
+  const layoutAt = (a) => {
+    const r = runAttempt(P, makeRng(levelSeed(n, a)));
+    const units = trim(P, r.units, makeRng(levelSeed(n, 'trim', a)));
+    if (!units || totalCats(units) < 6) return null;
+    let filled = 0;
+    let pairs = 0;
+    let long = 0;
+    for (const u of units) {
+      filled += u.parent.cells.length + (u.kitten ? u.kitten.cells.length : 0);
+      if (u.kitten) pairs++;
+      if (u.parent.cells.length >= 4) long++;
+    }
+    const fill = filled / (P.w * P.h);
+    const depth = depthOf(P, units);
+    const cats = totalCats(units);
+    const ok = fill >= P.fillMin && depth >= P.depthMin && pairs >= P.pairs && long * 4 >= units.length && cats >= needCats && kittenStats(tempBoard(P, units)).matter >= 1;
+    const q = (cats >= needCats ? 100 : 0) + (pairs >= P.pairs ? 50 : 0) + fill * 10 + Math.min(depth, P.depthTarget) * 5;
+    return { L: { units, a, fill, depth }, ok, q };
+  };
+  // orders x colourings per layout, measured by the solver; keep the best fit for the band
+  let best = null;
+  let evals = 0;
+  let relax = false;
+  const tryLayout = (L, maxEvals) => {
+    let mechFails = 0;
+    for (let o = 0; o < 3 && evals < maxEvals; o++) {
+      const ord = drawOrder(P, L.units, makeRng(levelSeed(n, 'final', L.a, o)));
+      if (!ord) continue;
+      let built = 0;
+      for (let v = 0; v < 30 && built < 3 && evals < maxEvals; v++) {
+        const asg = assignColors(ord.groups, P, makeRng(levelSeed(n, 'assign', L.a, o, v)), ord.holdAt);
+        if (!asg || (!relax && (!spreadOk(ord.groups, asg, n) || asg.detours < P.minDetours || asg.peak < P.minPeak || (P.hold && asg.peakPre < P.benchSize - 1 && v < 20)))) continue;
+        const board = build(P, L.units, ord, asg, L.a);
+        const rp = replay(board, board.meta.order);
+        if (!rp.won || rp.peak > P.benchSize - 1) continue;
+        if (n >= 8 && !finishMechanics(board, n)) {
+          if (++mechFails >= 3) return false; // this layout cannot host the lesson's mechanic on its line
+          continue;
+        }
+        built++;
+        evals++;
+        const d = decisions(board, board.meta.order);
+        if (!d) continue;
+        const s = bandScore(d, P);
+        if (!best || s > best.s) best = { s, board, d, L };
+        if (s >= 1000) return true;
+      }
+    }
+    return false;
+  };
+  const maxEvals = MAX_EVALS + (P.kind !== 'normal' ? 18 : P.teach ? 16 : n < 15 ? 10 : 4);
+  let fallback = null;
+  let done = false;
+  for (let a = 0; a < MAX_ATTEMPTS + 30 && !done && evals < maxEvals; a++) {
+    const r = layoutAt(a);
+    if (!r) continue;
+    if (r.ok) done = tryLayout(r.L, maxEvals);
+    else if (!fallback || r.q > fallback.q) fallback = r;
+  }
+  // nothing measured at all (rare): the best near-miss layout, then relaxed colour filters over more layouts
+  if (!best && fallback) tryLayout(fallback.L, evals + 3);
+  relax = true;
+  for (let a = MAX_ATTEMPTS + 30; !best && a < MAX_ATTEMPTS + 90; a++) {
+    const r = layoutAt(a);
+    if (r) tryLayout(r.L, evals + 3);
+  }
+  if (!best) throw new Error('generate failed for level ' + n);
+  const { board, d, L } = best;
+  let filled = 0;
+  for (const c of board.cats) filled += c.cells.length;
+  Object.assign(board.meta, {
+    depth: L.depth,
+    fill: +(filled / (P.w * P.h)).toFixed(3),
+    benchPeak: d.peak,
+    chains: d.chains,
+    chain3: d.chain3,
+    traps: d.traps,
+    deadRatio: d.deadRatio,
+    freeAvg: d.freeAvg,
+    startSafe: d.startSafe,
+    forced: d.forced,
+    band: best.s >= 1000,
+  });
+  return board;
+}
+
+ succeeded in 1084ms:
+
+DESIGN-V2.md
+src\core\generate.js
+Path                                                
+----                                                
+C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content qa/core-metrics.txt -Encoding utf8' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files --hidden -g '"'!node_modules'"' -g 'AGENTS.md' -g 'package.json' -g '*metrics*' -g '*review*'; Get-ChildItem qa | Select-Object -ExpandProperty Name" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content src/core/generate.js -Encoding utf8 -TotalCount 155; rg -n "export function decisions|function decisions|deadRatio|peakBench|function tutorial" src/core' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 927ms:
+
+> long-cat-out@0.1.0 check
+> node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs
+
+
+level  size   kind    cats  carriers  colors  bench  peak  detours  gen_ms
+1      5x6    normal  3     1         -       5      0     0        0.4
+5      6x8    normal  12    4         4       5      4     3        21.8
+10     6x8    normal  12    4         4       5      4     4        17.2
+15     7x9    hard    15    5         5       5      4     5        2.1
+30     7x9    normal  15    5         5       5      4     4        3.5
+60     8x11   normal  21    7         4       6      3     5        3.7
+100    8x11   normal  18    6         5       5      4     4        1.8
+250    8x11   normal  18    6         5       5      4     4        3.2
+500    8x10   normal  15    5         4       5      4     4        1.2
+
+mechanics per range (levels carrying each, total pieces)
+  L1-7: dog 0, yarn 0, mystery 0, frozen 0, mixed 0, pieces 0
+  L8-11: dog 2, yarn 0, mystery 0, frozen 0, mixed 0, pieces 2
+  L12-39: dog 3, yarn 14, mystery 0, frozen 0, mixed 2, pieces 22
+  L40-54: dog 2, yarn 7, mystery 5, frozen 0, mixed 2, pieces 19
+  L55-69: dog 1, yarn 5, mystery 1, frozen 5, mixed 2, pieces 16
+  L70-600: dog 88, yarn 171, mystery 58, frozen 169, mixed 121, pieces 611
+
+kinds {"normal":532,"hard":48,"super":20}; hard at 15,25,42,52,59,77,87,106...; super at 34,67,96,122,149,175...
+
+decisions per range (averages; dead = losing taps / legal taps, long = share of cats 4+ cells)
+  L5-14 normal n=10   traps 1.70  chains 1.60  3-chains 0.90  dead 0.060  free 2.97  startSafe 5.2  fill 0.76  long 0.32  colours 4.0  cats 12.3
+  L15-39 normal n=22   traps 1.45  chains 1.45  3-chains 0.73  dead 0.036  free 3.66  startSafe 6.4  fill 0.75  long 0.33  colours 4.5  cats 15.3
+  L15-39 hard   n=3    traps 5.67  chains 2.00  3-chains 1.00  dead 0.197  free 2.84  startSafe 5.0  fill 0.75  long 0.33  colours 5.0  cats 16.0
+  L40-99 normal n=53   traps 2.43  chains 1.45  3-chains 0.75  dead 0.068  free 3.57  startSafe 6.8  fill 0.75  long 0.38  colours 4.7  cats 16.8
+  L40-99 hard   n=7    traps 4.29  chains 2.29  3-chains 1.29  dead 0.120  free 3.65  startSafe 6.9  fill 0.73  long 0.36  colours 5.0  cats 18.0
+  L100-249 normal n=133  traps 2.55  chains 1.56  3-chains 0.73  dead 0.077  free 3.39  startSafe 6.6  fill 0.75  long 0.34  colours 4.9  cats 17.9
+  L100-249 hard   n=17   traps 5.12  chains 1.88  3-chains 1.18  dead 0.145  free 3.74  startSafe 7.4  fill 0.78  long 0.35  colours 5.2  cats 19.2
+  L250-600 normal n=310  traps 2.49  chains 1.51  3-chains 0.66  dead 0.082  free 3.37  startSafe 6.5  fill 0.77  long 0.36  colours 4.9  cats 18.2
+  L250-600 hard   n=41   traps 4.61  chains 1.80  3-chains 1.07  dead 0.161  free 3.65  startSafe 6.9  fill 0.78  long 0.35  colours 5.3  cats 19.2
+levels missing the full band (floor still held): 0
+search misses 0 (avg 15 nodes)
+gen avg 3.12ms, worst 26.0ms (level 443), total 1870ms for 600 levels
+all checks passed
+  caf� pacing: residents after L3 mochi, L5 biscuit, L11 luna, L16 pudding, L25 noodle, L39 pepper, L46 clover, L60 captain; areas done after L8, L18, L33, L46, L60
+econ checks passed
+check-web ok
+
+ succeeded in 965ms:
+// Level generator v2.
+// 1. reverse removal builds an arrow-solvable board (units = cat, or parent + kitten),
+// 2. a random legal tap order is drawn,
+// 3. colors and the carrier queue are assigned TOGETHER along that order (lazy carriers, deliberate
+//    bench detours), so the order wins under the real rules with bench <= benchSize - 1,
+// 4. the result is replayed on the real rules, mechanics are placed ON the winning line (each one must hold a cat
+//    that the line needs), and
+// 5. the solver measures the DECISIONS on that line (dead-end taps, traps, bench chains). Several candidates are
+//    built and the one that best fits the level's difficulty band is kept.
+import { makeRng, hashSeed, levelSeed } from './rng.js';
+import { DIRS, DIR_KEYS, BREEDS, makeBoard, makeCat, dirKey } from './board.js';
+import { exitRay, edgeNeighbours, catsNear, DOG_NEAR } from './rules.js';
+import { dependencyDepth, replay, kittenStats } from './solver.js';
+import { compile, Sim, decisions } from './search.js';
+
+const SIZES = [[5, 6], [6, 7], [6, 8], [7, 9], [7, 10], [8, 10], [8, 11]];
+const SIZE_FROM = [1, 4, 5, 12, 20, 34, 50]; // 6x8 from L5 so four colours of chunky cats fit
+const MAX_ATTEMPTS = 60;
+
+// ---- difficulty schedule: hard every 7-10 levels from L15, super hard about every 30 ----
+const sched = new Map();
+let nextSlot = 15;
+let lastSuper = 0;
+export function levelKind(n) {
+  if (n < 15) return 'normal';
+  while (nextSlot <= n) {
+    let kind = 'hard';
+    if (nextSlot >= 30 && nextSlot - lastSuper >= 26) {
+      kind = 'super';
+      lastSuper = nextSlot;
+    }
+    sched.set(nextSlot, kind);
+    nextSlot += 7 + (hashSeed('hardgap', nextSlot) % 4);
+  }
+  return sched.get(n) || 'normal';
+}
+
+// ---- mechanics ramp: one new thing per chapter, taught on a gentle level, then mixed ----
+export const TEACH = { 8: 'dog', 12: 'yarn', 40: 'mystery', 55: 'frozen' };
+const MECH_FROM = { dog: 8, yarn: 12, mystery: 40, frozen: 55 };
+const TEACH_COUNT = { dog: 1, yarn: 2, mystery: 2, frozen: 1 };
+
+// How many of each mechanic level n asks for (placement may fall short on non-teaching levels).
+export function mechPlan(n) {
+  if (TEACH[n]) return { [TEACH[n]]: TEACH_COUNT[TEACH[n]] };
+  const rng = makeRng(hashSeed('mechplan', n));
+  const names = Object.keys(MECH_FROM).filter((k) => n > MECH_FROM[k]);
+  const plan = {};
+  names.forEach((k, i) => {
+    const fresh = i === names.length - 1 && n < 70;
+    if (!rng.chance(fresh ? 0.6 : n >= 70 ? 0.42 : 0.3)) return;
+    plan[k] = k === 'dog' ? 1 + (n >= 70 && rng.chance(0.35) ? 1 : 0) : k === 'frozen' ? 1 + (n >= 80 && rng.chance(0.4) ? 1 : 0) : rng.int(1, n < 40 ? 2 : 3);
+  });
+  return plan;
+}
+
+export function params(n) {
+  const kind = levelKind(n);
+  const teach = !!TEACH[n];
+  const hard = kind !== 'normal';
+  const bonus = teach ? 0 : kind === 'super' ? 2 : hard ? 1 : 0;
+  const after = !hard && n > 15 && (levelKind(n - 1) !== 'normal' || levelKind(n - 2) !== 'normal');
+  let tier = 0;
+  for (let i = 0; i < SIZE_FROM.length; i++) if (n >= SIZE_FROM[i]) tier = i;
+  if (tier >= 3 && kind === 'normal' && makeRng(hashSeed('size', n)).chance(0.3)) tier -= 1;
+  if (kind === 'super') tier = Math.min(SIZES.length - 1, tier + 1);
+  const [w, h] = SIZES[tier];
+  const fillTarget = Math.min(0.84, (n < 10 ? 0.68 : 0.72 + 0.12 * Math.min(1, (n - 10) / 90)) + 0.03 * bonus);
+  const benchSize = kind === 'super' ? 4 : hard ? 5 : after || n <= 3 ? 6 : 5; // a 5-seat bench from L4
+  // 3 colours up to L7, 4 from L8, 5 from L15, 6 from L30 (hard levels one more), never above 6 so each reads at a glance
+  const colors = Math.min(6, (n < 15 ? 4 : n < 30 ? 5 : 6) + bonus);
+  // decision band (measured by the solver on the winning line): traps = steps where a tempting tap loses,
+  // chains = carrier arrivals that pull >= 2 bench cats, chain3 = a whole carrier filled from the bench
+  const band = kind === 'super' ? { traps: 4, chains: 2, chain3: 1, dead: 0.45 }
+    : hard ? { traps: 3, chains: 1, chain3: 1, dead: 0.4 }
+    : after ? { traps: 0, maxTraps: 1, chains: 1, chain3: 0, dead: 0.15 }
+    : { traps: n < 40 ? 1 : 2, chains: 1, chain3: 0, dead: n < 40 ? 0.25 : 0.32 };
+  return {
+    n,
+    kind,
+    w,
+    h,
+    fillTarget,
+    fillMin: n < 10 ? 0.55 : Math.min(0.68, 0.6 + 0.02 * bonus),
+    minLen: 2,
+    maxLen: n < 15 ? 6 : 8, // long and short cats mixed: about half are 4-8 cells
+    longP: n < 15 ? 0.35 : 0.5,
+    band,
+    after,
+    kittenMax: n < 30 ? 2 : 3,
+    bendP: 0.12 + 0.43 * Math.min(1, n / 60),
+    depthTarget: (n < 4 ? 1 : n < 25 ? 3 : n < 50 ? 4 : n < 100 ? 5 : n < 250 ? 6 : 7) + bonus,
+    depthMin: n >= 5 ? 2 : 1,
+    pairs: n < 20 ? 2 : n < 50 ? 2 : n < 120 ? 3 : 4,
+    breeds: Math.min(BREEDS.length, 3 + Math.floor(n / 10)),
+    benchSize,
+    colors,
+    teach,
+    detourP: teach ? 0.12 : kind === 'super' ? 0.38 : hard ? 0.3 : after ? 0.06 : 0.1 + 0.12 * Math.min(1, n / 80),
+    minDetours: teach ? 1 : kind === 'super' ? 4 : hard ? 3 : n >= 4 ? 2 : 1,
+    minChains: n >= 5 ? 1 : 0, // from L5 every level has a carrier that fills from the bench the moment it arrives
+    // L4-9: the bench fills to 3 of 5 at least once, a first small scare
+    minPeak: after ? 3 : benchSize - 1, // the line itself runs the bench to its last spare seat: a squatter there costs the level
+    hold: after ? 0 : kind === 'super' ? 3 : hard ? 3 : 2,
+    holdUntil: 0.6,
+    pAbsorb: teach ? 0.7 : kind === 'super' ? 0.35 : hard ? 0.5 : 0.8 - 0.2 * Math.min(1, n / 100),
+  };
+}
+
+// ---- hand-made tutorials (5x6) ----
+// 1: three cats, one carrier. 2: a forced zigzag, two blues park and hop in together when their carrier comes.
+// 3: mother + kitten, and a tempting big pink pair that fills the 3-seat bench if tapped early (hint arrow on orange).
+// 4: the first real bench choice (see below).
+function tutorial(n) {
+  const mk = (list) => list.map((c, i) => makeCat(i, c.cells, c.breed, c.kittenOf));
+  const meta = { n, tutorial: true, kind: 'normal', benchSize: 5 };
+  let cats;
+  let carriers;
+  if (n === 1) {
+    cats = mk([
+      { cells: [[1, 4], [1, 3], [1, 2]], breed: 'tabby' }, // orange
+      { cells: [[3, 5], [3, 4], [3, 3], [3, 2]], breed: 'tabby' }, // orange
+      { cells: [[2, 5], [2, 4], [2, 3]], breed: 'tabby' }, // orange
+    ]);
+    carriers = [{ color: 0, cap: 3 }]; // three quick taps fill it: the first door-snap and drive-off
+    meta.order = [0, 1, 2];
+  } else if (n === 2) {
+    // A forced zigzag that teaches the bench by hand: blue, orange, blue, orange, blue. Each cat frees only the next.
+    // The two blues park; the second orange sends the orange carrier off, the blue one rolls in and BOTH parked cats
+    // hop in by themselves (the first chain), then the last blue fills it.
+    cats = mk([
+      { cells: [[1, 1], [2, 1], [3, 1]], breed: 'tuxedo' }, // 0 blue, the only free cat: parks
+      { cells: [[2, 3], [2, 2]], breed: 'tabby' }, // 1 orange, held by 0
+      { cells: [[4, 3], [3, 3]], breed: 'tuxedo' }, // 2 blue, held by 1: parks
+      { cells: [[3, 5], [3, 4]], breed: 'tabby' }, // 3 orange, held by 2: fills the orange carrier, the chain fires
+      { cells: [[0, 5], [1, 5], [2, 5]], breed: 'tuxedo' }, // 4 blue, held by 3: fills the blue carrier
+    ]);
+    carriers = [{ color: 0, cap: 2 }, { color: 1, cap: 3 }];
+    meta.order = [0, 1, 2, 3, 4];
+  } else if (n === 4) {
+    // A packed 5x6 board (no empty rows) built around one real choice: no pink cat is free, so something must park.
+    // Free at the start: green 7 (green is the NEXT carrier: it hops in soon) and blue 2 (blue comes LAST: it squats
+    // on a seat all level). Exhaustive search: random play wins 72% overall, 85% after parking green first, 59% after
+    // blue first; the best line peaks at 4 of 5 seats. The hint card states the rule, never the tap.
+    cats = mk([
+      { cells: [[3, 5], [2, 5]], breed: 'calico' }, // 0 pink
+      { cells: [[2, 2], [2, 3]], breed: 'tabby' }, // 1 orange
+      { cells: [[0, 2], [0, 1], [0, 0]], breed: 'tuxedo' }, // 2 blue, free (comes last)
+      { cells: [[1, 5], [0, 5], [0, 4]], breed: 'tabby' }, // 3 orange
+      { cells: [[1, 1], [2, 1]], breed: 'tuxedo' }, // 4 blue
+      { cells: [[1, 3], [1, 4], [2, 4]], breed: 'gray' }, // 5 green
+      { cells: [[3, 0], [4, 0], [4, 1]], breed: 'calico' }, // 6 pink
+      { cells: [[4, 4], [4, 5]], breed: 'gray' }, // 7 green, free (comes next)
+      { cells: [[2, 0], [1, 0]], breed: 'gray' }, // 8 green
+      { cells: [[4, 2], [4, 3]], breed: 'tuxedo' }, // 9 blue
+src/core\search.js:305:export function decisions(board, order, budget = 120) {
+src/core\search.js:363:    deadRatio: legal ? +(dead / legal).toFixed(3) : 0,
+src/core\generate.js:114:function tutorial(n) {
+src/core\generate.js:776:  s -= 120 * Math.max(0, d.deadRatio - b.dead); // too punishing: most taps lose
+src/core\generate.js:777:  s += 10 * Math.min(d.deadRatio, b.dead);
+src/core\generate.js:867:    deadRatio: d.deadRatio,
+
+ succeeded in 1077ms:
+package.json
+01-home-en.png
+02-level1.png
+03-level2-bench.png
+03b-level2-chain.png
+04-level3-sprint.png
+04b-level3-carrier-fill.png
+04c-level3-start.png
+04d-level3-trap.png
+05-mid-sprint.png
+06-carrier-departing.png
+06b-bench-hop-in.png
+07-bench-nearly-full.png
+08-bonk.png
+09-continue-offer.png
+09b-after-continue.png
+09c-offer-slim-tr.png
+10-level30.png
+10b-blink.png
+10c-gen-trap.png
+11-win.png
+12-purrfect.png
+13-after-scoop.png
+14-cafe-migrated.png
+15-home-tr.png
+15b-play-tr.png
+15c-win-tr.png
+15d-offer-tr.png
+16-hint.png
+17-cafe-hub.png
+17b-cafe-build.png
+17c-cafe-built.png
+18-resident-arrival.png
+18b-cafe-resident-idle.png
+18c-cafe-4-tasks.png
+18d-cafe-area3.png
+18e-cafe-cushion-half.png
+18f-cafe-cushion-built.png
+18g-cafe-patio-built.png
+18h-cafe-rooftop-built.png
+19-residents.png
+19b-cafe-tr.png
+19c-residents-tr.png
+19d-residents-all.png
+20-perks-level20.png
+21-hub-econ.png
+21b-tasks.png
+21c-cat-show.png
+21d-cat-show-claimed.png
+21e-shop.png
+21f-shop-bottom.png
+21g-shop-owned.png
+21h-no-lives.png
+22-starter-offer.png
+22b-starter-sheet.png
+23-hub-econ-tr.png
+23b-tasks-tr.png
+23c-show-tr.png
+23d-shop-tr.png
+23e-no-lives-tr.png
+24a-dog-teach.png
+24b-dog-zzz-counter.png
+24c-dog-trots-away.png
+24d-dog-teach-tr.png
+24e-dog-wake-beat.png
+24f-dog-trot-paws.png
+25a-yarn-teach.png
+25b-yarn-rolls-off.png
+26a-mystery-teach.png
+26b-mystery-revealed.png
+26c-mystery-teach-tr.png
+27a-frozen-teach.png
+27b-frozen-bonk.png
+27c-frozen-chipped.png
+27d-frozen-thawed.png
+28a-l4-start.png
+28b-l4-scare.png
+28c-l4-chain.png
+28d-win-card.png
+28e-cafe-pet.png
+28f-chain-x2.png
+28g-chain3-slowmo.png
+28h-win-chain.png
+core-metrics.txt
+errors.txt
+round3-reviews.md
+round5-reviews.md
+sol-r1.md
+sol-r2.log
+sol-r2.md
+sol-r3.md
+sol-r4.md
+sol-r5.md
+sol-r6.log
+sol-r6.md
+sol-review.md
+zz-debug.png
+_sheet.jpg
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content src/core/search.js -Encoding utf8 | Select-Object -Skip 237 -First 147; Get-Content src/core/generate.js -Encoding utf8 | Select-Object -Skip 148 -First 52; Get-Content qa/sol-r6.md -Encoding utf8 -TotalCount 155' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n --hidden -g '"'!node_modules'"' -g '"'!.git/**'"' \"function share|function onWin|showLose|function guarded|earnedDecor|starterShown|Dodged a trap|Best chain|No seat left|One more try|bench.*used|touchstart|pointerdown|pointerup|offerSlim|peakBench|CATALOG\" src data scripts" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content package.json -Encoding utf8; Get-Content qa/round5-reviews.md -Encoding utf8 | Select-Object -Last 25; git status --short' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 766ms:
+scripts\check-econ.mjs:151:  ok(E.earnedDecor(d).length === 1, 'decor hook lists it');
+scripts\check-econ.mjs:184:  s.shop.starterShown = true;
+src\ui\ui.js:265:  // continue offer: first the why (the stuck cat stays visible above the bench with a "No seat left!" tag and the
+scripts\check-core.mjs:274:  eq(st.benchUsed, 1, 'bench used 1');
+scripts\check-core.mjs:328:  eq(st.benchUsed, 2, 'level 2: two seats used');
+src\game\game.js:63:    canvas.addEventListener('pointerdown', (e) => this.onPointer(e));
+src\main.js:274:function onWin(stars) {
+src\main.js:332:    d.shop.starterShown = true;
+src\main.js:720:  window.addEventListener('pointerdown', () => audio.unlock(), { once: true });
+src\i18n.js:19:    offerTitle: 'One more try?',
+src\i18n.js:154:    stuckWhy: 'No seat left!',
+src\i18n.js:168:    achChain: 'Best chain x{n}',
+src\i18n.js:171:    achTrap1: 'Dodged a trap',
+src\game\econ.js:170:export const earnedDecor = (d) => Object.keys(d.show.decor); // hook: the cafe renders these ids when art exists
+src\game\econ.js:180:export const starterDue = (d) => !d.shop.starterShown && !d.iap.owned.starter && !d.iap.owned.noads && d.level > 10;
+src\core\search.js:105:    for (const id of st.bench) if (id >= 0) { s.bench[C.color[id]]++; s.used++; }
+src\kit\save.js:23:  shop: { starterShown: false },
+src\kit\save.js:115:  d.shop.starterShown = !!d.shop.starterShown;
+src\kit\clip.js:215:export async function shareFile({ blob, ext }, name, text) {
+
+ succeeded in 1115ms:
+  const rev = [];
+  const dfs = () => {
+    if (sim.left === 0) return 1;
+    const key = sim.key();
+    const m = memo.get(key);
+    if (m !== undefined) {
+      if (m === 1) cachedTail(sim, rev);
+      return m;
+    }
+    if (++nodes > budget) return -1;
+    let moves = sim.free();
+    if (moves.length > 1) {
+      const cs = new Map(moves.map((u) => [u, sim.cost(u)]));
+      moves = moves.sort((a, b) => cs.get(a) - cs.get(b));
+    }
+    let unknown = false;
+    for (const u of moves) {
+      const r = sim.apply(u) ? dfs() : 0;
+      sim.undo();
+      if (r === 1) {
+        memo.set(key, 1);
+        rev.push(u);
+        return 1;
+      }
+      if (r === -1) unknown = true;
+      if (nodes > budget) return -1;
+    }
+    if (unknown) return -1;
+    memo.set(key, 0);
+    return 0;
+  };
+  const r = sim.dead ? 0 : dfs();
+  sim.nodes = nodes;
+  sim.line = r === 1 ? rev.reverse() : null;
+  return r;
+}
+
+// A memoised win was reached: follow memoised winning children so the caller still gets a full line (pushed reversed).
+function cachedTail(sim, rev) {
+  const memo = sim.C.memo;
+  const tail = [];
+  for (let guard = 0; sim.left > 0 && guard < 200; guard++) {
+    let next = -1;
+    for (const u of sim.free()) {
+      const ok = sim.apply(u);
+      if (ok && (sim.left === 0 || memo.get(sim.key()) === 1)) {
+        next = u;
+        break;
+      }
+      sim.undo();
+    }
+    if (next < 0) break;
+    tail.push(next);
+  }
+  for (let i = 0; i < tail.length; i++) sim.undo();
+  for (let i = tail.length - 1; i >= 0; i--) rev.push(tail[i]);
+}
+
+// Decision metrics along the intended line (cat ids, one per tap) under the real rules:
+//  free     cats tappable per step,
+//  dead     legal taps that lose (no winning line left), as a ratio of all legal taps,
+//  traps    steps where a TEMPTING tap loses: one that boards the front carrier or one of the next two, or the
+//           biggest free cat,
+//  chains   carrier arrivals that pull >= 2 cats off the bench (chain3: a whole carrier filled from the bench),
+//  startSafe taps at the start that keep a win (>= 2 = no guesswork),
+//  forced   steps where only one tap keeps a win.
+// Returns null when the line is not a legal win on this board.
+export function decisions(board, order, budget = 120) {
+  const C = compile(board);
+  const sim = new Sim(C, (board.meta && board.meta.benchSize) || 5);
+  const nc = C.cc.length;
+  let legal = 0;
+  let dead = 0;
+  let traps = 0;
+  let chains = 0;
+  let chain3 = 0;
+  let peak = 0;
+  let startSafe = 0;
+  let unknown = 0;
+  let freeSum = 0;
+  let forced = 0;
+  let nodes = 0;
+  for (let s = 0; s < order.length; s++) {
+    const lu = C.unitOf[order[s]];
+    const free = sim.free();
+    if (!free.includes(lu)) return null;
+    freeSum += free.length;
+    let big = 0;
+    for (const u of free) big = Math.max(big, C.len[u]);
+    let trap = false;
+    let safe = 1;
+    for (const u of free) {
+      if (u === lu) continue;
+      legal++;
+      const r = sim.apply(u) ? searchWin(sim, budget) : 0;
+      nodes += sim.nodes || 0;
+      sim.nodes = 0;
+      sim.undo();
+      if (r === 1) {
+        safe++;
+        continue;
+      }
+      if (r === -1) {
+        unknown++;
+        continue;
+      }
+      dead++;
+      let tempt = C.len[u] === big;
+      for (const id of C.ucats[u]) for (let d = 0; d < 3 && sim.ci + d < nc; d++) if (C.cc[sim.ci + d] === C.color[id]) tempt = true;
+      if (tempt) trap = true;
+    }
+    legal++;
+    if (s === 0) startSafe = safe;
+    if (trap) traps++;
+    if (safe === 1 && free.length > 1) forced++;
+    if (!sim.apply(lu)) return null;
+    for (const k of sim.boards) {
+      if (k >= 2) chains++;
+      if (k >= 3) chain3++;
+    }
+    if (sim.used > peak) peak = sim.used;
+  }
+  if (sim.left !== 0) return null;
+  return {
+    freeAvg: +(freeSum / order.length).toFixed(2),
+    deadRatio: legal ? +(dead / legal).toFixed(3) : 0,
+    traps,
+    chains,
+    chain3,
+    peak,
+    startSafe,
+    forced,
+    unknown,
+    nodes,
+  };
+}
+      { cells: [[1, 5], [0, 5], [0, 4]], breed: 'tabby' }, // 3 orange
+      { cells: [[1, 1], [2, 1]], breed: 'tuxedo' }, // 4 blue
+      { cells: [[1, 3], [1, 4], [2, 4]], breed: 'gray' }, // 5 green
+      { cells: [[3, 0], [4, 0], [4, 1]], breed: 'calico' }, // 6 pink
+      { cells: [[4, 4], [4, 5]], breed: 'gray' }, // 7 green, free (comes next)
+      { cells: [[2, 0], [1, 0]], breed: 'gray' }, // 8 green
+      { cells: [[4, 2], [4, 3]], breed: 'tuxedo' }, // 9 blue
+      { cells: [[3, 3], [3, 4]], breed: 'calico' }, // 10 pink
+      { cells: [[3, 1], [3, 2]], breed: 'tabby' }, // 11 orange
+    ]);
+    carriers = [{ color: 2, cap: 3 }, { color: 3, cap: 3 }, { color: 0, cap: 3 }, { color: 1, cap: 3 }]; // pink, green, orange, blue
+    meta.order = [2, 3, 0, 7, 9, 6, 10, 5, 1, 8, 11, 4]; // a winning line that peaks at 4 of 5 seats
+    meta.detours = 4;
+    meta.colors = 4;
+    return makeBoard(5, 6, cats, meta, carriers);
+  } else {
+    // Mother + kitten AND a first real choice on a 3-seat bench. Free at the start: the orange mother (her kitten
+    // trails, 2 of 3 orange seats in one tap) and a big pink mother + kitten whose carrier comes LAST. Tapping pink
+    // early takes 2 seats for the whole level: the two blues that must park later then find no seat. The hint arrow
+    // points at orange; pink is only safe once its carrier rolls in.
+    cats = mk([
+      { cells: [[2, 0], [3, 0], [4, 0]], breed: 'tabby' }, // 0 orange mother, free
+      { cells: [[0, 0], [1, 0]], breed: 'tabby', kittenOf: 0 }, // 1 her kitten
+      { cells: [[1, 2], [1, 1]], breed: 'tuxedo' }, // 2 blue, held by the kitten: parks
+      { cells: [[3, 1], [2, 1]], breed: 'tuxedo' }, // 3 blue, held by 2: parks
+      { cells: [[3, 3], [3, 2]], breed: 'tabby' }, // 4 orange, held by 3: fills orange, both blues hop in, blue departs too
+      { cells: [[4, 3], [4, 4], [4, 5]], breed: 'calico' }, // 5 pink mother, free from the start (the tempting wrong tap)
+      { cells: [[4, 1], [4, 2]], breed: 'calico', kittenOf: 5 }, // 6 her kitten
+    ]);
+    carriers = [{ color: 0, cap: 3 }, { color: 1, cap: 2 }, { color: 2, cap: 2 }];
+    meta.benchSize = 3;
+    meta.order = [0, 2, 3, 4, 5];
+  }
+  return makeBoard(5, 6, cats, meta, carriers);
+}
+
+// ---- one generation attempt ----
+function runAttempt(P, rng) {
+  const W = P.w;
+  const H = P.h;
+  const N = W * H;
+  const occ = new Int16Array(N).fill(-1);
+  const stamp = new Int32Array(N);
+  let cur = 0;
+  const rayOwn = Array.from({ length: N }, () => []);
+  const units = [];
+  const down = [];
+  const bm = [];
+  const pm = [];
+  let evalStamp = 0;
+  let filled = 0;
+  const cap = P.depthTarget + 1;
+
+ exited 1 in 1148ms:
+{
+  "name": "long-cat-out",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}
+- [medium] Cafe has no pull beyond first room
+  FIX: Mochi recurring free Hint with face on booster, tap residents where they lounge, ship playable third area, fold Cozy Room breeds in as visitors.
+- [medium] Lose card (Level 49) hides bench/stranded cat behind shop-height modal and pushes paid rescue
+  FIX: Freeze overflow, keep bench and active carrier visible, one-line consequence ('All 3 seats are full. Green can't board yet.'), Retry equal weight to rescue, 70-coin shortfall as secondary text.
+- [low] Cat Show is a wins-to-ribbons quota with no social hook
+  FIX: Weekly authored board on shared seed, unlimited practice, comparable result (peak bench occupancy), themed cafe decor reward for beating target.
+## code 7
+- [medium] src/game/game.js visBoard() line 620-625 clears vis.bench[e.seat] = -1 unconditionally, at time arr_C+0.44 of the tap that triggered the hop-in. visBench() (line 612) for a LATER tap can land earlier than that (arrival = t0+0.07+T, T is 0.42-0.95 s, so any second tap within about 0.5-1 s). The rules give the freed seat (lowest free index) to the new cat, so the new cat's cushion is wiped from the visual bench while rules still hold it. Chain finishes are exactly when players tap fast. Self-heals only on syncVis (undo, resize, new level); later the cat hops in from an empty cushion. Rules fuzz (tap/scoop/undo/addSeat on levels 5-120) shows rules state is consistent, so this is purely a vis-model ordering bug.
+  FIX: In visBoard only clear the seat if this.vis.bench[e.seat] === e.id (and have visBench likewise skip if a pending board for that seat is still queued), or key the vis updates by cat id instead of seat index.
+- [medium] src/kit/ads.js loadH5() has no timeout. h5Rewarded/h5Interstitial await it BEFORE their own START/INTER timers start. If the adsbygoogle script request stalls (captive portal, silent drop, no onload/onerror), the promise never settles, main.js guarded() leaves busy = true forever, and every guarded action (next, hint, buy, restore, adlife, adheart, share) is dead. The win card Next button then does nothing. Only reachable with VITE_ADS_PROVIDER=h5, which is the planned release config.
+  FIX: Race loadH5() against a 4-5 s timer inside loadH5 itself (resolve(false) on timeout) and do not cache a timeout as a permanent failure; also make guarded() release after a max duration.
+- [medium] Production gating leaves dead UI. In a default production build (ADS_CONFIG.provider 'off', AD_TEST false, iap backend fail-closed) rewarded() always returns false and purchase() always fails, yet the fail card shows 'Watch ad: +1 seat', the no-lives sheet shows 'Watch ad: +1 life', hint falls to a toast, the shop lists $ prices, and the Starter Bundle ($4.99) is shown once after L10 and then burned (shop.starterShown = true). Every one ends in 'No ad right now' / 'Purchase failed'.
+  FIX: Expose ads.available() and iap.available() (provider configured or DEV) and hide or replace the ad buttons, the price tiles and the starter offer when false; do not set starterShown unless the offer was purchasable.
+- [low] src/ui/ui.js settings(): cur.screen becomes 'settings' and actions.close only calls hideModal(), so ui.screen stays 'settings' after the card is gone (cafe or home keeps showing). main.js restore() (line 445) and the pwa.onChange handler (line 669) then call ui.settings() when ui.screen === 'settings'. Repro: cafe > Settings > Close > Shop > Restore, and Settings pops open over the shop. appinstalled/beforeinstallprompt fired later does the same.
+  FIX: In actions.close (or ui.hideModal) restore cur to the underlying screen (cafe/home/play), or make restore/pwa check that #modal.settings really exists.
+- [low] Cat Show 'exclusive decor' is sold but never delivered. Step 10 sets show.decor[themeId] = 1 and the UI shows a decor chip plus the '�zel dekor / Exclusive decor: <theme>' note, but econ.earnedDecor() has no caller in src/ (cafe.js and ui.cafe never render it). The player earns a reward with no visible effect.
+  FIX: Render earned decor in ui.cafe (data/events.js already has a decor id per theme), or drop the chip and note until art exists.
+- [low] src/main.js share() is wrapped in guarded(), so busy stays true while clip.encode runs (about 44 frames at 10 fps, 4.4 s; much longer in a background tab where setTimeout is throttled to 1/s). During that time Next (also guarded) silently does nothing. After the await the user-activation window is also gone, so navigator.share often throws and the code falls back to a file download.
+  FIX: Do not hold the shared busy flag for share; use a separate 'sharing' flag, and show the PNG card immediately while the video encodes.
+- [low] src/kit/clip.js tick() runs every 100 ms for the whole level and also during the win card: it allocates a new canvas and downsamples the full DPR canvas (up to 1125x2436) each time, then keeps about 48 frames (about 20 MB) alive until the next level. Pure cost on low-end phones with no gameplay benefit outside the chain moment.
+  FIX: Reuse a small pool of frame canvases, stop ticking once recording is finished and the win card is up, and drop ring/best after the share or on startHome.
+- [low] src/main.js adheart/hint: the reward is dropped silently when the board state changed while the ad ran (adheart returns after the ad if game.state !== st; hint skips game.setHint() if !ok()). Player watched a full rewarded ad and got nothing and no toast. Also ads.js h5Rewarded: if START_TIMEOUT fires (9 s) just before beforeAd, finish(false) is already latched while showAd() still plays, so a full view is not rewarded.
+  FIX: Grant the hint/seat to the stock (or toast and refund) when the context changed; in h5Rewarded clear the start timer on the first beforeAd/beforeReward callback before any async work.
+- [low] TR/EN leftovers: noAdSvg in src/ui/ui.js is a hard-coded English 'AD' text inside the 'No Ads' badge (shown on the Turkish shop and starter card); index.html has lang='en' and an English title (the runtime sets documentElement.lang but not document.title). All i18n.js keys are present in both en and tr and the placeholders match; data/cafe.json and data/events.js have tr for every name.
+  FIX: Drop the text from the SVG (use a strike-through speaker/ad icon) or inject t('ad'); set document.title from t('title') on boot and on language change.
+fatal: detected dubious ownership in repository at 'C:/Users/Admin/Documents/Msjelly'
+'C:/Users/Admin/Documents/Msjelly' is owned by:
+	BUILTIN/Administrators (S-1-5-32-544)
+but the current user is:
+	DESKTOP-RE8NLHR/Admin (S-1-5-21-675752366-3970861131-3817781662-1000)
+To add an exception for this directory, call:
+
+	git config --global --add safe.directory C:/Users/Admin/Documents/Msjelly
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content src/ui/ui.js -Encoding utf8 | Select-Object -Skip 230 -First 132; rg -n \"catShow|earnedDecor|function renderCafe|function cafe|area.*complete|function popup|visBoard|function onPointer|onPointer\\(|clip\\.\" src/game src/main.js src/ui data" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content src/main.js -Encoding utf8 | Select-Object -Skip 250 -First 175; Get-Content src/kit/clip.js -Encoding utf8 | Select-Object -First 155' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content qa/sol-r6.md -Encoding utf8 | Measure-Object -Line; Get-Content data/events.js -Encoding utf8; rg -n "starter|ad.*available|iap.*available|function loadH5|score" src/main.js src/kit/ads.js scripts/check-core.mjs' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 1067ms:
+  clipReset();
+  ui.none();
+  ui.play({ ...hudInfo(), level: n, daily, tut });
+  track('level_start', { n, daily });
+  if (perks.length) setTimeout(() => { if (S.mode === 'play' && S.n === n) perks.forEach((p, i) => setTimeout(() => ui.toast(p), i * 1500)); }, 500);
+}
+
+function onFree({ ids, step, purrfect }) {
+  if (game.demo) return;
+  if (!S.undid) quest('cat', ids.length); // replays after a paid undo do not count twice
+  audio.mrrp(step);
+  haptics.light();
+  if (purrfect) audio.pop();
+}
+
+function onBonk(r) {
+  if (game.demo) return;
+  audio.mew();
+  haptics.heavy();
+  ui.setHud(hudInfo());
+  track('bonk', { n: S.n });
+}
+
+function onWin(stars) {
+  ui.setTut('');
+  const d = save.data;
+  const dayKey = S.dayKey || todayKey();
+  const dailyRepeat = S.daily && d.daily.doneDay === dayKey;
+  // a daily already cleared today pays nothing (no coin farming)
+  // perk: +5 coins per coin-perk level on every win (Mochi 1, Pepper +2)
+  const first = !S.daily && S.n === d.level;
+  // coins pay on a first clear (and the daily); replaying an old level only drops a few coins, so it cannot be farmed
+  const full = first || S.daily;
+  const reward = dailyRepeat ? 0 : full ? (S.n <= 15 ? 25 : 20) + (stars === 3 ? 10 : stars === 2 ? 4 : 0) + (S.daily ? 25 : 0) + 5 * cafe.perkLevel('coins') + cafe.love() : 5;
+  let cafeStars = 0;
+  if (first) {
+    d.level++;
+    cafeStars = stars; // a first clear pays its star count into the caf� (normal 1, hard 2, super hard 3)
+    cafe.addStars(cafeStars);
+  }
+  if (!S.daily) d.bestStars[S.n] = Math.max(d.bestStars[S.n] || 0, stars);
+  if (S.daily && d.daily.doneDay !== dayKey) {
+    d.daily.streak = streak(+dayKey) + 1; // one day snapshot (taken at level start) for the whole daily bookkeeping
+    d.daily.last = dayKey;
+    d.daily.doneDay = dayKey;
+  }
+  d.coins += reward;
+  // economy: Purr Streak, daily tasks, Cat Show ribbons (a replayed daily puzzle pays no ribbons)
+  const firstTry = first && S.tries[triesKey()] === 1 && !S.continued && d.purr.lost !== S.n;
+  if (first) econ.purrWin(d, firstTry); // a replay of an old level never touches the streak
+  if (!S.daily && d.purr.lost === S.n) d.purr.lost = 0;
+  // Cat Show ribbons: a first clear pays its stars, +1 for a clean first try (so ~3-4 wins a day can finish the track in a week)
+  const ribbons = dailyRepeat || !full ? 0 : stars + (firstTry ? 1 : 0);
+  quest('win');
+  if (game.board.meta.kind !== 'normal') quest('hard');
+  if (ribbons) econ.showAdd(d, ribbons, dayNum());
+  const purr = S.daily ? '' : d.purr.pend ? t('purrReady') : d.purr.n > 0 ? t('purrProg', { n: d.purr.n, g: econ.purrGoal(d) }) : '';
+  save.commit();
+  track('level_win', { n: S.n, stars, firstTry });
+  if (first) for (const [lv, k] of [[1, 'l1'], [3, 'l3'], [10, 'l10']]) if (S.n === lv) funnel(k);
+  audio.clear();
+  haptics.success();
+  S.lastStars = stars;
+  const canBuild = !S.daily && d.level >= CAFE_FROM && cafe.anyAffordable();
+  // the title follows how cleanly it went, not the star payout
+  const peak = game.state ? game.state.benchPeak : 0;
+  const title = !S.undid && !S.continued && peak <= 1 ? 'winTitle' : !S.continued && peak <= 2 ? 'winTitle2' : 'winTitle1';
+  const res = cafe.RESIDENTS.filter((r) => cafe.isBuilt(r.task.id)).at(-1); // the newest resident peeks over the card
+  const nextTask = !S.daily && d.level >= CAFE_FROM ? cafe.ALL_TASKS.find((x) => !cafe.isBuilt(x.id)) : null;
+  const nr = nextTask && cafe.nextResident();
+  const cafeNext = nextTask && { sprite: nextTask.sprite, cost: nextTask.cost || 1, name: cafe.loc(nextTask.name), stars: cafe.stars(), res: nr && { id: nr.id, name: nr.name, left: Math.max(0, cafe.starsToResident(nr) - cafe.stars()) } };
+  // what the player pulled off: the best bench chain, a clear without parking, the traps of this board they dodged
+  const clean = !S.undid && !S.continued;
+  const meta = game.board.meta || {};
+  const ach = [];
+  if (clip.score >= 2) ach.push({ k: 'chain', text: t('achChain', { n: clip.score }) });
+  if (peak === 0) ach.push({ k: 'nobench', text: t('achNoBench') });
+  if (clean && meta.traps > 0) ach.push({ k: 'trap', text: meta.traps > 1 ? t('achTraps', { n: meta.traps }) : t('achTrap1') });
+  // one Starter Bundle card, on a quiet win only (no caf� build waiting), and only where it can be bought
+  const offer = !S.daily && !canBuild && econ.starterDue(d) && starterOpen();
+  if (offer) {
+    d.shop.starterShown = true;
+    save.commit();
+    track('starter_shown', { at: 'win' });
+  }
+  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, peek: peekColor(), cafeStars, canBuild, cafeNext, ribbons, purr: offer ? '' : purr, ach, chain: clip.has() && clip.score >= 2, offer: offer && { coins: iap.PRODUCTS.starter.coins, scoop: iap.PRODUCTS.starter.scoop, price: iap.PRODUCTS.starter.price } });
+  S.bonus = 0;
+  S.shareTitle = title;
+  for (let i = 0; i < stars; i++) setTimeout(() => audio.star(i), 300 + i * 300);
+  // the chain loops on the card at once (the frames are already there); the video for Share is encoded behind it
+  const token = S.winToken;
+  clearTimeout(S.clipTimer);
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const startPreview = () => {
+    if (token !== S.winToken || ui.screen !== 'win' || !clip.has() || clip.score < 2) return;
+    if (clip.recording) { S.clipTimer = setTimeout(startPreview, 300); return; } // the last hops are still being caught
+    clip.play(document.querySelector('#modal .chainclip canvas'), clipOverlay(), still);
+    clip.encode(clipOverlay());
+  };
+  S.clipTimer = setTimeout(startPreview, 500);
+}
+
+// ---- share clip of the level's best carrier chain ----
+let clip;
+const clipOverlay = () => ({ title: t('title'), badge: clip.score >= 2 ? t('chainX', { n: clip.score }) : t(S.shareTitle || 'winTitle'), level: S.daily ? t('dailyLevel') : t('level', { n: S.n }) });
+function clipReset() {
+  clip.reset(clipRect());
+}
+function clipRect() {
+  const c = game.canvas;
+  const k = game.dpr;
+  const y0 = Math.max(0, game.beltY - game.cs * 1.25);
+  const y1 = Math.min(game.H, game.oy + game.board.h * game.cell + 26);
+  return { x: 0, y: Math.round(y0 * k), w: c.width, h: Math.round((y1 - y0) * k) };
+}
+
+// the continue card: what went wrong (the stuck cat, seats vs the missing carrier), then the ways out
+function failInfo() {
+  const st = game.state;
+  const sid = st && st.pending && st.pending.length ? st.pending[0] : null;
+  const color = sid != null ? COLORS[game.board.cats[sid].color] : peekColor();
+  const sp = sid != null && game.vis.stuck.length ? game.stuckPos(0) : null;
+  return {
+    peek: color,
+    why: st ? t('offerWhy', { n: st.benchSize, c: t('col_' + color) }) : '',
+    stuckAt: sp && { x: Math.round(Math.min(game.W - 72, Math.max(72, sp.x))), y: Math.round(sp.y - game.bw * 0.62) },
+    coins: save.data.coins,
+    seatCost: seatCost(),
+    canSeat: save.data.coins >= seatCost(),
+    scoop: save.data.boosters.scoop,
+    scoopCost: SCOOP_COST,
+    ad: ads.available(),
+    store: iap.available(),
+    tip: t(st && st.carriers[0] && freeCats(st).some((i) => game.board.cats[i].color === st.carriers[0].color) ? 'failTip2' : 'failTip'),
+  };
+}
+
+function onFail(silent = false) {
+  ui.setTut('');
+  track('level_fail', { n: S.n });
+  track('bench_full', { n: S.n });
+  econ.purrLoss(save.data);
+  if (!S.daily) save.data.purr.lost = S.n;
+  S.lifeLost = lifeGate() && econ.loseLife(save.data, now());
+  save.commit();
+  if (S.lifeLost) track('life_lost', { n: S.n });
+  if (silent) return;
+  audio.mew();
+  ui.fail(failInfo());
+  if (S.lifeLost) ui.toast(t('lifeLost'));
+}
+
+// ---- actions ----
+const actions = {
+  click: () => audio.tick(),
+  play: () => tryStart(save.data.level),
+  daily: () => tryStart(dailyLevel(), true),
+  cafe: () => startHome(),
+  starter() { if (!starterOpen()) return; ui.starter(); track('starter_open', { from: S.mode }); },
+  cafeback() { ui.cafe(cafeInfo()); },
+  residents: () => ui.residents(),
+  pet({ id }) {
+    if (S.mode !== 'cafe' || !ui.pet(id)) return;
+    audio.mrrp(0);
+    haptics.light();
+    track('pet', { id });
+  },
+  treat({ id }) {
+    if (S.mode !== 'cafe') return;
+    const r = cafe.RESIDENTS.find((x) => x.id === id);
+    if (!r || cafe.loveOf(id) >= cafe.LOVE_COSTS.length) return;
+    if (!cafe.treat(id)) return ui.toast(t('needCoins', { n: cafe.treatCost(id) }));
+    audio.star(1);
+    haptics.success();
+    track('treat', { id });
+// Share clip: a rolling low-res copy of the board (~1.4 s ring) keeps the moment before the best bench chain of the
+// level and ~3 s after it. The win card loops those frames as the share preview right away (no encode needed); Share
+// hands over a WebM made by a MediaRecorder on a canvas captureStream, or an animated-strip PNG without one.
+const FPS = 10;
+const BEFORE = 14; // frames kept before the moment
+const AFTER = 30; // frames recorded after it (the chain plays in slow motion)
+const OUT_W = 240; // ~300 KB a frame, ~44 frames kept
+const POOL = 16;
+const TOP = 30; // title strip
+const BOT = 44; // caption strip: "Chain x3!" + level
+
+export function makeClip(source) {
+  let ring = [];
+  let best = null; // { score, frames, after, keep: Set }
+  let crop = null;
+  let job = null; // the encode promise for the current best
+  let done = null; // its result once finished (Share can then hand it over inside the tap)
+  let pool = [];
+
+  const recycle = (f) => { if (pool.length < POOL && (!best || !best.keep.has(f))) pool.push(f); };
+
+  // copy the board region of the game canvas into a small frame (reusing a pooled canvas of the same size)
+  function grab() {
+    const c = source.canvas;
+    const r = crop || { x: 0, y: 0, w: c.width, h: c.height };
+    const w = OUT_W;
+    const h = Math.round((OUT_W * r.h) / r.w);
+    let f = pool.pop();
+    if (!f || f.width !== w || f.height !== h) {
+      f = document.createElement('canvas');
+      f.width = w;
+      f.height = h;
+    }
+    f.getContext('2d').drawImage(c, r.x, r.y, r.w, r.h, 0, 0, w, h);
+    return f;
+  }
+
+  return {
+    // a new level: forget everything; crop = the belt + bench + board, in canvas pixels
+    reset(rect) {
+      ring = [];
+      best = null;
+      job = null;
+      done = null;
+      crop = rect;
+    },
+    // leaving play: let the frames go
+    drop() {
+      ring = [];
+      best = null;
+      job = null;
+      done = null;
+      pool = [];
+    },
+    // the canvas was resized (rotation, URL bar): new crop; frames of the old size are dropped from the ring
+    setCrop(rect) {
+      if (!crop || (rect.w === crop.w && rect.h === crop.h && rect.y === crop.y)) { crop = crop && rect; return; }
+      crop = rect;
+      ring = [];
+      pool = [];
+    },
+    // called ~10x a second while the level runs (and while the chain after the win is still recording)
+    tick() {
+      if (!crop || crop.w <= 0 || crop.h <= 0 || !source.canvas.width) return; // hidden tab / zero-size viewport
+      const f = grab();
+      if (best && best.after > 0) {
+        best.frames.push(f);
+        best.keep.add(f);
+        best.after--;
+      }
+      ring.push(f);
+      if (ring.length > BEFORE) recycle(ring.shift());
+    },
+    get recording() {
+      return !!(best && best.after > 0);
+    },
+    // a chain happened: keep it when it beats the best one of the level
+    mark(score) {
+      if (best && score <= best.score) return;
+      const old = best;
+      const frames = ring.slice();
+      best = { score, frames, after: AFTER, keep: new Set(frames), at: frames.length };
+      if (old) for (const f of old.frames) if (!ring.includes(f)) recycle(f);
+      job = null;
+      done = null;
+    },
+    get score() {
+      return best ? best.score : 0;
+    },
+    has() {
+      return !!(best && best.frames.length >= 4);
+    },
+    // loop the moment on a canvas (the win card preview); reduced motion shows one still. Returns stop().
+    play(cv, overlay, still = false) {
+      if (!best || !best.frames.length || !cv) return () => {};
+      const fr = best.frames;
+      cv.width = fr[0].width;
+      cv.height = fr[0].height + TOP + BOT;
+      if (still) { paint(cv, fr[Math.min(fr.length - 1, best.at + 12)], overlay); return () => {}; }
+      let i = 0;
+      const hold = 8;
+      const step = () => {
+        if (!cv.isConnected) return stop();
+        paint(cv, fr[Math.min(i, fr.length - 1)], overlay);
+        i = (i + 1) % (fr.length + hold);
+      };
+      step();
+      const id = setInterval(step, 1000 / FPS);
+      function stop() { clearInterval(id); }
+      return stop;
+    },
+    // encode the best moment; resolves to { blob, ext } or null
+    encode(overlay) {
+      if (!best || best.after > 0 || !best.frames.length) return Promise.resolve(null);
+      if (!job) {
+        const mine = (job = encode(best.frames, overlay).catch(() => null));
+        mine.then((r) => { if (job === mine) done = r; });
+      }
+      return job;
+    },
+    // the finished encode, or null while it is still running
+    ready() {
+      return done;
+    },
+    // no MediaRecorder: an animated strip as one PNG, four moments of the chain side by side
+    async png(overlay) {
+      if (!best || !best.frames.length) return null;
+      const fr = best.frames;
+      const picks = [0, 1, 2, 3].map((k) => fr[Math.min(fr.length - 1, Math.max(0, best.at - 4) + k * Math.max(1, Math.floor((fr.length - best.at + 4) / 4)))]);
+      const one = document.createElement('canvas');
+      one.width = fr[0].width;
+      one.height = fr[0].height + TOP + BOT;
+      const cv = document.createElement('canvas');
+      cv.width = one.width * 4 + 3 * 6;
+      cv.height = one.height;
+      const g = cv.getContext('2d');
+      g.fillStyle = '#1d2b53';
+      g.fillRect(0, 0, cv.width, cv.height);
+      picks.forEach((f, k) => {
+        paint(one, f, overlay);
+        g.drawImage(one, k * (one.width + 6), 0);
+      });
+      const blob = await new Promise((res) => cv.toBlob(res, 'image/png'));
+      return blob ? { blob, ext: 'png' } : null;
+    },
+  };
+}
+
+// one output frame: title strip, the board, then the caption ("Chain x3!" and the level)
+function paint(cv, frame, overlay) {
+  const g = cv.getContext('2d');
+  g.fillStyle = '#1fb3aa';
+  g.fillRect(0, 0, cv.width, cv.height);
+  g.drawImage(frame, 0, TOP);
+  g.fillStyle = '#1d2b53';
+
+ succeeded in 1101ms:
+    cur = { screen: 'win', info };
+    // only the stars that were earned (1 normal, 2 hard, 3 super hard): a clean clear never shows grey slots
+    const stars = Array.from({ length: info.stars }, (_, i) => img('ui_star.webp', 'star on').replace('<img ', `<img style="--i:${i}" `)).join('');
+    // a moved-in resident peeks over the card and cheers (by how clean the clear was); before that, a cat of the level
+    const peek = info.res
+      ? `<div class="peek respeek">${cimg('res_' + info.res + '.webp')}<i class="cheer">${t(info.cheer)}</i></div>`
+      : colorHead(info.peek, 'peek');
+    const cn = info.cafeNext;
+    const nr = cn && cn.res;
+    const resChip = nr ? `<span class="nres">${cimg('res_' + nr.id + '.webp')}<b>${nr.left > 0 ? t('resIn', { name: nr.name, n: nr.left }) : t('resReady', { name: nr.name })}</b></span>` : '';
+    // the level's best bench chain loops here as the share preview (main.js starts it), with what the player pulled off
+    const rrow = `<div class="rrow">${info.coins ? `<div class="reward cn">${img('ui_coin.webp')}<b>+${info.coins}</b></div>` : ''}${info.cafeStars ? `<div class="reward st">${img('ui_star.webp')}<b>+${info.cafeStars}</b></div>` : ''}${info.ribbons ? `<div class="reward st rb">${ribbonSvg}<b>+${info.ribbons}</b></div>` : ''}</div>`;
+    const ach = (info.ach || []).map((a) => `<li class="a-${a.k}">${a.text}</li>`).join('');
+    const hilite = info.chain
+      ? `<div class="hilite"><div class="chainclip"><canvas width="240" height="300" aria-hidden="true"></canvas></div><div class="hcol">${rrow}${ach ? `<ul class="ach">${ach}</ul>` : ''}</div></div>`
+      : ach ? `<ul class="ach inline">${ach}</ul>` : '';
+    const offer = info.offer ? `<button class="offercard" data-act="starter"><i class="ribbon">${t('bestValue')}</i><span class="oc-t"><b>${t('starterBundle')}</b><small>${t('starterLine', { c: info.offer.coins.toLocaleString(lang()), s: info.offer.scoop })}</small></span><span class="oc-p">${info.offer.price}</span></button>` : '';
+    const cafeBar = cn ? `<div class="cafebar"><span class="ticon">${cimg(cn.sprite)}</span><div class="cbtxt"><small>${t('cafeNext', { name: cn.name })}</small><div class="bar"><i style="width:${Math.min(100, Math.round((cn.stars / cn.cost) * 100))}%"></i><em>${img('ui_star.webp')}${Math.min(cn.stars, cn.cost)}/${cn.cost}</em></div>${resChip}</div></div>` : '';
+    root.insertAdjacentHTML('beforeend', `
+<div class="backdrop" id="modal"><div class="card teal win ${info.chain ? 'withclip' : info.offer || (info.ach || []).length ? 'tight' : ''}">
+  ${peek}
+  <h2 class="title yellow">${t(info.title)}</h2>
+  <div class="stars n${info.stars}">${stars}</div>
+  ${info.chain ? '' : rrow}
+  ${hilite}
+  ${cafeBar}
+  ${offer}
+  ${info.purr ? `<div class="purr">${info.purr}</div>` : ''}
+  ${info.canBuild ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${t('next')}</button>`}
+  <div class="row"><button class="btn teal sm" data-act="home">${t('home')}</button><button class="btn teal sm" data-act="share">${t('share')}</button></div>
+</div></div>`);
+    if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);
+  },
+
+  // continue offer: first the why (the stuck cat stays visible above the bench with a "No seat left!" tag and the
+  // card explains seats vs the missing carrier), then the ways out. Options the player cannot pay lead to the shop.
+  fail(info) {
+    cur = { screen: 'fail', info, hud: cur.hud };
+    const scoopOk = info.scoop > 0 || info.coins >= info.scoopCost;
+    const opt = (act, tone, icon, b, sm, cls = '') => `<button class="opt ${tone} ${cls}" data-act="${act}">${icon}<b>${b}</b><small>${sm}</small></button>`;
+    const scoop = scoopOk ? opt('offerscoop', 'mint', img('v2/ui_scoop.webp', 'oi'), t('scoop'), info.scoop > 0 ? t('scoopUse', { n: info.scoop }) : `${img('ui_coin.webp', 'mini')}${info.scoopCost}`) : '';
+    // one job per button: buy the seat, or (when short) the price against the purse, and a tap opens the coin shop
+    const seat = info.canSeat
+      ? opt('coinseat', 'gold', img('v2/ui_coin.webp', 'oi'), t('extraSeat'), `${img('ui_coin.webp', 'mini')}${info.seatCost}`)
+      : info.store ? opt('shop', 'gold', img('v2/ui_coin.webp', 'oi'), t('extraSeat'), `${img('ui_coin.webp', 'mini')}${info.seatCost} � ${t('haveCoins', { n: info.coins })}`, 'short') : '';
+    const ad = info.ad ? opt('adheart', 'green', adSvg, t('adSeatShort'), t('watchAd')) : '';
+    const tag = info.stuckAt ? `<div class="stucktag" style="left:${info.stuckAt.x}px;top:${info.stuckAt.y}px">${t('stuckWhy')}</div>` : '';
+    const opts = [scoop, seat, ad].filter(Boolean);
+    root.insertAdjacentHTML('beforeend', `
+<div class="backdrop offerb" id="modal">${tag}<div class="card cream offer slim">
+  <h2 class="title navy">${t('offerTitle')}</h2>
+  <div class="why">${info.why || t('offerSub')}</div>
+  ${info.tip ? `<div class="tip">${info.tip}</div>` : ''}
+  ${opts.length ? `<div class="opts n${opts.length}">${opts.join('')}</div>` : ''}
+  <div class="row"><button class="btn sm" data-act="retry">${t('retry')}</button><button class="btn teal sm" data-act="home">${t('home')}</button></div>
+</div></div>`);
+  },
+
+  // combo text over the board's top rows (--combo-y, set from the board layout): never over the LEVEL pill, the belt,
+  // the bench, the boosters or the hint card
+  combo(text) {
+    const hud = document.getElementById('hud');
+    if (!hud) return;
+    hud.querySelectorAll('.combo').forEach((x) => x.remove());
+    const el = document.createElement('div');
+    el.className = 'combo';
+    el.textContent = text;
+    hud.appendChild(el);
+    setTimeout(() => el.remove(), 1300);
+  },
+
+  settings(info) {
+    cur = { screen: 'settings', info };
+    const s = info.settings;
+    const tog = (k, label) => `<div class="setrow"><span>${label}</span><button class="toggle ${s[k] ? 'on' : ''}" data-act="toggle" data-k="${k}"><i></i><b>${s[k] ? t('on') : t('off')}</b></button></div>`;
+    const langs = LANGS.map((l) => `<button class="seg ${lang() === l ? 'on' : ''}" data-act="lang" data-l="${l}">${l.toUpperCase()}</button>`).join('');
+    const m = document.getElementById('modal');
+    if (m) m.remove();
+    root.insertAdjacentHTML('beforeend', `
+<div class="backdrop" id="modal"><div class="card cream settings">
+  <h2 class="title navy">${t('settings')}</h2>
+  ${tog('sound', t('sound'))}
+  ${tog('haptics', t('haptics'))}
+  <div class="setrow"><span>${t('language')}</span><div class="segs">${langs}</div></div>
+  ${info.canInstall ? `<div class="setrow"><span>${t('installApp')}</span><button class="seg wide" data-act="install">${t('install')}</button></div>` : ''}
+  <div class="setrow"><span>${t('removeAds')}</span>${info.removeAds ? `<b class="owned">${t('owned')}</b>` : `<button class="seg wide" data-act="shop">${t('shop')}</button>`}</div>
+  <div class="setrow"><button class="link" data-act="restore">${t('restore')}</button></div>
+  <button class="btn teal" data-act="close">${t('close')}</button>
+</div></div>`);
+  },
+
+  // ---- Cat Caf� hub (cafe-a layout, B-token buttons) ----
+  // info: { stars, level, area (index; AREAS.length = teaser), justBuilt }
+  cafe(info) {
+    cur = { screen: 'cafe', info };
+    const ai = Math.max(0, Math.min(AREAS.length, info.area));
+    const area = AREAS[ai];
+    const tasks = area ? area.tasks : [];
+    const builtN = tasks.filter((x) => isBuilt(x.id)).length;
+    let scene;
+    if (area) {
+      const px = (x) => (area.flip ? 1 - x.x : x.x);
+      const nextIds = pending(ai).slice(0, 1).map((x) => x.id); // one dust sheet only, on the next piece
+      const decor = tasks.map((x) => {
+        const fresh = info.justBuilt === x.id;
+        const pos = `left:${px(x) * 100}%;top:${x.y * 100}%;width:${x.w * 100}%;--dh:${x.hue || 0}deg`;
+        // the next piece: a faint outline of what goes here and its price (the shell art already has the dust sheet + paint corner)
+        if (!isBuilt(x.id)) return nextIds.includes(x.id) ? `<div class="decor tbd" style="${pos}">${cimg(x.sprite)}<i class="tbd-tag">${img('ui_star.webp')}<b>${x.cost || 1}</b></i></div>` : '';
+        return `<div class="decor ${fresh ? 'fresh' : ''} ${area.flip ? 'flip' : ''}" style="${pos}">${cimg(x.sprite)}${fresh ? '<i class="puff p1"></i><i class="puff p2"></i><i class="puff p3"></i><i class="spk s1"></i><i class="spk s2"></i><i class="spk s3"></i>' : ''}</div>`;
+      }).join('');
+      // residents lounge on the room's floor spots (full-body sit/loaf art); a tap pets them
+      const freshRes = tasks.find((x) => x.id === info.justBuilt && x.resident);
+      const guests = guestsFor(ai, info.day || 0).map((g, i) => {
+        const lines = g.idle && g.idle.length ? g.idle : [g.line];
+        const line = lines[((info.day || 0) + ai * 2 + i) % lines.length];
+        const s = g.spot;
+        const fresh = freshRes && freshRes.resident.id === g.id;
+        return `<button class="guest ${s.pose} ${fresh ? 'fresh' : ''}" data-act="pet" data-id="${g.id}" aria-label="${g.name}" style="left:${s.x * 100}%;top:${s.y * 100}%;width:${s.w * 100}%;--d:${(-i * 3.7).toFixed(1)}s">${cimg(`res_${g.id}_${s.pose}.webp`, 'gimg')}<i class="gbub ${s.x > 0.62 ? 'l' : s.x < 0.3 ? 'r' : ''}">${loc(line)}</i></button>`;
+      }).join('');
+      // renovation clutter (paint, tools) fades out task by task and is gone once the area is done
+      const cl = area.clutter && clutterLevel(ai);
+      const clutter = cl ? `<div class="decor clutter" style="left:${area.clutter.x * 100}%;top:${area.clutter.y * 100}%;width:${area.clutter.w * 100}%;opacity:${(0.25 + 0.75 * cl).toFixed(2)}">${cimg(area.clutter.sprite)}</div>` : '';
+      const justTask = tasks.find((x) => x.id === info.justBuilt);
+      scene = `${cimg(area.shell, 'shell' + (area.flip ? ' flip' : ''))}${patchHtml(area, builtN, !!justTask && builtN === PATCH_AT)}${clutter}${decor}${guests}`;
+    } else {
+      scene = `${TEASER ? cimg(TEASER.image, 'shell teaser') : '<div class="shell ph"></div>'}<div class="soon"><b>${t('comingSoon')}</b><span>${t('teaserSub')}</span></div>`;
+    }
+    const nr = nextResident();
+    const bubble = nr ? `<div class="nextres"><div class="bub">${t('nextResident')}</div><div class="face">${cimg('res_' + nr.id + '.webp')}</div></div>` : '';
+
+    const left = pending(ai);
+    const rows = area
+src/main.js:20:import { makeClip, shareFile } from './kit/clip.js';
+src/main.js:180:  if (clip) clip.drop();
+src/main.js:326:  if (clip.score >= 2) ach.push({ k: 'chain', text: t('achChain', { n: clip.score }) });
+src/main.js:336:  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, peek: peekColor(), cafeStars, canBuild, cafeNext, ribbons, purr: offer ? '' : purr, ach, chain: clip.has() && clip.score >= 2, offer: offer && { coins: iap.PRODUCTS.starter.coins, scoop: iap.PRODUCTS.starter.scoop, price: iap.PRODUCTS.starter.price } });
+src/main.js:345:    if (token !== S.winToken || ui.screen !== 'win' || !clip.has() || clip.score < 2) return;
+src/main.js:346:    if (clip.recording) { S.clipTimer = setTimeout(startPreview, 300); return; } // the last hops are still being caught
+src/main.js:347:    clip.play(document.querySelector('#modal .chainclip canvas'), clipOverlay(), still);
+src/main.js:348:    clip.encode(clipOverlay());
+src/main.js:355:const clipOverlay = () => ({ title: t('title'), badge: clip.score >= 2 ? t('chainX', { n: clip.score }) : t(S.shareTitle || 'winTitle'), level: S.daily ? t('dailyLevel') : t('level', { n: S.n }) });
+src/main.js:357:  clip.reset(clipRect());
+src/main.js:663:  const text = clip.score >= 2 ? t('shareClip', { n: S.n, c: clip.score }) : t('shareText', { n: S.n, stars: '★'.repeat(S.lastStars || 1) });
+src/main.js:664:  if (clip.has()) {
+src/main.js:666:    const f = clip.ready() || (await clip.png(ov)); // no long await: the tap's user activation must still hold
+src/main.js:700:  game.on.chain = ({ n }) => { if (game.demo) return; clip.mark(n); track('chain', { n, lv: S.n }); };
+src/main.js:712:    if (S.mode === 'play' && game.board) clip.setCrop(clipRect()); // resize / rotation
+src/main.js:752:  setInterval(() => { if (S.mode === 'play' && game.state && !game.demo && ((!game.over && ui.screen === 'play') || clip.recording)) clip.tick(); }, 100);
+src/main.js:834:      clip: () => ({ has: clip.has(), score: clip.score, recording: clip.recording }),
+src/main.js:835:      async clipEncode() { const r = (await clip.encode(clipOverlay())) || (await clip.png(clipOverlay())); return r && { ext: r.ext, size: r.blob.size }; },
+data\cafe.json:578:  "notes": "x,y = sprite center and w = sprite width, as fractions of the shell image (sprite webps are square, padded). hue = CSS hue-rotate degrees for a recoloured shell/sprite; flip = mirrored layout. spots = resident floor spots (sprite center x,y and width w; pose sit|loaf): residents of the area take them first, other moved-in residents visit the free ones. clutter = per-area renovation sprite (x,y,w like a task); show it only while the area has unbuilt tasks and fade it out as tasks complete. value on a resident = perk strength (default 1).",
+src/game\econ.js:170:export const earnedDecor = (d) => Object.keys(d.show.decor); // hook: the cafe renders these ids when art exists
+src/game\game.js:63:    canvas.addEventListener('pointerdown', (e) => this.onPointer(e));
+src/game\game.js:357:  onPointer(e) {
+src/game\game.js:606:        this.pending.push({ at, vis: true, seat: e.seat, cat: e.id, fn: () => this.visBoard(e, fx) });
+src/game\game.js:641:  visBoard(e, fx) {
+
+ succeeded in 1161ms:
+
+src/kit/ads.js:31:function loadH5() {
+src/main.js:143:const shopInfo = () => ({ owned: save.data.iap.owned, noAds: iap.noAds(), store: iap.available() });
+src/main.js:146:const starterOpen = () => iap.available() && !save.data.iap.owned.starter && !save.data.iap.owned.noads && save.data.level > 10;
+src/main.js:157:    ui.noLives({ ms: econ.livesMs(save.data, now()), coins: save.data.coins, cost: econ.LIFE_REFILL_COST, ad: ads.available() });
+src/main.js:166:const cafeInfo = (justBuilt) => ({ stars: cafe.stars(), level: save.data.level, area: S.area, justBuilt, coins: save.data.coins, lives: livesInfo(), dots: dots(), day: dayNum(), offer: starterOpen() });
+src/main.js:326:  if (clip.score >= 2) ach.push({ k: 'chain', text: t('achChain', { n: clip.score }) });
+src/main.js:330:  const offer = !S.daily && !canBuild && econ.starterDue(d) && starterOpen();
+src/main.js:332:    d.shop.starterShown = true;
+src/main.js:334:    track('starter_shown', { at: 'win' });
+src/main.js:336:  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, peek: peekColor(), cafeStars, canBuild, cafeNext, ribbons, purr: offer ? '' : purr, ach, chain: clip.has() && clip.score >= 2, offer: offer && { coins: iap.PRODUCTS.starter.coins, scoop: iap.PRODUCTS.starter.scoop, price: iap.PRODUCTS.starter.price } });
+src/main.js:345:    if (token !== S.winToken || ui.screen !== 'win' || !clip.has() || clip.score < 2) return;
+src/main.js:355:const clipOverlay = () => ({ title: t('title'), badge: clip.score >= 2 ? t('chainX', { n: clip.score }) : t(S.shareTitle || 'winTitle'), level: S.daily ? t('dailyLevel') : t('level', { n: S.n }) });
+src/main.js:382:    ad: ads.available(),
+src/main.js:383:    store: iap.available(),
+src/main.js:409:  starter() { if (!starterOpen()) return; ui.starter(); track('starter_open', { from: S.mode }); },
+src/main.js:466:    if (ui.sheet === 'starter') ui.hideSheet();
+src/main.js:520:    if (ui.sheet !== 'nolives' || !ads.available()) return;
+src/main.js:545:    if (S.mode !== 'play' || !game.over || !st.failed || !ads.available()) return;
+src/main.js:627:    } else if (!ads.available()) {
+src/main.js:663:  const text = clip.score >= 2 ? t('shareClip', { n: S.n, c: clip.score }) : t('shareText', { n: S.n, stars: '★'.repeat(S.lastStars || 1) });
+src/main.js:776:        else if (name === 'starter') ui.starter();
+src/main.js:777:        else if (name === 'nolives') ui.noLives({ ms: econ.livesMs(save.data, now()), coins: save.data.coins, cost: econ.LIFE_REFILL_COST, ad: ads.available() });
+src/main.js:834:      clip: () => ({ has: clip.has(), score: clip.score, recording: clip.recording }),
+Lines Words Characters Property
+----- ----- ---------- --------
+    0                          
+// Weekly Cat Show themes. Rotates by week number (see econ.themeOf). `decor` is the exclusive cafe decor id earned on step 10.
+export const EVENT_THEMES = [
+  { id: 'spring_picnic', name: { en: 'Spring Picnic', tr: 'Bahar Piknigi' }, decor: 'picnic_blanket', color: '#7bd66b' },
+  { id: 'pajama_party', name: { en: 'Pajama Party', tr: 'Pijama Partisi' }, decor: 'pajama_pillows', color: '#8f8cff' },
+  { id: 'beach_day', name: { en: 'Beach Day', tr: 'Plaj G�n�' }, decor: 'beach_umbrella', color: '#ffb23f' },
+  { id: 'starry_night', name: { en: 'Starry Night', tr: 'Yildizli Gece' }, decor: 'star_lantern', color: '#4d6bd6' },
+  { id: 'pumpkin_patch', name: { en: 'Pumpkin Patch', tr: 'Balkabagi Bah�esi' }, decor: 'pumpkin_stack', color: '#ff7a1a' },
+  { id: 'snow_globe', name: { en: 'Snow Globe', tr: 'Kar K�resi' }, decor: 'snow_globe', color: '#59c7ee' },
+];
+
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n --hidden -g '"'!node_modules'"' -g '"'!.git/**'"' \"04d-level3-trap|10c-gen-trap|28g-chain3-slowmo|28h-win-chain|09-continue-offer|18h-cafe-rooftop-built|setTut|function onState|failTip|chainFx\" scripts src qa/errors.txt; Get-Content src/game/game.js -Encoding utf8 | Select-Object -Skip 350 -First 87" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content src/kit/ads.js -Encoding utf8 | Select-Object -First 145; Get-Content src/main.js -Encoding utf8 | Select-Object -Skip 651 -First 37; Get-Content scripts/check-core.mjs -Encoding utf8 | Select-Object -Skip 350 -First 105; rg -n "export (function|const|class)" src/core/rules.js src/core/search.js' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content data/cafe.json -Encoding utf8 | Select-String '\"id\"|\"cost\"|\"perk\"|\"shell\"|\"hue\"' | Select-Object -Last 145; rg -n \"location.*search|URLSearchParams|level=|dailyLevel|showInfo|claimshow|showClaim\" src" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 1079ms:
+src\i18n.js:174:    failTip: 'Tip: park only cats whose carrier comes soon.',
+src\i18n.js:175:    failTip2: 'Tip: free a cat of the front carrier’s colour first.',
+src\i18n.js:347:    failTip: 'İpucu: Sadece taşıyıcısı yakında gelen kedileri park et.',
+src\i18n.js:348:    failTip2: 'İpucu: Önce öndeki taşıyıcının renginde bir kediyi gönder.',
+scripts\qa.mjs:91:  await waitFor('(window.__qa.chainFx() || {}).k >= 2', 8000); await sleep(150);
+scripts\qa.mjs:111:  await shot('04d-level3-trap');
+scripts\qa.mjs:156:  await shot('09-continue-offer');
+scripts\qa.mjs:512:        await shot('10c-gen-trap');
+scripts\qa.mjs:530:        await waitFor('(window.__qa.chainFx() || {}).k >= 2', 10000);
+scripts\qa.mjs:532:        await waitFor('(window.__qa.chainFx() || {}).k >= 3', 10000); await sleep(120);
+scripts\qa.mjs:533:        await shot('28g-chain3-slowmo');
+scripts\qa.mjs:540:    await shot('28h-win-chain');
+scripts\qa.mjs:593:    await cafeAt(`${A1},${A2},${A3},${A4},${A5}`, 1, '18h-cafe-rooftop-built');
+src\main.js:275:  ui.setTut('');
+src\main.js:384:    tip: t(st && st.carriers[0] && freeCats(st).some((i) => game.board.cats[i].color === st.carriers[0].color) ? 'failTip2' : 'failTip'),
+src\main.js:389:  ui.setTut('');
+src\main.js:600:    ui.setTut(game.scoopMode ? t('scoopTip') : '');
+src\main.js:704:  game.on.scoop = () => { payBooster('scoop', SCOOP_COST); ui.setTut(''); ui.setHud(hudInfo()); track('scoop'); };
+src\main.js:733:        ui.setTut(t('tut4b'));
+src\main.js:737:        ui.setTut(t('tut4c'));
+src\main.js:743:      ui.setTut(S.tut);
+src\main.js:748:      ui.setTut('');
+src\main.js:864:      chainFx: () => game.chainFx && { n: game.chainFx.n, k: game.chainFx.k },
+src\ui\ui.js:585:  setTut(text) {
+src\game\game.js:50:    this.chainFx = null; // the bench chain on screen: { n, k (hops so far), kT, t0, t1 }
+src\game\game.js:171:    this.chainFx = null;
+src\game\game.js:611:    if (fx) this.pending.push({ at: fx.t0 - 0.2, vis: true, fn: () => { this.chainFx = fx; if (this.on.chain) this.on.chain({ n: fx.n }); } });
+src\game\game.js:616:    const f = this.chainFx;
+src\game\game.js:670:    if (this.chain >= 2 && !(this.chainFx && this.clock < this.chainFx.t1 + 1.4)) { // the chain stamp already speaks
+src\game\game.js:872:    const fx = this.chainFx;
+src\game\game.js:941:    const f = this.chainFx;
+    this.syncVis();
+    if (this.autoHint) this.refreshHint();
+    return true;
+  }
+
+  // ---- input ----
+  onPointer(e) {
+    if (this.demo || !this.state || this.clock < this.inputAt) return;
+    if (document.querySelector('#modal, .fake-ad')) return;
+    const r = this.canvas.getBoundingClientRect();
+    const px = e.clientX - r.left, py = e.clientY - r.top;
+    const id = this.hitCat(px, py);
+    if (id < 0) {
+      const gx = Math.floor((px - this.ox) / this.cell), gy = Math.floor((py - this.oy) / this.cell);
+      const { w, h } = this.state;
+      const o = gx >= 0 && gy >= 0 && gx < w && gy < h ? this.state.grid[gy * w + gx] : -1;
+      if (o < -1) this.wiggleObj[-2 - o] = { t: this.clock, dx: 0, dy: -1 };
+    }
+    if (id >= 0) {
+      e.preventDefault();
+      if (this.scoopMode) this.scoopCat(id);
+      else this.tapCat(id);
+    }
+  }
+
+  hitCat(px, py) {
+    const c = this.cell;
+    const { w, h } = this.state;
+    const gx = Math.floor((px - this.ox) / c);
+    const gy = Math.floor((py - this.oy) / c);
+    if (gx >= 0 && gy >= 0 && gx < w && gy < h) {
+      const o = this.state.grid[gy * w + gx];
+      if (o >= 0) return o;
+    }
+    let best = -1;
+    let bd = c * 0.5;
+    for (let y = gy - 1; y <= gy + 1; y++) {
+      for (let x = gx - 1; x <= gx + 1; x++) {
+        if (x < 0 || y < 0 || x >= w || y >= h) continue;
+        const o = this.state.grid[y * w + x];
+        if (o < 0) continue;
+        const [cx, cy] = this.center(x, y);
+        const d = Math.hypot(px - cx, py - cy);
+        if (d < bd) {
+          bd = d;
+          best = o;
+        }
+      }
+    }
+    return best;
+  }
+
+  // CSS-pixel centre of a cat's head (k < 0) or of its k-th cell
+  cellPos(id, k = -1) {
+    const cat = this.board.cats[id];
+    const cell = k < 0 ? cat.cells[cat.cells.length - 1] : cat.cells[k];
+    const [x, y] = this.center(cell[0], cell[1]);
+    return { x, y };
+  }
+
+  // returns the rules result, or null when ignored
+  tapCat(id) {
+    if (!this.state || this.over) return null;
+    if (this.anims.some((a) => a.type === 'bonk' && a.id === id)) return null;
+    if (this.state.alive[id] === 0) return null;
+    const r = tap(this.state, id);
+    if (r.gone || r.over) return r;
+    if (!this.demo) {
+      const hp = this.cellPos(id);
+      this.look = { id, x: hp.x, y: hp.y, t: this.clock };
+    }
+    if (r.bonk) this.addBonk(r);
+    else this.startRun(r, { ray: true });
+    if (this.hintId === id && r.ok) this.hintId = null;
+    return r;
+  }
+
+  // Scoop booster: lift any cat straight to its seat, blockers or not. null = not allowed.
+  scoopCat(id) {
+    if (!this.state || this.over || !this.state.alive[id]) return null;
+    if (this.on.scoopCan && !this.on.scoopCan()) {
+      this.scoopMode = false;
+      return null;
+    }
+    const r = rulesScoop(this.state, id);
+    if (!r.ok) {
+      if (r.full && this.on.scoopFull) this.on.scoopFull();
+
+ succeeded in 1116ms:
+// Ads. Dev builds: a 2s fake overlay. Web release: a Google H5 Games Ads provider (adBreak/adConfig), OFF unless
+// VITE_ADS_PROVIDER=h5 is set at build time (see RELEASE.md). Anything else grants nothing (fail closed).
+import { save } from './save.js';
+import { t } from '../i18n.js';
+import { interstitialOk } from '../game/econ.js';
+import { now } from './clock.js';
+import { audio } from './audio.js';
+
+// Dev/test builds only: a production build with no real ad plugin registered grants nothing (fail closed).
+export const AD_TEST = !!(import.meta.env && import.meta.env.DEV);
+const FAKE_MS = 2000;
+
+// Build-time config (vite env). Default: no real provider. Portals that run their own ads load the game with ?noads=1.
+const env = (import.meta.env) || {};
+export const ADS_CONFIG = {
+  provider: env.VITE_ADS_PROVIDER === 'h5' ? 'h5' : 'off',
+  h5ClientId: env.VITE_H5_CLIENT_ID || 'ca-pub-0000000000000000', // placeholder until the owner has an AdSense publisher id
+  h5Test: env.VITE_H5_TEST !== '0', // data-adbreak-test: test ads until the owner builds with VITE_H5_TEST=0
+};
+const urlNoAds = (() => {
+  try {
+    return /^(1|true)$/.test(new URLSearchParams(location.search).get('noads') || '');
+  } catch {
+    return false;
+  }
+})();
+
+// ---- Google H5 Games Ads provider (loaded lazily, only when ADS_CONFIG.provider === 'h5') ----
+let h5Ready = null;
+const LOAD_TIMEOUT_MS = 4500;
+function loadH5() {
+  if (h5Ready) return h5Ready;
+  const p = new Promise((resolve) => {
+    window.adsbygoogle = window.adsbygoogle || [];
+    window.adBreak = window.adConfig = (o) => window.adsbygoogle.push(o);
+    const s = document.createElement('script');
+    s.async = true;
+    s.crossOrigin = 'anonymous';
+    s.src = 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=' + encodeURIComponent(ADS_CONFIG.h5ClientId);
+    s.dataset.adClient = ADS_CONFIG.h5ClientId;
+    if (ADS_CONFIG.h5Test) s.dataset.adbreakTest = 'on';
+    s.onload = () => resolve(true);
+    s.onerror = () => { if (h5Ready === p) h5Ready = null; resolve(false); }; // a failed load may be retried later
+    document.head.appendChild(s);
+    window.adConfig({ sound: 'on', preloadAdBreaks: 'on', onReady() {} });
+  });
+  h5Ready = p;
+  // a stalled script request (captive portal, silent drop) never settles: give up this time, keep the load going
+  return Promise.race([p, new Promise((r) => setTimeout(() => r(false), LOAD_TIMEOUT_MS))]);
+}
+
+const START_TIMEOUT_MS = 9000; // rewarded: how long to wait for the ad to start
+const INTER_TIMEOUT_MS = 5000; // interstitial: same
+
+// -> Promise<boolean> true only when the player watched the whole rewarded ad
+async function h5Rewarded(reason) {
+  if (!(await loadH5())) return false;
+  return new Promise((resolve) => {
+    let viewed = false;
+    let done = false;
+    const finish = (v) => { if (!done) { done = true; clearTimeout(timer); resolve(v); } };
+    // the ad network never answered (blocked request, too soon after another ad): give up, grant nothing
+    const timer = setTimeout(() => finish(false), START_TIMEOUT_MS);
+    window.adBreak({
+      type: 'reward',
+      name: 'reward-' + reason,
+      beforeAd: () => { clearTimeout(timer); audio.hold(true); }, // a playing ad may run long: only the wait for it is timed
+      afterAd: () => audio.hold(false),
+      beforeReward: (showAd) => { clearTimeout(timer); showAd(); }, // the ad is starting: the start timeout must not latch a 'no'
+      adViewed: () => { if (!done) viewed = true; },
+      adBreakDone: () => finish(viewed),
+    });
+  });
+}
+
+// -> Promise<boolean> true when an interstitial was actually shown
+async function h5Interstitial() {
+  if (!(await loadH5())) return false;
+  return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => { if (!done) { done = true; clearTimeout(timer); resolve(v); } };
+    const timer = setTimeout(() => finish(false), INTER_TIMEOUT_MS);
+    window.adBreak({
+      type: 'next',
+      name: 'level-end',
+      beforeAd: () => { clearTimeout(timer); audio.hold(true); },
+      afterAd: () => audio.hold(false),
+      adBreakDone: (info) => finish(!!info && info.breakStatus === 'viewed'),
+    });
+  });
+}
+
+function fakeAd(label) {
+  return new Promise((resolve) => {
+    const el = document.createElement('div');
+    el.className = 'fake-ad';
+    el.innerHTML = `<div class="fake-ad-box"><div class="fake-ad-tag">${t('testAd')}</div><div class="fake-ad-text">${label}</div><div class="fake-ad-bar"><i></i></div></div>`;
+    document.body.appendChild(el);
+    setTimeout(() => {
+      el.remove();
+      resolve(true);
+    }, FAKE_MS);
+  });
+}
+
+export const ads = {
+  // false when no ad can ever be shown (production build without a provider, or a no-ads portal): hide ad buttons
+  available: () => !urlNoAds && (ADS_CONFIG.provider === 'h5' || AD_TEST),
+  // -> Promise<boolean> true when the reward should be granted
+  rewarded(reason) {
+    if (urlNoAds) return Promise.resolve(false); // no ad network is loaded in a no-ads build
+    if (ADS_CONFIG.provider === 'h5') return h5Rewarded(reason);
+    if (!AD_TEST) return Promise.resolve(false);
+    return fakeAd(t('adPlaying') + ' (' + reason + ')');
+  },
+  interstitial() {
+    if (urlNoAds) return Promise.resolve();
+    const done = (shown) => {
+      if (!shown) return;
+      save.data.ads.lastInterstitial = now();
+      save.commit();
+    };
+    if (ADS_CONFIG.provider === 'h5') return h5Interstitial().then(done);
+    if (!AD_TEST) return Promise.resolve();
+    return fakeAd(t('adPlaying')).then(() => done(true));
+  },
+  // Rules (econ.interstitialOk): after a win only, from level 8, 1 per 3 min, none in the first 5 minutes after install, never with No Ads.
+  shouldShowInterstitial(level) {
+    return !urlNoAds && interstitialOk(save.data, level, now());
+  },
+  isRemoved: () => save.data.ads.removeAds || urlNoAds,
+};
+    if (game.board) setTexts();
+    document.documentElement.lang = l;
+    if (S.mode === 'home') ui.home(homeInfo());
+    else if (S.mode === 'cafe') ui.cafe(cafeInfo());
+    ui.settings(settingsInfo());
+  },
+};
+
+// Share: the level's best bench chain as a WebM (an animated-strip PNG while it is still encoding or without
+// MediaRecorder), else the text line. Its own flag, so Next stays live while a share sheet is open.
+async function doShare() {
+  const text = clip.score >= 2 ? t('shareClip', { n: S.n, c: clip.score }) : t('shareText', { n: S.n, stars: '?'.repeat(S.lastStars || 1) });
+  if (clip.has()) {
+    const ov = clipOverlay();
+    const f = clip.ready() || (await clip.png(ov)); // no long await: the tap's user activation must still hold
+    if (f) {
+      const how = await shareFile(f, `long-cat-out-level-${S.n}`, text);
+      track('share', { kind: f.ext, how });
+      if (how === 'saved') ui.toast(t('clipSaved'));
+      return;
+    }
+  }
+  try {
+    if (navigator.share) await navigator.share({ text });
+    else if (!navigator.clipboard) ui.toast(text);
+    else {
+      await navigator.clipboard.writeText(text);
+      ui.toast(t('copied'));
+    }
+  } catch (e) {
+    if (e && e.name !== 'AbortError') ui.toast(text);
+  }
+}
+
+const settingsInfo = () => ({ settings: save.data.settings, removeAds: ads.isRemoved(), canInstall: pwa.canInstall() });
+
+// ---- boot ----
+    eq(w.benchUsed, 2, 'level 3: pink pair takes two seats');
+    let lost = true;
+    const dfs = (s) => {
+      if (isWon(s)) return true;
+      for (const id of freeCats(s)) {
+        tap(s, id);
+        const won = !s.failed && dfs(s);
+        undo(s, true);
+        if (won) return true;
+      }
+      return false;
+    };
+    lost = !dfs(w);
+    ok(lost, 'level 3: tapping pink first is a dead end');
+  }
+  eq(hint(createState(b)), 0, 'level 3: the hint points at the orange mother');
+  const r = tap(st, 0);
+  eq(r.freed, [0, 1], 'mother frees trailing kitten');
+  eq(r.events.map((e) => e.type), ['load', 'load'], 'one tap, two cats aboard');
+  ok(canExit(st, 2) && !canExit(st, 3), 'blue freed, the next blue still held');
+  tap(st, 2);
+  tap(st, 3);
+  eq(st.benchUsed, 2, 'level 3: two blues parked');
+  const r4 = tap(st, 4);
+  eq(r4.events.map((e) => e.type), ['load', 'depart', 'arrive', 'board', 'board', 'depart', 'arrive'], 'level 3: orange fills, both blues hop in and blue departs too');
+  ok(tap(st, 5).won, 'level 3 wins');
+}
+// undo: restores board, bench and carriers
+{
+  const b = row([1, 0, 0, 0], [car(0), car(1, 1)], { benchSize: 3 });
+  const st = createState(b);
+  ok(!canUndo(st) && !undo(st).ok, 'nothing to undo at start');
+  tap(st, 0); tap(st, 1);
+  const snap = JSON.stringify([st.alive, st.bench, st.carriers, st.benchUsed]);
+  tap(st, 2);
+  tap(st, 3);
+  ok(undo(st).ok && undo(st).ok, 'two undos');
+  eq(JSON.stringify([st.alive, st.bench, st.carriers, st.benchUsed]), snap, 'undo restores state');
+  eq(st.undos, 2, 'undo counter');
+}
+// scoop: ignores blockers, goes to a matching carrier or the bench; refuses when nowhere to go
+{
+  const b = generate(2); // blue 0 blocks orange 1, orange 1 blocks blue 2; front carrier is orange
+  const st = createState(b);
+  ok(!canExit(st, 1), 'orange cat is blocked');
+  const r = scoop(st, 2); // a blue cat, blocked, while the front carrier is orange
+  ok(r.ok && st.alive[2] === 0 && st.benchUsed === 1, 'scoop to the bench when the carrier does not match');
+  const r2 = scoop(st, 1);
+  ok(r2.ok && st.alive[1] === 0 && st.benchUsed === 1 && front(st).fill === 1, 'scoop lifts a blocked cat into its matching carrier');
+  ok(undo(st).ok && st.alive[1] === 1 && st.benchUsed === 1, 'undo reverts a scoop');
+  const full = createState(row([1, 2, 3], [car(0), car(1, 1), car(2, 1), car(3, 1)], { benchSize: 2 }));
+  tap(full, 0); tap(full, 1);
+  ok(scoop(full, 2).full && !isFailed(full) && full.alive[2] === 1, 'scoop refused on a full bench, no loss');
+}
+// stars by level type
+{
+  const find = (k) => {
+    for (let n = 15; n < 200; n++) if (levelKind(n) === k) return n;
+    return 0;
+  };
+  for (const [k, s] of [['normal', 1], ['hard', 2], ['super', 3]]) {
+    const n = k === 'normal' ? 5 : find(k);
+    const b = generate(n);
+    const st = createState(b);
+    eq(stars(st), 0, 'stars before win');
+    for (const id of b.meta.order) tap(st, id);
+    eq(stars(st), s, `${k} level stars`);
+  }
+}
+// hint is a legal tap
+{
+  const st = createState(generate(2));
+  eq(hint(st), 0, 'hint level 2 = blue cat');
+  const done = createState(generate(1));
+  tap(done, 0);
+  tap(done, 1);
+  tap(done, 2);
+  eq(hint(done), null, 'no hint when cleared');
+}
+
+// ---------------- mechanics unit tests ----------------
+{
+  // yarn: blocks a lane until a cat leaves past it
+  const b = makeBoard(6, 5, [cat(0, [[1, 3], [1, 2]]), cat(1, [[0, 3], [0, 2]])], {}, [car(0, 2)]);
+  b.objs = [{ kind: 'yarn', cells: [[1, 0]] }];
+  eq(validateBoard(b), [], 'yarn board valid');
+  const st = createState(b);
+  const r0 = tap(st, 0);
+  ok(r0.bonk && r0.blockerObj === 0 && r0.blockerId === -1, 'yarn blocks cat 0');
+  eq(freeCats(st), [1], 'only the cat beside the yarn is free');
+  const r1 = tap(st, 1);
+  eq(r1.events.filter((e) => e.type === 'knock').map((e) => [e.obj, e.cell]), [[0, [1, 0]]], 'cat running past knocks the yarn');
+  ok(canExit(st, 0) && st.objAlive[0] === 0, 'yarn gone, cat 0 free');
+  ok(tap(st, 0).won, 'yarn level wins');
+  ok(undo(st).ok && undo(st).ok && st.objAlive[0] === 1 && !canExit(st, 0), 'undo brings the yarn back');
+  const st2 = createState(b);
+  scoop(st2, 1);
+  ok(st2.objAlive[0] === 0 && canExit(st2, 0), 'scoop knocks yarn beside the lane like a tap (no softlock)');
+}
+{
+  // dog: wakes after 3 nearby exits, then the lane is free
+  const b = makeBoard(6, 4, [
+    cat(0, [[2, 3], [2, 2]]), // A blocked by the dog at (2,0)
+    cat(1, [[0, 2], [0, 1]]),
+    cat(2, [[4, 2], [4, 1]]),
+src/core/search.js:19:export function compile(board) {
+src/core/search.js:82:export class Sim {
+src/core/search.js:235:export function searchWin(sim, budget = 2000) {
+src/core/search.js:305:export function decisions(board, order, budget = 120) {
+src/core/rules.js:7:export const BENCH_DEFAULT = 5;
+src/core/rules.js:8:export const CARRIER_CAP = 3;
+src/core/rules.js:9:export const DOG_WAKE = 3; // cats that must leave near a sleeping dog (cells within 2) before it trots away
+src/core/rules.js:10:export const THAW_NEED = 2; // neighbours that must leave before a frozen cat thaws
+src/core/rules.js:11:export const DOG_NEAR = 2;
+src/core/rules.js:15:export function catsNear(board, cells, r) {
+src/core/rules.js:24:export function edgeNeighbours(board, cat) {
+src/core/rules.js:33:export function createState(board) {
+src/core/rules.js:90:export function exitRay(cat, w, h) {
+src/core/rules.js:105:export function findBlocker(state, id) {
+src/core/rules.js:121:export const isFrozen = (state, id) => state.frozen[id] === 1;
+src/core/rules.js:123:export const isHidden = (state, id) => state.board.cats[id].mech === 'mystery' && !state.revealed[id] && !!state.alive[id];
+src/core/rules.js:124:export const canExit = (state, id) => !state.failed && !!state.alive[id] && !state.frozen[id] && findBlocker(state, id) === null;
+src/core/rules.js:126:export const dogLeft = (state, k) => (state.objAlive[k] && state.near[k] ? Math.max(0, state.wake[k] - state.dogCount[k]) : 0);
+src/core/rules.js:127:export const isFailed = (state) => state.failed;
+src/core/rules.js:128:export const isWon = (state) =>
+src/core/rules.js:130:export const front = (state) => state.carriers[0] || null;
+src/core/rules.js:131:export const previews = (state, n = 2) => state.carriers.slice(1, 1 + n);
+src/core/rules.js:132:export const benchFree = (state) => state.benchSize - state.benchUsed;
+src/core/rules.js:135:export function stars(state) {
+src/core/rules.js:142:export function liftCat(state, id, freed, trail = true) {
+src/core/rules.js:275:export const canUndo = (state) => state.undo.length > 0;
+src/core/rules.js:278:export function undo(state, silent = false) {
+src/core/rules.js:308:export function tap(state, id) {
+src/core/rules.js:332:export function scoop(state, id) {
+src/core/rules.js:357:export function addSeat(state) {
+
+ succeeded in 1270ms:
+
+      "id": "counter",
+      "shell": "cafe_shell_counter.webp",
+          "id": "counter_counter",
+          "cost": 1,
+          "id": "counter_pastry",
+          "cost": 1,
+            "id": "mochi",
+            "perk": "coins_bonus"
+          "id": "counter_lamps",
+          "cost": 1,
+          "id": "counter_chalkboard",
+          "cost": 2,
+            "id": "biscuit",
+            "perk": "hint_discount"
+          "id": "counter_tables",
+          "cost": 1,
+          "id": "counter_plant",
+          "cost": 2,
+      "id": "window",
+      "shell": "cafe_shell_window.webp",
+          "id": "window_seat",
+          "cost": 1,
+          "id": "window_plants",
+          "cost": 2,
+            "id": "luna",
+            "perk": "extra_undo"
+          "id": "window_bookshelf",
+          "cost": 2,
+          "id": "window_cattree",
+          "cost": 2,
+          "id": "window_rug",
+          "cost": 2,
+            "id": "pudding",
+            "perk": "star_bonus"
+          "id": "window_lights",
+          "cost": 2,
+      "id": "cushion",
+      "shell": "cafe_shell_cushion.webp",
+          "id": "cushion_rug",
+          "cost": 2,
+          "id": "cushion_lamp",
+          "cost": 3,
+          "id": "cushion_shelf",
+          "cost": 3,
+            "id": "noodle",
+            "perk": "extra_undo",
+          "id": "cushion_hammock",
+          "cost": 2,
+          "id": "cushion_bench",
+          "cost": 3,
+          "id": "cushion_pile",
+          "cost": 3,
+      "id": "patio",
+      "shell": "cafe_shell_patio.webp",
+          "id": "patio_planters",
+          "cost": 2,
+          "id": "patio_pergola",
+          "cost": 3,
+          "id": "patio_fountain",
+          "cost": 3,
+            "id": "pepper",
+            "perk": "coins_bonus",
+          "id": "patio_lights",
+          "cost": 2,
+          "id": "patio_lounger",
+          "cost": 3,
+          "id": "patio_tables",
+          "cost": 3,
+            "id": "clover",
+            "perk": "hint_discount",
+      "id": "rooftop",
+      "shell": "cafe_shell_rooftop.webp",
+          "id": "roof_canopy",
+          "cost": 2,
+          "id": "roof_telescope",
+          "cost": 3,
+          "id": "roof_lemon",
+          "cost": 3,
+          "id": "roof_tower",
+          "cost": 2,
+          "id": "roof_beanbags",
+          "cost": 3,
+          "id": "roof_grill",
+          "cost": 3,
+            "id": "captain",
+            "perk": "star_bonus",
+    "id": "more",
+src\ui\ui.js:185:    <div class="logo-wrap"><div class="lvl-pill">${paw()}<span>${info.daily ? t('dailyLevel') : t('level', { n: info.level })}</span>${paw()}</div></div>
+src\main.js:47:const dailyLevel = () => 100 + (dayNum() % 400);
+src\main.js:129:function showInfo() {
+src\main.js:355:const clipOverlay = () => ({ title: t('title'), badge: clip.score >= 2 ? t('chainX', { n: clip.score }) : t(S.shareTitle || 'winTitle'), level: S.daily ? t('dailyLevel') : t('level', { n: S.n }) });
+src\main.js:407:  daily: () => tryStart(dailyLevel(), true),
+src\main.js:507:  show() { ui.show(showInfo()); track('show_open'); },
+src\main.js:509:    const out = econ.showClaim(save.data, dayNum());
+src\main.js:515:    ui.show(showInfo());
+src\main.js:768:      daily: () => startLevel(dailyLevel(), true),
+src\i18n.js:65:    dailyLevel: 'Daily puzzle',
+src\i18n.js:238:    dailyLevel: 'Günlük bulmaca',
+src\game\econ.js:156:export function showClaim(d, day) { // claims every reached step; -> list of rewards (empty when none)
+src\kit\ads.js:22:    return /^(1|true)$/.test(new URLSearchParams(location.search).get('noads') || '');
+
+
+
+codex
+The new frames close several round-five issues, including the repeated café art. I’m checking what the generator’s passing scores tell us about player choices, and where the screenshots reflect QA setups.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'node scripts/check-core.mjs' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'rg -n "function analytics|function track|function interstitialOk|function lifeGate|const lifeGate|function startLevel|const startLevel|const tryStart|MAX_LEVEL|export const TEASER|advance|finished|cafeStars|levelDur|LINK" src data scripts/check-core.mjs; Get-Content src/game/econ.js -Encoding utf8 | Select-Object -Skip 105 -First 97' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content scripts/qa.mjs -Encoding utf8 | Select-Object -Skip 85 -First 80; Get-Content scripts/qa.mjs -Encoding utf8 | Select-Object -Skip 470 -First 87; Get-Content src/game/game.js -Encoding utf8 | Select-Object -Skip 586 -First 88; Get-Content src/kit/clip.js -Encoding utf8 | Select-Object -Skip 203 -First 54' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 1174ms:
+src\ui\ui.js:242:    const rrow = `<div class="rrow">${info.coins ? `<div class="reward cn">${img('ui_coin.webp')}<b>+${info.coins}</b></div>` : ''}${info.cafeStars ? `<div class="reward st">${img('ui_star.webp')}<b>+${info.cafeStars}</b></div>` : ''}${info.ribbons ? `<div class="reward st rb">${ribbonSvg}<b>+${info.ribbons}</b></div>` : ''}</div>`;
+src\game\game.js:794:  // distance the tail has advanced along the path at time t (seconds since the run began)
+src\game\cafe.js:7:export const TEASER = RAW.teaser || null;
+src\main.js:97:const lifeGate = () => cafe.RESIDENTS.some((r) => cafe.isBuilt(r.task.id)); // lives only matter once the first resident has moved in
+src\main.js:195:function startLevel(n, daily = false) {
+src\main.js:285:  let cafeStars = 0;
+src\main.js:288:    cafeStars = stars; // a first clear pays its star count into the café (normal 1, hard 2, super hard 3)
+src\main.js:289:    cafe.addStars(cafeStars);
+src\main.js:336:  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, peek: peekColor(), cafeStars, canBuild, cafeNext, ribbons, purr: offer ? '' : purr, ach, chain: clip.has() && clip.score >= 2, offer: offer && { coins: iap.PRODUCTS.starter.coins, scoop: iap.PRODUCTS.starter.scoop, price: iap.PRODUCTS.starter.price } });
+src\game\econ.js:173:export function interstitialOk(d, level, now) {
+src\kit\analytics.js:5:export function track(name, props = {}) {
+src\kit\clip.js:17:  let done = null; // its result once finished (Share can then hand it over inside the tap)
+src\kit\clip.js:121:    // the finished encode, or null while it is still running
+src\kit\iap.js:17:// Pure: apply a finished purchase to the save data. Returns false for an unknown product, an owned one-time product,
+}
+export const chestReady = (d) => !d.quests.chest && d.quests.list.length > 0 && d.quests.list.every((x) => x.c);
+export function chestClaim(d) {
+  if (!chestReady(d)) return null;
+  d.quests.chest = 1;
+  grant(d, CHEST);
+  return CHEST;
+}
+
+// ---- 7-day login calendar (a missed day restarts it) ----
+export const LOGIN_REWARDS = [
+  { coins: 20 }, { coins: 10, hint: 1 }, { coins: 40 }, { scoop: 1 }, { coins: 60, undo: 1 }, { coins: 30, hint: 1, scoop: 1 }, { coins: 150, scoop: 2, hint: 2 },
+];
+export function loginState(d, day) { // -> { avail, idx }: idx = today's reward when avail, else the count already claimed this cycle
+  const g = d.login;
+  if (g.last >= day) return { avail: false, idx: g.idx };
+  const idx = g.last === 0 || day - g.last > 1 || g.idx >= LOGIN_REWARDS.length ? 0 : g.idx;
+  return { avail: true, idx };
+}
+export function loginClaim(d, day) {
+  const s = loginState(d, day);
+  if (!s.avail) return null;
+  d.login.idx = s.idx + 1;
+  d.login.last = day;
+  const r = LOGIN_REWARDS[s.idx];
+  grant(d, r);
+  return r;
+}
+
+// ---- weekly Cat Show ----
+export const SHOW_STEPS = [3, 6, 9, 13, 17, 21, 26, 31, 37, 44]; // cumulative ribbons
+export const SHOW_REWARDS = [
+  { coins: 30 }, { hint: 1 }, { coins: 50 }, { undo: 1 }, { scoop: 1 }, { coins: 80 }, { hint: 2 }, { scoop: 1, coins: 50 }, { coins: 120 }, { coins: 100, scoop: 2, decor: true },
+];
+export const weekOf = (day) => Math.floor((day + 3) / 7); // weeks start Monday
+export const themeOf = (week) => EVENT_THEMES[((week % EVENT_THEMES.length) + EVENT_THEMES.length) % EVENT_THEMES.length];
+export function showRoll(d, day) {
+  const w = weekOf(day);
+  if (d.show.week >= w) return false; // same week, or the clock went back
+  d.show.week = w;
+  d.show.ribbons = 0;
+  d.show.claimed = [];
+  return true;
+}
+export function showAdd(d, n, day) {
+  showRoll(d, day);
+  d.show.ribbons += n;
+}
+export const showReady = (d, i) => d.show.ribbons >= SHOW_STEPS[i] && !d.show.claimed.includes(i);
+export const showAnyReady = (d) => SHOW_STEPS.some((_, i) => showReady(d, i));
+export function showClaim(d, day) { // claims every reached step; -> list of rewards (empty when none)
+  showRoll(d, day);
+  const out = [];
+  SHOW_STEPS.forEach((_, i) => {
+    if (!showReady(d, i)) return;
+    d.show.claimed.push(i);
+    const r = SHOW_REWARDS[i];
+    grant(d, r);
+    if (r.decor) d.show.decor[themeOf(d.show.week).id] = 1;
+    out.push(r);
+  });
+  return out;
+}
+export const showEndsMs = (day, now) => Math.max(0, dayStart((weekOf(day) + 1) * 7 - 3) - now);
+export const earnedDecor = (d) => Object.keys(d.show.decor); // hook: the cafe renders these ids when art exists
+
+// ---- ads: after a win only, from level 8, 1 per 3 min, none in the first 5 minutes after install ----
+export function interstitialOk(d, level, now) {
+  if (d.ads.removeAds || level < INTERSTITIAL_FROM) return false;
+  if (d.meta.firstOpen && now - d.meta.firstOpen < FIRST_SESSION_MS) return false;
+  return now - d.ads.lastInterstitial >= INTERSTITIAL_GAP_MS;
+}
+
+// ---- starter bundle: offered once, after level 10 ----
+export const starterDue = (d) => !d.shop.starterShown && !d.iap.owned.starter && !d.iap.owned.noads && d.level > 10;
+
+// notification dots on the hub
+export function dots(d, now) {
+  const day = dayOf(now);
+  questsRoll(d, day);
+  showRoll(d, day);
+  return {
+    quests: loginState(d, day).avail || chestReady(d) || d.quests.list.some((x) => !x.c && taskDone(x)),
+    show: showAnyReady(d),
+  };
+}
+
+ succeeded in 1195ms:
+  await waitFor('!window.__qa.state().busy', 8000); await sleep(400);
+  if ((await qa('state()')).bench[0] !== 2) throw new Error('L2 should park the two blues, bench ' + (await qa('state()')).bench);
+  await shot('03-level2-bench');
+  if ((await qa('peek(3)')).boards !== 2) throw new Error('L2 orange should fire a 2-chain');
+  await qa('tap(3)');
+  await waitFor('(window.__qa.chainFx() || {}).k >= 2', 8000); await sleep(150);
+  await shot('03b-level2-chain');
+  await waitFor('!window.__qa.state().busy', 8000); await sleep(300);
+
+  // 4 level 3: mother + kitten sprint, slowed; then settled in the carrier
+  await qa('level(3)'); await sleep(600);
+  await qa('slow(0.22)');
+  await tapCat(0);
+  await sleep(450);
+  await shot('04-level3-sprint');
+  await sleep(1500);
+  await qa('slow(1)');
+  await sleep(500);
+  await shot('04b-level3-carrier-fill');
+  // 4c the L3 trap: the big pink pair is free from the start, its carrier comes last; tapping it fills 2 of 3 seats
+  await qa('level(3)'); await sleep(700);
+  await shot('04c-level3-start');
+  await qa('tap(5)'); await sleep(300);
+  await waitFor('!window.__qa.state().busy', 8000); await sleep(300);
+  if ((await qa('state()')).bench[0] !== 2) throw new Error('L3 pink pair should take 2 of 3 seats');
+  await shot('04d-level3-trap');
+
+  // 5 mid-sprint on a real board: the long body slithers from the rug to the carrier
+  await qa('level(12)'); await sleep(600);
+  await qa('slow(0.2)');
+  await tapCat(await qa('tapColor(true)') ?? await qa('freeId()'));
+  await sleep(520);
+  await shot('05-mid-sprint');
+  await qa('slow(1)'); await sleep(1500);
+
+  // 6 carrier departing: fill the front carrier, catch the door-close + drive-off
+  await qa('level(12)'); await sleep(600);
+  await qa('slow(0.25)');
+  for (let i = 0; i < 14; i++) {
+    const id = await qa('tapColor(true)');
+    if (id == null) { await qa('solveStep()'); }
+    await sleep(120);
+    if ((await qa('state()')).departed > 0) break;
+  }
+  await waitFor('window.__qa.state().leaving > 0', 8000);
+  await sleep(500);
+  await shot('06-carrier-departing');
+  await sleep(1700);
+  await shot('06b-bench-hop-in');
+  await qa('slow(1)'); await sleep(2500);
+
+  // 7 bench nearly full
+  await qa('level(12)'); await sleep(600);
+  await qa('benchTo(4)'); await sleep(2400);
+  await shot('07-bench-nearly-full');
+
+  // 8 bonk mid-animation
+  await qa('level(6)'); await sleep(600);
+  const b = await qa('blockedId()');
+  await qa('slow(0.3)');
+  await tapCat(b);
+  await sleep(450);
+  await shot('08-bonk');
+  await qa('slow(1)');
+
+  // 9 continue offer (bench overflow)
+  await qa('level(49)'); await sleep(600);
+  await qa('failNow()');
+  await waitFor('window.__qa.state().screen === "fail"', 30000);
+  await sleep(700);
+  await shot('09-continue-offer');
+  const ad = await ev('(() => { const r = document.querySelector("[data-act=adheart]").getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()');
+  await tap(ad.x, ad.y); await sleep(3600);
+  await shot('09b-after-continue');
+
+  // 10 a level ~30 board
+  await qa('level(49)'); await sleep(900);
+  await shot('10-level30');
+
+  // 10b idle blink (forced) on the same board
+    for (let i = 0; i < 4; i++) { await qa('solveStep()'); await sleep(380); }
+    await sleep(900);
+    await shot('28c-l4-chain');
+    await qa('winNow()');
+    await waitFor('window.__qa.state().screen === "win"', 30000);
+    await sleep(1400);
+    await sleep(6800); // the clip encodes (real time) and starts looping inside the Share button
+    await shot('28d-win-card');
+    const cl = await qa('clip()');
+    if (!cl.has || cl.score < 2) throw new Error('L4 share clip should hold its chain: ' + JSON.stringify(cl));
+    const enc = await qa('clipEncode()');
+    console.log('  clip', JSON.stringify(cl), JSON.stringify(enc));
+    if (!enc || enc.size < 2000) throw new Error('share clip did not encode');
+    await qa('home()'); await sleep(1200);
+    const g = await ev('(() => { const r = document.querySelector(".guest")?.getBoundingClientRect(); return r && { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()');
+    if (!g) throw new Error('no resident on the caf� floor');
+    await tap(g.x, g.y); await sleep(700);
+    await shot('28e-cafe-pet');
+  }
+  }
+
+  // ---- round 6: a generated trap, the 3-chain in slow motion, its looping preview on the win card, the dog waking,
+  // the finished caf� areas 3-5 with their new residents ----
+  {
+    const idle = async () => { await waitFor('!window.__qa.state().busy', 10000); await sleep(150); };
+    const alive = (id) => qa(`alive(${id})`);
+    await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:60,coins:500}))');
+    await boot();
+    await qa('lang("en")'); await qa('slow(1)');
+    // a generated board at its trap: the free mother + kitten would take two seats while the bench is almost full
+    await qa('level(5)'); await sleep(700);
+    const m5 = await qa('meta()');
+    console.log('  L5 meta', JSON.stringify({ traps: m5.traps, chains: m5.chains, chain3: m5.chain3, bench: m5.benchSize }));
+    let trapShot = false;
+    for (const id of await qa('order()')) {
+      await idle();
+      const tc = await qa('trapCat()');
+      const st = await qa('state()');
+      if (tc != null && tc !== id && st.bench[0] >= st.bench[1] - 2) {
+        const pk = await qa(`peek(${tc})`);
+        console.log('  trap cat', tc, JSON.stringify(pk), 'bench', st.bench);
+        await shot('10c-gen-trap');
+        trapShot = true;
+        break;
+      }
+      if (await alive(id)) await qa(`tap(${id})`);
+    }
+    if (!trapShot) console.log('  (no mother-kitten trap moment on L5)');
+
+    // the 3-chain: play the winning line of L13 and catch the hops in slow motion
+    await qa('level(13)'); await sleep(700);
+    let chained = false;
+    for (const id of await qa('order()')) {
+      await idle();
+      if (!(await alive(id))) continue;
+      const pk = await qa(`peek(${id})`);
+      await qa(`tap(${id})`);
+      if (pk.boards >= 3 && !chained) {
+        chained = true;
+        await waitFor('(window.__qa.chainFx() || {}).k >= 2', 10000);
+        await shot('28f-chain-x2');
+        await waitFor('(window.__qa.chainFx() || {}).k >= 3', 10000); await sleep(120);
+        await shot('28g-chain3-slowmo');
+      }
+    }
+    if (!chained) throw new Error('L13 line should hold a 3-chain');
+    await waitFor('window.__qa.state().screen === "win"', 30000);
+    await sleep(2600);
+    if (!(await ev('(() => { const c = document.querySelector("#modal .chainclip canvas"); return !!c && c.height > 300; })()'))) throw new Error('the win card should loop the chain preview');
+    await shot('28h-win-chain');
+    const enc = await qa('clipEncode()');
+    console.log('  chain clip', JSON.stringify(await qa('clip()')), JSON.stringify(enc));
+    if (!enc || enc.size < 2000) throw new Error('chain clip did not encode');
+    // the lose card at L13 in TR: the lesson first, small, bench in view
+    await qa('lang("tr")');
+    await qa('level(49)'); await sleep(600);
+    await qa('failNow()');
+    await waitFor('window.__qa.state().screen === "fail"', 30000);
+    await sleep(700);
+    await shot('09c-offer-slim-tr');
+    await qa('lang("en")');
+
+    // the sleeping dog wakes: a beat in place with a "!" and a stretch, then it trots off leaving paw prints
+    await qa('level(8)'); await sleep(800);
+    let woke = false;
+    for (const id of await qa('order()')) {
+      await idle();
+    let cur = t0;
+    let hops = 0;
+    // two or more parked cats hopping in from one tap = a bench chain: slow motion, camera nudge, rising notes, stamp
+    const nb = this.demo ? 0 : events.filter((e) => e.type === 'board').length;
+    const fx = nb >= 2 ? { n: nb, k: 0, kT: -9, t0: 0, t1: 0 } : null;
+    for (const e of events) {
+      if (e.type === 'load' || e.type === 'bench') {
+        const inf = info[e.id] || { arrive: cur };
+        const at = inf.arrive;
+        cur = Math.max(cur, at);
+        if (fromStuck.includes(e.id)) this.addHop(inf.from, e, at - 0.32, at);
+        this.pending.push({ at, vis: true, fn: () => (e.type === 'load' ? this.visLoad(e) : this.visBench(e)) });
+      } else if (e.type === 'depart') {
+        cur += 0.12;
+        hops = 0;
+        this.pending.push({ at: cur, vis: true, fn: () => this.visDepart(e) });
+      } else if (e.type === 'board') {
+        const at = cur + (hops ? 0.12 : 0.32); // staggered hops, one every 0.42 s
+        hops++;
+        this.pending.push({ at, vis: true, seat: e.seat, cat: e.id, fn: () => this.visBoard(e, fx) });
+        if (fx) { fx.t0 = fx.t0 || at; fx.t1 = at + 0.3; }
+        cur = at + 0.3;
+      }
+    }
+    if (fx) this.pending.push({ at: fx.t0 - 0.2, vis: true, fn: () => { this.chainFx = fx; if (this.on.chain) this.on.chain({ n: fx.n }); } });
+  }
+
+  // slow motion runs from just before the first hop until the last parked cat is in
+  chainSlow() {
+    const f = this.chainFx;
+    return !!f && !this.calm && this.clock >= f.t0 - 0.2 && this.clock < f.t1 + 0.15;
+  }
+
+  visLoad(e) {
+    const vc = this.vis.carriers.find((c) => c.uid === e.carrier);
+    if (!vc) return;
+    vc.fill = Math.min(vc.cap, vc.fill + 1);
+    vc.sqT = this.clock;
+    vc.popT = this.clock;
+    this.sparks(this.slotX(0), this.beltY - this.cs * 0.5, COLOR_PAL[vc.color].base, 7);
+    if (this.on.land) this.on.land({ kind: 'carrier', fill: vc.fill, cap: vc.cap });
+  }
+
+  visBench(e) {
+    // the seat was freed in the rules by a hop that has not played yet: sit down right after that cat leaves
+    const hop = this.pending.filter((p) => p.seat === e.seat && p.cat !== e.id && this.vis.bench[e.seat] === p.cat).sort((x, y) => x.at - y.at)[0];
+    if (hop) { this.pending.push({ at: hop.at + 0.02, vis: true, fn: () => this.visBench(e) }); return; }
+    this.vis.bench[e.seat] = e.id;
+    this.vis.benchT[e.seat] = this.clock;
+    const p = this.benchPos(e.seat);
+    this.sparks(p.x, p.y, COLOR_PAL[e.color].base, 5);
+    if (this.on.land) this.on.land({ kind: 'bench' });
+  }
+
+  visBoard(e, fx) {
+    const from = this.benchPos(e.seat);
+    if (this.vis.bench[e.seat] === e.id) this.vis.bench[e.seat] = -1; // a later cat may already sit there (vis trails rules)
+    this.addHop(from, e, this.clock, this.clock + 0.3);
+    if (fx) {
+      fx.k++;
+      fx.kT = this.clock;
+      if (this.on.hop) this.on.hop({ k: fx.k, n: fx.n });
+    }
+    this.pending.push({ at: this.clock + 0.3, vis: true, fn: () => this.visLoad(e) });
+  }
+
+  addHop(from, e, t0, t1) {
+    this.anims.push({ type: 'hop', t0, dur: t1 - t0, from, color: e.color, to: () => this.carrierMouth() });
+  }
+
+  visDepart(e) {
+    const i = this.vis.carriers.findIndex((c) => c.uid === e.carrier);
+    if (i < 0) return;
+    const vc = this.vis.carriers.splice(i, 1)[0];
+    vc.fill = vc.cap;
+    vc.closed = true;
+    vc.leaveT = this.clock;
+    vc.x0 = vc.x;
+    this.vis.leaving.push(vc);
+    const now = this.clock;
+    this.chain = now - this.lastDepart < 3.2 ? this.chain + 1 : 1;
+    this.lastDepart = now;
+    this.confettiAt(vc.x, this.beltY - this.cs * 0.5, this.calm ? 6 : this.chain >= 2 ? 34 : 18); // a chain departure gets the bigger burst
+    if (this.chain >= 2 && !(this.chainFx && this.clock < this.chainFx.t1 + 1.4)) { // the chain stamp already speaks
+      this.popup(this.chain >= 3 ? 2 : 1);
+      if (!this.demo) this.inputAt = Math.max(this.inputAt, this.clock + 0.3); // a short beat so a stray tap cannot bury the chain
+    }
+    if (this.on.depart) this.on.depart({ n: e.n, chain: this.chain });
+    }
+    rec.stop();
+    await done;
+    const blob = new Blob(parts, { type: type.split(';')[0] });
+    return blob.size ? { blob, ext: type.includes('mp4') ? 'mp4' : 'webm' } : null;
+  } finally {
+    stream.getTracks().forEach((t) => t.stop()); // also on a failed encode
+  }
+}
+
+// share a file when the platform can, else download it; returns 'shared' | 'saved' | 'cancel'
+export async function shareFile({ blob, ext }, name, text) {
+  const file = typeof File !== 'undefined' ? new File([blob], `${name}.${ext}`, { type: blob.type }) : null;
+  if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+    try {
+      await navigator.share({ files: [file], text });
+      return 'shared';
+    } catch (e) {
+      if (e && e.name === 'AbortError') return 'cancel';
+    }
+  }
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `${name}.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+  return 'saved';
+}
+
+ succeeded in 5280ms:
+
+level  size   kind    cats  carriers  colors  bench  peak  detours  gen_ms
+1      5x6    normal  3     1         -       5      0     0        0.4
+5      6x8    normal  12    4         4       5      4     3        21.1
+10     6x8    normal  12    4         4       5      4     4        17.9
+15     7x9    hard    15    5         5       5      4     5        2.3
+30     7x9    normal  15    5         5       5      4     4        3.8
+60     8x11   normal  21    7         4       6      3     5        4.6
+100    8x11   normal  18    6         5       5      4     4        1.7
+250    8x11   normal  18    6         5       5      4     4        3.9
+500    8x10   normal  15    5         4       5      4     4        1.2
+
+mechanics per range (levels carrying each, total pieces)
+  L1-7: dog 0, yarn 0, mystery 0, frozen 0, mixed 0, pieces 0
+  L8-11: dog 2, yarn 0, mystery 0, frozen 0, mixed 0, pieces 2
+  L12-39: dog 3, yarn 14, mystery 0, frozen 0, mixed 2, pieces 22
+  L40-54: dog 2, yarn 7, mystery 5, frozen 0, mixed 2, pieces 19
+  L55-69: dog 1, yarn 5, mystery 1, frozen 5, mixed 2, pieces 16
+  L70-600: dog 88, yarn 171, mystery 58, frozen 169, mixed 121, pieces 611
+
+kinds {"normal":532,"hard":48,"super":20}; hard at 15,25,42,52,59,77,87,106...; super at 34,67,96,122,149,175...
+
+decisions per range (averages; dead = losing taps / legal taps, long = share of cats 4+ cells)
+  L5-14 normal n=10   traps 1.70  chains 1.60  3-chains 0.90  dead 0.060  free 2.97  startSafe 5.2  fill 0.76  long 0.32  colours 4.0  cats 12.3
+  L15-39 normal n=22   traps 1.45  chains 1.45  3-chains 0.73  dead 0.036  free 3.66  startSafe 6.4  fill 0.75  long 0.33  colours 4.5  cats 15.3
+  L15-39 hard   n=3    traps 5.67  chains 2.00  3-chains 1.00  dead 0.197  free 2.84  startSafe 5.0  fill 0.75  long 0.33  colours 5.0  cats 16.0
+  L40-99 normal n=53   traps 2.43  chains 1.45  3-chains 0.75  dead 0.068  free 3.57  startSafe 6.8  fill 0.75  long 0.38  colours 4.7  cats 16.8
+  L40-99 hard   n=7    traps 4.29  chains 2.29  3-chains 1.29  dead 0.120  free 3.65  startSafe 6.9  fill 0.73  long 0.36  colours 5.0  cats 18.0
+  L100-249 normal n=133  traps 2.55  chains 1.56  3-chains 0.73  dead 0.077  free 3.39  startSafe 6.6  fill 0.75  long 0.34  colours 4.9  cats 17.9
+  L100-249 hard   n=17   traps 5.12  chains 1.88  3-chains 1.18  dead 0.145  free 3.74  startSafe 7.4  fill 0.78  long 0.35  colours 5.2  cats 19.2
+  L250-600 normal n=310  traps 2.49  chains 1.51  3-chains 0.66  dead 0.082  free 3.37  startSafe 6.5  fill 0.77  long 0.36  colours 4.9  cats 18.2
+  L250-600 hard   n=41   traps 4.61  chains 1.80  3-chains 1.07  dead 0.161  free 3.65  startSafe 6.9  fill 0.78  long 0.35  colours 5.3  cats 19.2
+levels missing the full band (floor still held): 0
+search misses 0 (avg 15 nodes)
+gen avg 2.97ms, worst 26.1ms (level 443), total 1784ms for 600 levels
+all checks passed
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "@'
+import {generate} from './src/core/generate.js';
+import {compile, Sim, searchWin} from './src/core/search.js';
+const sums = {};
+for(let n=5;n<=600;n++) {
+ const b=generate(n), m=b.meta, C=compile(b), s=new Sim(C,m.benchSize);
+ const k=n<15?'5-14':n<40?'15-39':n<70?'40-69':'70-600';
+ const z=sums[k]??={levels:0,without:0,with:0,firstClearScriptTriple:0,steps:0,trivial:0,forcedSingle:0,deadNow:0,deadLater:0,unknown:0};
+ z.levels++; const p=Object.values(m.mechs??{}).some(x=>x>0);z[p?'with':'without']++;
+ z.firstClearScriptTriple+=+(m.chain3>0);
+ for(const id of m.order) {
+   const move=C.unitOf[id], options=s.free(); z.steps++;
+   if(options.length===1) z.forcedSingle++;
+   let all=true;
+   for(const u of options) {
+    if(u===move) continue;
+    const ok=s.apply(u);
+    if("'!ok) {z.deadNow++; all=false;} else {const r=searchWin(s,120); if (r===0) {z.deadLater++; all=false;} if(r===-1) {z.unknown++;all=false;}}
+    s.undo();
+   }
+   if(options.length>1 && all) z.trivial++;
+   s.apply(move);
+ }
+}
+console.log(JSON.stringify(sums,null,2));
+'"'@ | node --input-type=module" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 3134ms:
+{
+  "5-14": {
+    "levels": 10,
+    "without": 6,
+    "with": 4,
+    "firstClearScriptTriple": 8,
+    "steps": 103,
+    "trivial": 65,
+    "forcedSingle": 21,
+    "deadNow": 14,
+    "deadLater": 3,
+    "unknown": 0
+  },
+  "15-39": {
+    "levels": 25,
+    "without": 12,
+    "with": 13,
+    "firstClearScriptTriple": 17,
+    "steps": 334,
+    "trivial": 226,
+    "forcedSingle": 58,
+    "deadNow": 35,
+    "deadLater": 23,
+    "unknown": 1
+  },
+  "40-69": {
+    "levels": 30,
+    "without": 8,
+    "with": 22,
+    "firstClearScriptTriple": 24,
+    "steps": 421,
+    "trivial": 281,
+    "forcedSingle": 74,
+    "deadNow": 67,
+    "deadLater": 12,
+    "unknown": 0
+  },
+  "70-600": {
+    "levels": 531,
+    "without": 178,
+    "with": 353,
+    "firstClearScriptTriple": 363,
+    "steps": 7592,
+    "trivial": 4385,
+    "forcedSingle": 1648,
+    "deadNow": 1884,
+    "deadLater": 492,
+    "unknown": 1
+  }
+}
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'node scripts/check-econ.mjs' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n \"export const TEACH|function finishMechanics|function bandScore|if \\(n <= 4\\)|function tutorial|function decisions|if \\(h5Ready\\)|function doShare|function failInfo|if \\(clean && meta.traps|function onWin|onPointer\\(e\\)|OUT_W|showClaim\\(|earnedDecor|\\\"id\\\": \\\"rooftop\\\"|café pacing|tut3|const benchSize\" src scripts/check-econ.mjs data/cafe.json qa/core-metrics.txt" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content src/core/search.js -Encoding utf8 | Select-Object -Skip 132 -First 69; Get-Content scripts/check-econ.mjs -Encoding utf8 | Select-Object -Skip 32 -First 61' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ exited 1 in 846ms:
+rg: \rooftop\|café: The system cannot find the path specified. (os error 3)
+rg: pacing|tut3|const: The filename, directory name, or volume label syntax is incorrect. (os error 123)
+rg: benchSize src scripts/check-econ.mjs data/cafe.json qa/core-metrics.txt: The system cannot find the path specified. (os error 3)
+
+ succeeded in 914ms:
+  café pacing: residents after L3 mochi, L5 biscuit, L11 luna, L16 pudding, L25 noodle, L39 pepper, L46 clover, L60 captain; areas done after L8, L18, L33, L46, L60
+econ checks passed
+
+ succeeded in 1176ms:
+    for (let u = 0; u < this.C.N; u++) if (this.canExit(u)) out.push(u);
+    return out;
+  }
+
+  // Unit u leaves (no blocking check). Returns false when a cat found no seat; undo() reverts either way.
+  apply(u) {
+    const C = this.C;
+    const b = this.bench;
+    this.trail.push(u, this.ci, this.fill, this.used, b[0], b[1], b[2], b[3], b[4], b[5], b[6], b[7]);
+    this.alive[u] = 0;
+    this.left--;
+    const ids = C.ucats[u];
+    for (const id of ids) {
+      const ho = C.hitsO[id];
+      for (let i = 0; i < ho.length; i++) this.cnt[ho[i]]++;
+      const hf = C.hitsF[id];
+      for (let i = 0; i < hf.length; i++) this.thaw[hf[i]]++;
+    }
+    this.boards.length = 0;
+    const nc = C.cc.length;
+    for (const id of ids) {
+      const col = C.color[id];
+      if (this.ci < nc && C.cc[this.ci] === col && this.fill < C.cap[this.ci]) this.fill++;
+      else if (this.used < this.B) {
+        b[col]++;
+        this.used++;
+      } else return false;
+      while (this.ci < nc && this.fill >= C.cap[this.ci]) {
+        this.ci++;
+        this.fill = 0;
+        if (this.ci < nc) {
+          const c2 = C.cc[this.ci];
+          const take = Math.min(b[c2], C.cap[this.ci]);
+          b[c2] -= take;
+          this.used -= take;
+          this.fill = take;
+          this.boards.push(take);
+        }
+      }
+    }
+    return true;
+  }
+
+  undo() {
+    const C = this.C;
+    const t = this.trail;
+    const o = t.length - 12;
+    const u = t[o];
+    this.ci = t[o + 1];
+    this.fill = t[o + 2];
+    this.used = t[o + 3];
+    for (let i = 0; i < 8; i++) this.bench[i] = t[o + 4 + i];
+    t.length = o;
+    this.alive[u] = 1;
+    this.left++;
+    for (const id of C.ucats[u]) {
+      const ho = C.hitsO[id];
+      for (let i = 0; i < ho.length; i++) this.cnt[ho[i]]--;
+      const hf = C.hitsF[id];
+      for (let i = 0; i < hf.length; i++) this.thaw[hf[i]]--;
+    }
+  }
+
+  key() {
+    let k = '';
+    let v = 0;
+    const N = this.C.N;
+    for (let u = 0; u < N; u++) {
+      v = (v << 1) | this.alive[u];
+  // clock rollback: a timer stamped in the future never locks the player out nor pays free lives
+  const r = fresh();
+  E.loseLife(r, T0 + 2 * H);
+  eq(E.lives(r, T0), 4, 'rollback: no lives gained');
+  ok(E.livesMs(r, T0) <= 25 * MIN, 'rollback: the wait is at most one full interval');
+  E.addLife(r, 9);
+  eq(r.lives.n, 5, 'addLife caps at 5');
+  E.refillLives(r);
+  eq([r.lives.n, r.lives.t], [5, 0], 'refill');
+}
+
+// ---------------- Purr Streak ----------------
+{
+  const d = fresh();
+  E.purrWin(d, true); E.purrWin(d, true);
+  eq(E.purrConsume(d), 0, 'no bonus after 2');
+  E.purrWin(d, true);
+  eq(d.purr.pend, 1, '3 first-try wins queue the bonus');
+  eq(E.purrConsume(d), 1, 'bonus consumed once');
+  eq(E.purrConsume(d), 0, 'bonus does not repeat');
+  E.purrWin(d, true); E.purrWin(d, true);
+  eq([d.purr.pend, d.purr.n], [2, 0], '5 in a row queues the big bonus and restarts');
+  eq(E.purrConsume(d), 2, 'big bonus');
+  E.purrWin(d, true); E.purrWin(d, true);
+  E.purrWin(d, false);
+  eq(d.purr.n, 0, 'a win that was not first try resets');
+  E.purrWin(d, true); E.purrWin(d, true); E.purrWin(d, true);
+  E.purrLoss(d);
+  eq([d.purr.n, d.purr.pend], [0, 1], 'a loss resets the count but keeps the bonus already earned');
+}
+
+// ---------------- daily tasks + chest ----------------
+{
+  const d = fresh();
+  const day = E.dayOf(T0);
+  ok(E.questsRoll(d, day), 'first roll');
+  ok(!E.questsRoll(d, day), 'same day: no re-roll');
+  eq(d.quests.list.length, 3, '3 tasks');
+  eq(new Set(d.quests.list.map((x) => x.id)).size, 3, 'tasks are distinct');
+  ok(d.quests.list.every((x) => x.id !== 'hard'), 'no hard-level task before hard levels exist');
+  const copy = fresh();
+  E.questsRoll(copy, day);
+  eq(copy.quests.list, d.quests.list, 'same day = same tasks');
+  // force known tasks
+  d.quests.list = [{ id: 'carriers', p: 0, c: 0 }, { id: 'wins', p: 0, c: 0 }, { id: 'cats', p: 0, c: 0 }];
+  E.questEvent(d, 'carrier', day, 4);
+  E.questEvent(d, 'carrier', day, 20);
+  eq(d.quests.list[0].p, 10, 'progress caps at need');
+  eq(E.questClaim(d, 'wins', day), 0, 'unfinished task pays nothing');
+  eq(E.questClaim(d, 'carriers', day), 15, 'finished task pays its coins');
+  eq(E.questClaim(d, 'carriers', day), 0, 'no double pay');
+  const coins = d.coins;
+  ok(!E.chestReady(d), 'chest locked until all 3 are claimed');
+  eq(E.chestClaim(d), null, 'locked chest gives nothing');
+  for (let i = 0; i < 3; i++) E.questEvent(d, 'win', day);
+  E.questEvent(d, 'cat', day, 50);
+  E.questClaim(d, 'wins', day); E.questClaim(d, 'cats', day);
+  ok(E.chestReady(d), 'chest ready');
+  const sc = d.boosters.scoop;
+  ok(!!E.chestClaim(d) && d.boosters.scoop === sc + 1 && d.coins > coins, 'chest pays');
+  eq(E.chestClaim(d), null, 'chest pays once');
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'export const TEACH|function finishMechanics|function bandScore|if \\(n <= 4\\)|function tutorial|function decisions|if \\(h5Ready\\)|function doShare|function failInfo|if \\(clean && meta.traps|function onWin|onPointer\\(e\\)|OUT_W|showClaim\\(|earnedDecor|rooftop|pacing|tut3' src scripts/check-econ.mjs data/cafe.json qa/core-metrics.txt" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 672ms:
+qa/core-metrics.txt:41:  café pacing: residents after L3 mochi, L5 biscuit, L11 luna, L16 pudding, L25 noodle, L39 pepper, L46 clover, L60 captain; areas done after L8, L18, L33, L46, L60
+data/cafe.json:466:      "id": "rooftop",
+data/cafe.json:471:      "shell": "cafe_shell_rooftop.webp",
+data/cafe.json:480:          "sprite": "cafe_rooftop_canopy.webp",
+data/cafe.json:492:          "sprite": "cafe_rooftop_telescope.webp",
+data/cafe.json:504:          "sprite": "cafe_rooftop_lemon.webp",
+data/cafe.json:516:          "sprite": "cafe_rooftop_tower.webp",
+data/cafe.json:528:          "sprite": "cafe_rooftop_beanbags.webp",
+data/cafe.json:540:          "sprite": "cafe_rooftop_grill.webp",
+data/cafe.json:571:        "sprite": "cafe_clutter_rooftop.webp",
+scripts/check-econ.mjs:143:  const out = E.showClaim(d, sun);
+scripts/check-econ.mjs:145:  eq(E.showClaim(d, sun).length, 0, 'no double claim');
+scripts/check-econ.mjs:148:  const all = E.showClaim(d, sun);
+scripts/check-econ.mjs:151:  ok(E.earnedDecor(d).length === 1, 'decor hook lists it');
+scripts/check-econ.mjs:235:// ---------------- café star pacing (sim of a player who wins every level first try) ----------------
+scripts/check-econ.mjs:262:  console.log('  café pacing: residents after ' + Object.entries(arrive).map(([r, n]) => `L${n} ${r}`).join(', ') + '; areas done after L' + areaEnd.join(', L'));
+src\ui\ui.css:30:.btn { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 62px; border-radius: 999px; font-size: 28px; font-weight: 700; color: #fff; letter-spacing: .5px; text-shadow: 0 2px 0 rgba(120,50,0,.45);
+src\ui\ui.css:43:.btn.play b { font-size: 50px; letter-spacing: 2px; }
+src\ui\ui.css:131:.lvl-pill { display: flex; align-items: center; gap: 6px; margin-top: 8px; height: 32px; padding: 0 12px; border-radius: 999px; background: var(--cream); border: 3px solid var(--navy); box-shadow: 0 3px 0 rgba(29,43,83,.3); font-size: 14px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; white-space: nowrap; }
+src\ui\ui.css:270:.perk em { font-style: normal; font-size: 13px; font-weight: 600; letter-spacing: 1px; text-transform: uppercase; opacity: .9; }
+src\core\search.js:305:export function decisions(board, order, budget = 120) {
+src\main.js:193:const TUT_KEY = { 1: 'tut1', 2: 'tut2', 3: 'tut3', 4: 'tut4', 8: 'tutDog', 12: 'tutYarn', 40: 'tutMystery', 55: 'tutFrozen' };
+src\main.js:274:function onWin(stars) {
+src\main.js:328:  if (clean && meta.traps > 0) ach.push({ k: 'trap', text: meta.traps > 1 ? t('achTraps', { n: meta.traps }) : t('achTrap1') });
+src\main.js:368:function failInfo() {
+src\main.js:509:    const out = econ.showClaim(save.data, dayNum());
+src\main.js:662:async function doShare() {
+src\core\generate.js:39:export const TEACH = { 8: 'dog', 12: 'yarn', 40: 'mystery', 55: 'frozen' };
+src\core\generate.js:114:function tutorial(n) {
+src\core\generate.js:707:function finishMechanics(board, n) {
+src\core\generate.js:766:function bandScore(d, P) {
+src\core\generate.js:786:  if (n <= 4) return tutorial(n);
+src\i18n.js:45:    tut3: 'Kittens follow mom out!',
+src\i18n.js:218:    tut3: 'Yavrular anneyi takip eder!',
+src\kit\ads.js:32:  if (h5Ready) return h5Ready;
+src\kit\clip.js:7:const OUT_W = 240; // ~300 KB a frame, ~44 frames kept
+src\kit\clip.js:26:    const w = OUT_W;
+src\kit\clip.js:27:    const h = Math.round((OUT_W * r.h) / r.w);
+src\game\render.js:100:// [start offset (cells), spacing (cells)] per pattern
+src\game\game.js:63:    canvas.addEventListener('pointerdown', (e) => this.onPointer(e));
+src\game\game.js:110:        this.sw = Math.min((this.cs / f) * 1.05, (W - 16) / 3); // slots keep their spacing when the art shrinks
+src\game\game.js:357:  onPointer(e) {
+src\game\econ.js:156:export function showClaim(d, day) { // claims every reached step; -> list of rewards (empty when none)
+src\game\econ.js:170:export const earnedDecor = (d) => Object.keys(d.show.decor); // hook: the cafe renders these ids when art exists
+
+codex
+**6.5/10 combined.** Long Cat Out! has one genuinely fun move: send the right cat, finish a carrier, and watch three more cats jump off the bench. The cats have personality, and the finished rooftop earns the café its screen time. But too much of the puzzle is clearing whichever cat can move until there’s a bench-space test. The café runs out of builds around L60, and the best chain is easier to watch than to challenge a friend to reproduce. I reran the core and economy checks. This score is a design judgment from the frames and code, without player retention or sharing data.
+
+1. **Make the generator reward planning a chain.** All 600 levels pass the checks. On the intended paths through L5–14, 21 of 103 turns had a single legal exit, and on 65 every legal exit still left a possible win. Fourteen of the 17 losing alternatives overflowed the bench immediately. Teach players to set something up. Require at least one fork on a normal board where both exits are survivable, but one frees a key lane or sets up a three-cat hop within the next two taps. Score those forks across several viable paths. Right now the band scores traps and chains along one scripted path. [Solver](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/core/search.js:305>) · [Generator](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/core/generate.js:766>)
+
+2. **Show exactly where the cat will go before the move commits.** The L5 frame asks players to connect three pink cats on cushions with a pink carrier two slots away, while another badge floats at the end of the belt. Give the queue fixed slots labeled **Now**, **Next**, and **Later**, with fill pips on the active carrier. On touch-down, light the actual destination cushions or carrier slots for both mother and kitten, in arrival order. Commit on release and let players drag off to cancel. Keep a mystery cat’s color hidden in the preview. [Input handling](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/game/game.js:357>)
+
+3. **Rebuild L3 around a mistake the player can recover from.** In the frame, the pink pair has already taken two of three seats, and the lesson still says “Kittens follow mom out!” The player made the fatal choice before the game explained the cost. Let pink-first survive with a cramped bench and let orange-first trigger the satisfying chain. Update the lesson the instant the pair parks. Put the first irreversible version of that trap after the player has seen the tradeoff. [L3 layout](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/core/generate.js:166>)
+
+4. **Follow each mechanic lesson with a board where timing it changes the solve.** Twelve of the 25 boards from L15–39 contain none of the dog, yarn, mystery, or ice mechanics. The generator checks whether a mechanic holds up a cat on the scripted route. Give it a stronger job. For yarn, author a board where rolling the ball early opens a matching exit and saves a seat, while rolling it late forces a detour. Give every mechanic a teach, practice, and remix sequence before leaving its appearances to chance. [Mechanic filter](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/core/generate.js:707>)
+
+5. **Turn the L13 chain into a playable dare.** The giant stamp gets the best real estate, and the win card shrinks the action beside a $4.99 offer. Make a full-width, four-second loop that starts on the setup tap and keeps the cushions and carrier in view through the third hop. End on “Can you chain all 3?” with a link that opens that exact board. Drop “Dodged a trap” until it comes from the player’s moves. Today it reads from generator metadata. [Win and share logic](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/main.js:324>)
+
+6. **Give the finished café a next goal.** The economy test finishes all five areas and unlocks the eighth resident by L60. The rooftop frame shows the consequence at L61: “Area complete!” and a huge Play button. Give Captain a recurring rooftop project with three visible upgrades and a decor choice the player can place. Preview the first project before the final build, so players know what the next stars buy. [Café pacing test](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/scripts/check-econ.mjs:235>)
+
+7. **Make a loss teach the next attempt.** The L49 sheet preserves the stalled cat, but three rescue tiles dominate the screen, including a 120-coin seat when the player has 50. Use a short bottom sheet, keep the board visible, and highlight the tap that spent the last seat. Give players one free **Take Back** on their first bench failure, with **Retry** primary thereafter. Put the unaffordable seat behind the Shop and keep the Starter Bundle off the chain celebration. [Continue sheet](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/ui/ui.js:267>)
+
+8. **Make Cat Show a weekly puzzle worth comparing.** Ship one authored board per week with a fixed bench, unlimited practice, and a result friends can compare. Start with lowest peak bench occupancy, with biggest chain as the tiebreaker. Award a decoration players can actually place for beating the target. Today the headline prize comes from a 44-ribbon quota, and the earned decor is stored without being rendered in the café. [Cat Show rewards](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/game/econ.js:132>)
+tokens used
+76,083
+**6.5/10 combined.** Long Cat Out! has one genuinely fun move: send the right cat, finish a carrier, and watch three more cats jump off the bench. The cats have personality, and the finished rooftop earns the café its screen time. But too much of the puzzle is clearing whichever cat can move until there’s a bench-space test. The café runs out of builds around L60, and the best chain is easier to watch than to challenge a friend to reproduce. I reran the core and economy checks. This score is a design judgment from the frames and code, without player retention or sharing data.
+
+1. **Make the generator reward planning a chain.** All 600 levels pass the checks. On the intended paths through L5–14, 21 of 103 turns had a single legal exit, and on 65 every legal exit still left a possible win. Fourteen of the 17 losing alternatives overflowed the bench immediately. Teach players to set something up. Require at least one fork on a normal board where both exits are survivable, but one frees a key lane or sets up a three-cat hop within the next two taps. Score those forks across several viable paths. Right now the band scores traps and chains along one scripted path. [Solver](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/core/search.js:305>) · [Generator](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/core/generate.js:766>)
+
+2. **Show exactly where the cat will go before the move commits.** The L5 frame asks players to connect three pink cats on cushions with a pink carrier two slots away, while another badge floats at the end of the belt. Give the queue fixed slots labeled **Now**, **Next**, and **Later**, with fill pips on the active carrier. On touch-down, light the actual destination cushions or carrier slots for both mother and kitten, in arrival order. Commit on release and let players drag off to cancel. Keep a mystery cat’s color hidden in the preview. [Input handling](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/game/game.js:357>)
+
+3. **Rebuild L3 around a mistake the player can recover from.** In the frame, the pink pair has already taken two of three seats, and the lesson still says “Kittens follow mom out!” The player made the fatal choice before the game explained the cost. Let pink-first survive with a cramped bench and let orange-first trigger the satisfying chain. Update the lesson the instant the pair parks. Put the first irreversible version of that trap after the player has seen the tradeoff. [L3 layout](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/core/generate.js:166>)
+
+4. **Follow each mechanic lesson with a board where timing it changes the solve.** Twelve of the 25 boards from L15–39 contain none of the dog, yarn, mystery, or ice mechanics. The generator checks whether a mechanic holds up a cat on the scripted route. Give it a stronger job. For yarn, author a board where rolling the ball early opens a matching exit and saves a seat, while rolling it late forces a detour. Give every mechanic a teach, practice, and remix sequence before leaving its appearances to chance. [Mechanic filter](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/core/generate.js:707>)
+
+5. **Turn the L13 chain into a playable dare.** The giant stamp gets the best real estate, and the win card shrinks the action beside a $4.99 offer. Make a full-width, four-second loop that starts on the setup tap and keeps the cushions and carrier in view through the third hop. End on “Can you chain all 3?” with a link that opens that exact board. Drop “Dodged a trap” until it comes from the player’s moves. Today it reads from generator metadata. [Win and share logic](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/main.js:324>)
+
+6. **Give the finished café a next goal.** The economy test finishes all five areas and unlocks the eighth resident by L60. The rooftop frame shows the consequence at L61: “Area complete!” and a huge Play button. Give Captain a recurring rooftop project with three visible upgrades and a decor choice the player can place. Preview the first project before the final build, so players know what the next stars buy. [Café pacing test](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/scripts/check-econ.mjs:235>)
+
+7. **Make a loss teach the next attempt.** The L49 sheet preserves the stalled cat, but three rescue tiles dominate the screen, including a 120-coin seat when the player has 50. Use a short bottom sheet, keep the board visible, and highlight the tap that spent the last seat. Give players one free **Take Back** on their first bench failure, with **Retry** primary thereafter. Put the unaffordable seat behind the Shop and keep the Starter Bundle off the chain celebration. [Continue sheet](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/ui/ui.js:267>)
+
+8. **Make Cat Show a weekly puzzle worth comparing.** Ship one authored board per week with a fixed bench, unlimited practice, and a result friends can compare. Start with lowest peak bench occupancy, with biggest chain as the tiebreaker. Award a decoration players can actually place for beating the target. Today the headline prize comes from a 44-ribbon quota, and the earned decor is stored without being rendered in the café. [Cat Show rewards](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/src/game/econ.js:132>)
