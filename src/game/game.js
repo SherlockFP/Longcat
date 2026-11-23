@@ -26,6 +26,7 @@ const CONFETTI = ['#ff7a1a', '#ffd43b', '#3fd0c4', '#ff6b9a', '#7c5cff', '#6bd36
 const RUN_EASE = 1.35; // sprint: fast launch, gentle brake into the carrier
 const rampD = (u) => 1 - Math.pow(1 - clamp(u, 0, 1), RUN_EASE);
 const LANE = 34; // px kept free above the booster bar for toasts
+const PLAQUE_B = 47; // R11 pres: CSS bottom of the LEVEL plaque under the safe area (r7.css .hud-top2: 6px + a 42px row, the 40px plaque centred)
 const smooth = (u) => { u = clamp(u, 0, 1); return u * u * (3 - 2 * u); };
 
 export class Game {
@@ -140,9 +141,10 @@ export class Game {
     for (let f = 1; ; f -= 0.05) {
       { // the home demo gets a compact belt + bench under the logo so it shows the real move (cat -> carrier)
         if (this.demo) f = 0.74;
-        const hdr = this.demo ? this.top : this.safeT + (r7 ? 54 : 62) * k;
+        let hdr = this.demo ? this.top : this.safeT + (r7 ? 54 : 62) * k;
         const cf = this.demo ? f : Math.max(0.94, f); // carrier art: fixed in play (a hair smaller on the tallest boards)
         this.cs = Math.min(92, (W - 24) / 3.25) * Math.min(1, k + 0.08) * 0.9 * cf; // carrier art size
+        if (r7 && !this.demo) hdr = Math.max(hdr, this.safeT + PLAQUE_B + 5 + this.cs * 0.093); // R11 pres: the front carrier's n/3 tag (its top sits 0.093 cs above hdr) stays 5px clear of the LEVEL plaque
         this.sw = Math.min((this.cs / cf) * 1.05, (W - 16) / 3); // slots keep their spacing when the art shrinks
         this.beltY = hdr + this.cs * 1.08; // room for the big front carrier
         this.bw = Math.min(64, (W - 20) / 5.2) * Math.max(0.7, f);

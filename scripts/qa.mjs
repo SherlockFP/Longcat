@@ -2640,6 +2640,55 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }
+  // ---- R11 pres (sol-r11-3 fix 1): one Play on the mobile map (the node is a level marker), the resident line in full
+  // on the build card, the front carrier's n/3 tag clear of the LEVEL plaque, the win card, at 360x640 and 375x667 in
+  // EN + TR, and the 1600x900 hub. QA_SKIP_PRES=1 skips it. ----
+  if (!process.env.QA_SKIP_PRES) {
+    const cfgP = (lg) => `settings: { lang: '${lg}', sound: false, music: false, haptics: false }`;
+    const presSave = (lg) => `localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 6, coins: 100, meta: { sessions: 2 }, cafe: { stars: 0, built: {} }, ${cfgP(lg)} }))`;
+    // visible buttons that read Play / Oyna on their own: the big bottom PLAY must be the only one
+    const PLAYS = `[...document.querySelectorAll('#cafe *')].filter((e) => e.children.length === 0 && /^(play|oyna)$/i.test((e.textContent || '').trim()) && e.getClientRects().length && getComputedStyle(e).visibility !== 'hidden').length`;
+    const TAGGAP = `(() => { const L = window.__qa.layout(); const p = document.querySelector('#hud .lvl-pill').getBoundingClientRect(); return Math.round((L.beltY + 2 - 1.1724 * L.cs - p.bottom) * 10) / 10; })()`;
+    for (const [w, h] of [[360, 640], [375, 667]]) {
+      await send('Emulation.setDeviceMetricsOverride', { width: w, height: h, deviceScaleFactor: 2, mobile: true });
+      for (const lg of ['en', 'tr']) {
+        await ev(presSave(lg));
+        await boot(); await qa('home()'); await sleep(800);
+        if (await ev('!!document.querySelector(".hmplay")')) throw new Error(`pres ${w} ${lg}: the map node should not carry its own Play pill`);
+        if (!(await ev('document.querySelector("#cafe .hmn.cur")?.dataset.act === "play"'))) throw new Error(`pres ${w} ${lg}: the current node should still start the level`);
+        const plays = await ev(PLAYS);
+        if (plays !== 1) throw new Error(`pres ${w} ${lg}: the map should show one Play, saw ${plays}`);
+        const thr = await ev('(() => { const s = document.querySelector("#cafe .nbcard small.thread"); if (!s) return null; const r = s.getBoundingClientRect(), c = s.closest(".nbcard").getBoundingClientRect(); return { txt: s.textContent, clip: s.scrollWidth > s.clientWidth + 1, out: r.bottom > c.bottom - 2 || r.right > c.right }; })()');
+        if (thr && (thr.clip || thr.out)) throw new Error(`pres ${w} ${lg}: the resident line on the build card is clipped: ${JSON.stringify(thr)}`);
+        if (!(await ev('[...document.querySelectorAll("#cafe .goal.feat .gt b")].every((e) => e.scrollWidth <= e.clientWidth + 1 && e.scrollHeight <= e.clientHeight + 1)'))) throw new Error(`pres ${w} ${lg}: featured goal text clipped`);
+        await shot(`r11-pres-map-${w}-${lg}`);
+        // the teaching boards: the n/3 tag on the front carrier stays clear of the plaque
+        for (const lv of [4, 6]) {
+          await qa(`level(${lv})`); await sleep(900);
+          const gap = await ev(TAGGAP);
+          console.log(`  pres ${w}x${h} ${lg} L${lv} tag-plaque gap ${gap}px`);
+          if (gap < 3) throw new Error(`pres ${w} ${lg} L${lv}: the n/3 tag crowds the LEVEL plaque (${gap}px)`);
+          if (lv === 6 || lg === 'en') await shot(`r11-pres-l${lv}-${w}-${lg}`);
+        }
+        await qa('winNow()');
+        await waitFor('window.__qa.state().screen === "win"', 30000); await waitFor('!!document.querySelector("#modal .card.win")', 15000); await sleep(1100);
+        const nb = await ev('(() => { const b = document.querySelector("#modal .card.win [data-act=next], #modal .card.win > [data-act=retry]"); return b ? Math.round(b.getBoundingClientRect().bottom) : -1; })()');
+        if (nb < 0 || nb > h) throw new Error(`pres ${w} ${lg}: Next should be on screen on the win card (${nb})`);
+        await shot(`r11-pres-win-${w}-${lg}`);
+      }
+    }
+    // the shop header: the balance pill and the close button on one centre line
+    await qa('home()'); await sleep(600); await qa('screen("shop")'); await sleep(900);
+    const hd = await ev('(() => { const a = document.querySelector(".s4bal")?.getBoundingClientRect(), b = document.querySelector(".phead .round.x")?.getBoundingClientRect(); return a && b ? Math.abs((a.top + a.bottom) / 2 - (b.top + b.bottom) / 2) : -1; })()');
+    if (hd < 0 || hd > 2) throw new Error(`pres: the shop balance and close button should share a centre line (${hd})`);
+    await shot('r11-pres-shop-375');
+    await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+    await ev(presSave('en'));
+    await boot(); await sleep(800);
+    await shot('r11-pres-desk-1600');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

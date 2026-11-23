@@ -132,7 +132,7 @@ function mapHtml(cur, W) {
     const nw = TEACH[lv] ? `<i class="hmnew">${t('mapNew')}</i>` : '';
     const st = `left:${p.x.toFixed(1)}px;top:${p.y.toFixed(1)}px`;
     if (lv < cur) items.push(`<div class="hmn done ${kind}" style="${st}">${r7('map_node_done', 'hmc')}<b>${lv}</b>${starRow(best[lv] || 0)}${tag}</div>`);
-    else if (lv === cur) items.push(`<button class="hmn cur ${kind}" data-act="play" style="${st}" aria-label="${t('mapLevel', { n: lv })}">${r7('map_node_cur', 'hmc')}<b>${lv}</b><span class="hmplay"><em>${t('mapLevel', { n: lv })}</em><strong>${t('mapPlay')}</strong></span>${tag}${nw}</button>`);
+    else if (lv === cur) items.push(`<button class="hmn cur ${kind}" data-act="play" style="${st}" aria-label="${t('mapLevel', { n: lv })}">${r7('map_node_cur', 'hmc')}<b>${lv}</b>${tag}${nw}</button>`); // R11 pres: a level marker (still tappable); the bottom PLAY is the one Play
     else items.push(`<div class="hmn lock ${kind}" style="${st}">${r7('map_node_lock', 'hmc')}<b>${lv}</b>${tag}${nw}</div>`);
     // a chapter signpost where the road enters the next stop of the town (to the roomier side of the road)
     if ((lv - 1) % CHAPTER_LEN === 0) {

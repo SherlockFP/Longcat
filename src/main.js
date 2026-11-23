@@ -52,6 +52,7 @@ import './i18n-r11-ret.js';
 import * as rret from './ui/r11-ret.js'; // R11 retention lane: album card, hang card, tomorrow on the win card
 import * as rtg from './game/r11-ret.js';
 import './ui/r11.css'; // R11 fix round 1: plaque pack line, on-demand clip, featured goal, one Play
+import './ui/r11-pres.css'; // R11 pres: one Play per hub screen, the resident line in full, shared card spacing
 import './ui/r11b.css'; // R11 fix round 2: win card rows, thread bar, video progress
 import './i18n-fun.js';
 import * as fun from './game/r11-fun.js'; // R11 fun lane: winnable Take back, park ghosts, teaching rewind, a free opening
