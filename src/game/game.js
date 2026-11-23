@@ -105,7 +105,7 @@ export class Game {
       return;
     }
     this.dpr = Math.min(window.devicePixelRatio || 1, 3);
-    this.W = window.innerWidth;
+    this.W = document.body.clientWidth || window.innerWidth; // wide screens: the centred phone column (index.html)
     this.H = window.innerHeight;
     const cs = getComputedStyle(this.probe);
     this.safeT = parseFloat(cs.paddingTop) || 0;

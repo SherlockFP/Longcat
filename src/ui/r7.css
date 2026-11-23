@@ -58,7 +58,7 @@ button.pill { color: var(--ink); }
 .bst.r7b.dim { opacity: .5; filter: grayscale(.5) drop-shadow(-3px 5px 3px rgba(60,30,10,.25)); }
 .bst.r7b.on { outline: 4px solid var(--honey); outline-offset: 2px; border-radius: 50%; }
 /* the tutorial line: a speech bubble over the board's bottom edge, not a bar */
-.tut { left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(100vw - 40px); bottom: calc(var(--lane-b, 92px) - 8px); padding: 8px 16px; border: 3px solid var(--oak-d); border-radius: 18px; background: #fffaf0; color: var(--ink); font-size: 17px; box-shadow: 0 4px 0 rgba(142,85,48,.45); }
+.tut { left: 50%; right: auto; transform: translateX(-50%); width: max-content; max-width: calc(var(--vw, 100vw) - 40px); bottom: calc(var(--lane-b, 92px) - 8px); padding: 8px 16px; border: 3px solid var(--oak-d); border-radius: 18px; background: #fffaf0; color: var(--ink); font-size: 17px; box-shadow: 0 4px 0 rgba(142,85,48,.45); }
 .tut::after { content: ""; position: absolute; left: 50%; top: -10px; width: 14px; height: 14px; margin-left: -7px; background: #fffaf0; border-left: 3px solid var(--oak-d); border-top: 3px solid var(--oak-d); transform: rotate(45deg); }
 .combo { background: var(--honey); color: #fff; -webkit-text-stroke: 4px var(--oak-d); border-color: var(--oak-d); }
 
