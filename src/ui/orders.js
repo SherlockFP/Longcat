@@ -25,6 +25,7 @@ let strip = null;
 let intro = null;
 let cer = null; // the running ceremony: { el, go, snap, timer, t0 }
 let happyT = 0;
+let pendIntro = false; // the intro card waits for a content-lane card (#cmodal) to close
 let flushing = false;
 let adPage = -1;
 const seen = new Set(); // levels whose intro card already showed this session
@@ -97,6 +98,7 @@ export function initOrders(game, c) {
 // after every level load: an order on a normal level, nothing on the Daily / Cat Show / Rush / dare boards
 export function startOrder(n, board, special) {
   dismissIntro(true);
+  pendIntro = false;
   if (special || !board || !strip) { cur = null; if (strip) strip.hidden = true; return; }
   const o = O.orderOf(n, board.meta && board.meta.kind);
   const caps = (board.carriers || []).map((c) => c.cap || 3);
@@ -109,7 +111,8 @@ export function startOrder(n, board, special) {
   strip.innerHTML = `<div class="osdoor" style="--sh:url('${url('street_' + o.shop)}')"><i class="osawn"></i><div class="osface" style="background-image:url('${url('keeper_' + o.shop)}')"></div><i class="osmood">${HEART}${DROP}</i></div><b class="oscount">${r7(head(board.carriers && board.carriers.length ? board.carriers[0].color : 0), 'osc')}<span>0/${total}</span></b>${tagHtml(o)}`;
   strip.setAttribute('aria-label', `${orderTitle(o, total)} ${t('ordStrip', { a: 0, b: total })}`);
   place();
-  if (!seen.has(n)) { seen.add(n); showIntro(); }
+  // a pack / new-piece card (content lane, #cmodal) goes first: the order card waits for it to close
+  if (!seen.has(n)) { seen.add(n); if (document.getElementById('cmodal')) pendIntro = true; else showIntro(); }
 }
 
 function onPlay() {
@@ -135,6 +138,7 @@ function tick() {
   const vis = onPlay();
   strip.hidden = !vis;
   if (!vis) { if (intro && !(cur && G && G.board === cur.board)) dismissIntro(true); return; }
+  if (pendIntro && !document.getElementById('cmodal')) { pendIntro = false; showIntro(); }
   const st = G.state;
   if (!st) return;
   // a carrier counts once it has driven off the edge into the shop (still on screen = still on its way)
