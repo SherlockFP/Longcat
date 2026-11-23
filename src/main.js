@@ -37,6 +37,8 @@ import { toggleGpu } from './ui/perf.js';
 import './i18n-orders.js';
 import * as ord from './game/orders.js';
 import * as ordUi from './ui/orders.js';
+import './i18n-iq.js';
+import * as iqui from './ui/iq.js'; // R10 iq lane: level clocks + time medals, Record Run, Records sheet
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -1702,6 +1704,7 @@ async function boot() {
   game.on.demoReset = () => game.load(generate(1), { demo: true, top: 146, bottom: 246 });
   ordUi.initOrders(game, { cur: () => S }); // adoption orders: wraps the hooks above (strip, ceremony, album tab)
   ui.init(actions);
+  iqui.init({ game, S, actions, ui, tryStart, startLevel, streak }); // R10 iq lane: wraps game.load/on.free/on.win, adds its actions
   initPwa();
   pwa.onChange(() => { if (ui.screen === 'settings') ui.settings(settingsInfo()); });
   document.documentElement.lang = save.data.settings.lang;
