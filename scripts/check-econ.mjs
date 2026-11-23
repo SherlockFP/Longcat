@@ -7,6 +7,7 @@ const E = await import('../src/game/econ.js');
 const L = await import('../src/game/live.js');
 const ST = await import('../src/game/street.js');
 const R = await import('../src/game/r10.js');
+const RT = await import('../src/game/r11-ret.js'); // R11 retention lane: album card, day goal, tomorrow
 const { applyPurchase, PRODUCTS } = await import('../src/kit/iap.js');
 
 let failures = 0;
@@ -299,6 +300,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   let stars = 0;
   const collection = () => ST.streetSights(d) + R.cardsOwned(d) + R.printsHung(d) + (d.drec.got >> 2 ? 1 : 0) + ((d.drec.got >> 3) & 1) + ((d.drec.got >> 4) & 1) + ST.renoCount(d) + L.visitorsOwned(d).length + L.outfitsOwned(d, resAt(d.level)) + E.earnedDecor(d).length + Object.values(d.rush.cups).reduce((a, b) => a + b, 0);
   let doneDay = -1;
+  let albumDays = 0, openDays = 0; // R11 ret: visits with an album reward open, and those whose goal was that step
   for (let dd = 0; dd < 120; dd++) {
     const earn = new Set();
     const ticking = new Set();
@@ -317,6 +319,12 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
       if (E.loginClaim(d, day)) { earn.add('login'); if (E.LOGIN_REWARDS[d.login.idx - 1].outfit && L.giftOutfit(d, res)) earn.add('outfit-gift'); }
       for (const id of res.slice(dd % Math.max(1, res.length)).concat(res).slice(0, 2)) if (L.pet(d, id, day)) earn.add('pet');
       R.jobsToday(d, day, res);
+      { // R11 ret: every visit of every day has one concrete next goal the player can act on right now
+        const dg = RT.dayGoal(d, { week, day, dailyDone: doneDay === day, res });
+        ok(dg && (dg.k !== 'album' || RT.stepOk(d, week, dg.g, doneDay === day)), `day ${dd + 1} ${hour}:00: a concrete next goal reachable now (got ${dg ? dg.k : 'none'})`);
+        const an = RT.albumNext(d, week, doneDay === day);
+        if (an && an.today) { openDays++; ok(dg && dg.k === 'album', `day ${dd + 1} ${hour}:00: an open album reward is the goal (got ${dg && dg.k})`); if (dg && dg.k === 'album') albumDays++; }
+      }
       // play this visit's half of the day's levels
       for (let k = 0; k < levels / 2; k++) {
         d.level++;
@@ -371,7 +379,14 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
       if (d.req.next > now) ticking.add('request');
     }
     days.push({ dd, level: d.level, earn: [...earn], ticking: [...ticking], items: collection(), street: d.cafe.street });
+    { // R11 ret: the day's last visit names what opens tomorrow (the Daily chest or a fresh Daily, and a resident's jobs)
+      const day = E.dayOf(start + dd * 24 * H + 11 * H);
+      const tm = RT.tomorrow(d, { day, res: resAt(d.level), dailyDone: doneDay === day, streak: d.daily.streak });
+      ok(tm.length >= (resAt(d.level).length ? 2 : 1), `day ${dd + 1}: the win card can name tomorrow (got ${tm.map((x) => x.k).join(', ')})`);
+    }
   }
+  ok(openDays >= 17, `R11 ret: an album reward is open on a visit every event week (${openDays} visits)`);
+  console.log(`  R11 ret: the album card was the visit's goal on ${albumDays}/${openDays} visits with an album reward open`);
   // R10: past day 2 a resident job pays every single day (a new cat, a new goal), and the collection (postcards, prints,
   // street sights, Daily keepsakes) gains something new every week, before and after the house is finished
   days.slice(2).forEach((x) => ok(x.earn.includes('job'), `day ${x.dd + 1}: a resident job to finish and claim (got ${x.earn.join(', ')})`));
@@ -790,6 +805,51 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
     ok(deals >= 30, `${tag}: the deal of the day is bought regularly (${deals} of 120 days)`);
     console.log(`  shop 120 days (${adsOn ? 'with' : 'no'} ad gifts): ${Math.round(perDay)} coins/day from play, +${Math.round(adIncome / 120)}/day from ads, ${deals} deals, all cosmetics on day ${allAt + 1}, spent ${spent}, left ${d.coins}`);
   }
+}
+
+// ---------------- R11 ret: the nearest album reward, step by step ----------------
+{
+  const d = fresh();
+  d.level = 30;
+  const wk = 2910;
+  ok(RT.albumNext(fresh(), wk, false) === null, 'no album card before the events open');
+  const card = R.popIndex(wk);
+  let g = RT.albumNext(d, wk, false);
+  eq([g.k, g.b, g.card, g.left, g.unit], ['board', 'a', card, 3, 'stamp'], 'a fresh week: board A of the Show, 3 stamps left');
+  L.showMedal(d, wk, 'a', false);
+  g = RT.albumNext(d, wk, false);
+  eq([g.k, g.b, g.left], ['board', 'b', 2], 'then board B');
+  L.showMedal(d, wk, 'b', false);
+  g = RT.albumNext(d, wk, false);
+  eq([g.k, g.left, g.today], ['daily', 1, true], "then 1 stamp: today's Daily");
+  const gd = RT.albumNext(d, wk, true);
+  ok(!(gd.k === 'daily' && gd.today), 'a Daily already done today is not a step for today');
+  R.popDaily(d, wk);
+  g = RT.albumNext(d, wk, true);
+  eq(g.k, 'claim', 'three stamps: claim');
+  ok(RT.stepOk(d, wk, g, true), 'the claim works');
+  R.popClaim(d, wk, { a: true, b: true });
+  g = RT.albumNext(d, wk, true);
+  ok(g && g.arch && g.k === 'board' && g.w < wk && R.pageOf(g.card) === R.pageOf(card), `after the claim: a catch-up board on the same page (${g && g.k} w${g && g.w})`);
+  for (const k of ['a', 'b']) L.showMedal(d, g.w, k, false);
+  const g2 = RT.albumNext(d, wk, true);
+  eq([g2.k, g2.w], ['catch', g.w], 'both archived boards cleared: add it');
+  R.catchUp(d, wk, g2.w, { a: true, b: true });
+  const g3 = RT.albumNext(d, wk, true);
+  ok(!g3 || !g3.arch, 'one catch-up a week: no second archived card this week');
+  // a full page: the print waits, then it is hung
+  const p = R.pageOf(card);
+  for (const i of R.pageCards(p)) d.album.cards[i] = 1;
+  RT.setHang(d, p);
+  eq(RT.albumNext(d, wk, true).k, 'hang', 'a finished page: hang the print first');
+  R.hangPrint(d, p, 0);
+  ok(RT.hangPending(d) < 0 && RT.albumNext(d, wk, true)?.k !== 'hang', 'a hung print stops waiting');
+  // the win day counter and tomorrow
+  eq([RT.winDay(d, 5), RT.winDay(d, 5), RT.winDay(d, 5), RT.winDay(d, 6)], [1, 2, 3, 1], 'wins counted per day');
+  const sun = wk * 7 + 3; // the last day of a week: tomorrow is a new postcard week
+  ok(E.weekOf(sun) !== E.weekOf(sun + 1), 'test day is a Sunday');
+  const tm = RT.tomorrow(d, { day: sun, res: ['mochi'], dailyDone: true, streak: 4 });
+  ok(tm.some((x) => x.k === 'week') && tm.some((x) => x.k === 'chest' && x.n === 5) && tm.some((x) => x.k === 'job'), `tomorrow on a Sunday: ${tm.map((x) => x.k).join(', ')}`);
 }
 
 if (failures) {
