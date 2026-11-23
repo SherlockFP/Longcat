@@ -608,6 +608,52 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   console.log('  café pacing: residents after ' + Object.entries(arrive).map(([r, n]) => `L${n} ${r}`).join(', ') + '; areas done after L' + areaEnd.join(', L'));
 }
 
+// ---------------- adoption orders (src/game/orders.js, data/orders.js) ----------------
+// every level is an order from a Cat Street keeper, seeded by the level number; a first clear adopts one named cat into
+// the shop's set (SET_SIZE), a full set pays SET_REWARDS; Urgent (hard) / VIP (super) orders add a first-clear bonus
+{
+  const OR = await import('../src/game/orders.js');
+  const { levelKind } = await import('../src/core/generate.js');
+  eq(OR.orderOf(37), OR.orderOf(37), 'an order is deterministic');
+  eq([OR.shopOf(1), OR.shopOf(10), OR.shopOf(11), OR.shopOf(91)], ['bakery', 'bakery', 'library', 'bakery'], 'a chapter of 10 levels per shop, in street order, then a new round');
+  ok(OR.SHOP_ORDER.every((s) => OR.CUSTOMERS[s] && OR.keeperOf(s) && OR.CUSTOMERS[s].why.length && OR.CUSTOMERS[s].to.tr && OR.CUSTOMERS[s].at.tr), 'every shop has a keeper and EN/TR order words');
+  let hardN = 0, superN = 0, bonus = 0;
+  for (let n = 1; n <= 400; n++) {
+    const k = levelKind(n);
+    const o = OR.orderOf(n, k);
+    if (k === 'hard') { hardN++; ok(o.kind === 'urgent' && o.bonus === OR.BONUS.hard, `L${n} hard = Urgent order`); }
+    if (k === 'super') { superN++; ok(o.kind === 'vip' && o.bonus === OR.BONUS.super, `L${n} super = VIP order`); }
+    if (k === 'normal') ok(o.kind === 'normal' && o.bonus === 0, `L${n} normal order has no bonus`);
+    bonus += OR.payParts(n, k).reduce((t, p) => t + p.n, 0);
+    ok(o.name >= 0 && o.name < OR.CAT_NAMES.length, `L${n} names a cat`);
+  }
+  ok(hardN > 20 && superN > 5, `orders: ${hardN} Urgent + ${superN} VIP in 400 levels`);
+  const d = fresh();
+  const c0 = d.coins, s0 = d.boosters.scoop;
+  let sets = 0, setCoins = 0;
+  for (let n = 1; n <= 100; n++) {
+    const a = OR.adopt(d, n, 12, n % 8);
+    ok(a && a.shop === OR.shopOf(n), `L${n} adopts into its shop`);
+    if (a && a.reward) { sets++; setCoins += a.reward.coins || 0; }
+  }
+  eq(OR.adopt(d, 50, 12, 0), null, 'a level adopts once (replays never adopt again)');
+  eq(sets, 20, '100 orders fill 20 sets of 5 (2 per chapter)');
+  eq(d.coins - c0, setCoins, 'set rewards pay the listed coins');
+  eq(d.boosters.scoop - s0, 10, 'every second set pays a Scoop');
+  eq(OR.totalAdopted(d), 100, 'one named cat per order');
+  eq(d.orders.shops.bakery.cats, 12 * 20, 'cats delivered add up per shop (bakery: chapters 1 and 10)');
+  eq(OR.lively(d, 'bakery'), 3, 'a busy shop shows 3 doorstep cats');
+  eq(OR.lively(d, 'yarn'), 2, 'one chapter of deliveries shows 2');
+  eq(OR.albumShops(d, 101), OR.SHOP_ORDER, 'every served shop has an album page');
+  const per = (setCoins + (bonus * 100) / 400) / 100; // coins per level from orders (sets + the average Urgent/VIP bonus)
+  ok(per <= 20, `orders add at most 20 coins a level (got ${per.toFixed(1)})`);
+  // a hand-edited / old save: a broken orders state is repaired, not thrown on
+  const d2 = fresh();
+  d2.orders = { last: 'x', shops: { bakery: { cats: -3, cur: 5 } } };
+  ok(OR.adopt(d2, 1, 9, 2) && d2.orders.shops.bakery.cats === 9 && d2.orders.shops.bakery.cur.length === 1, 'a broken orders save is repaired');
+  console.log(`  orders: ${hardN} Urgent / ${superN} VIP in 400 levels, +${bonus} bonus coins; sets pay ${(setCoins / 100).toFixed(1)} coins a level`);
+}
+
 if (failures) {
   console.error(`\n${failures} econ check(s) failed`);
   process.exit(1);
