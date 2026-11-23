@@ -738,6 +738,76 @@ DRANGES.forEach(([lo, hi], i) => {
   const b11 = CURATED[11]();
   ok(winsWith(b11, 4) && !winsWith(b11, 3), 'curated L11: four seats win, three do not');
 }
+// shape lane: shaped boards (void cells are open air) and folded flaps (a wall until `need` cats left). Over L1-600:
+// shapes and flaps show up on schedule, nothing sits on a void cell, every folded board's line wins and the solver finds
+// a win on its own, the rules and the search model agree on every free cat along the line, a flap opens exactly at its
+// count (and closes again on undo), a tap or scoop under a closed flap does nothing, cells stay >= the 9 x 11 budget.
+{
+  let shaped = 0, folded = 0, twoFolds = 0, first = { shape: 0, fold: 0 };
+  const names = new Set();
+  for (let n = 1; n <= 600; n++) {
+    const b = generate(n);
+    ok(b.w <= 9 && b.h <= 11 && (!b.shape || b.h <= 10), `level ${n} box ${b.w}x${b.h} above 9x11 or a shaped board over 10 rows (cells under 30px on 375x667)`);
+    if (b.shape) {
+      shaped++;
+      names.add(b.shape.name);
+      if (!first.shape) first.shape = n;
+      ok(n >= 16 && !TEACH[n], `level ${n} shaped before L16 or on a teaching level`);
+      const voids = b.shape.mask.filter((v) => !v).length;
+      ok(voids > 0 && b.shape.mask.length === b.w * b.h, `level ${n} shape mask`);
+    }
+    if (!b.folds) continue;
+    folded++;
+    if (b.folds.length > 1) twoFolds++;
+    if (!first.fold) first.fold = n;
+    ok(n >= 22 && levelKind(n) === 'normal' && !TEACH[n], `level ${n} folded off schedule`);
+    ok(solve(b, 20000).solvable, `level ${n} folded board: the solver finds no win`);
+    const C = compile(b);
+    const sim = new Sim(C, b.meta.benchSize);
+    const st = createState(b);
+    let opened = 0;
+    for (const id of b.meta.order) {
+      for (let u = 0; u < C.N; u++) {
+        const p = C.units[u];
+        if (sim.alive[u]) ok(sim.canExit(u) === canExit(st, p), `level ${n}: rules and search disagree on cat ${p} (gone ${st.gone})`);
+      }
+      const folded0 = b.folds.map((f, k) => !st.foldOpen[k]);
+      for (const [k, f] of b.folds.entries()) if (folded0[k]) {
+        const r = tap(st, f.cats[0]);
+        ok(!r.ok && r.folded, `level ${n}: a cat under a closed flap answered a tap`);
+        ok(!scoop(st, f.cats[0]).ok, `level ${n}: a cat under a closed flap was scooped`);
+      }
+      const r = tap(st, id);
+      ok(r.ok, `level ${n}: line tap ${id} refused on the folded board`);
+      if (!r.ok) break;
+      sim.apply(C.unitOf[id]);
+      for (const e of r.events) if (e.type === 'unfold') {
+        opened++;
+        ok(st.gone >= b.folds[e.fold].need && st.gone - r.freed.length < b.folds[e.fold].need, `level ${n}: flap ${e.fold} opened at ${st.gone}, need ${b.folds[e.fold].need}`);
+      }
+    }
+    ok(opened === b.folds.length && isWon(st), `level ${n}: every flap opens and the line wins (${opened}/${b.folds.length})`);
+  }
+  // undo closes a flap that the undone tap opened
+  {
+    let n = 22;
+    while (!generate(n).folds) n++;
+    const b = generate(n);
+    const st = createState(b);
+    for (const id of b.meta.order) {
+      const r = tap(st, id);
+      if (r.events.some((e) => e.type === 'unfold')) {
+        undo(st);
+        ok(!st.foldOpen[0] && st.gone < b.folds[0].need, `level ${n}: undo should fold the flap back`);
+        break;
+      }
+    }
+  }
+  ok(first.shape === 16 && first.fold === 22, `first shaped board L${first.shape} (want 16), first folded board L${first.fold} (want 22)`);
+  ok(names.size >= 9, `only ${names.size} shapes in L1-600: ${[...names].join(',')}`);
+  ok(shaped >= 100 && folded >= 40, `shaped ${shaped}, folded ${folded} of 600`);
+  console.log(`shape lane: ${shaped} shaped boards (${[...names].join(', ')}), ${folded} folded (${twoFolds} with two flaps)`);
+}
 console.log(`levels missing the full band (floor still held): ${bandMiss}; normal levels from L10 with a delayed trap: ${lateOk}/${lateN}`);
 console.log(`search misses ${searchMiss} (avg ${(searchNodes / 200).toFixed(0)} nodes)`);
 console.log(`gen avg ${avgMs.toFixed(2)}ms, worst ${maxMs.toFixed(1)}ms (level ${maxMsN}), total ${totalMs.toFixed(0)}ms for ${MAXN} levels`);

@@ -5,6 +5,7 @@
 // shared across every query on one board.
 import { createState, exitRay, catsNear, edgeNeighbours, DOG_WAKE, DOG_NEAR, THAW_NEED } from './rules.js';
 import { compileMech, mechCanExit, spinFromState } from './content-mech.js';
+import { compileFold, foldBlocked } from './shape.js'; // shape lane: folded flaps
 
 const rootOf = (board, id) => {
   let c = board.cats[id];
@@ -77,6 +78,7 @@ export function compile(board) {
     cap: Int8Array.from(carriers.map((c) => c.cap || 3)),
     memo: new Map(),
     ...compileMech(board, st, unitOf, units), // spring cats + swivel beds (content-mech.js)
+    ...compileFold(board, unitOf, units), // folded flaps: nFold, foldU, rayF, foldNeed (shape.js)
   };
 }
 
@@ -98,6 +100,7 @@ export class Sim {
     this.fill = 0;
     this.dead = false;
     this.trail = [];
+    this.gone = 0; // cats off the board (a flap opens at its count)
     this.boards = []; // bench cats boarded per carrier arrival during the last apply (chain metrics)
   }
 
@@ -111,6 +114,7 @@ export class Sim {
     s.ci = st.carriers.length ? st.carriers[0].uid : C.cc.length;
     s.fill = st.carriers.length ? st.carriers[0].fill : 0;
     s.dead = !!st.failed;
+    s.gone = st.gone || 0;
     if (C.nSpin) spinFromState(s, st);
     return s;
   }
@@ -127,6 +131,7 @@ export class Sim {
   canExit(u) {
     const C = this.C;
     if (!this.alive[u] || this.frozen(u)) return false;
+    if (C.nFold && foldBlocked(this, u)) return false;
     if (C.mk[u]) return mechCanExit(this, u);
     const ru = C.rayU[u];
     for (let i = 0; i < ru.length; i++) if (this.alive[ru[i]]) return false;
@@ -149,6 +154,7 @@ export class Sim {
     this.alive[u] = 0;
     this.left--;
     const ids = C.ucats[u];
+    this.gone += ids.length;
     for (const id of ids) {
       const ho = C.hitsO[id];
       for (let i = 0; i < ho.length; i++) this.cnt[ho[i]]++;
@@ -194,6 +200,7 @@ export class Sim {
     t.length = o;
     this.alive[u] = 1;
     this.left++;
+    this.gone -= C.ucats[u].length;
     for (const id of C.ucats[u]) {
       const ho = C.hitsO[id];
       for (let i = 0; i < ho.length; i++) this.cnt[ho[i]]--;

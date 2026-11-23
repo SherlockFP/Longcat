@@ -31,6 +31,7 @@ import * as r10 from './game/r10.js';
 import * as lui from './ui/live.js';
 import * as rui from './ui/r10.js';
 import * as cui from './ui/content.js'; // content lane: spring cats, swivel beds, themed packs past L60
+import * as sui from './ui/shape.js'; // shape lane: first shaped / folded board cards, the flap's count and toast
 import { notify } from './kit/notify.js';
 import './i18n-live.js';
 import './i18n-r10.js';
@@ -659,6 +660,7 @@ function startLevel(n, daily = false, show = false) {
   ui.none();
   ui.play({ ...hudInfo(), level: n, daily, show: show ? (show.kind === 'friend' ? t('dareTitle') : show.kind === 'rush' ? t('rush') : t('showBoardN', { k: show.k.toUpperCase() })) : false, rush: !!show && (show.kind === 'rush' || (show.kind === 'friend' && show.m === 'time')), tut });
   cui.levelStart(n, !!special, board); // pack room + chip, pack / new-piece cards
+  sui.levelStart(n, !!special, board); // shape lane: one-time card for the first shaped / folded board
   ordUi.startOrder(n, board, special); // adoption order: intro card + the keeper strip (normal levels only)
   track('level_start', { n, daily });
   if (!special && n === 4) funnel('l4_start');
@@ -1843,6 +1845,7 @@ async function boot() {
   game.on.mech = (e) => { if (game.demo) return; if (e.type === 'wake' || e.type === 'thaw') audio.pop(); else if (e.type === 'knock' || e.type === 'reveal') audio.land(); };
   game.on.win = onWin;
   cui.init({ game, audio });
+  sui.init({ game, audio, toast: (s) => ui.toast(s) });
   clip = makeShareClip();
   game.on.fail = onFail;
   game.on.depart = ({ chain }) => { if (game.demo) return; audio.depart(chain - 1); haptics.success(); if (!game.demo && !S.undid) quest('carrier'); };

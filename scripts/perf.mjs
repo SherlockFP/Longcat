@@ -18,6 +18,7 @@ const RATES = (process.env.PERF_RATES || '4,6').split(',').map(Number);
 const WIN_MS = 3000;
 const ONLY = process.env.PERF_ONLY ? process.env.PERF_ONLY.split(',') : null; // R11 juice: e.g. PERF_ONLY=chain,rapid6 skips the other scenes
 const want = (k) => !ONLY || ONLY.includes(k);
+const only = (k) => !!ONLY && ONLY.includes(k); // shape lane scenes run only when named (PERF_ONLY=shape,unfold)
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const profile = mkdtempSync(join(tmpdir(), 'lco-perf-'));
 const procs = [];
@@ -108,6 +109,20 @@ try {
     if (want('rapid6')) { await qa('level(60)'); await sleep(1500);
     await ev('(() => { let k = 0; const go = () => { if (k++ > 5) return; window.__qa.solveStep(); setTimeout(go, 130); }; go(); })()');
     res.rapid6 = await measure(2000); }
+    // shape lane: a late shaped board (L84 paw, 9x10) idle and while cats sprint; the L57 flap opening (the tap that
+    // reaches its count is sent inside the window: flap squash, dust, the camera lean)
+    if (only('shape') || only('unfold')) await ev('localStorage.setItem("lco_shape", JSON.stringify({ shape: 1, fold: 1 }))'); // their one-time cards stay out of the window
+    if (only('shape')) { await qa('level(84)'); await sleep(1500);
+    await ev('document.querySelectorAll("#smodal, #cmodal").forEach((e) => e.remove())');
+    res.shape = await measure(); await shot(`r10-perf-shape-${LABEL}`);
+    await ev('(() => { let k = 0; const go = () => { if (k++ > 5) return; window.__qa.solveStep(); setTimeout(go, 380); }; go(); })()');
+    res.shapeRun = await measure(2400); }
+    if (only('unfold')) { await qa('level(57)'); await sleep(1500);
+    await ev('document.querySelectorAll("#smodal, #cmodal").forEach((e) => e.remove())');
+    for (let k = 0; k < 24 && (await ev('window.__qaShape.info().folds[0].left')) > 1; k++) { await waitFor('!window.__qa.state().busy', 20000).catch(() => {}); await qa('solveStep()'); await sleep(400); }
+    await waitFor('!window.__qa.state().busy', 20000).catch(() => {}); await sleep(400);
+    await ev('setTimeout(() => window.__qa.solveStep(), 200)');
+    res.unfold = await measure(1800); await shot(`r10-perf-unfold-${LABEL}`); }
     // chain slow-mo: the L13 winning line holds a 3-chain
     await qa('level(13)'); await sleep(1000);
     let chain = null;

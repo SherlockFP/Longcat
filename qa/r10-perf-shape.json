@@ -1,0 +1,70 @@
+{
+ "label": "shape",
+ "query": "",
+ "dpr": 3,
+ "size": "375x812",
+ "out": {
+  "x4": {
+   "L60": {
+    "frames": 175,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 33.4,
+    "cost50": 0.6,
+    "cost95": 14.4,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":140,\"skipped\":170,\"covered\":false,\"layers\":3,\"sprites\":18,\"split\":0,\"boardDraws\":0,\"carSprites\":3}"
+   },
+   "L60run": {
+    "frames": 137,
+    "p50": 16.7,
+    "p95": 33.3,
+    "max": 116.7,
+    "cost50": 2.9,
+    "cost95": 18.9,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":290,\"skipped\":181,\"covered\":false,\"layers\":3,\"sprites\":18,\"split\":139,\"boardDraws\":48,\"carSprites\":4}"
+   },
+   "shape": {
+    "frames": 165,
+    "p50": 16.7,
+    "p95": 33.3,
+    "max": 50.1,
+    "cost50": 1.8,
+    "cost95": 19.3,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":433,\"skipped\":266,\"covered\":false,\"layers\":4,\"sprites\":36,\"split\":139,\"boardDraws\":48,\"carSprites\":7}"
+   },
+   "shapeRun": {
+    "frames": 135,
+    "p50": 16.7,
+    "p95": 33.2,
+    "max": 50,
+    "cost50": 2.9,
+    "cost95": 17.6,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":580,\"skipped\":274,\"covered\":false,\"layers\":4,\"sprites\":36,\"split\":275,\"boardDraws\":92,\"carSprites\":8}"
+   },
+   "unfold": {
+    "frames": 108,
+    "p50": 16.7,
+    "p95": 16.7,
+    "max": 16.8,
+    "cost50": 1.6,
+    "cost95": 3.3,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":846,\"skipped\":297,\"covered\":false,\"layers\":5,\"sprites\":54,\"split\":439,\"boardDraws\":148,\"carSprites\":12}"
+   },
+   "chain": {
+    "frames": 107,
+    "p50": 16.7,
+    "p95": 16.7,
+    "max": 33.3,
+    "cost50": 1.6,
+    "cost95": 9.4,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":1240,\"skipped\":330,\"covered\":false,\"layers\":6,\"sprites\":66,\"split\":799,\"boardDraws\":227,\"carSprites\":28}"
+   }
+  }
+ }
+}

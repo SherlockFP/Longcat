@@ -9,6 +9,8 @@
 // A kitten (kittenOf = parent id) has its head directly behind the parent's tail,
 // continuing the parent's line: kittenHead = parentTail - (parent.cells[1] - parent.cells[0]).
 
+import { floorCount, isVoid } from './shape.js'; // shape lane: board.shape (void cells), board.folds
+
 export const DIRS = { U: [0, -1], R: [1, 0], D: [0, 1], L: [-1, 0] };
 export const DIR_KEYS = ['U', 'R', 'D', 'L'];
 export const BREEDS = ['tabby', 'tuxedo', 'calico', 'gray', 'siamese', 'cream', 'ginger', 'black'];
@@ -53,7 +55,7 @@ export function filledCells(board) {
 }
 
 export function fillRatio(board) {
-  return filledCells(board) / (board.w * board.h);
+  return filledCells(board) / floorCount(board); // a shaped board counts its floor only
 }
 
 // Returns a list of error strings (empty = valid).
@@ -121,6 +123,22 @@ export function validateBoard(board) {
   for (const c of cats) need.set(c.color, (need.get(c.color) || 0) + 1);
   const cap = new Map();
   for (const c of board.carriers || []) cap.set(c.color, (cap.get(c.color) || 0) + (c.cap || 3));
+  // shape lane: nothing sits on a void cell; a flap holds whole mother + kitten pairs and opens after >= 1 cat
+  for (const c of cats) if (c.cells.some(([x, y]) => isVoid(board, x, y))) errs.push(`cat ${c.id} on a void cell`);
+  for (const o of board.objs || []) if (o.cells.some(([x, y]) => isVoid(board, x, y))) errs.push(`${o.kind} on a void cell`);
+  if (board.shape && board.shape.mask.length !== w * h) errs.push('shape mask size');
+  (board.folds || []).forEach((f, k) => {
+    if (!(f.need >= 1)) errs.push(`fold ${k} need ${f.need}`);
+    const set = new Set(f.cells.map(([x, y]) => x + ',' + y));
+    for (const id of f.cats) {
+      const c = cats[id];
+      if (!c) { errs.push(`fold ${k} cat ${id} missing`); continue; }
+      if (!c.cells.every(([x, y]) => set.has(x + ',' + y))) errs.push(`fold ${k} cat ${id} not fully under the flap`);
+      const mate = c.kittenOf != null ? c.kittenOf : cats.findIndex((o) => o.kittenOf === id);
+      if (mate >= 0 && !f.cats.includes(mate)) errs.push(`fold ${k} splits the pair of cat ${id}`);
+    }
+    for (const c of cats) if (!f.cats.includes(c.id) && c.cells.some(([x, y]) => set.has(x + ',' + y))) errs.push(`fold ${k} covers cat ${c.id} it does not hold`);
+  });
   for (const col of new Set([...need.keys(), ...cap.keys()])) {
     if ((need.get(col) || 0) !== (cap.get(col) || 0)) errs.push(`color ${col}: ${need.get(col) || 0} cats vs carrier capacity ${cap.get(col) || 0}`);
   }
