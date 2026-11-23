@@ -23,6 +23,7 @@ import { makeShareClip, planClip, shareFile, canRecord } from './kit/clip.js';
 import { houseCard } from './kit/card.js';
 import * as dare from './kit/dare.js';
 import './i18n-dare.js';
+import { appealBoard } from './game/r11-appeal.js'; // R11 appeal: the shaped-body showcase board (dev QA)
 import * as live from './game/live.js';
 import * as street from './game/street.js';
 import * as r10 from './game/r10.js';
@@ -1903,6 +1904,7 @@ async function boot() {
         game.load(makeBoard(6, 8, cats, { n: 0, kind: 'normal', benchSize: 5 }, [{ color: 0, cap: 3 }, { color: 0, cap: 3 }]));
         return cats.length;
       },
+      appealBoard: () => { game.load(appealBoard()); return game.board.cats.length; },
       showBoard: (k = 'a') => { const w = weekNum(); startLevel(showLevelOf(w, k), false, { kind: 'show', w, k, goal: showGoal(w, k) }); },
       showGoal: (k = 'a') => showGoal(weekNum(), k),
       rush: () => actions.rushplay(),

@@ -2305,6 +2305,25 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }
+  // ---- R11 appeal (sol-r11-3 fix 2): every breed gets the tabby's shaped body (shoulder, belly, tapered rump, head
+  // shade on the shoulders) with markings wrapped to the width, on a crowded showcase board and a late board at real
+  // phone size (375x812 @3x). QA_SKIP_APPEAL=1 skips it. ----
+  if (!process.env.QA_SKIP_APPEAL) {
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 3, mobile: true });
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 220, coins: 500, meta: { sessions: 5 }, settings: { lang: 'en', sound: false, music: false, haptics: false } }))`);
+    await boot();
+    const unshaped = await ev('import("/src/game/breeds.js").then(async (b) => { const r = await import("/src/game/render.js"); return [...b.COLOR_PAL, b.MYSTERY_PAL].filter((p) => !r.shaped(p)).map((p) => p.name); })');
+    if (unshaped.length) throw new Error('appeal: every breed should have the shaped body: ' + unshaped.join(', '));
+    await qa('level(60)'); await sleep(800);
+    if ((await qa('appealBoard()')) !== 12) throw new Error('appeal: the showcase board should hold 12 cats');
+    await sleep(1200);
+    await shot('r11-appeal-board');
+    await qa('level(220)'); await sleep(1400);
+    for (let k = 0; k < 3; k++) { await ev('(() => { const b = document.querySelector("[data-cgo]"); if (b) b.click(); })()'); await sleep(600); }
+    await shot('r11-appeal-late');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 
