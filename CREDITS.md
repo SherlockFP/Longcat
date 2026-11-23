@@ -27,6 +27,30 @@ loudness-matched (sfx about -16 dBFS active RMS, music -23 LUFS), downmixed to m
 | win.mp3 | level win, café build | https://opengameart.org/content/win-jingle (winjingle.zip, WinVibraphone) | Fupi | CC0 |
 | music.mp3 | background loop | https://opengameart.org/content/cozy-puzzle-title (cozy_puzzle_title_bpm95.ogg) | MintoDog | CC0 |
 
+## UI sounds
+
+The `ui_*.mp3` files come from **"127 FREE Cozy UI & Menu Sound Effects" by Zeno Studio**
+(https://zenostudio.itch.io/127-free-cozy-ui-menu-sfx, downloaded 2026-11-24). Its license (LICENSE.txt in the pack)
+allows use in commercial games and modifying the sounds; attribution is appreciated but not required. Redistributing the
+sounds as standalone files is not allowed, so they ship only inside the game. Processing: mono, trimmed, loudness-matched,
+96 kbps MP3.
+
+| File(s) | Used for | Source file(s) |
+|---|---|---|
+| ui_click1.mp3, ui_click2.mp3, ui_click3.mp3 | button tap | UI_Click_Bubble_Pop V01, V02, V04 |
+| ui_tab1.mp3, ui_tab2.mp3 | tabs, pages, toggles | UI_Click_Soft_Wood V01, V03 |
+| ui_back1.mp3, ui_back2.mp3 | close / back | UI_Cancel_Back V02, V03 |
+| ui_ok1.mp3, ui_ok2.mp3 | play / next / retry, wear, treat | UI_Confirm_Wooden_Double_Tap V01, V04 |
+| ui_err1.mp3, ui_err2.mp3 | not enough coins or stars | UI_Error_Gentle V01, V03 |
+| ui_coin1.mp3, ui_coin2.mp3 | coins collected, shop purchase | UI_Reward_Coin_Pickup V02, V03 |
+| ui_chest1.mp3, ui_chest2.mp3 | chest opens | UI_Reward_Treasure_Chest V01, V03 |
+| ui_rare1.mp3, ui_rare2.mp3 | rare reward, season prize | UI_Reward_Rare_Item V01, V02 |
+| ui_claim1.mp3, ui_claim2.mp3 | task / request / login claim | UI_Achievement_Unlocked V01, V03 |
+| ui_build1.mp3, ui_build2.mp3 | café or street piece built, print hung | UI_Save_Complete V01, V04 |
+| ui_friend.mp3 | a new resident moves in | UI_Notify_New_Friend V01 |
+| ui_notify1.mp3, ui_notify2.mp3 | goal ready | UI_Notify_Quest_Update V02, V04 |
+| ui_sparkle1.mp3, ui_sparkle2.mp3 | postcard catch-up, small sparkle rewards | UI_Reward_Sparkle V01, V02 |
+
 If a file fails to load the game falls back to its built-in WebAudio synth sound.
 `npm run check` (scripts/check-sfx.mjs) asserts every referenced file exists, is under
 60 KB (sfx) / 1.2 MB (music) and is listed here.

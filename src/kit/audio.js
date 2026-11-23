@@ -26,6 +26,20 @@ export const SFX = {
   plink: ['plink1', 'plink2'],
   thump: ['thump1', 'thump2'],
   win: ['win'],
+  // UI (Zeno Studio "127 FREE Cozy UI & Menu Sound Effects", see CREDITS.md)
+  uiclick: ['ui_click1', 'ui_click2', 'ui_click3'],
+  uitab: ['ui_tab1', 'ui_tab2'],
+  uiback: ['ui_back1', 'ui_back2'],
+  uiok: ['ui_ok1', 'ui_ok2'],
+  uierr: ['ui_err1', 'ui_err2'],
+  uicoin: ['ui_coin1', 'ui_coin2'],
+  uichest: ['ui_chest1', 'ui_chest2'],
+  uirare: ['ui_rare1', 'ui_rare2'],
+  uiclaim: ['ui_claim1', 'ui_claim2'],
+  uibuild: ['ui_build1', 'ui_build2'],
+  uifriend: ['ui_friend'],
+  uinotify: ['ui_notify1', 'ui_notify2'],
+  uisparkle: ['ui_sparkle1', 'ui_sparkle2'],
 };
 export const MUSIC = 'music';
 
@@ -261,6 +275,13 @@ export const audio = {
     if (!on()) return;
     if (sample('thump', { vol: 0.65 })) return;
     tone({ type: 'sine', f0: 520, f1: 300, dur: 0.09, vol: 0.22 });
+  },
+  // UI feedback: click | tab | back | ok | err | coin | chest | rare | claim | build | friend | notify | sparkle
+  ui(kind = 'click') {
+    if (!kind || !on()) return; // '' = the action plays its own result sound
+    const ev = 'ui' + kind;
+    if (SFX[ev] && sample(ev, { vol: 0.9, cap: kind === 'click' || kind === 'tab' ? 2 : 3 })) return;
+    tone({ type: 'sine', f0: 880, f1: 660, dur: 0.05, vol: 0.15 }); // file not ready: the old tick
   },
   clear() {
     if (!on()) return;
