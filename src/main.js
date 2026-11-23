@@ -59,6 +59,8 @@ import * as fun from './game/r11-fun.js'; // R11 fun lane: winnable Take back, p
 import * as vir from './ui/r11-vir.js'; // R11 vir: QR dare card, background video
 import './i18n-r11-vir.js';
 import './ui/r11-vir.css';
+import './i18n-boss.js';
+import * as bossUi from './ui/boss.js'; // R11 boss lane: boss every 20 levels, chests, the flame streak (src/game/boss.js)
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -275,7 +277,7 @@ function threadInfo() {
   const need = cafe.starsToResident(nr);
   const have = Math.min(need, cafe.stars());
   let wins = 0;
-  for (let n = d.level, got = have; got < need && wins < 50; n++, wins++) got += { super: 3, hard: 2 }[levelKind(n)] || 1;
+  for (let n = d.level, got = have; got < need && wins < 50; n++, wins++) got += { boss: 3, hard: 2 }[levelKind(n)] || 1;
   const next = cafe.pending(nr.task.area)[0];
   return { who: nr.id, name: nr.name, have, need, wins, task: cafe.loc((next || nr.task).name) };
 }
@@ -574,7 +576,7 @@ function startHome() {
 }
 
 // one-line hint card: the tutorial levels and the teaching level of each new mechanic
-const TUT_KEY = { 1: 'tut1', 2: 'tut2', 3: 'tut3', 4: 'tut4', 8: 'tutDog', 12: 'tutYarn', 40: 'tutMystery', 55: 'tutFrozen' };
+const TUT_KEY = { 1: 'tut1', 2: 'tut2', 3: 'tut3', 4: 'tut4', 8: 'tutDog', 12: 'tutYarn', 41: 'tutMystery', 55: 'tutFrozen' }; // mystery on L41: L40 is a boss (R11 boss lane)
 Object.assign(TUT_KEY, cui.TUT);
 
 function startLevel(n, daily = false, show = false) {
@@ -660,6 +662,7 @@ function startLevel(n, daily = false, show = false) {
   ui.play({ ...hudInfo(), level: n, daily, show: show ? (show.kind === 'friend' ? t('dareTitle') : show.kind === 'rush' ? t('rush') : t('showBoardN', { k: show.k.toUpperCase() })) : false, rush: !!show && (show.kind === 'rush' || (show.kind === 'friend' && show.m === 'time')), tut });
   cui.levelStart(n, !!special, board); // pack room + chip, pack / new-piece cards
   ordUi.startOrder(n, board, special); // adoption order: intro card + the keeper strip (normal levels only)
+  bossUi.levelStart(n, !!special, board); // boss lane: intro card, HP nameplate, board frame (boss levels); the flame goes out on a given-up loss
   track('level_start', { n, daily });
   if (!special && n === 4) funnel('l4_start');
   if (!special && n === 10) funnel('l10_reach');
@@ -1140,6 +1143,7 @@ function onFail(silent = false) {
   if (!S.show && !S.daily) { // Cat Show practice and the daily puzzle are free to retry: no life, no streak
     econ.purrLoss(save.data);
     save.data.purr.lost = S.n;
+    bossUi.onFail(S.n); // boss lane: the win-streak flame goes out unless this attempt is continued
     S.lifeLost = lifeGate() && !fun.freeLoss(S.n) && econ.loseLife(save.data, now()); // R11 fun: the opening (L1-12) is practice
   }
   save.commit();
@@ -1864,6 +1868,7 @@ async function boot() {
   game.on.combo = (text) => { if (S.mode === 'play') ui.combo(text); };
   game.on.demoReset = () => game.load(generate(1), { demo: true, top: 146, bottom: 246 });
   ordUi.initOrders(game, { cur: () => S }); // adoption orders: wraps the hooks above (strip, ceremony, album tab)
+  bossUi.init(game, { cur: () => S, sync: syncCoins, toast: (s) => ui.toast(s), hubRedraw: () => { if (S.mode === 'cafe' && ui.screen === 'cafe') ui.cafe(cafeInfo()); } }); // boss lane: HP bar, defeat ceremony, chests
   Object.assign(actions, shopActions(syncCoins)); // R10 shop tabs, packs, deal, ad gifts, cosmetics (src/ui/shop.js)
   Object.assign(actions, vir.init({ S, clip, ui, winDare, dareText, dareUrl, shortUrl, qrUrl, peek: peekColor, makeClip, goalLine: (d) => `${dareGoal(d.m, d.g, d.x)} · ${t('dareBoard', { board: boardName(), n: d.b })}` })); // R11 vir: Share QR card
   ui.init(actions);

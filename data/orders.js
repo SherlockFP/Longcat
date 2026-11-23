@@ -9,7 +9,7 @@ export const SET_SIZE = 5;
 // a full set of adopted cats at one shop: the rewards alternate (set 1, 3, 5... and set 2, 4, 6...)
 export const SET_REWARDS = [{ coins: 100 }, { coins: 60, scoop: 1 }];
 // first-clear bonus on top of the hard / super-hard pay (shown on the win card as its own line)
-export const BONUS = { hard: 15, super: 40 };
+export const BONUS = { hard: 15, boss: 40 };
 
 // gen: the keeper's name in the TR genitive, by how it is said (Page'in, Crumb'ın); title: the keeper's job before the name; to: the shop as a destination (TR: possessive + dative, after the genitive
 // name), at: where the cat lives now (TR: locative); why: one line of flavour, picked per level

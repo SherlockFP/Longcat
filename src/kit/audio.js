@@ -268,3 +268,10 @@ export const audio = {
     [0, 4, 7, 12, 16].forEach((s, i) => tone({ type: 'triangle', f0: hz(s), f1: hz(s), t: i * 0.09, dur: 0.28, vol: 0.28 }));
   },
 };
+
+// R11 boss lane: short synth stings (boss intro, hits, the defeat fanfare, chest bursts in src/ui/boss.js), played on
+// the same tone() voice as the fallbacks above. notes: [{ type, f0, f1, t, dur, vol, vib, lp }]
+export function synth(notes) {
+  if (!on()) return;
+  for (const n of notes) tone(n);
+}

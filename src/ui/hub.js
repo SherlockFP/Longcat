@@ -13,6 +13,7 @@ import { cardsOwned, WEEKS } from '../game/r10.js';
 import { CHAPTER_LEN, CHAPTERS, PROPS } from '../../data/hub.js';
 import { goalsHtml, featGoalHtml, featGoal } from './live.js';
 import { retMap, retRoom, retPanel } from './r11-ret.js'; // R11 retention lane: the album card, the hang card
+import { decorateMap, chapterName as bossChapter } from './boss.js'; // boss lane: castle nodes, chest markers, the chest / flame pill
 
 const root = document.getElementById('ui');
 const r7 = (name, cls = '') => `<img class="${cls}" src="${assetUrl('r7/' + name + '.webp')}" alt="" draggable="false">`;
@@ -29,7 +30,7 @@ let last = { screen: '', info: null };
 let mapScroll = null; // { lv, top }: where the player scrolled the map, kept across hub redraws
 
 export const chapterOf = (n) => Math.floor((n - 1) / CHAPTER_LEN) + 1;
-export const chapterName = (c) => loc(CHAPTERS[(c - 1) % CHAPTERS.length]);
+export const chapterName = (c) => (c <= CHAPTERS.length ? loc(CHAPTERS[c - 1]) : bossChapter(c, CHAPTERS.length)); // boss lane: generated names past the named stops
 
 // ---- entry points ----
 export function home() { mapOn = true; mapScroll = null; }
@@ -89,7 +90,7 @@ const PAD_TOP = 170; // the locked levels and the "more ahead" cloud above the l
 const PAD_BOT = 150; // under the first node: the goals strip covers the room's bottom
 function geometry(cur, W) {
   const first = Math.max(1, cur - 24);
-  const lastLv = cur + 3;
+  const lastLv = Math.max(cur + 3, Math.ceil(cur / 5) * 5); // boss lane: the next chest marker is always on the map
   const H = PAD_TOP + (lastLv - first) * GAP + PAD_BOT;
   const cx = W / 2 - Math.min(16, W * 0.04); // the right rail stands over the room's right edge
   const amp = Math.min(118, W * 0.25);
@@ -128,12 +129,12 @@ function mapHtml(cur, W) {
   for (let lv = first; lv <= lastLv; lv++) {
     const p = pos(lv);
     const kind = levelKind(lv);
-    const tag = kind === 'super' ? `<i class="hmtag super">${t('mapSuper')}</i>` : kind === 'hard' ? `<i class="hmtag hard">${t('mapHard')}</i>` : '';
+    const tag = kind === 'boss' ? `<i class="hmtag super">${t('mapSuper')}</i>` : kind === 'hard' ? `<i class="hmtag hard">${t('mapHard')}</i>` : '';
     const nw = TEACH[lv] ? `<i class="hmnew">${t('mapNew')}</i>` : '';
     const st = `left:${p.x.toFixed(1)}px;top:${p.y.toFixed(1)}px`;
-    if (lv < cur) items.push(`<div class="hmn done ${kind}" style="${st}">${r7('map_node_done', 'hmc')}<b>${lv}</b>${starRow(best[lv] || 0)}${tag}</div>`);
-    else if (lv === cur) items.push(`<button class="hmn cur ${kind}" data-act="play" style="${st}" aria-label="${t('mapLevel', { n: lv })}">${r7('map_node_cur', 'hmc')}<b>${lv}</b>${tag}${nw}</button>`); // R11 pres: a level marker (still tappable); the bottom PLAY is the one Play
-    else items.push(`<div class="hmn lock ${kind}" style="${st}">${r7('map_node_lock', 'hmc')}<b>${lv}</b>${tag}${nw}</div>`);
+    if (lv < cur) items.push(`<div class="hmn done ${kind}" data-lv="${lv}" style="${st}">${r7('map_node_done', 'hmc')}<b>${lv}</b>${starRow(best[lv] || 0)}${tag}</div>`);
+    else if (lv === cur) items.push(`<button class="hmn cur ${kind}" data-act="play" data-lv="${lv}" style="${st}" aria-label="${t('mapLevel', { n: lv })}">${r7('map_node_cur', 'hmc')}<b>${lv}</b>${tag}${nw}</button>`); // R11 pres: a level marker (still tappable); the bottom PLAY is the one Play
+    else items.push(`<div class="hmn lock ${kind}" data-lv="${lv}" style="${st}">${r7('map_node_lock', 'hmc')}<b>${lv}</b>${tag}${nw}</div>`);
     // a chapter signpost where the road enters the next stop of the town (to the roomier side of the road)
     if ((lv - 1) % CHAPTER_LEN === 0) {
       const q = pos(lv - 0.5);
@@ -169,6 +170,7 @@ function showMap(info) {
   const W = room.clientWidth || 360;
   m.innerHTML = mapHtml(cur, W);
   retMap(true, info);
+  decorateMap(m, geometry(cur, W), cur);
   m.dataset.w = W;
   const sc = m.querySelector('.hmscroll');
   const G = geometry(cur, W);

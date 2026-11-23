@@ -116,7 +116,8 @@ export function startOrder(n, board, special) {
   strip.setAttribute('aria-label', `${orderTitle(o, total)} ${t('ordStrip', { a: 0, b: total })}`);
   place();
   // a pack / new-piece card (content lane, #cmodal) goes first: the order card waits for it to close
-  if (!seen.has(n)) { seen.add(n); if (document.getElementById('cmodal')) pendIntro = true; else showIntro(); }
+  const boss = board.meta && board.meta.kind === 'boss'; // boss lane: the boss card (src/ui/boss.js) is this level's intro
+  if (!seen.has(n)) { seen.add(n); if (boss) { /* no order card */ } else if (document.getElementById('cmodal')) pendIntro = true; else showIntro(); }
 }
 
 function onPlay() {
@@ -234,7 +235,7 @@ function delivered(go) {
   if (!a || flushing) return go();
   // R11: the full ceremony only for the first adoption ever, a finished set and Urgent / VIP orders; an ordinary first
   // clear credits the cat at once and names it on the win card (main.js reads S.quickAdopt)
-  if (!(O.totalAdopted(save.data) <= 1 || a.reward || cur.o.kind !== 'normal')) {
+  if (!(O.totalAdopted(save.data) <= 1 || a.reward || (cur.o.kind !== 'normal' && !(cur.board.meta && cur.board.meta.kind === 'boss')))) { // boss lane: a boss has its own ceremony
     S.quickAdopt = adoptRow(a);
     try { go(); } finally { S.quickAdopt = null; }
     return;

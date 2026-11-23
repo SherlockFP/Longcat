@@ -24,7 +24,7 @@ export function hash(n, salt = 0) {
 
 export const chapterOf = (n) => Math.floor((Math.max(1, n) - 1) / CHAPTER);
 export const shopOf = (n) => SHOP_ORDER[chapterOf(n) % SHOP_ORDER.length];
-const KIND = { normal: 'normal', hard: 'urgent', super: 'vip' };
+const KIND = { normal: 'normal', hard: 'urgent', boss: 'vip' }; // a boss level (every 20th) is the VIP order
 
 // level n -> its order. kind: the level's difficulty (levelKind), passed in when the caller already has the board
 export function orderOf(n, kind = levelKind(n)) {

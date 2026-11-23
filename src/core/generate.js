@@ -18,27 +18,27 @@ const SIZES = [[5, 6], [6, 7], [6, 8], [7, 9], [7, 10], [8, 10], [8, 11]];
 const SIZE_FROM = [1, 4, 5, 12, 20, 34, 50]; // 6x8 from L5 so four colours of chunky cats fit
 const MAX_ATTEMPTS = 60;
 
-// ---- difficulty schedule: hard every 7-10 levels from L15, super hard about every 30 ----
+// ---- difficulty schedule: a BOSS level every 20 (L20, 40, 60...: the hardest band, src/game/boss.js), hard levels
+// every 7-10 from L15 in between; a hard slot within 3 levels of a boss is dropped (the boss stands alone, its breather
+// after it stays plain) ----
 const sched = new Map();
 let nextSlot = 15;
-let lastSuper = 0;
+export const BOSS_EVERY = 20;
+export const isBossLevel = (n) => n >= BOSS_EVERY && n % BOSS_EVERY === 0;
 export function levelKind(n) {
+  if (isBossLevel(n)) return 'boss';
   if (n < 15) return 'normal';
   while (nextSlot <= n) {
-    let kind = 'hard';
-    if (nextSlot >= 30 && nextSlot - lastSuper >= 26) {
-      kind = 'super';
-      lastSuper = nextSlot;
-    }
-    sched.set(nextSlot, kind);
+    const m = nextSlot % BOSS_EVERY;
+    if (m > 3 && m < BOSS_EVERY - 3) sched.set(nextSlot, 'hard');
     nextSlot += 7 + (hashSeed('hardgap', nextSlot) % 4);
   }
   return sched.get(n) || 'normal';
 }
 
 // ---- mechanics ramp: one new thing per chapter, taught on a gentle level, then mixed ----
-export const TEACH = { 8: 'dog', 12: 'yarn', 40: 'mystery', 55: 'frozen', 61: 'spring', 81: 'swivel' }; // 61 / 81: content packs (content-mech.js)
-const MECH_FROM = { dog: 8, yarn: 12, mystery: 40, frozen: 55, spring: 61, swivel: 81 };
+export const TEACH = { 8: 'dog', 12: 'yarn', 41: 'mystery', 55: 'frozen', 61: 'spring', 81: 'swivel' }; // 61 / 81: content packs (content-mech.js); mystery moved off L40 (a boss) onto its breather
+const MECH_FROM = { dog: 8, yarn: 12, mystery: 41, frozen: 55, spring: 61, swivel: 81 };
 const TEACH_COUNT = { dog: 1, yarn: 2, mystery: 2, frozen: 1, spring: 2, swivel: 1 };
 
 // ---- mid-game flavours (normal L5-30): neighbouring boards lean on different decisions so the run never repeats.
@@ -72,24 +72,24 @@ export function params(n) {
   const kind = levelKind(n);
   const teach = !!TEACH[n];
   const hard = kind !== 'normal';
-  const bonus = teach ? 0 : kind === 'super' ? 2 : hard ? 1 : 0;
-  const after = !hard && n > 15 && levelKind(n - 1) !== 'normal'; // one breather per hard level, never two
+  const bonus = teach ? 0 : kind === 'boss' ? 2 : hard ? 1 : 0;
+  const after = !hard && !teach && n > 15 && levelKind(n - 1) !== 'normal'; // one breather per hard level, never two; a teaching level after a boss (L41, L61, L81) keeps its own gentle shape
   // about 40% of the normal levels from L10 are 'medium': more dead ends and two or more delayed traps
   const medium = !hard && !after && !teach && n >= 10 && hashSeed('medium', n) % 100 < 40;
   let tier = 0;
   for (let i = 0; i < SIZE_FROM.length; i++) if (n >= SIZE_FROM[i]) tier = i;
   if (tier >= 3 && kind === 'normal' && makeRng(hashSeed('size', n)).chance(0.3)) tier -= 1;
-  if (kind === 'super') tier = Math.min(SIZES.length - 1, tier + 1);
+  if (kind === 'boss') tier = Math.min(SIZES.length - 1, tier + 1);
   const [w, h] = SIZES[tier];
   const fillTarget = Math.min(0.84, (n < 10 ? 0.68 : 0.72 + 0.12 * Math.min(1, (n - 10) / 90)) + 0.03 * bonus);
-  const benchSize = kind === 'super' ? 4 : 5; // a 5-seat bench from L4 (breathers too: 6 seats made them free wins)
+  const benchSize = kind === 'boss' && n > BOSS_EVERY ? 4 : 5; // a 5-seat bench from L4 (breathers too: 6 seats made them free wins); the first boss (L20) keeps 5
   // 4 colours up to L14, 5 from L15, 6 from L30 (hard levels one more), never above 6 so each reads at a glance
   const colors = Math.min(6, (n < 15 ? 4 : n < 30 ? 5 : 6) + bonus);
   // decision band (measured by the solver on the winning line): traps = steps where a tempting tap loses,
   // late = steps with a lose-LATER tap (legal, room on the bench, but no winning line left: a real planning mistake),
   // chains = carrier arrivals that pull >= 2 bench cats, chain3 = a whole carrier filled from the bench,
   // dead = the most losing taps / legal taps we allow, deadMin = the fewest (below it the order hardly matters)
-  const band = kind === 'super' ? { traps: 4, late: 3, chains: 2, chain3: 1, dead: 0.45, deadMin: 0.15 }
+  const band = kind === 'boss' ? { traps: 4, late: 3, chains: 2, chain3: 1, dead: 0.45, deadMin: 0.15 }
     : hard ? { traps: 3, late: 2, chains: 1, chain3: 1, dead: 0.4, deadMin: 0.12 }
     : after ? { traps: 0, maxTraps: 2, late: 1, chains: 1, chain3: 0, dead: 0.15, deadMin: 0.03 }
     : medium ? { traps: 2, late: n < 40 ? 2 : 3, chains: 1, chain3: 0, dead: 0.36, deadMin: 0.15 }
@@ -119,14 +119,14 @@ export function params(n) {
     benchSize,
     colors,
     teach,
-    detourP: teach ? 0.2 : kind === 'super' ? 0.38 : hard ? 0.3 : after ? 0.15 : medium ? 0.24 : 0.12 + 0.12 * Math.min(1, n / 80),
-    minDetours: teach ? 1 : kind === 'super' ? 4 : hard ? 3 : n >= 4 ? 2 : 1,
+    detourP: teach ? 0.2 : kind === 'boss' ? 0.38 : hard ? 0.3 : after ? 0.15 : medium ? 0.24 : 0.12 + 0.12 * Math.min(1, n / 80),
+    minDetours: teach ? 1 : kind === 'boss' ? 4 : hard ? 3 : n >= 4 ? 2 : 1,
     minChains: n >= 5 ? 1 : 0, // from L5 every level has a carrier that fills from the bench the moment it arrives
     // L4-9: the bench fills to 3 of 5 at least once, a first small scare
     minPeak: after ? 3 : benchSize - 1, // the line itself runs the bench to its last spare seat: a squatter there costs the level
-    hold: after ? 2 : kind === 'super' ? 3 : hard ? 3 : 2,
+    hold: after ? 2 : kind === 'boss' ? 3 : hard ? 3 : 2,
     holdUntil: 0.6,
-    pAbsorb: teach ? 0.6 : kind === 'super' ? 0.35 : hard ? 0.5 : medium ? 0.55 : 0.72 - 0.15 * Math.min(1, n / 100), // lower = parked cats wait longer: a wrong park costs later
+    pAbsorb: teach ? 0.6 : kind === 'boss' ? 0.35 : hard ? 0.5 : medium ? 0.55 : 0.72 - 0.15 * Math.min(1, n / 100), // lower = parked cats wait longer: a wrong park costs later
   };
   if (n > 60 && n <= 140 && !teach) springTune(P, mechPlan(n)); // spring / swivel boards free more cats: a tighter bench keeps them in band
   if (flav === 'chain') {
@@ -937,7 +937,7 @@ export function generate(n) {
     }
     return false;
   };
-  const maxEvals = MAX_EVALS + (P.kind === 'super' ? 50 : P.kind !== 'normal' ? 30 : P.teach ? 70 : P.after || n < 40 ? 40 : P.medium ? 30 : 22);
+  const maxEvals = MAX_EVALS + (P.kind === 'boss' ? 50 : P.kind !== 'normal' ? 30 : P.teach ? 70 : P.after || n < 40 ? 40 : P.medium ? 30 : 22);
   let fallback = null;
   let done = false;
   for (let a = 0; a < MAX_ATTEMPTS + 30 && !done && evals < maxEvals; a++) {

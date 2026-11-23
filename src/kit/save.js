@@ -233,6 +233,7 @@ function load() {
       if (isObj(m.vis)) d.vis = m.vis;
       if (isObj(m.orders)) d.orders = m.orders; // adoption orders: free-form, sanitised in src/game/orders.js
       if (isObj(m.hub)) d.hub = { seen: Number.isInteger(m.hub.seen) && m.hub.seen >= 0 ? m.hub.seen : 0 }; // hub lane (src/ui/hub.js): the last level the map showed
+      if (isObj(m.boss)) d.boss = m.boss; // R11 boss lane: chests + flame streak (sanitised in src/game/boss.js state())
       if (isObj(m.ret)) d.ret = m.ret; // R11 ret lane: day wins + a print waiting to be hung (sanitised in src/game/r11-ret.js state())
       for (const [o, ks] of [['pop', ['daily', 'paid']], ['album', ['cards', 'hung']]]) if (isObj(m[o])) for (const k of ks) if (isObj(m[o][k])) d[o][k] = m[o][k];
       if (isObj(m.rush) && isObj(m.rush.cups)) d.rush.cups = m.rush.cups;
