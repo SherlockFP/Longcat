@@ -342,7 +342,8 @@ function playFloor(q) {
 export const ui = {
   init(a) {
     actions = a;
-    const setVar = (k, f) => document.documentElement.style.setProperty(k, `url("${assetUrl('r7/' + f)}")`);
+    // absolute URL: a relative url() inside a custom property resolves against the built stylesheet in /assets/ (broke the Play button art)
+    const setVar = (k, f) => document.documentElement.style.setProperty(k, `url("${new URL(assetUrl('r7/' + f), document.baseURI).href}")`);
     setVar('--r7-play', 'btn_play.webp');
     setVar('--r7-green', 'btn_green.webp');
     setVar('--r7-plaque', 'plaque_wood.webp');
