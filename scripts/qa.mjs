@@ -2459,6 +2459,126 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }
+  // ---- R11 vir (Sol fix 6): the production https dare link is the primary share (one tap, text + link, no file), the
+  // captioned QR card beside it (a picture at once), the video as the third share recording in the background from the
+  // moment the win card opens; the QR legible at 360 px wide (card, clip end card at 360x640 and 720x1280); the received
+  // path on fresh saves: open the link, first move, finish, counter-dare, open that on another fresh save.
+  // QA_SKIP_VIR=1 skips it. ----
+  if (!process.env.QA_SKIP_VIR) {
+    const idleV = async () => { await waitFor('!window.__qa.state().busy', 10000); await sleep(150); };
+    const playV = async () => { for (const id of await qa('order()')) { await idleV(); if (await qa(`alive(${id})`)) await qa(`tap(${id})`); } };
+    const mockV = 'window.__shared = []; navigator.canShare = () => true; navigator.share = async (o) => { window.__shared.push({ at: performance.now() - (window.__tapAt || 0), text: o.text || "", url: o.url || "", files: (o.files || []).map((f) => f.type).join(",") }); };';
+    const tapV = (sel) => ev(`(() => { const b = document.querySelector(${JSON.stringify(sel)}); if (!b) return false; window.__tapAt = performance.now(); b.click(); return true; })()`);
+    const saveV = (name, url) => writeFileSync(join(OUT, name), Buffer.from(url.split(',')[1], 'base64'));
+    const cfgV = (lg) => `settings: { lang: '${lg}', sound: false, music: false, haptics: false }`;
+    const pub = process.env.QA_LOCAL_URL ? origin + '/' : process.env.VITE_PUBLIC_URL;
+    const inView = (sel) => ev(`[...document.querySelectorAll(${JSON.stringify(sel)})].length > 0 && [...document.querySelectorAll(${JSON.stringify(sel)})].every((e) => { const r = e.getBoundingClientRect(); return r.width > 0 && e.scrollWidth <= e.clientWidth + 1 && r.left >= 0 && r.right <= innerWidth + 1 && r.top >= 0 && r.bottom <= innerHeight + 1; })`);
+    const winV = async () => { await waitFor('window.__qa.state().screen === "win"', 30000); await waitFor('!!document.querySelector("#modal .card.win")', 15000); };
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    // 1 the sender (Ana) clears L13 with a chain x3: Dare a friend, Share QR card and the video on one win card
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 60, coins: 500, meta: { sessions: 3, nick: 'Ana' }, ${cfgV('en')} }))`);
+    await boot();
+    await qa('level(13)'); await sleep(700); await playV();
+    await winV(); await sleep(400);
+    if (!(await inView('#modal [data-act=share], #modal [data-act=sharecard], #modal [data-act=next]'))) throw new Error('vir: Dare a friend, Share QR card and Next should all sit on screen at 375x667');
+    const v0 = await qa('clip()');
+    if (v0.canRecord) {
+      await waitFor('window.__qa.clip().encoding || window.__qa.clip().ready', 4000); // nobody tapped: the win card started it
+      await sleep(400);
+      if (!(await ev('/Video \\d+%/.test(document.querySelector("#modal [data-act=shareclip]")?.getAttribute("aria-label") || "") || window.__qa.clip().ready'))) throw new Error('vir: the background video should count up on its button');
+    } else console.log('  note: vir no MediaRecorder here: the video button sends the PNG');
+    await shot('r11-vir-win-bg');
+    // Dare a friend: one tap, the share sheet gets the text and the production link at once, no file
+    await ev(mockV);
+    await tapV('#modal [data-act=share]'); await sleep(400);
+    let sh = await ev('window.__shared');
+    const link = sh[0];
+    console.log('  vir dare', JSON.stringify(link));
+    if (!link || link.files || !/Beat my chain x3 on Level 13!/.test(link.text) || !link.url.startsWith(pub + '?c=3l13-') || link.at > 250) throw new Error('vir: Dare a friend should share text + the public link in the tap: ' + JSON.stringify(sh));
+    // Share QR card: one tap, a PNG with the same link as text
+    await tapV('#modal [data-act=sharecard]'); await sleep(600);
+    sh = await ev('window.__shared');
+    if (!sh[1] || sh[1].files !== 'image/png' || !sh[1].text.endsWith(' ' + link.url) || sh[1].at > 400) throw new Error('vir: Share QR card should hand over the PNG with the link at once: ' + JSON.stringify(sh[1]));
+    const vc = await qa('virCard()');
+    if (!vc || vc.type !== 'image/png' || vc.size < 20000 || !vc.still || !vc.url.startsWith(pub + '?c=3l13-')) throw new Error('vir: QR card ' + JSON.stringify(vc));
+    saveV('r11-vir-card.jpg', await qa('virCardShot()'));
+    // the QR read back from a 360 px wide copy (smoothing + JPEG): card, end card recorded at 360x640 and at 720x1280
+    const pr = await qa('virQrProbe()');
+    console.log('  vir QR at 360px', JSON.stringify(pr));
+    for (const k of ['card', 'end1', 'end2']) if (!pr[k] || pr[k].mod < 4 || pr[k].err > 0.02) throw new Error(`vir: the ${k} QR should read at 360 px wide: ` + JSON.stringify(pr[k]));
+    const ef = await qa('clipFrames(["end"])');
+    saveV('r11-vir-clip-end.jpg', ef[0].url);
+    // the video: ready without a tap, then one tap sends it (and the link follows as its own message)
+    if (v0.canRecord) {
+      await waitFor('window.__qa.clip().ready', 25000); await sleep(300);
+      if (!(await ev('document.querySelector("#modal [data-act=shareclip]").classList.contains("ready")'))) throw new Error('vir: the video button should say it is ready');
+      await shot('r11-vir-video-ready');
+      await tapV('#modal [data-act=shareclip]'); await sleep(600);
+      sh = await ev('window.__shared');
+      if (!sh[2] || !/^video\//.test(sh[2].files) || !sh[2].text.endsWith(' ' + link.url)) throw new Error('vir: the video share ' + JSON.stringify(sh[2]));
+      if (!(await ev('!!document.querySelector("#linkbar.dlink")'))) throw new Error('vir: the link should follow the video');
+      await ev('document.getElementById("linkbar")?.remove()');
+    }
+    const cs = await qa('counters()');
+    if (!cs.share_tap_card || (v0.canRecord && !cs.clip_bg)) throw new Error('vir: counters ' + JSON.stringify(cs));
+    const code = link.url.split('?c=')[1];
+    // 2 a friend opens the link on a fresh save: the landing, the first move, the finish
+    await ev('localStorage.clear()');
+    await boot('?c=' + code);
+    await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(500);
+    const landV = await ev('document.querySelector("#modal .card.dare").textContent');
+    if (!/Ana dares you!/.test(landV) || !/Beat a chain x3/.test(landV)) throw new Error('vir: landing ' + landV);
+    if (!(await inView('#modal [data-act=dareplay]'))) throw new Error('vir: Play should be on screen on the landing at 375x667');
+    if ((await qa('counters()')).dare_open !== 1) throw new Error('vir: the open should be counted once');
+    await shot('r11-vir-recv-landing');
+    await ev('document.getElementById("darename").value = "Ece"; document.querySelector("[data-act=dareplay]").click()'); await sleep(900);
+    if ((await qa('state()')).mode !== 'play') throw new Error('vir: Play should start the dared board');
+    const first = (await qa('order()'))[0];
+    await idleV(); await qa(`tap(${first})`); await sleep(300);
+    if ((await qa('counters()')).dare_first_move !== 1) throw new Error('vir: the first move should be counted');
+    await shot('r11-vir-recv-first-move');
+    await playV();
+    await winV(); await sleep(600);
+    const resV = await ev('document.querySelector("#modal .dres")?.textContent || ""');
+    if (!/Ana/.test(resV) || (await qa('counters()')).dare_done !== 1) throw new Error('vir: the friend result ' + resV);
+    if (!(await inView('#modal .dback, #modal [data-act=sharecard]'))) throw new Error('vir: the counter-dare and the QR card should be on screen');
+    await shot('r11-vir-recv-win');
+    // 3 the counter-dare: one tap, the round and both results, the production link carrying the thread
+    await ev(mockV);
+    await tapV('#modal .dback'); await sleep(400);
+    const cd = (await ev('window.__shared'))[0];
+    console.log('  vir counter-dare', JSON.stringify(cd));
+    if (!cd || cd.files || !/Round 2 on Level 13/.test(cd.text) || !cd.url.startsWith(pub + '?c=3l13-') || cd.at > 250) throw new Error('vir: counter-dare share ' + JSON.stringify(cd));
+    const back = await qa(`dareDecode(${JSON.stringify(cd.url.split('?c=')[1])})`);
+    const sent = await qa(`dareDecode(${JSON.stringify(code)})`);
+    if (!back || back.nm !== 'Ece' || back.r !== sent.i || back.pg !== 3 || back.rd !== 2 || !back.th || back.th[0].nm !== 'Ana') throw new Error('vir: counter-dare payload ' + JSON.stringify(back));
+    if (!(await qa('counters()')).dare_reshare) throw new Error('vir: the reshare should be counted');
+    // 4 the counter-dare opened on another fresh save: Ece dares, the thread and the round
+    await ev('localStorage.clear()');
+    await boot('?c=' + cd.url.split('?c=')[1]);
+    await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(500);
+    const land2V = await ev('document.querySelector("#modal .card.dare").textContent');
+    if (!/Ece dares you!/.test(land2V) || !/Ana x3/.test(land2V) || !/Round 2/.test(land2V)) throw new Error('vir: counter-dare landing ' + land2V);
+    if (!(await inView('#modal [data-act=dareplay]'))) throw new Error('vir: Play on the counter-dare landing');
+    await shot('r11-vir-recv2-landing');
+    // 5 TR win card at 375x667 and the desktop win card
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 60, coins: 500, meta: { sessions: 3 }, ${cfgV('tr')} }))`);
+    await boot();
+    await qa('level(13)'); await sleep(700); await playV();
+    await winV(); await sleep(900);
+    if (!(await inView('#modal [data-act=share], #modal [data-act=sharecard], #modal [data-act=next]'))) throw new Error('vir TR: the share row should fit at 375x667');
+    await shot('r11-vir-win-tr');
+    await send('Emulation.setDeviceMetricsOverride', { width: 360, height: 640, deviceScaleFactor: 2, mobile: true }); await sleep(900);
+    if (!(await inView('#modal [data-act=share], #modal [data-act=sharecard], #modal [data-act=next]'))) throw new Error('vir TR: the share row should fit at 360x640');
+    await shot('r11-vir-win-tr-360');
+    await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+    await qa('level(13)'); await sleep(700); await playV();
+    await winV(); await sleep(900);
+    if (!(await inView('#modal [data-act=share], #modal [data-act=sharecard]'))) throw new Error('vir desktop: the share row');
+    await shot('r11-vir-win-desk');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

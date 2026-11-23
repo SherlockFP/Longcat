@@ -52,6 +52,9 @@ import './ui/r11.css'; // R11 fix round 1: plaque pack line, on-demand clip, fea
 import './ui/r11b.css'; // R11 fix round 2: win card rows, thread bar, video progress
 import './i18n-fun.js';
 import * as fun from './game/r11-fun.js'; // R11 fun lane: winnable Take back, park ghosts, teaching rewind, a free opening
+import * as vir from './ui/r11-vir.js'; // R11 vir: QR dare card, background video
+import './i18n-r11-vir.js';
+import './ui/r11-vir.css';
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -833,6 +836,7 @@ function prepClip() {
     board: game.board,
     log: game.log.slice(),
     plan,
+    dpr: vir.clipDpr(), // R11 vir: 360x640 on a slow device
     text: { combo: [t('purrfect'), t('combo2'), t('combo3')], chainX: (n) => t('chainX', { n }), lastSeat: t('lastSeat'), title: t('title'), board: boardName(), result, can: t('clipCan'), link: t('clipLink'), url: shortUrl(wd), qr: qrUrl(wd), scan: t('clipScan'), goal: `${dareGoal(wd.m, wd.g, wd.x)} · ${t('dareBoard', { board: boardName(), n: wd.b })}`, bench: (u, n) => t('clipBench', { u, n }), oneSeat: t('clipOneSeat'), chain: t('clipChain') },
   });
 }
@@ -875,17 +879,19 @@ function clipPreview() {
     if (cv) clip.start(cv);
     const b = document.querySelector('#modal [data-act=shareclip]');
     if (b) b.hidden = false;
+    vir.onWinCard(); // R11 vir: the QR card is drawn and the video starts recording in the background
   }, 60); // one frame after the card mounts: the card's pop-in starts before the replay to the peak runs
 }
 // Share clip, first tap with no video yet: record it into the thumbnail, then the button is ready to send
-function makeClip() {
+function makeClip(bg) { // bg (R11 vir): started by the win card, not a tap
   const token = S.winToken;
   const btn = () => document.querySelector('#modal [data-act=shareclip]');
   const b = btn();
   // R11 fix 2: the video is made in real time, so the button says so and counts up; when it is ready it says Send
   const label = (x, s) => { const sp = x.querySelector('span'); if (sp) sp.textContent = s; x.setAttribute('aria-label', s); };
-  if (b) { b.classList.add('making'); label(b, t('clipMakingP', { p: 0 })); }
-  track('clip_make', { n: S.n });
+  const mk = bg ? 'virVideoBg' : 'clipMakingP';
+  if (b) { b.classList.add('making'); label(b, t(mk, { p: 0 })); }
+  track('clip_make', { n: S.n, bg: bg ? 1 : 0 });
   const cv = document.querySelector('#modal .chainclip canvas');
   const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let shown = 0;
@@ -894,10 +900,10 @@ function makeClip() {
     const x = btn();
     if (p === shown || !x || token !== S.winToken) return;
     shown = p;
-    label(x, t('clipMakingP', { p }));
+    label(x, t(mk, { p }));
     x.style.setProperty('--p', p + '%');
   };
-  return clip.record(cv, still, prog).then((r) => {
+  return clip.record(cv, still, prog, bg).then((r) => {
     const x = btn();
     if (token !== S.winToken || !x) return r;
     x.classList.remove('making');
@@ -1716,7 +1722,7 @@ async function doShare(withClip) {
   if (from != null) track('dare_reshare', { i: from, to: d.i });
   const goal = `${dareGoal(d.m, d.g, d.x)} · ${t('dareBoard', { board: boardName(), n: d.b })}`;
   if (withClip && clip.has()) {
-    if (!clip.ready() && canRecord() && !clip.failed()) { if (!clip.encoding()) makeClip(); return; } // R11: the first tap makes the clip
+    if (!clip.ready() && canRecord() && !clip.failed()) { if (!clip.encoding()) makeClip(); else ui.toast(t('virVideoSoon')); return; } // R11: the first tap makes the clip
     const f = clip.ready() || (await clip.png()); // no long await: the tap's user activation must still hold
     if (f) {
       const how = await shareFile(f, `long-cat-out-${d.k === 'l' ? 'level-' + S.n : 'challenge'}`, text, url);
@@ -1824,6 +1830,7 @@ async function boot() {
   game.on.demoReset = () => game.load(generate(1), { demo: true, top: 146, bottom: 246 });
   ordUi.initOrders(game, { cur: () => S }); // adoption orders: wraps the hooks above (strip, ceremony, album tab)
   Object.assign(actions, shopActions(syncCoins)); // R10 shop tabs, packs, deal, ad gifts, cosmetics (src/ui/shop.js)
+  Object.assign(actions, vir.init({ S, clip, ui, winDare, dareText, dareUrl, shortUrl, qrUrl, peek: peekColor, makeClip, goalLine: (d) => `${dareGoal(d.m, d.g, d.x)} · ${t('dareBoard', { board: boardName(), n: d.b })}` })); // R11 vir: Share QR card
   ui.init(actions);
   iqui.init({ game, S, actions, ui, tryStart, startLevel, streak }); // R10 iq lane: wraps game.load/on.free/on.win, adds its actions
   initPwa();
@@ -2114,6 +2121,7 @@ async function boot() {
         board: game.board && [game.board.w, game.board.h],
       }),
     };
+    Object.assign(window.__qa, vir.qaHooks()); // R11 vir: QR card, legibility probe
   }
 }
 
