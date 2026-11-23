@@ -150,9 +150,11 @@ function hudRun() {
 }
 
 // ---- the win card: this clear's time, a new best, the medal and the next cut ----
-function winRow(rec) {
+function winRow(rec, tries = 0) {
   const card = document.querySelector('#modal .card.win');
-  if (!card) return;
+  // a first clear plays the adoption ceremony (orders lane) before the card: wait for it (about 3 s, a tap skips)
+  if (!card) { if (tries < 50 && C.S.mode === 'play') setTimeout(() => winRow(rec, tries + 1), 120); return; }
+  if (card.querySelector('.iqwin, .iqchip')) return;
   const tt = iq.fmt(rec.ms, true);
   const fresh = rec.best && rec.prev;
   const line = fresh ? t('iqNewBest', { t: tt }) : !rec.prev ? t('iqFirstTime', { t: tt }) : t('iqTimeVs', { t: tt, b: iq.fmt(rec.prev, true) });
