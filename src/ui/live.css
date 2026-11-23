@@ -270,3 +270,4 @@ svg.medal.gold .rb { fill: #e5484d; }
 .sh .apnext .appr { position: static; width: 40px; filter: brightness(0) opacity(.45); }
 .sh .apnext b { padding: 2px 7px; border-radius: 999px; background: rgba(255,250,240,.92); border: 2px solid var(--ink, #1d2b53); font: 700 10px/1.1 var(--font); color: var(--ink, #1d2b53); white-space: nowrap; }
 .arwalk .arkit { position: absolute; left: 62%; bottom: 0; width: 55%; }
+.sh.sl > span { align-self: flex-end; margin-right: -46px; position: relative; z-index: 4; } /* clear of the floor rail on the left */

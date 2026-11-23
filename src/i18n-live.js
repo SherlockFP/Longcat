@@ -71,7 +71,7 @@ addStrings({
     goalSeats: 'Altın: aynı anda en fazla {n} minder kullan', goalChain: 'Altın: tek dokunuşta {n} kedilik minder zinciri',
     medalGold: 'Altın madalya', medalBronze: 'Bronz madalya: altını dene!', medalNone: 'Bronz için bitir', replay: 'Tekrar',
     showRules: 'Bu hafta herkes için aynı iki sabit tahta. Tekrar denemek serbest, güçlendirici yok.',
-    showPays: 'Bronz +{b}, altın +{g} altın, her biri 1 sezon pulu', showRosette: 'ikisinde de altın: haftanın rozeti',
+    showPays: 'Bronz +{b} altın, altın madalya +{g} altın, her biri 1 sezon pulu', showRosette: 'ikisinde de altın: haftanın rozeti',
     medalGoldWon: 'Altın madalya!', medalBronzeWon: 'Bronz! Altın için: {goal}', rosetteWon: 'Kafen için bir rozet!',
     archive: 'Geçmiş tahtalar', archiveSub: 'Geçmiş Şov tahtalarının hepsi oynanabilir. Madalyalar kendi sezonuna pul kazandırır.', archiveEmpty: 'Henüz geçmiş tahta yok.', weeksAgo: '{n} hf önce',
     rushGoal: 'Bu haftanın tahtasını olabildiğince hızlı bitir', rushBest: 'En iyin: {t} · {n}/20. sıra', rushNone: 'Henüz süren yok. Tekrar serbest, güçlendirici yok.',

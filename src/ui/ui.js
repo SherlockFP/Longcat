@@ -8,7 +8,8 @@ import './r7.css';
 import './dare.css';
 import { railHtml as liveRail, goalsHtml } from './live.js';
 import { OUTFITS } from '../game/live.js';
-import { house as streetHouse, HOUSE_TASKS, SHOPS } from '../game/street.js';
+import { drecHas, cardsOwned, WEEKS } from '../game/r10.js';
+import { house as streetHouse, SHOPS } from '../game/street.js';
 
 const root = document.getElementById('ui');
 let actions = {};
@@ -38,6 +39,8 @@ const D7 = {
   patio: { patio_planters: [0.32, 0.6, 0.26], patio_pergola: [0.54, 0.62, 0.36], patio_fountain: [0.5, 0.84, 0.26], patio_lights: [0.8, 0.62, 0.2], patio_lounger: [0.24, 0.94, 0.3], patio_tables: [0.74, 0.97, 0.32] },
   rooftop: { roof_canopy: [0.5, 0.62, 0.44], roof_telescope: [0.8, 0.66, 0.18], roof_lemon: [0.2, 0.74, 0.16], roof_tower: [0.85, 0.92, 0.2], roof_beanbags: [0.4, 0.95, 0.3], roof_grill: [0.64, 0.84, 0.22] },
 };
+// R10: where a framed album print hangs in each room: [x centre, y centre, width] as fractions of the stage
+const WALL7 = { counter: [0.36, 0.3, 0.15], window: [0.42, 0.3, 0.12], cushion: [0.26, 0.5, 0.13], patio: [0.84, 0.3, 0.14], rooftop: [0.46, 0.37, 0.12] };
 const FLAT = /_rug$/; // rugs lie on the floor under everything
 // resident floor spots per room (same order as the area's data spots)
 const RS7 = { counter: [[0.47, 0.99, 0.25], [0.84, 0.8, 0.18]], window: [[0.42, 0.82, 0.21], [0.74, 0.99, 0.2]], cushion: [[0.52, 0.8, 0.2], [0.5, 0.99, 0.21]], patio: [[0.36, 0.76, 0.19], [0.62, 0.99, 0.21]], rooftop: [[0.56, 0.74, 0.19], [0.66, 0.99, 0.21]] };
@@ -47,6 +50,27 @@ const floorName = (i) => (i === 0 ? t('groundFloor') : t('floorN', { n: i }));
 const paw = () => '<svg class="pawi" viewBox="0 0 24 24"><ellipse cx="12" cy="16" rx="5.5" ry="4.5"/><ellipse cx="5" cy="11" rx="2.2" ry="2.8"/><ellipse cx="9.5" cy="6.5" rx="2.2" ry="2.8"/><ellipse cx="14.5" cy="6.5" rx="2.2" ry="2.8"/><ellipse cx="19" cy="11" rx="2.2" ry="2.8"/></svg>';
 const boost = (k, icon, tone) => `<button class="bst ${tone}" id="b-${k}" data-act="${k}"><img class="bi" src="${assetUrl('v2/' + icon)}" alt="" draggable="false"><b>${t(k)}</b><i class="badge"></i></button>`;
 
+// the Daily record row on a Daily win: the total against the next milestone (its art as a silhouette), or what it unlocked
+const drecRow = (r) => (!r ? '' : r.got
+  ? `<div class="drecrow got">${r7c(r.got.art, 'drart')}<span><b>${t('drecGot', { name: r.got.name })}</b><small>${t('drecTotal', { n: r.n })}</small></span></div>`
+  : r.next ? `<div class="drecrow">${r7c(r.next.art, 'drart sil')}<span><b>${t('drecProg', { n: r.n, at: r.next.at })}</b><small>${t('drecNext', { name: r.next.name })}</small></span></div>` : `<div class="drecrow"><span><b>${t('drecTotal', { n: r.n })}</b></span></div>`);
+
+// the goals strip: a resident request that already shows as a bubble over its cat in this room is not repeated
+const roomGoals = (L, here) => L.goals.filter((g) => !(g.k === 'req' && here.includes(g.who) && (L.bubbleWho || []).includes(g.who))).slice(0, 2);
+// today's resident jobs in the Tasks sheet: two tiles (a named cat, one goal, the reward); the first one done pays, then
+// the claimed slot shows tomorrow's cat and the reset time
+function jobsHtml(J) {
+  if (!J) return '';
+  const tile = (j) => {
+    if (J.paid) {
+      if (J.paid - 1 !== j.s) return '';
+      return `<div class="jobt next">${r7c('res7_' + J.tomorrow.who + '_idle', 'jp')}<span><b>${t('jobTomorrow', { name: J.tomorrow.name })}</b><small>${t('jobReset', { t: fmtShort(J.ms) })}</small></span></div>`;
+    }
+    const act = j.done ? `<button class="btn green xs" data-act="jobclaim" data-s="${j.s}">${t('claim')}</button>` : `<i class="jrw">${r7('hud_coin')}${J.reward.coins} ${r7('hud_heart')}+${J.reward.hearts}</i>`;
+    return `<div class="jobt ${j.done ? 'ready' : ''}">${r7c('res7_' + j.who + '_job', 'jp')}<span><b>${t('jobFor', { name: j.name })}</b><small>${t('jk_' + j.k, { n: j.need })}</small><i class="jbar"><i style="width:${Math.round((j.p / j.need) * 100)}%"></i><em>${j.p}/${j.need}</em></i></span>${act}</div>`;
+  };
+  return `<div class="qsec">${t('jobsTitle')}<small>${J.paid ? '' : t('jobsRule')}</small></div><div class="jobs">${J.list.map(tile).join('')}</div>`;
+}
 function mount(html) {
   root.innerHTML = html;
   sheetName = '';
@@ -211,7 +235,7 @@ function houseHtml(curFloor, ai, St = {}) {
     ? `<button class="hf roof ${rs} ${roofI === ai ? 'sel' : ''}" data-act="cafearea" data-d="${roofI - ai}" data-view="room" aria-label="${loc(AREAS[roofI].name)}">${r7('roof_terrace')}${rs === 'cur' ? `<i class="hcost">${r7('hud_star')}<b>${starsLeft(roofI)}</b></i>${r7('crane', 'crane')}` : ''}</button>`
     : `<div class="hf roof gable">${r7('roof_gable')}${curFloor === roofI - 1 ? nextTag(roofI) : ''}</div>`;
   const units = fl.length * 0.5 + (rs ? 0.52 : 0.56) + (curFloor >= 0 && curFloor < roofI ? 0.25 : 0); // room for the next-floor tag
-  const sign = `<button class="streetbtn ${St.open ? 'open' : ''}" data-act="cafeview" data-view="street">${r7('street_bakery', 'sbimg')}<b>${t('streetTitle')}</b><small>${St.open ? t('streetShops', { n: St.done }) : t('streetLocked')}</small></button>`;
+  const sign = `<button class="streetbtn ${St.open ? 'open' : ''}" data-act="cafeview" data-view="street">${r7('street_bakery', 'sbimg')}<b>${t('streetTitle')}</b><small>${St.open ? t('streetShops', { n: St.shops ?? St.done }) : t('streetLocked')}</small></button>`;
   return `${r7('building_base', 'hbg')}<div class="tower" style="--u:${units.toFixed(2)}">${roof}${fl.reverse().join('')}</div>${sign}`;
 }
 // the next floor's preview tag: its name and the resident who moves in there
@@ -221,20 +245,52 @@ function nextTag(i) {
   return `<i class="hnext">${r ? r7c('res7_' + r.resident.id + '_idle', 'hnres') : ''}<span><b>${t('nextUp', { room: loc(a.name) })}</b>${r ? `<small>${t('unlocksX', { name: r.resident.name })}</small>` : ''}</span></i>`;
 }
 
-// Cat Street: the shop houses past the rooftop. The finished house before (or the cat house) on the left with its
-// shopkeeper, the house under construction in the middle (built from the ground up as pieces go in, crane and stars
-// left on it), the next one as a silhouette on the right.
+// Cat Street: the shop houses past the rooftop. The finished unit before (or the cat house) on the left with its
+// shopkeeper, the unit under construction in the middle, the next one as a silhouette on the right. A new house is
+// built from the ground up as pieces go in (crane, stars left on it); an upgrade unit (lap 3) shows the shop with its
+// upgrades so far and the next one as a glowing ghost; a remix unit (later laps) repaints the shop, dresses it for a
+// festival and brings a guest, piece by piece. Every shop shows its current look (street.shopLook) wherever it stands.
+const UPDECO = { bunting: 'up_bunting', planter: 'up_planter', lights: 'up_lights' };
+function facade(id, look, o = {}) {
+  const th = look && look.theme;
+  const f = th && o.paint !== false ? `style="filter:hue-rotate(${th.hue}deg) saturate(${th.sat}) drop-shadow(-4px 5px 4px rgba(40,20,5,.35))"` : '';
+  const ov = [];
+  const ups = (look && look.ups) || [];
+  const ghost = o.ghost || '';
+  for (const u of ['bunting', 'planter']) if (ups.includes(u) || ghost === u) ov.push(r7c(UPDECO[u], `ovl ov-${u} ${ghost === u ? 'gh' : ''}`));
+  if (ups.includes('sign') || ghost === 'sign') ov.push(r7c('up_' + id, `ovl ov-sign ${ghost === 'sign' ? 'gh' : ''}`));
+  const deco = th && o.deco !== false ? th.deco : '';
+  if (deco) ov.push(r7c(UPDECO[deco] || deco, `ovl ov-deco ov-${UPDECO[deco] ? deco : 'garland'} ${o.ghostDeco ? 'gh' : ''}`));
+  const guest = look && look.guest && o.guest !== false ? r7c(look.guest.art, `sguest ${o.ghostGuest ? 'sil' : ''}`) : '';
+  return `<div class="fac"><img class="shimg ${o.cls || ''}" src="${assetUrl('r7/street_' + id + '.webp')}" alt="" draggable="false" ${f}>${ov.join('')}</div>${guest}`;
+}
 function streetHtml(St, fresh) {
   const k = St.open ? St.done : 0;
   const cur = streetHouse(k);
-  const pct = St.open ? St.at / HOUSE_TASKS : 0;
+  const looks = St.looks || {};
   const prev = k > 0 ? streetHouse(k - 1) : null;
   const left = prev
-    ? `<div class="sh sl">${r7('street_' + prev.id, 'shimg')}${r7c('keeper_' + prev.id, 'keeper')}${prev.apprentice ? r7c('appr_' + prev.id, 'appr') : ''}<span>${loc(prev.name)}</span></div>`
+    ? `<div class="sh sl">${facade(prev.id, looks[prev.id])}${r7c('keeper_' + prev.id, 'keeper')}${prev.apprentice ? r7c('appr_' + prev.id, 'appr') : ''}<span>${loc(prev.name)}</span></div>`
     : `<div class="sh sl home">${r7('floor_ground', 'shimg')}<span>${t('houseTitle')}</span></div>`;
-  const mid = `<div class="sh sc ${fresh ? 'fresh' : ''} ${St.open ? '' : 'locked'}" style="--p:${(1 - pct) * 100}%">${r7('street_' + cur.id, 'shimg ghost')}${r7('street_' + cur.id, 'shimg built')}${St.open ? `${r7('crane', 'crane')}<i class="hcost">${r7('hud_star')}<b>${St.left}</b></i>` : `<i class="hcost lk">${r7('icon_lock')}</i>`}<span>${loc(cur.name)}</span>${cur.apprentice && St.open ? `<i class="apnext">${r7c('appr_' + cur.id, 'appr sil')}<b>${t('apprNext')}</b></i>` : ''}${fresh ? '<i class="puff p1"></i><i class="puff p2"></i><i class="puff p3"></i>' : ''}</div>`;
+  const tag = St.open ? `<i class="hcost">${r7('hud_star')}<b>${St.left}</b></i>` : `<i class="hcost lk">${r7('icon_lock')}</i>`;
+  const puffs = fresh ? '<i class="puff p1"></i><i class="puff p2"></i><i class="puff p3"></i>' : '';
+  let mid;
+  if (cur.kind === 'up' && St.open) {
+    // the shop as it is, its upgrades so far, the next one glowing where it goes
+    const lk = looks[cur.id] || { ups: [] };
+    const nx = cur.tasks[St.at];
+    mid = `<div class="sh sc up ${fresh ? 'fresh' : ''}">${facade(cur.id, lk, { ghost: nx ? (nx.up === cur.id ? 'sign' : nx.up) : '' })}${r7c('keeper_' + cur.id, 'keeper')}${tag}<span>${t('streetUpName', { house: loc(cur.name) })}</span>${puffs}</div>`;
+  } else if (cur.kind === 'mix' && St.open) {
+    // a remix: paint (1), festival decoration (2), the guest (3), the street party (4)
+    const lk = { ...(looks[cur.id] || { ups: [] }), theme: cur.theme, guest: cur.guest };
+    mid = `<div class="sh sc mix ${fresh ? 'fresh' : ''}">${facade(cur.id, lk, { paint: St.at >= 1, ghostDeco: St.at < 2, ghostGuest: St.at < 3 })}${r7c('keeper_' + cur.id, 'keeper')}${tag}<span>${t('streetMixName', { house: loc(cur.name), theme: loc(cur.theme.name) })}</span>${puffs}</div>`;
+  } else {
+    const pct = St.open ? St.at / cur.tasks.length : 0;
+    mid = `<div class="sh sc ${fresh ? 'fresh' : ''} ${St.open ? '' : 'locked'}" style="--p:${(1 - pct) * 100}%">${r7('street_' + cur.id, 'shimg ghost')}${r7('street_' + cur.id, 'shimg built')}${St.open ? r7('crane', 'crane') : ''}${tag}<span>${loc(cur.name)}</span>${cur.apprentice && St.open ? `<i class="apnext">${r7c('appr_' + cur.id, 'appr sil')}<b>${t('apprNext')}</b></i>` : ''}${puffs}</div>`;
+  }
   const nx = streetHouse(k + 1);
-  const right = `<div class="sh sr">${r7('street_' + nx.id, 'shimg sil')}<span>${t('streetNext', { house: loc(nx.name) })}</span></div>`;
+  const nxName = loc(nx.name);
+  const right = `<div class="sh sr">${r7('street_' + nx.id, 'shimg sil')}<span>${t('streetNext', { house: nxName })}</span></div>`;
   return `${r7c('street_bg', 'hbg')}<div class="street">${left}${mid}${right}</div>`;
 }
 
@@ -265,20 +321,22 @@ function playFloor(q) {
   const name = next ? loc(next.name) : t('comingSoon');
   el.innerHTML = `<div class="fx">
   ${r7('building_base', 'hbg')}
-  <div class="tower fxt"><div class="hf newf">${r7('floor_scaffold')}<i class="dust d1"></i><i class="dust d2"></i><i class="dust d3"></i></div><div class="hf">${r7(q.from === 0 ? 'floor_ground' : 'floor_lit')}</div></div>
-  ${r7('crane', 'fxcrane')}
+  <div class="tower fxt"><div class="hf newf ${next ? '' : 'roof'}">${r7(next ? 'floor_scaffold' : 'roof_terrace')}<i class="dust d1"></i><i class="dust d2"></i><i class="dust d3"></i></div><div class="hf">${r7(q.from === 0 ? 'floor_ground' : 'floor_lit')}</div></div>
+  ${next ? r7('crane', 'fxcrane') : ''}
   ${Array.from({ length: 14 }, (_, i) => `<i class="cf" style="--i:${i}"></i>`).join('')}
 </div>
 <div class="card cream nfcard">
   ${res ? `<div class="peek respeek">${r7c('res7_' + res.resident.id + '_idle')}</div>` : ''}
-  <h2 class="title yellow sm">${next ? t('newFloor', { name }) : t('floorDone')}</h2>
+  <h2 class="title yellow sm">${next ? t('newFloor', { name }) : t('houseDoneTitle')}</h2>
   ${res ? `<p class="nfsub">${t('nextResidentIs', { name: res.resident.name })}</p>` : ''}
-  <button class="btn" data-act="${next ? 'cafearea' : 'floordone'}" data-d="1" data-view="room">${t('letsGo')}</button>
+  ${next ? '' : `<p class="nfsub">${t('streetOpensSub')}</p>`}
+  <button class="btn" data-act="${next ? 'cafearea' : 'floordone'}" data-d="1" data-view="${next ? 'room' : 'street'}">${next ? t('letsGo') : t('toStreet')}</button>
+  <button class="btn pink sm hshare" data-act="sharehouse" data-k="floor" data-to="${q.to}">${SHARE_SVG}<span>${t('shareHouse')}</span></button>
 </div>`;
   root.appendChild(el);
   const skip = (e) => { if (e.target.closest('.nfcard .btn')) return; el.classList.add('skip'); };
   el.addEventListener('click', skip);
-  el.addEventListener('click', (e) => { const b = e.target.closest('.nfcard .btn'); if (b) { el.remove(); if (!next) ui.cafe(cur.info); } });
+  el.addEventListener('click', (e) => { const b = e.target.closest('.nfcard .btn:not(.hshare)'); if (b) { el.remove(); if (!next) { cafeView = 'street'; ui.cafe(cur.info); } } }); // this listener runs before root's, so set the view here
 }
 
 export const ui = {
@@ -418,7 +476,10 @@ export const ui = {
     const ach = (info.ach || []).map((a) => `<li class="a-${a.k}">${a.text}</li>`).join('');
     // where the coins came from (base, tidy bench, hard level, café perks): a low payout explains itself
     const pay = info.pay ? `<div class="paybd">${info.pay}</div>` : '';
-    const dres = info.friend ? `<div class="dres ${info.friend.res}">${info.friend.line}</div>` : ''; // a friend challenge: how it went
+    // a friend challenge: how it went, both scores side by side and the round of the back-and-forth
+    const dres = info.friend ? `<div class="dres ${info.friend.res}">${info.friend.line}${info.friend.vs ? `<small class="dvs">${info.friend.round > 1 ? `<i class="drd">${t('dareRound', { n: info.friend.round })}</i>` : ''}<span class="${info.friend.res === 'miss' ? 'win' : ''}">${escHtml(info.friend.vs[0])}</span><span class="me ${info.friend.res !== 'miss' ? 'win' : ''}">${escHtml(info.friend.vs[1])}</span></small>` : ''}</div>` : '';
+    // a share moment (first chain x3, a new best, a clean sweep, today's Daily, Show gold, Rush top 3): its own headline
+    const moment = info.moment ? `<div class="moment">${escHtml(info.moment)}</div>` : '';
     const hilite = info.chain
       ? `<div class="hilite"><div class="chainclip"><canvas width="180" height="320" aria-hidden="true"></canvas>${CLIP_BTN()}</div><div class="hcol">${dres}${rrow}${pay}${ach ? `<ul class="ach">${ach}</ul>` : ''}</div></div>`
       : `${pay}${ach ? `<ul class="ach inline">${ach}</ul>` : ''}`;
@@ -430,10 +491,11 @@ export const ui = {
       const head = info.chain ? `<div class="chainclip mini"><canvas width="180" height="320" aria-hidden="true"></canvas>${CLIP_BTN()}</div>` : info.res ? r7c('res7_' + info.res + '_idle', 'cpeek') : r7c('cat_head_' + info.peek + '_happy', 'cpeek');
       root.insertAdjacentHTML('beforeend', `
 <div class="backdrop winb" id="modal"><div class="card teal win compact ${info.chain ? 'haschain' : ''}">
-  <div class="cwtop">${head}<div class="cwt"><h2 class="title yellow">${t(info.title)}</h2>${info.pay ? `<div class="paybd">${info.pay}</div>` : ''}</div><div class="stars n${info.stars}">${stars}</div></div>
+  <div class="cwtop">${head}<div class="cwt"><h2 class="title yellow">${t(info.title)}</h2>${moment}${info.pay ? `<div class="paybd">${info.pay}</div>` : ''}</div><div class="stars n${info.stars}">${stars}</div></div>
   ${rrow}
   ${ach ? `<ul class="ach inline">${ach}</ul>` : ''}
   ${cbar}
+  ${drecRow(info.drec)}
   ${info.purr ? `<div class="purr">${info.purr}</div>` : ''}
   <div class="row r7row">${info.canBuild ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${t('next')}</button>`}${info.dare ? '' : `<button class="round" data-act="home" aria-label="${t('home')}"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button>`}${shareBtn}</div>
 </div></div>`);
@@ -446,14 +508,16 @@ export const ui = {
 <div class="backdrop" id="modal"><div class="card teal win ${info.chain ? 'withclip' : (info.ach || []).length || info.pay ? 'tight' : ''}">
   ${peek}
   <h2 class="title yellow">${t(info.title)}</h2>
+  ${moment}
   ${info.show ? `<div class="purr showtag">${ribbonSvg}${info.showTag || t('showBoard')}</div>` : `<div class="stars n${info.stars}">${stars}</div>`}
   ${info.chain ? '' : rrow}
   ${hilite}
   ${cafeBar}
+  ${drecRow(info.drec)}
   ${info.purr ? `<div class="purr">${info.purr}</div>` : ''}
   ${info.chain ? '' : dres}
-  ${info.friend ? (info.friend.res === 'miss' ? `<button class="btn" data-act="retry">${t('retry')}</button>` : `<button class="btn pink" data-act="share">${SHARE_SVG}<span>${t('dareBack')}</span></button>`) : info.again ? `<button class="btn" data-act="retry">${t('runAgain')}</button>` : info.canBuild ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${info.show ? t('show') : t('next')}</button>`}
-  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? SHARE_ROUND() : ''}` : `<button class="btn teal sm" data-act="home">${t('home')}</button>${shareBtn}`}</div>
+  ${info.friend ? (info.friend.res === 'miss' ? `<button class="btn" data-act="retry">${t('retry')}</button>` : `<button class="btn pink dback" data-act="share">${SHARE_SVG}<span>${t(info.friend.res === 'tie' ? 'dareTieBtn' : 'dareBack')}</span></button>`) : info.again ? `<button class="btn" data-act="retry">${t('runAgain')}</button>` : info.canBuild ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${info.show ? t('show') : t('next')}</button>`}
+  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? `<button class="btn pink sm sharebtn dsend" data-act="share">${SHARE_SVG}<span>${t('dareSendResult')}</span></button>` : ''}` : `<button class="btn teal sm" data-act="home">${t('home')}</button>${shareBtn}`}</div>
 </div></div>`);
     if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);
     if (cn && info.cafeStars) flyStar(cn, info.cafeStars);
@@ -471,7 +535,10 @@ export const ui = {
   <h2 class="title yellow">${escHtml(t('dareFrom', { name: info.who }))}</h2>
   <div class="dgoal">${r7('hud_medal')}<b>${info.goal}</b></div>
   <div class="dboard">${escHtml(t('dareBoard', { board: info.board, n: info.seats }))}</div>
+  ${info.thread && info.thread.length ? `<div class="dthread">${info.round > 1 ? `<i class="drd">${t('dareRound', { n: info.round })}</i>` : ''}${info.thread.map((e) => `<span>${escHtml(e)}</span>`).join('<em>&rarr;</em>')}<em>&rarr;</em><b>${t('dareYourTurn')}</b></div>` : ''}
+  ${info.reply ? `<p class="dreply" data-act="events" data-tab="friends">${escHtml(info.reply)}</p>` : ''}
   ${info.fresh ? `<p class="dhow">${t('dareHow')}</p>` : ''}
+  <label class="dname"><span>${t('dareName')}</span><input id="darename" maxlength="12" autocomplete="nickname" enterkeyhint="done" placeholder="${t('dareNameHint')}" value="${escHtml(info.nick || '')}"></label>
   <button class="btn" data-act="dareplay">${t('darePlay')}</button>
   <button class="link" data-act="dareskip">${t('dareSkip')}</button>
 </div></div>`);
@@ -616,7 +683,13 @@ export const ui = {
       // a renovation set (garland + rug) restyles a finished room
       const st7 = info.reno && info.reno.style;
       const reno = st7 ? `<img class="reno-r cfb ${info.justBuilt === 'reno' ? 'fresh' : ''}" src="${assetUrl('r7/reno_' + st7 + '_rug.webp')}" alt="" draggable="false"><img class="reno-g cfb ${info.justBuilt === 'reno' ? 'fresh' : ''}" src="${assetUrl('r7/reno_' + st7 + '_garland.webp')}" alt="" draggable="false">` : '';
-      scene = `<div class="stage">${r7c(`room_${area.id}_bare`, 'rbg')}${reno}${decor}${guests}${nooks}${vis}${jar}${bubbles.join('')}${ros}${L && L.cups ? L.cups : ''}</div>`;
+      // R10 keepsakes on the walls: a framed album print (one per room), the Daily record's pennant and clock
+      const W = info.wall || {};
+      const wp = WALL7[area.id] || WALL7.counter;
+      const keep = (W.hung && W.hung[ai] != null ? `<img class="wall7 print7 ${info.justBuilt === 'print' ? 'fresh' : ''}" src="${assetUrl('r7/print_' + W.hung[ai] + '.webp')}" alt="" draggable="false" style="left:${wp[0] * 100}%;top:${wp[1] * 100}%;width:${wp[2] * 100}%">` : '')
+        + (ai === 0 && W.pennant ? `<img class="wall7 pen7" src="${assetUrl('r7/drec_pennant.webp')}" alt="" draggable="false">` : '')
+        + (ai === 0 && W.clock ? `<img class="wall7 clk7" src="${assetUrl('r7/drec_clock.webp')}" alt="" draggable="false">` : '');
+      scene = `<div class="stage">${r7c(`room_${area.id}_bare`, 'rbg')}${reno}${keep}${decor}${guests}${nooks}${vis}${jar}${bubbles.join('')}${ros}${L && L.cups ? L.cups : ''}</div>`;
     } else if (view === 'street') {
       scene = streetHtml(St, info.justBuilt === 'street');
     } else {
@@ -644,7 +717,7 @@ export const ui = {
       const h = St.next.house;
       card = `<button class="trow ${St.ok ? 'ok' : 'dim'} ${L && L.spot && L.spot.k === 'build' ? 'spot' : ''}" data-act="streetbuild">
   <span class="ticon">${r7c('street_' + h.id)}</span>
-  <span class="tname"><b>${loc(St.next.name)}</b><small>${t('streetPiece', { house: loc(h.name), n: St.at + 1, m: HOUSE_TASKS })}</small><i class="segs">${Array.from({ length: HOUSE_TASKS }, (_, i) => `<i class="${i < St.at ? 'on' : ''}"></i>`).join('')}</i></span>
+  <span class="tname"><b>${loc(St.next.name)}</b><small>${t('streetPiece', { house: h.kind === 'up' ? t('streetUpName', { house: loc(h.name) }) : h.kind === 'mix' ? loc(h.theme.name) + ' · ' + loc(h.name) : loc(h.name), n: St.at + 1, m: h.tasks.length })}</small><i class="segs">${h.tasks.map((_, i) => `<i class="${i < St.at ? 'on' : ''}"></i>`).join('')}</i></span>
   <span class="cost">${r7('hud_star')}<b>${St.next.cost}</b></span>
 </button>`;
     } else if (view === 'street') {
@@ -675,7 +748,20 @@ export const ui = {
   <span class="cost">${r7('hud_star')}<b>${x.cost || 1}</b></span>
 </button>`;
     } else {
-      card = `<div class="trow empty"><span class="tname"><b>${area ? t('floorDone') : t('comingSoon')}</b>${area ? segs : `<small>${t('teaserSub')}</small>`}</span></div>`;
+      // a finished floor is never a dead end: the card is the next build on the floor under construction (its room, the
+      // stars it still needs) and one tap goes there; with the whole house built it leads to Cat Street
+      const nf = curFloor >= 0 ? pending(curFloor)[0] : null;
+      if (area && nf) {
+        const have = info.stars || 0;
+        const need = nf.cost || 1;
+        card = `<button class="trow nextfloor ok" data-act="cafearea" data-d="${curFloor - ai}" data-view="room">
+  <span class="ticon">${r7c('decor_' + nf.id)}</span>
+  <span class="tname"><small class="nfdone">${checkSvg0}${t('floorDoneShort', { floor: floorName(ai) })}</small><b>${loc(nf.name)}</b><small>${t('nextIn', { room: `${floorName(curFloor)} · ${loc(AREAS[curFloor].name)}` })}</small><small class="nfneed ${have >= need ? 'ok' : ''}">${have >= need ? t('readyBuild') : t('starsMissing', { n: need - have })}</small></span>
+  <span class="cost go">${r7('hud_star')}<b>${Math.min(have, need)}/${need}</b><em>${t('goThere')}</em></span>
+</button>`;
+      } else if (area && St.open) {
+        card = `<button class="trow nextfloor ok" data-act="cafeview" data-view="street"><span class="ticon">${r7c('street_' + St.next.house.id)}</span><span class="tname"><b>${loc(St.next.name)}</b><small>${t('streetTitle')} · ${loc(St.next.house.name)}</small></span><span class="cost go">${r7('hud_star')}<b>${St.next.cost}</b><em>${t('goThere')}</em></span></button>`;
+      } else card = `<div class="trow empty"><span class="tname"><b>${area ? t('floorDone') : t('comingSoon')}</b>${area ? segs : `<small>${t('teaserSub')}</small>`}</span></div>`;
     }
     const tab = (act, icon, label, extra = '', on = false, view = '') => `<button class="tab ${on ? 'on' : ''}" data-act="${act}" ${view ? `data-view="${view}"` : ''} aria-label="${label}">${r7(icon)}<span>${label}</span>${extra}</button>`;
     mount(`
@@ -686,8 +772,8 @@ export const ui = {
       <div class="tr">${livesPill(info.lives)}<button class="pill sm" data-act="shop">${r7('hud_coin')}<b id="coins">${info.coins}</b></button><div class="pill sm cstar">${r7('hud_star')}<b id="cstars">${info.stars}</b></div></div>
     </div>
     ${railHtml}${rrail}
-    <div class="fname ${L && L.goals.length ? 'up' : ''}">${view === 'street' ? `${t('streetTitle')} · ${t('streetShops', { n: St.done })}` : house ? t('houseTitle') : `${floorName(ai)} · ${loc(area.name)}`}</div>
-    ${L ? goalsHtml(L.goals) : ''}
+    <div class="fname ${L && L.goals.length ? 'up' : ''}">${view === 'street' ? `${t('streetTitle')} · ${t('streetShops', { n: St.shops ?? St.done })}` : house ? t('houseTitle') : `${floorName(ai)} · ${loc(area.name)}`}</div>
+    ${L ? goalsHtml(roomGoals(L, house || view === 'street' ? [] : guestsFor(ai, info.day || 0, (L.reqs.find((x) => x.ready) || {}).who || '').map((g) => g.id))) : ''}
   </div>
   <div class="nbcard">${card}</div>
   <button class="btn play cafe-play" data-act="play"><b>${t('play')}</b><small>${t('level', { n: info.level })}</small></button>
@@ -745,12 +831,13 @@ export const ui = {
       return `<div class="love">${hearts}<span class="ward">${ward}</span></div>${btn}`;
     };
     const owned = RESIDENTS.filter((r) => isBuilt(r.task.id)).length;
+    const framed = drecHas(save.data, 'frame'); // the Daily record's 30-clear frame on every resident portrait
     const card = (r) => {
       const has = isBuilt(r.task.id);
       const area = AREAS[r.task.area];
       const wr = has && save.data.cafe.wear[r.id];
       return `<div class="rcard ${has ? '' : 'locked'}">
-  <div class="rp">${r7c('res7_' + r.id + '_' + (wr || 'idle'))}${has ? '' : lockSvg}</div>
+  <div class="rp ${has && framed ? 'framed' : ''}">${has && framed ? r7c('drec_frame', 'rframe') : ''}${r7c('res7_' + r.id + '_' + (wr || 'idle'))}${has ? '' : lockSvg}</div>
   <b class="rn">${has ? r.name : '???'}</b>
   <span class="rperk">${has ? perkText(r) : t('resUnlock', { task: loc(r.task.name) })}</span>
   ${has ? loveRow(r) : ''}
@@ -764,7 +851,7 @@ export const ui = {
     mount(`
 <div id="resi" class="screen on">
   <div class="cafe-bg"></div>
-  <div class="hud-top"><button class="round" data-act="cafeback" aria-label="${t('back')}"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h2 class="title yellow sm">${t('residents')}</h2></div>
+  <div class="hud-top"><button class="round" data-act="cafeback" aria-label="${t('back')}"><svg viewBox="0 0 24 24"><path d="M15 5 8 12l7 7" fill="none" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button><h2 class="title yellow sm">${t('residents')}</h2><button class="albbtn" data-act="album">${r7c('album_book')}<b>${t('album')}</b><small>${cardsOwned(save.data)}/${WEEKS.length}</small></button></div>
   <div class="resi-sub">${t('resSub', { a: owned, b: RESIDENTS.length })}</div>
   <div class="rgrid">${RESIDENTS.slice(resPage * 4, resPage * 4 + 4).map(card).join('')}</div>
   <div class="rpager">${arrow(-1)}<span class="pdots">${pdots}</span>${arrow(1)}</div>
@@ -830,6 +917,7 @@ export const ui = {
 <div class="qsec">${t('loginTitle')}</div>
 <div class="days">${days}</div>
 ${L.avail ? `<button class="btn green sm" data-act="loginclaim">${t('claim')}</button>` : ''}
+${jobsHtml(info.jobs)}
 <div class="qsec">${t('tasksTitle')}</div>
 ${tasks}
 <div class="qrow chest ${chest.opened ? 'done' : ''}">${img('v2/ui_chest.webp', 'cimg')}<div class="qt"><b>${t('chest')}</b><span>${t('chestSub')}</span>${chips(info.chestReward)}</div>${chest.opened ? `<span class="own">${checkSvg}</span>` : `<button class="btn ${chest.ready ? 'green' : 'teal dim'} xs" data-act="chest">${t('openChest')}</button>`}</div>`);
@@ -893,24 +981,38 @@ ${info.ad === false ? '' : `<button class="btn green sm" data-act="adlife">${adS
     setTimeout(() => { el.remove(); if (tut && !document.querySelector('.toast.inplay')) tut.style.visibility = ''; }, 1400);
   },
 
-  // the challenge link when the platform could not copy it on its own: one tap copies it (a fresh user gesture), and
-  // "Link copied" shows only after the write succeeded; else the link stays selected in the field to copy by hand
-  copyLink(text, url) {
+  // the share sheet where the platform has no share sheet of its own (desktop browsers): the link was copied in the
+  // same tap (status says so) or the copy was refused, then one tap copies it (a fresh user gesture) and "Link copied"
+  // shows only after the write succeeded; else the link stays selected in the field to copy by hand. A preview shows what
+  // the friend gets (the clip's end card with the link burned in, or the house card); Save hands over the file too.
+  // info: { title, goal?, img?, url, text, copied, file? }; onSave(): download the file (and copy the link)
+  shareSheet(info, onSave) {
     document.getElementById('linkbar')?.remove();
     const el = document.createElement('div');
     el.id = 'linkbar';
-    el.className = 'linkbar';
-    el.innerHTML = `<input readonly aria-label="${t('copyLinkBtn')}"><button class="btn pink sm" type="button" data-copy>${t('copyLinkBtn')}</button><button class="lbx" type="button" aria-label="${t('close')}">&times;</button>`;
+    el.className = 'sharesheet';
+    el.innerHTML = `<div class="sscard">
+  <button class="lbx" type="button" aria-label="${t('close')}">&times;</button>
+  <b class="sst">${escHtml(info.title)}</b>
+  <div class="ssrow">${info.img ? `<img class="ssimg${info.wide ? ' wide' : ''}" src="${info.img}" alt="">` : ''}<div class="sscol">${info.goal ? `<span class="ssgoal">${escHtml(info.goal)}</span>` : ''}<span class="ssst ${info.copied ? 'ok' : ''}">${t(info.copied ? 'ssCopied' : 'ssCopy')}</span></div></div>
+  <input readonly aria-label="${t('copyLinkBtn')}">
+  <div class="ssbtns">${info.copied ? '' : `<button class="btn pink sm" type="button" data-copy>${t('copyLinkBtn')}</button>`}${info.file ? `<button class="btn ${info.copied ? 'pink' : 'teal'} sm" type="button" data-save>${t(info.file === 'clip' ? 'ssSaveClip' : 'ssSaveCard')}</button>` : ''}${info.copied && !info.file ? `<button class="btn teal sm" type="button" data-done>${t('ssDone')}</button>` : ''}</div>
+</div>`;
     const inp = el.querySelector('input');
-    inp.value = url;
-    el.querySelector('.lbx').addEventListener('click', () => el.remove());
-    el.querySelector('[data-copy]').addEventListener('click', async () => {
+    inp.value = info.url;
+    const close = () => el.remove();
+    el.querySelector('.lbx').addEventListener('click', close);
+    el.querySelector('[data-done]')?.addEventListener('click', close);
+    el.addEventListener('click', (e) => { if (e.target === el) close(); });
+    el.querySelector('[data-save]')?.addEventListener('click', () => { close(); onSave && onSave(); });
+    el.querySelector('[data-copy]')?.addEventListener('click', async () => {
       let ok = false;
-      try { if (navigator.clipboard) { await navigator.clipboard.writeText(text + ' ' + url); ok = true; } } catch { /* no permission */ }
+      try { if (navigator.clipboard) { await navigator.clipboard.writeText(info.text + ' ' + info.url); ok = true; } } catch { /* no permission */ }
       if (!ok) { inp.focus(); inp.select(); try { ok = document.execCommand('copy'); } catch { ok = false; } }
-      if (ok) { el.remove(); this.toast(t('linkCopied')); } else this.toast(t('copyHold'));
+      if (ok) { close(); this.toast(t('linkCopied')); } else this.toast(t('copyHold'));
     });
     root.appendChild(el);
+    if (!info.copied) { inp.focus(); inp.select(); }
     return el;
   },
 

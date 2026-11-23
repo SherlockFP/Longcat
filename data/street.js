@@ -61,3 +61,67 @@ export const RENO = [
   { id: 'cocoa', name: { en: 'Cocoa Snow', tr: 'Kakaolu Kar' }, cost: 5 },
   { id: 'blossom', name: { en: 'Blossom Breeze', tr: 'Çiçek Esintisi' }, cost: 5 },
 ];
+
+// ---- R10: Cat Street past the second lap (src/game/street.js unit()) ----
+// Lap 3: no new houses. Each of the six shops gets 3 visible upgrades on its façade (2, 2 and 3 stars): a bunting
+// garland, a window planter, then the shop's own signature piece beside the door (art: up_bunting.webp, up_planter.webp,
+// up_<shop>.webp). Then three new shop kinds open with new keepers (street_<id>.webp, keeper_<id>.webp). After that every
+// lap is a remix: each of the nine shops is repainted (a colour variant), dressed for a festival and gets a guest who
+// moves in for the lap, so a lap never repeats the one before it.
+export const UP_SHARED = [
+  { id: 'bunting', name: { en: 'Bunting garland', tr: 'Flama süsü' }, cost: 2 },
+  { id: 'planter', name: { en: 'Window planter', tr: 'Pencere saksısı' }, cost: 2 },
+];
+export const UP_SIGN = {
+  bakery: { en: 'Bread cart', tr: 'Ekmek arabası' },
+  library: { en: 'Reading lamp', tr: 'Okuma lambası' },
+  florist: { en: 'Flower cart', tr: 'Çiçek arabası' },
+  tea: { en: 'Garden tea table', tr: 'Bahçe çay masası' },
+  toy: { en: 'Pinwheel toy stand', tr: 'Fırıldaklı oyuncak tezgahı' },
+  music: { en: 'Busker stage', tr: 'Sokak sahnesi' },
+};
+export const UP_SIGN_COST = 3;
+export const UP_REWARD = { coins: 120, hint: 1 };
+export const SHOPS_NEW = [
+  {
+    id: 'fish', name: { en: 'Fish Market', tr: 'Balık Pazarı' },
+    keeper: { name: 'Gill', line: { en: 'Fresh this morning. Mostly.', tr: 'Bu sabah tutuldu. Çoğu yani.' } },
+    own: [{ en: 'Fish crates', tr: 'Balık kasaları' }, { en: 'Ice counter', tr: 'Buzlu tezgah' }, { en: 'Striped awning', tr: 'Çizgili tente' }],
+  },
+  {
+    id: 'post', name: { en: 'Post Office', tr: 'Postane' },
+    keeper: { name: 'Stamp', line: { en: 'Every letter gets there. Every paw print too.', tr: 'Her mektup yerine ulaşır. Her pati izi de.' } },
+    own: [{ en: 'Red mailbox', tr: 'Kırmızı posta kutusu' }, { en: 'Parcel shelves', tr: 'Koli rafları' }, { en: 'Clock over the door', tr: 'Kapı üstü saat' }],
+  },
+  {
+    id: 'yarn', name: { en: 'Yarn Shop', tr: 'Yün Dükkanı' },
+    keeper: { name: 'Purl', line: { en: 'Knit one, nap two.', tr: 'Bir ilmek ör, iki kere uyu.' } },
+    own: [{ en: 'Yarn baskets', tr: 'Yün sepetleri' }, { en: 'Knitting chair', tr: 'Örgü koltuğu' }, { en: 'Knitted bunting', tr: 'Örgü flamalar' }],
+  },
+];
+export const NEW_REWARD = { coins: 200, scoop: 1, hint: 1 };
+// remix laps: a festival look (CSS hue turn of the façade + one decoration) and a guest of the lap (a visitor or an
+// apprentice art already in the game). Nine shops x these themes; the guest list is offset per lap so pairs rotate.
+export const REMIX = [
+  { id: 'lights', name: { en: 'Evening Lights', tr: 'Akşam Işıkları' }, hue: 0, sat: 1.1, deco: 'lights' },
+  { id: 'mint', name: { en: 'Mint Paint', tr: 'Nane Boyası' }, hue: 120, sat: 1, deco: 'bunting' },
+  { id: 'lantern', name: { en: 'Lantern Fair', tr: 'Fener Panayırı' }, hue: -25, sat: 1.15, deco: 'reno_lantern_garland' },
+  { id: 'snow', name: { en: 'Snow Day', tr: 'Kar Günü' }, hue: 190, sat: 0.75, deco: 'reno_cocoa_garland' },
+  { id: 'blossom', name: { en: 'Blossom Week', tr: 'Çiçek Haftası' }, hue: 300, sat: 0.95, deco: 'reno_blossom_garland' },
+  { id: 'sunny', name: { en: 'Sunny Paint', tr: 'Güneş Boyası' }, hue: 40, sat: 1.2, deco: 'planter' },
+];
+export const REMIX_TASKS = [
+  { en: 'Fresh paint', tr: 'Taze boya' },
+  { en: 'Festival decorations', tr: 'Şenlik süsleri' },
+  { en: 'Guest room', tr: 'Misafir odası' },
+  { en: 'Street party', tr: 'Sokak şenliği' },
+];
+export const REMIX_COST = 3;
+export const REMIX_REWARD = { coins: 150, scoop: 1 };
+// guests of a remix lap: visiting cats (vis7_<id>) and apprentices (appr_<id>)
+export const REMIX_GUESTS = [
+  { art: 'vis7_maple', name: 'Maple' }, { art: 'appr_bakery', name: 'Bun' }, { art: 'vis7_pip', name: 'Pip' },
+  { art: 'appr_library', name: 'Dewey' }, { art: 'vis7_sakura', name: 'Sakura' }, { art: 'appr_florist', name: 'Sprout' },
+  { art: 'vis7_hazel', name: 'Hazel' }, { art: 'appr_tea', name: 'Sugar' }, { art: 'vis7_frost', name: 'Frost' },
+  { art: 'appr_toy', name: 'Button' }, { art: 'vis7_bean', name: 'Bean' }, { art: 'appr_music', name: 'Tempo' },
+];

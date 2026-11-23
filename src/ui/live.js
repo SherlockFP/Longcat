@@ -7,6 +7,7 @@ import { COLORS } from '../core/board.js';
 import { openSheet } from './ui.js';
 import { SNACKS } from '../../data/live.js';
 import './live.css';
+import { popCard, friendsTab } from './r10.js';
 
 const r7 = (name, cls = '') => `<img class="${cls}" src="${assetUrl('r7/' + name + '.webp')}" alt="" draggable="false">`;
 const reduced = () => { try { return matchMedia('(prefers-reduced-motion: reduce)').matches; } catch { return false; } };
@@ -56,6 +57,7 @@ export function goalsHtml(list) {
     else if (g.k === 'req') { icon = resImg(g.who) + r7(g.req.k === 'color' ? `cat_head_${COLORS[g.req.c]}_happy` : 'hud_yarn', 'sub'); label = t('g_' + g.req.k, { n: g.req.need }); act = 'cafesheet'; }
     else if (g.k === 'outfit') { icon = resImg(g.who, g.outfit); label = t('outfit_' + g.outfit); act = 'residents'; }
     else if (g.k === 'season') { icon = g.visitor ? r7('vis7_' + g.visitor) : r7('hud_rosette'); label = g.visitor ? t('goalVisitor', { name: g.vname }) : t('goalGift'); act = 'events'; extra = 'data-tab="season"'; }
+    else if (g.k === 'job') { icon = resImg(g.who) + `<i class="gjrw">${r7('hud_coin')}30</i>`; label = t('jobGoal', { name: g.job.name, task: t('jk_' + g.job.k, { n: g.job.need }) }); act = g.job.done ? 'jobclaim' : 'quests'; extra = `data-s="${g.job.s}"`; }
     else if (g.k === 'daily') { icon = r7('hud_medal'); label = t('g_daily'); act = 'dailysheet'; }
     else if (g.k === 'show') { icon = r7('icon_trophy'); label = t('goalShow'); act = 'events'; extra = 'data-tab="show"'; }
     else if (g.k === 'party') { icon = r7('hud_star'); label = t('goalParty'); }
@@ -87,6 +89,7 @@ export function dailySheet(info) {
   const shield = `<div class="shieldchip ${info.shield ? 'on' : 'used'}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5z"/><path class="ck" d="m8 12 3 3 5-6"/></svg>${t(info.shield ? 'shieldReady' : 'shieldUsed')}</div>`;
   const body = `<div class="streakhead">${r7('hud_medal', 'flame')}<b>${t('streakDays', { n: info.streak })}</b>${shield}<small>${t('streakRule')}</small></div>
 <div class="sdays">${boxes}</div>
+${info.drec ? `<div class="drecbar">${info.drec.next ? r7(info.drec.next.art, 'drart sil') : ''}<span><b>${info.drec.next ? t('drecProg', { n: info.drec.n, at: info.drec.next.at }) : t('drecTotal', { n: info.drec.n })}</b><small>${info.drec.next ? t('drecNext', { name: info.drec.next.name }) : t('drecAll')}</small></span>${info.drec.next ? bar(info.drec.n, info.drec.next.at, '') : ''}</div>` : ''}
 ${info.done ? `<div class="lnote">${t('dailyDoneTil', { t: fmtLong(info.ms) })}</div>` : `<button class="btn green sm" data-act="dailyplay">${t('play')}</button><div class="lnote small">${t('dailyEnds', { t: fmtLong(info.ms) })}${info.stamp ? ' · ' + t('dailyStamp') : ''}</div>`}`;
   openSheet('dailysheet', 'quests lsheet', t('dailyLevel'), body);
 }
@@ -101,9 +104,10 @@ export function eventsSheet(info) {
     return;
   }
   const tab = (k, label, dot) => `<button class="stab ${evTab === k || (k === 'show' && evTab === 'arch') ? 'on' : ''}" data-act="evtab" data-tab="${k}">${label}${dot ? '<i class="dot"></i>' : ''}</button>`;
-  const tabs = `<div class="stabs">${tab('show', t('show'), info.show.dot)}${tab('rush', t('rush'), info.rush.dot)}${tab('season', t('season'), info.season.dot)}</div>`;
+  const tabs = `<div class="stabs ev4">${tab('show', t('show'), info.show.dot || (info.pop && info.pop.next && info.pop.next.k === 'claim'))}${tab('rush', t('rush'), info.rush.dot)}${tab('season', t('season'), info.season.dot)}${tab('friends', t('friends'), false)}</div>`;
   let body = '';
-  if (evTab === 'show') body = showTab(info.show);
+  if (evTab === 'show') body = showTab(info.show, info.pop);
+  else if (evTab === 'friends') body = friendsTab(info.friends);
   else if (evTab === 'arch') body = archTab(info.arch);
   else if (evTab === 'rush') body = rushTab(info.rush);
   else body = seasonTab(info.season);
@@ -111,9 +115,10 @@ export function eventsSheet(info) {
 }
 
 const goalText = (g) => (g.kind === 'chain' ? t('goalChain', { n: g.n }) : t('goalSeats', { n: g.n }));
-function showTab(s) {
+function showTab(s, pop) {
   const card = (b) => `<div class="sbcard ${b.medal}">${medalSvg(b.medal)}<div class="sbt"><b>${t('showBoardN', { k: b.k.toUpperCase() })}</b><small>${b.goal ? goalText(b.goal) : t('goalLoading')}</small><small class="mst">${b.medal === 'gold' ? t('medalGold') : b.medal === 'bronze' ? t('medalBronze') : t('medalNone')}</small></div><button class="btn green xs" data-act="showplay" data-w="${b.w}" data-k="${b.k}">${b.medal ? t('replay') : t('play')}</button></div>`;
-  return `<div class="theme lth" style="--th:${s.color}"><b>${s.name}</b><span>${t('showEnds', { t: fmtLong(s.endsMs) })}</span></div>
+  // R10: the week's pop-up event leads the tab (its postcard, 3 stamps, the one thing left to do); the boards below are its boards
+  return `${pop ? popCard(pop) : `<div class="theme lth" style="--th:${s.color}"><b>${s.name}</b><span>${t('showEnds', { t: fmtLong(s.endsMs) })}</span></div>`}
 <div class="lnote">${t('showRules')}</div>
 ${s.boards.map(card).join('')}
 <div class="lnote small">${t('showPays', { b: s.bronze, g: s.gold })}${s.rosette ? '' : ' · ' + t('showRosette')}</div>
@@ -123,9 +128,11 @@ function archTab(a) {
   const per = 3;
   const pages = Math.max(1, Math.ceil(a.weeks.length / per));
   archPage = Math.max(0, Math.min(pages - 1, archPage));
-  const rows = a.weeks.slice(archPage * per, archPage * per + per).map((w) => `<div class="qrow arow"><div class="qt"><b>${w.name}</b><span>${t('weeksAgo', { n: w.ago })}</span></div>${w.boards.map((b) => `<button class="abtn ${b.medal}" data-act="showplay" data-w="${w.w}" data-k="${b.k}">${medalSvg(b.medal)}<b>${b.k.toUpperCase()}</b></button>`).join('')}</div>`).join('');
+  // each past week keeps its postcard: owned, or caught up once both boards are cleared (one catch-up a week)
+  const pc = (w) => (!w.card ? '' : w.card.own ? `<span class="apc own">${r7(w.card.fg)}<i>&#10003;</i></span>` : w.card.ok ? `<button class="apc get" data-act="catchup" data-w="${w.w}">${r7(w.card.fg)}<em>${t('catchGet')}</em></button>` : `<span class="apc">${r7(w.card.fg, 'sil')}</span>`);
+  const rows = a.weeks.slice(archPage * per, archPage * per + per).map((w) => `<div class="qrow arow"><div class="qt"><b>${w.name}</b><span>${t('weeksAgo', { n: w.ago })}</span></div>${w.boards.map((b) => `<button class="abtn ${b.medal}" data-act="showplay" data-w="${w.w}" data-k="${b.k}">${medalSvg(b.medal)}<b>${b.k.toUpperCase()}</b></button>`).join('')}${pc(w)}</div>`).join('');
   const arrow = (d) => `<button class="arr ${archPage + d < 0 || archPage + d >= pages ? 'dis' : ''}" data-act="archpage" data-p="${archPage + d}" aria-label="${d < 0 ? t('back') : t('next')}"><svg viewBox="0 0 24 24"><path d="${d < 0 ? 'M15 5 8 12l7 7' : 'M9 5l7 7-7 7'}" fill="none" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>`;
-  return `<div class="lnote">${t('archiveSub')}</div>${rows || `<div class="lnote">${t('archiveEmpty')}</div>`}${pages > 1 ? `<div class="rpager">${arrow(-1)}<span>${archPage + 1}/${pages}</span>${arrow(1)}</div>` : ''}<button class="link" data-act="evtab" data-tab="show">${t('back')}</button>`;
+  return `<div class="lnote">${t('archiveSub')} ${a.catchOpen ? t('catchRule') : t('catchUsed')}</div>${rows || `<div class="lnote">${t('archiveEmpty')}</div>`}${pages > 1 ? `<div class="rpager">${arrow(-1)}<span>${archPage + 1}/${pages}</span>${arrow(1)}</div>` : ''}<button class="link" data-act="evtab" data-tab="show">${t('back')}</button>`;
 }
 export const setArchPage = (p) => { archPage = +p || 0; };
 function rushTab(r) {
@@ -152,18 +159,20 @@ ${s.claim ? `<button class="btn green sm" data-act="seasonclaim">${s.claim.visit
 // ---- arrival scene: a new visiting cat (or a Cat Street shopkeeper) walks in, waves, and a card says where it lives ----
 // a: { kind: 'visitor'|'keeper'|'apprentice', id, name, line, place, reward, keeper? }. Tap anywhere (or the button) closes. Reduced motion:
 // no walk, the card shows at once.
+// a new shop / upgrade / guest on Cat Street can be shown off: Share makes a picture of the street with the game's link
+const SHARE_ICON = '<svg class="shi" viewBox="0 0 24 24"><path d="M12 3v12M7 8l5-5 5 5" fill="none" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" fill="none" stroke-width="3" stroke-linecap="round"/></svg>';
 export function arrival(a) {
   closeArrival();
   const shop = a.kind === 'keeper' || a.kind === 'apprentice';
-  const art = a.kind === 'apprentice' ? r7('keeper_' + a.id, 'arcat') + r7('appr_' + a.id, 'arcat arkit') : a.kind === 'keeper' ? r7('keeper_' + a.id, 'arcat') : r7('vis7_' + a.id, 'arcat');
-  const title = shop ? t('keeperArrive', { place: a.place }) : t('visitorArrive', { name: a.name });
-  const sub = a.kind === 'apprentice' ? t('apprMoved', { name: a.name, keeper: a.keeper }) : a.kind === 'keeper' ? t('keeperMoved', { name: a.name }) : a.place ? t('nookIn', { room: a.place }) : '';
+  const art = a.kind === 'apprentice' ? r7('keeper_' + a.id, 'arcat') + r7('appr_' + a.id, 'arcat arkit') : a.kind === 'keeper' || a.kind === 'upgrade' ? r7('keeper_' + a.id, 'arcat') : a.kind === 'guest' ? r7(a.art, 'arcat') : r7('vis7_' + a.id, 'arcat');
+  const title = shop ? t('keeperArrive', { place: a.place }) : a.kind === 'upgrade' ? t('upDone', { place: a.place }) : a.kind === 'guest' ? t('guestArrive', { name: a.name, place: a.place }) : t('visitorArrive', { name: a.name });
+  const sub = a.kind === 'apprentice' ? t('apprMoved', { name: a.name, keeper: a.keeper }) : a.kind === 'keeper' ? t('keeperMoved', { name: a.name }) : a.kind === 'upgrade' ? t('upDoneSub', { name: a.name }) : a.kind === 'guest' ? t('guestSub', { theme: a.theme }) : a.place ? t('nookIn', { room: a.place }) : '';
   const el = document.createElement('div');
   el.id = 'arrival';
   el.className = 'arrival' + (reduced() ? ' calm' : '');
   el.dataset.act = 'arrivalclose'; // a tap anywhere closes it
   el.innerHTML = `<div class="arwalk">${art}</div>
-<div class="arcard"><b>${title}</b><p>&ldquo;${loc(a.line)}&rdquo;</p><small>${sub}</small>${a.kind === 'visitor' ? `<small class="argift">${r7('hud_coin', 'mini')}${t('visitGift')}</small>` : a.reward ? chips(a.reward) : ''}<button class="btn green sm" data-act="arrivalclose">${t('yay')}</button></div>`;
+<div class="arcard"><b>${title}</b><p>&ldquo;${loc(a.line)}&rdquo;</p><small>${sub}</small>${a.kind === 'visitor' ? `<small class="argift">${r7('hud_coin', 'mini')}${t('visitGift')}</small>` : a.reward ? chips(a.reward) : ''}${a.kind === 'visitor' ? `<button class="btn green sm" data-act="arrivalclose">${t('yay')}</button>` : `<div class="arbtns"><button class="btn green sm" data-act="arrivalclose">${t('yay')}</button><button class="btn pink sm hshare" data-act="sharehouse" data-k="street" data-id="${a.id}">${SHARE_ICON}<span>${t('shareHouse')}</span></button></div>`}</div>`;
   (document.getElementById('ui') || document.body).appendChild(el); // inside #ui: its taps reach the action handler
 }
 export function closeArrival() { document.getElementById('arrival')?.remove(); }

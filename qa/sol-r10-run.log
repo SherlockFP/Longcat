@@ -1,0 +1,1704 @@
+Reading additional input from stdin...
+OpenAI Codex v0.171.0
+--------
+workdir: C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+model: gpt-6.2-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a20921-2c17-7f83-b5fe-0f018a5543b4
+--------
+user
+You are co-director. Long Cat Out! (web) scores retention 7 and virality 7; everything else 8. Read qa/r9-notes.md and qa/sol-r9-4.md. Give a concrete, buildable plan (no backend, no accounts, web only, ads untouched) of the 5-6 changes that would most clearly lift RETENTION to 8+ (reasons to open the game every day for months after the house is done; what a top hybrid-casual game does: collections, albums, limited-time events, streak rewards, rotating goals, social proof) and 5-6 for VIRALITY to 8+ (one-tap share where the clip always carries the link, a reason for the recipient to reply, dare chains, deep link landing, share moments). For each: player-facing description, numbers, where it shows on screen, and how you will judge it in stills.
+codex
+I’ll read both R9 notes and check the game’s existing daily and sharing flows so the plan can build on what already ships.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g '"'!node_modules'"' -g '"'!dist'"' -g '"'!*lock*'"' -g '"'!qa/*.png'"' -g '"'!qa/*.webp'"' | Select-Object -First 110" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -LiteralPath qa/r9-notes.md; Get-Content -LiteralPath qa/sol-r9-4.md' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 898ms:
+# Round 9 notes (for Sol)
+
+## Juice
+- Signature send: 60ms crouch, noodle stretch (head 1.6x tail speed, body thins), sideways leap arc with ground shadow, paws land first, accordion body (120ms), white-tip tail snap. ~510ms, taps overlap. Land sound/haptic/counter pop fire on paw landing. Carrier grate door swings. Legs reduced to front/back pair.
+- Chain: slow-mo 0.6x for 0.25s only on 2nd+ hops; glowing trail, gold screen edge glow, rising sparkles.
+- Bodies (render.js): code-made knit texture, edge stitches, inner belly shadow, soft sheen, tapered tail.
+
+## Fun / readability
+- Press preview while holding a free cat: exit lane with chevrons, speech bubble showing destination (carrier pattern badge or cushion + wait count), amber "LAST SEAT" tag (TR "SON MINDER") or red "!" if no seat. Blocked cats bonk with red lane + blocker highlight.
+- Last free cushion pulses amber with "!" tag.
+- L4: each free cat shows wait-count badge before first tap; tut4 text updated EN+TR.
+- QA asserts L1 first carrier leaves < 10s (measured 2.6s).
+
+## Virality
+- Clip from replay (src/kit/clip.js): offscreen 720x1280 9:16 replay, skips to 2 moves before best moment (biggest chain or final clear), captions (seats taken, CHAIN xN, game strip), 2.2s end card "Can you beat it?" + link. MediaRecorder MP4 preferred, WebM fallback; PNG peak-frame fallback. L13 clip ~6.3s, ~0.75MB.
+- Win card: 9:16 preview then looping video; pink "Share clip" on chain x3+ or no-park clear on 10+ cat boards; Web Share with file/text/link, else download + copy text. Challenge landing link.
+- Old live-filming code removed.
+
+## Retention
+- (report pending at time of writing)
+
+## Checks
+- build, check, full QA pass (0 console errors, no scroll failures at 375x667). Nothing committed.
+
+## Virality (r8 high finding)
+- Clip (src/kit/clip.js): opens on the tight bench. Window reaches up to 4 moves back, then setup moves made with 2+ free seats are fast-forwarded, so frame 1 reads "Only ONE seat left!" (TR "Tek minder kald��!"); caption latches through the deciding tap.
+- Punch-in on the deciding tap (camera leans 1.16x on the tap, slides to the bench at 1.10x while the cushions empty, eases out before the end card). Recorded frame is a separate canvas: zoomed world, then unzoomed caption bands.
+- One chain caption: the in-game "Chain x3!" stamp is off in the clip (Game.noStamp); only the top band counts CHAIN x1..x3.
+- Win card: the labelled pink button is now "Dare a friend" / "Meydan oku" (text + exact-board link, live at once). "Share clip" sits on the clip preview and stays hidden until the MP4/WebM is encoded (no MediaRecorder: the captioned still is offered at once). A tap can no longer send a still by accident.
+- QA: 101a asserts clip button hidden while encoding; 101b2-clip-punch frame; 101e / 101h2 assert Share clip shows once encoded.
+- Not done: real iOS/Android share-sheet link survival is unverified (WhatsApp/iMessage may drop text when a file is attached; Dare a friend sends text + link only, which is the safer path).
+
+## Retention + virality (r9, sol-r8 findings)
+- Hub thread: the build card names the next resident with their portrait and the stars still to spend ("Biscuit moves in after 3 stars" / "3 y��ld��z sonra Biscuit ta�Y��n��yor"); a piece that brings a resident keeps "moves in". The resident row left the goals strip (no duplicate).
+- Goals strip cut from 3 rows to 2. Order: claimable, a newcomer's first request, today's Daily puzzle (until played), this week's Cat Show medals (0/2, opens Events > Show), then the nearest of outfit/season/party.
+- First request after arrival: live.reqArrive gives the new resident an easy ask at once (Win 2 levels, else Fill carriers; skipped if 2 requests already wait). The arrival card shows "Luna asks: Win 2 levels"; back in the hub that request leads the goals with an orange border (cleared on claim).
+- Dare recipient: landing text "Tap a cat to send it. Only the front carrier boards. The others wait on cushions." (TR natural). On the challenge board the hint card says the rule, and the front carrier ("Boards here") and first cushion ("Waits here") get dashed gold rings until the first tap (static under reduced motion).
+- Clipboard: shareFile returns 'saved-nolink' when the clipboard write fails; "Link copied" only after writeText resolves. Otherwise a bar at the top shows the link plus "Copy challenge link" (TR "Davet linkini kopyala"); the tap is a fresh gesture, falls back to execCommand, and if that fails too, says "Press and hold the link to copy it" with the link selected.
+- QA: 90a hub thread, 90b arrival with first request, 90c hub led by that request, 90d/90e Daily + Cat Show goals (EN/TR), 91a copy bar after a refused clipboard (asserts no "copied" toast), 91b success toast + copied text carries ?c=, 91c TR bar at 375x667. 101g asserts the dare rule card + rings. 40a now expects 2 goals.
+- Not done: real iOS/Android iMessage/WhatsApp link delivery still untested (needs devices). No analytics funnel for the three handoffs yet.
+
+## Round 10 (sol-r9-3 findings: juice, virality, retention)
+### Juice (high)
+- Send reads at game speed: crouch is 100 ms (was 60) and deeper (head pulls back 0.28 cells, body 1.32x wide), released over the first 80 ms. Front paws shoot out on the spring, gallop (alternating) along the board, sit wide of the ears and reach 0.34 cells ahead across the gap. Hind legs kick back on take-off and tuck forward as the rear catches up in the fold. Reduced motion: no crouch/kick/tuck. Strip: qa/_leap-strip.jpg (100 ms = crouch with paws out, 160-210 ms = paws leading).
+- Chain counter moved off the carrier to the strip of air under the bench (centre). It appears with the first landing and ticks per landing (x1, x2, ...), not per jump; the last landing gets the full words in gold ("Chain x3!"), a 1.3x pop, a gold sparkle burst, star sound + success haptic. The combo popup stays quiet for the counter's whole life. Strip: qa/_chain-strip.jpg; frame 103a.
+### Virality (high)
+- One share path: after Share clip goes out (or saves without a link) a bar offers "Send the dare link too" with a preview of what the friend gets (goal A� board A� seats) and one Send link button (text + link only). EN/TR, fits 375x667 (103b, 103c).
+- Dares are checked on the exact board + seat count the link carries: the sender's move log is replayed on generate(n) with b seats. A run that bought a seat or used a Scoop, or that does not replay to the same result, falls back to "clear it with these seats" (always reachable).
+- Match vs beat: core/search.js maxChain() searches every winning line (all boards < 1 ms). When the sender's chain is already the board's best, the link carries x=1: "Match my chain x2 on Level 2! It is the best this board allows." / landing "Match a chain x2"; the friend's tie reads "You matched ...". L13 keeps "Beat" (its best is x5).
+- Funnel on one share id (link field i, random per share): dare_handoff (via clip/link), dare_open, dare_play, dare_first_move, dare_done (clear), dare_reshare (from -> to). Local counters only (kit/analytics.js stub); session-1 funnel adds first_chain and first_request next to l1/l3/l4_start/l10_reach/first_resident.
+### Retention (medium)
+- Newcomer loop in the room: the newcomer's first ask sits over the cat (task, progress bar, reward +coins +hearts); the Claim bubble shows its reward too; right after a claim the resident says the next reason to come back ("Next: Fill 6 carriers for Luna" or "New request in 3h. See you soon!") until the next level starts (103f-103i).
+- Bug fixed: req.fresh was missing from the save defaults, so the newcomer thread was dropped on every reload.
+- Cat Street first repeat lap: each shop's keeper takes a kitten apprentice (6 new sprites, appr_<id>.webp: Bun, Dewey, Sprout, Sugar, Button, Tempo). The house under construction shows the apprentice's silhouette ("An apprentice moves in"); finishing it plays the arrival with keeper + kitten ("Page's apprentice Dewey moved in!"); finished lap-2 shops show the kitten beside the keeper (103j, 103k).
+### Still weak / not done
+- Real iOS/Android share-sheet delivery (iMessage, WhatsApp) still untested; needs devices. The follow-up link bar is the mitigation.
+- Analytics are local counters, no backend: the funnel exists but nothing is collected off-device. Phone first-session tests not run.
+- The newcomer's ask also shows in the goals strip (duplicate when the resident is in the current room).
+- Lap 3+ of Cat Street still repeats keepers + apprentices.
+**Overall 8/10, up from 7/10.** Long Cat Out! now meets your top-100 benchmark as a design. The paws-first leap gives the game a recognizable move, and watching a full bench empty after one good decision is its best payoff. The biggest remaining gaps are giving players a fresh reason to return and getting a shared clip to turn into a friend�?Ts first move.
+
+| Dimension | Previous | Current | Assessment |
+|---|---:|---:|---|
+| Presentation | 8 | **8** | The cafAc, street, and puzzle board feel like one world. On short phones, the rails and world labels still crowd each other. |
+| Appeal | 8 | **8** | The faces, sleeping bench cats, and resident arrivals sell the fantasy. The straight bodies still read as patterned tubes at rest. |
+| Juice | 6 | **8** | The crouch, reaching paws, and fold give the send a clear rhythm. The chain counter now leaves the carrier mouth visible. |
+| Fun | 7 | **8** | Choosing which cat can afford to wait gives the puzzle real stakes. The press preview makes those stakes easier to read, and the first four boards teach distinct decisions. |
+| Retention | 7 | **7** | The first resident request gives the next win a purpose, and apprentices make the second Cat Street lap worth seeing. Completed floors and later laps still offer weaker reasons to return. |
+| Virality | 5 | **7** | The clip tells a clear one-seat-left story. The exact-board dare gives friends an achievable goal, including a match target when the sender has already hit the board maximum. The clip-to-link handoff still adds friction. |
+| **Overall** | **7** | **8** | The biggest gain is in the move players repeat every few seconds. |
+
+I scored from the captures and current implementation, including the later changes in [the R9 notes](qa/r9-notes.md). `npm run check` passed. I didn�?Tt play on a physical phone or verify share delivery, and the analytics are local, so retention and virality are design scores without player outcome data.
+
+### Highest-priority fixes
+
+1. **Presentation �?" fix the 375A-667 hub layout.** Collapse completed and locked floors into a single picker in Cat Street. Give building names a lane below the faAades and reserve space beside Tasks for the claim badge. The current street capture has names under rail buttons, and the cafAc capture has the build cost tucked behind the currency row.
+2. **Appeal �?" make the resting cat silhouette read at board size.** Start with the orange tabby. Give it shoulders under the head, a softer belly contour, and a tapered rump. Wrap the stripes around those forms, then check straight cats and tight bends at 375 px before applying the treatment to other breeds.
+3. **Juice �?" make the landing move the objects it touches.** Anchor the front paws to the carrier lip for a beat, compress the mat as the body folds, and give the loaded carrier a small settle. Give occupied cushions a quick rebound as each cat springs off. Fit those reactions into the existing timing.
+4. **Fun �?" teach the recovery at the first full-bench loss.** Keep the failed cat, all occupied cushions, and the carrier queue visible above a shorter sheet. Highlight the carrier the cat needs and show how many departures away it is. Lead with **Take back** and **Retry**, and put the Starter Bundle behind **More help**. In a fresh-phone test, check whether players change their next choice after undoing.
+5. **Retention �?" always show what the next win can build.** Replace the large **Floor complete!** card with the next available build and a tap to that room. Give an in-room resident request one home by removing its duplicate goal tile. For Cat Street lap three, give each shop a visible renovation and a shop-specific resident request so the next completion changes something players can see or do.
+6. **Virality �?" make a single message sufficient.** Give **Dare a friend** a rich link preview with the actual chain goal, seat count, and peak frame. Keep the video export available for posting. Verify the link from send to first move on iOS and Android in iMessage and WhatsApp, and collect the existing share-ID events off-device so you can see where recipients drop out.
+
+ exited 1 in 951ms:
+vite.config.js
+STYLE.md
+store\shots\tr-6.png
+store\shots\tr-5.png
+store\shots\tr-4.png
+store\shots\tr-3.png
+store\shots\tr-2.png
+store\shots\tr-1.png
+store\shots\en-6.png
+store\shots\en-5.png
+store\shots\en-4.png
+store\shots\en-3.png
+store\shots\en-2.png
+store\shots\en-1.png
+store\shots\cover.png
+store\listing.md
+src\ui\ui.js
+src\ui\ui.css
+src\ui\r7.css
+src\ui\live.js
+src\ui\live.css
+src\ui\dare.css
+src\main.js
+RELEASE.md
+qa-run.log
+src\kit\save.js
+src\kit\pwa.js
+src\kit\notify.js
+src\kit\iap.js
+src\kit\haptics.js
+src\kit\dare.js
+src\kit\clip.js
+src\kit\audio.js
+src\kit\analytics.js
+src\kit\ads.js
+src\i18n.js
+src\i18n-live.js
+src\i18n-dare.js
+src\game\street.js
+src\game\render.js
+src\game\live.js
+src\game\game.js
+src\game\econ.js
+src\game\cafe.js
+src\game\breeds.js
+src\game\assets.js
+src\core\solver.js
+src\core\search.js
+src\core\rules.js
+src\core\rng.js
+src\core\generate.js
+src\core\board.js
+scripts\store-shots.mjs
+scripts\qa.mjs
+scripts\check-web.mjs
+scripts\check-sfx.mjs
+scripts\check-econ.mjs
+scripts\check-dare.mjs
+scripts\check-core.mjs
+DESIGN-HYBRID.md
+ASSETS-V2.md
+DESIGN-V2.md
+DESIGN.md
+package.json
+CREDITS.md
+ASSETS.md
+index.html
+data\street.js
+data\live.js
+data\events.js
+data\cafe.json
+public\sfx\win.mp3
+public\sfx\tick2.mp3
+public\sfx\tick1.mp3
+public\sfx\thump2.mp3
+public\sfx\thump1.mp3
+public\sfx\star.mp3
+public\sfx\pop4.mp3
+public\sfx\pop3.mp3
+public\sfx\pop2.mp3
+public\sfx\pop1.mp3
+public\sfx\plink2.mp3
+public\sfx\plink1.mp3
+public\sfx\music.mp3
+public\sfx\mrrp3.mp3
+public\sfx\mrrp2.mp3
+public\sfx\mrrp1.mp3
+public\sfx\mew2.mp3
+public\sfx\mew1.mp3
+public\sfx\jingle.mp3
+public\sfx\clack.mp3
+public\sfx\bonk.mp3
+public\privacy.html
+public\manifest.webmanifest
+art-src\_pal.pkl
+public\icons\maskable-512.png
+public\icons\icon-512.png
+public\icons\icon-192.png
+public\icons\apple-touch-icon.png
+qa\_codex-r9.log
+qa\_codex-r9-4.log
+qa\_codex-r9-3.log
+qa\_codex-r9-2.log
+qa\sol.err
+qa\sol-review.md
+qa\sol-r9-4.md
+qa\sol-r9-3.md
+qa\sol-r9-2.md
+qa\sol-r9-1.md
+qa\sol-r8.md
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'rg -n "daily|streak|season|album|show|request|weekKey|dayKey|reset|floorDone" src/game/live.js src/ui/live.js src/ui/ui.js data/live.js src/game/street.js data/events.js' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n \"end.?card|toBlob|shareFile|shareText|clipReady|dare_|shareBar|challenge|og:|service.worker|base:\" src/kit/clip.js src/main.js index.html src/kit/pwa.js src/ui/ui.js scripts/check-dare.mjs; rg --files -g AGENTS.md -g '*sw.js' -g '*deploy*' -g '"'!node_modules'"'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -Encoding utf8 -LiteralPath src/kit/dare.js, src/kit/save.js, src/kit/analytics.js, vite.config.js, package.json' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ exited 1 in 685ms:
+scripts/check-dare.mjs:1:// Friend challenge links: round trip, and every hostile payload is refused or clamped.
+src/ui/ui.js:402:    // Share: a round icon; at a real high (chain x3+, a clean sweep, a friend challenge) a labelled "Share clip" pill
+src/ui/ui.js:421:    const dres = info.friend ? `<div class="dres ${info.friend.res}">${info.friend.line}</div>` : ''; // a friend challenge: how it went
+src/ui/ui.js:464:  // a friend's challenge link: who dares, the goal, the board, and (a new player) the one rule; Play goes straight in
+src/ui/ui.js:896:  // the challenge link when the platform could not copy it on its own: one tap copies it (a fresh user gesture), and
+src/main.js:21:import { makeShareClip, planClip, shareFile, canRecord } from './kit/clip.js';
+src/main.js:488:  // a friend's challenge: the one rule a recipient needs, with the front carrier and a cushion ringed until the first tap
+src/main.js:499:  S.bench0 = board.meta.benchSize; // the seats this attempt started with (a friend challenge link carries them)
+src/main.js:519:  if (S.show && S.show.kind === 'friend' && !S.dareMoved) { S.dareMoved = true; track('dare_first_move', { i: S.show.i || '', m: S.show.m }); }
+src/main.js:651:// ---- share clip + friend challenge ----
+src/main.js:653:// clear) as a vertical clip. Share hands it over with a challenge link to this exact board (kit/dare.js).
+src/main.js:663:    log: game.log.slice(),
+src/main.js:697:// the challenge this run sends: the same board and seats, and what the player did on it
+src/main.js:731:    if (!ok) { out.m = 'seats'; out.g = d.b; track('dare_fallback', { n: d.n, m: d.m }); }
+src/main.js:755:  track(d ? 'dare_open' : 'dare_bad', d ? { m: d.m, k: d.k, i: d.i || '' } : {});
+src/main.js:766:  track('dare_play', { m: d.m, i: d.i || '' });
+src/main.js:768:// after the challenge (or Not now): the normal flow, a new player straight into level 1
+src/main.js:785:  track('dare_done', { m: sh.m, res, i: sh.i || '' }); // the funnel's clear step
+src/main.js:788:  const line = t(`dare_${res}_${sh.m}`, { who: whoOf(sh.nm), n, v: vv });
+src/main.js:1193:  dareskip() { ui.hideModal(); track('dare_skip'); afterDare(); },
+src/main.js:1289:  // Share / Dare a friend: the challenge (text + link to this exact board), at once
+src/main.js:1325:// Share: the challenge line with the link (withClip: the encoded clip with it; without MediaRecorder, the captioned peak
+src/main.js:1334:  if (from != null) track('dare_reshare', { i: from, to: d.i });
+src/main.js:1338:      const how = await shareFile(f, `long-cat-out-${d.k === 'l' ? 'level-' + S.n : 'challenge'}`, text, url);
+src/main.js:1340:      track('dare_handoff', { i: d.i, via: 'clip', how });
+src/main.js:1350:// the challenge text + link on its own (the Dare button, and the follow-up after a clip)
+src/main.js:1352:  track('dare_handoff', { i: id, via: 'link' });
+src/main.js:1403:  if (dc) { startHome(); dareLanding(dc); } // a friend's challenge link: one intro card, then straight onto that board
+src/main.js:1566:          dog: st.objs.map((o, k) => (o.kind === 'dog' && st.objAlive[k] ? dogLeft(st, k) : -1)).filter((x) => x >= 0),
+src/kit/clip.js:5:// and a short end card ("Can you beat it?") closes it. Reads with sound off. MediaRecorder turns it into an MP4 /
+src/kit/clip.js:16:const END = 2.2; // end card seconds
+src/kit/clip.js:145:  // back out before the end card
+src/kit/clip.js:223:    // end card: the result, the dare, the name of the game
+src/kit/clip.js:256:    // screen, 'end' = the end card), then draw it
+src/kit/clip.js:359:      const blob = await new Promise((res) => p.canvas.toBlob(res, 'image/png'));
+src/kit/clip.js:372:// share a file (with the text and the challenge link) when the platform can, else download it and copy the text;
+src/kit/clip.js:374:export async function shareFile({ blob, ext }, name, text, url) {
+src/kit/pwa.js:1:// PWA glue: service worker (production only) + the "install app" prompt the browser offers on supported browsers.
+
+ succeeded in 702ms:
+src/game/street.js:3:// d.cafe.reno[areaId] = bitmask of owned theme sets, d.cafe.style[areaId] = the set shown ('' = none).
+src/game/street.js:42:// the set to offer next in a room: the featured one (current season) first, then the list order; -1 = all owned
+src/ui/ui.js:274:  <h2 class="title yellow sm">${next ? t('newFloor', { name }) : t('floorDone')}</h2>
+src/ui/ui.js:329:    const dailyDone = info.dailyDone;
+src/ui/ui.js:337:      <button class="tile" data-act="daily">${img('ui_hint.webp')}<span>${t('daily')}</span><i>${dailyDone ? t('dailyDone') : t('streak', { n: info.streak })}</i></button>
+src/ui/ui.js:354:    <div class="logo-wrap"><div class="lvl-pill">${paw()}<span>${info.show ? (typeof info.show === 'string' ? info.show : t('showBoard')) : info.daily ? t('dailyLevel') : t('level', { n: info.level })}</span>${paw()}</div></div>
+src/ui/ui.js:358:  ${info.show ? (info.rush ? `<div class="rushclock" id="rushclock" aria-live="off">0.0s</div>` : `<div class="goalpill" id="goalpill" hidden>${r7('hud_medal')}<b></b></div>`) : `<div class="boosters">${bst('hint')}${bst('scoop')}${bst('undo')}</div>`}
+src/ui/ui.js:406:    // only the stars that were earned (1 normal, 2 hard, 3 super hard): a clean clear never shows grey slots
+src/ui/ui.js:426:    // for hard levels, a chain replay, a resident ready to move in, the daily and the Show / Rush boards
+src/ui/ui.js:427:    const compact = !info.show && !info.again && info.stars < 2 && !(nr && nr.left <= 0); // a chain loops as a thumbnail in it
+src/ui/ui.js:449:  ${info.show ? `<div class="purr showtag">${ribbonSvg}${info.showTag || t('showBoard')}</div>` : `<div class="stars n${info.stars}">${stars}</div>`}
+src/ui/ui.js:455:  ${info.friend ? (info.friend.res === 'miss' ? `<button class="btn" data-act="retry">${t('retry')}</button>` : `<button class="btn pink" data-act="share">${SHARE_SVG}<span>${t('dareBack')}</span></button>`) : info.again ? `<button class="btn" data-act="retry">${t('runAgain')}</button>` : info.canBuild ? `<button class="btn" data-act="cafe">${t('build')}</button>` : `<button class="btn" data-act="next">${info.show ? t('show') : t('next')}</button>`}
+src/ui/ui.js:470:  <div class="purr showtag">${t('dareTitle')}</div>
+src/ui/ui.js:589:        // a finished request: a speech bubble over its resident, claimed with one tap ("Help Mochi earn a beanie!")
+src/ui/ui.js:595:        // a newcomer's first ask, over the cat itself: what, how far, and what it pays (a tap opens the request list)
+src/ui/ui.js:602:      // visiting cats live here: each has a furnished nook (its season's bed) in a room and idles on it; today's visitor
+src/ui/ui.js:603:      // carries the daily gift (one tap). A visitor whose nook is in another room drops by at the door.
+src/ui/ui.js:636:    const rrail = `<div class="rrail"><button class="rr ${spk === 'quests' ? 'spot' : ''}" data-act="quests" aria-label="${t('tasks')}">${r7('icon_calendar')}${dot(info.dots && info.dots.quests)}<span>${t('tasks')}</span>${sptag('quests')}</button>${L ? liveRail({ ...L, jar: jarOnCounter || !(L.jar.coins > 0 || L.spot && L.spot.k === 'jar') ? null : L.jar, jarSpot: L.spot && L.spot.k === 'jar', spot: spk, sptag }) : `<button class="rr" data-act="daily" aria-label="${t('daily')}">${r7('hud_medal')}<span>${t('daily')}</span></button>`}</div>`;
+src/ui/ui.js:678:      card = `<div class="trow empty"><span class="tname"><b>${area ? t('floorDone') : t('comingSoon')}</b>${area ? segs : `<small>${t('teaserSub')}</small>`}</span></div>`;
+src/ui/ui.js:694:  <nav class="tabbar">${tab('cafeview', 'icon_home', t('home'), '', true, 'room')}${tab('residents', 'icon_paw', t('residents'))}${tab('shop', 'icon_shop', t('shop'), info.offer ? `<i class="otag">${t('offerBadge')}</i>` : '')}${tab('show', 'icon_trophy', t('events'), dot(info.dots && info.dots.show) + (spk === 'rush' ? `<em class="sptag">${t('spotClaim')}</em>` : ''))}</nav>
+src/ui/ui.js:699:  // a petted resident hops, shows a heart and says its line
+src/ui/ui.js:739:      // wardrobe: outfits unlock with affection hearts (pets, requests, treats; live.js)
+src/ui/ui.js:810:  // starter bundle offer, shown once after level 10
+src/ui/ui.js:815:  // daily tasks + chest + 7-day login calendar
+src/ui/ui.js:861:    const w = document.querySelector('[data-act=show] .dot');
+src/ui/ui.js:862:    if (w) w.hidden = !d.show;
+src/ui/ui.js:863:    for (const [k, sel] of [['jar', '[data-act=cafesheet] .dot'], ['season', '[data-act=events][data-tab=season] .dot'], ['daily', '[data-act=dailysheet] .dot']]) {
+src/ui/ui.js:897:  // "Link copied" shows only after the write succeeded; else the link stays selected in the field to copy by hand
+src/ui/live.js:2:// requests), the daily puzzle sheet, the Events sheet (Cat Show mastery, Café Rush, season + visitors, archive) and the
+src/ui/live.js:31:// L: { jar, daily, season, dots: { jar, season, events } }
+src/ui/live.js:36:  const d = L.daily;
+src/ui/live.js:37:  const daily = `<button class="rr lr" data-act="dailysheet" aria-label="${t('dailyLevel')}">${r7('hud_medal')}${d.done ? '<i class="rok">&#10003;</i>' : d.streak ? `<i class="rnum">${d.streak}</i>` : ''}${dot(!d.done && L.dots.daily)}<span>${d.done ? fmtShort(d.ms) : t('daily')}</span></button>`;
+src/ui/live.js:40:  const s = L.season;
+src/ui/live.js:41:  const season = s ? `<button class="rr lr ${L.spot === 'season' ? 'spot' : ''}" data-act="events" data-tab="season" aria-label="${t('season')}">${r7('hud_rosette')}<i class="rnum">${s.stamps}</i>${dot(L.dots.season)}<span>${t('season')}</span>${L.sptag ? L.sptag('season') : ''}</button>` : '';
+src/ui/live.js:42:  return daily + jar + season;
+src/ui/live.js:58:    else if (g.k === 'season') { icon = g.visitor ? r7('vis7_' + g.visitor) : r7('hud_rosette'); label = g.visitor ? t('goalVisitor', { name: g.vname }) : t('goalGift'); act = 'events'; extra = 'data-tab="season"'; }
+src/ui/live.js:59:    else if (g.k === 'daily') { icon = r7('hud_medal'); label = t('g_daily'); act = 'dailysheet'; }
+src/ui/live.js:60:    else if (g.k === 'show') { icon = r7('icon_trophy'); label = t('goalShow'); act = 'events'; extra = 'data-tab="show"'; }
+src/ui/live.js:68:// ---- café tips sheet: the tip jar + resident requests ----
+src/ui/live.js:75:  openSheet('cafesheet', 'quests lsheet', t('cafeChores'), `${jar}<div class="qsec">${t('requests')}</div>${reqs}${empty}<div class="lnote small">${t('reqHow')}</div>`);
+src/ui/live.js:78:// ---- daily puzzle sheet: streak flames, the escalating chest, play ----
+src/ui/live.js:79:// info: { streak, done, ms (to midnight), chests: [7 rewards], stamp: bool }
+src/ui/live.js:80:export function dailySheet(info) {
+src/ui/live.js:81:  const cur = info.done ? info.streak : info.streak + 1; // the box today's clear opens
+src/ui/live.js:88:  const body = `<div class="streakhead">${r7('hud_medal', 'flame')}<b>${t('streakDays', { n: info.streak })}</b>${shield}<small>${t('streakRule')}</small></div>
+src/ui/live.js:90:${info.done ? `<div class="lnote">${t('dailyDoneTil', { t: fmtLong(info.ms) })}</div>` : `<button class="btn green sm" data-act="dailyplay">${t('play')}</button><div class="lnote small">${t('dailyEnds', { t: fmtLong(info.ms) })}${info.stamp ? ' · ' + t('dailyStamp') : ''}</div>`}`;
+src/ui/live.js:91:  openSheet('dailysheet', 'quests lsheet', t('dailyLevel'), body);
+src/ui/live.js:95:let evTab = 'show';
+src/ui/live.js:103:  const tab = (k, label, dot) => `<button class="stab ${evTab === k || (k === 'show' && evTab === 'arch') ? 'on' : ''}" data-act="evtab" data-tab="${k}">${label}${dot ? '<i class="dot"></i>' : ''}</button>`;
+src/ui/live.js:104:  const tabs = `<div class="stabs">${tab('show', t('show'), info.show.dot)}${tab('rush', t('rush'), info.rush.dot)}${tab('season', t('season'), info.season.dot)}</div>`;
+src/ui/live.js:106:  if (evTab === 'show') body = showTab(info.show);
+src/ui/live.js:109:  else body = seasonTab(info.season);
+src/ui/live.js:114:function showTab(s) {
+src/ui/live.js:115:  const card = (b) => `<div class="sbcard ${b.medal}">${medalSvg(b.medal)}<div class="sbt"><b>${t('showBoardN', { k: b.k.toUpperCase() })}</b><small>${b.goal ? goalText(b.goal) : t('goalLoading')}</small><small class="mst">${b.medal === 'gold' ? t('medalGold') : b.medal === 'bronze' ? t('medalBronze') : t('medalNone')}</small></div><button class="btn green xs" data-act="showplay" data-w="${b.w}" data-k="${b.k}">${b.medal ? t('replay') : t('play')}</button></div>`;
+src/ui/live.js:116:  return `<div class="theme lth" style="--th:${s.color}"><b>${s.name}</b><span>${t('showEnds', { t: fmtLong(s.endsMs) })}</span></div>
+src/ui/live.js:117:<div class="lnote">${t('showRules')}</div>
+src/ui/live.js:119:<div class="lnote small">${t('showPays', { b: s.bronze, g: s.gold })}${s.rosette ? '' : ' · ' + t('showRosette')}</div>
+src/ui/live.js:126:  const rows = a.weeks.slice(archPage * per, archPage * per + per).map((w) => `<div class="qrow arow"><div class="qt"><b>${w.name}</b><span>${t('weeksAgo', { n: w.ago })}</span></div>${w.boards.map((b) => `<button class="abtn ${b.medal}" data-act="showplay" data-w="${w.w}" data-k="${b.k}">${medalSvg(b.medal)}<b>${b.k.toUpperCase()}</b></button>`).join('')}</div>`).join('');
+src/ui/live.js:128:  return `<div class="lnote">${t('archiveSub')}</div>${rows || `<div class="lnote">${t('archiveEmpty')}</div>`}${pages > 1 ? `<div class="rpager">${arrow(-1)}<span>${archPage + 1}/${pages}</span>${arrow(1)}</div>` : ''}<button class="link" data-act="evtab" data-tab="show">${t('back')}</button>`;
+src/ui/live.js:134:  return `<div class="theme lth" style="--th:#e2843c"><b>${t('rush')}</b><span>${t('showEnds', { t: fmtLong(r.endsMs) })}</span></div>
+src/ui/live.js:140:function seasonTab(s) {
+src/ui/live.js:143:  return `<div class="theme lth" style="--th:${s.color}"><b>${s.name}</b><span>${t('seasonEnds', { t: fmtLong(s.endsMs) })}</span></div>
+src/ui/live.js:147:${s.claim ? `<button class="btn green sm" data-act="seasonclaim">${s.claim.visitor ? t('inviteX', { name: s.claim.name }) : t('claimGift')}</button>` : ''}
+src/ui/live.js:154:// no walk, the card shows at once.
+data/live.js:1:// Long-term retention data (src/game/live.js): seasons, visiting cats, resident requests, outfits, Café Rush bots.
+data/live.js:2:// Seasons rotate every 4 weeks through this list; each season invites two permanent visiting cats with stamps.
+data/live.js:20:// stamps needed for the season's 1st and 2nd visitor; past the last one, every SEASON_GIFT_EVERY more stamps pays a gift
+data/live.js:26:// resident requests: one new every REQ_EVERY_H hours, at most REQ_MAX waiting
+data/live.js:32:  { k: 'daily', need: 1, coins: 35, hearts: 2 },
+data/live.js:42:// resident outfits, unlocked by affection hearts (pets, requests, treats); art res7_<id>_<outfit>.webp
+data/live.js:49:// Café Rush practice bots: clearly bots, never shown as people. Their times are simulated per week (live.rushBots).
+src/game/live.js:1:// Long-term retention systems: the café tip jar, resident requests, affection hearts + outfits, the daily-puzzle streak
+src/game/live.js:2:// chest, Cat Show mastery medals, the weekly Café Rush, 4-week seasons with stamps and visiting cats.
+src/game/live.js:10:export const EVENTS_FROM = 10; // Cat Show, Café Rush, seasons and notifications open after level 10 (d.level > 10)
+src/game/live.js:78:// ---- resident requests: 1 new every REQ_EVERY_H hours, at most REQ_MAX waiting ----
+src/game/live.js:81:export function reqTick(d, now, res) { // -> true when a request was added
+src/game/live.js:84:  if (!R.next) R.next = now; // the first resident: one request right away
+src/game/live.js:90:    const kinds = REQ_KINDS.filter((k) => !R.list.some((x) => x.k === k.k)); // two waiting requests never ask the same
+src/game/live.js:98:  if (R.list.length >= REQ_MAX) R.next = Math.max(R.next, now + REQ_EVERY_H * H_MS); // full: the clock waits (no pile of catch-up requests)
+src/game/live.js:101:// a resident who just moved in asks for something at once (their first request is the next thread on the hub);
+src/game/live.js:102:// a full list keeps its requests and the newcomer asks with the next one
+src/game/live.js:103:export function reqArrive(d, id) { // -> the new request or null
+src/game/live.js:115:export function reqEvent(d, ev, n = 1, color = -1) { // ev: win | cat | carrier | tidy | daily -> true when progress moved
+src/game/live.js:140:// ---- daily puzzle streak chest (the streak itself lives in d.daily: a missed day resets it) ----
+src/game/live.js:141:export function streakChest(streak) {
+src/game/live.js:142:  const s = Math.max(1, Math.min(7, streak));
+src/game/live.js:150:// ---- seasons: 4 weeks each, rotating through data/live.js SEASONS ----
+src/game/live.js:151:export const seasonOf = (week) => Math.floor(week / 4);
+src/game/live.js:152:export const seasonDef = (s) => SEASONS[((s % SEASONS.length) + SEASONS.length) % SEASONS.length];
+src/game/live.js:153:export const seasonEndsMs = (s, now) => Math.max(0, dayStart((s + 1) * 4 * 7 - 3) - now);
+src/game/live.js:158:  let n = d.season.daily[s] || 0;
+src/game/live.js:159:  for (const [key, b] of Object.entries(d.show.marks)) if (seasonOf(keyWeek(key)) === s) n += bits(b);
+src/game/live.js:162:// what a season pays at a stamp count: its 2 visitors, then a gift every SEASON_GIFT_EVERY stamps
+src/game/live.js:163:export function seasonSteps(s, stamps) {
+src/game/live.js:164:  const out = VISIT_AT.map((at, i) => ({ at, visitor: seasonDef(s).visitors[i] }));
+src/game/live.js:170:export function seasonClaimable(d, s) {
+src/game/live.js:172:  const done = d.season.claim[s] || 0;
+src/game/live.js:173:  return seasonSteps(s, st).filter((x, i) => i >= done && st >= x.at).length;
+src/game/live.js:175:// claims the next reached step of season s -> { visitor, repeat } | { gift } | null
+src/game/live.js:176:export function seasonClaim(d, s, day) {
+src/game/live.js:178:  const done = d.season.claim[s] || 0;
+src/game/live.js:179:  const step = seasonSteps(s, st)[done];
+src/game/live.js:181:  d.season.claim[s] = done + 1;
+src/game/live.js:190:// any season (current or archived) with a reward waiting
+src/game/live.js:191:export function seasonsReady(d) {
+src/game/live.js:192:  const seen = new Set(Object.keys(d.show.marks).map((k) => seasonOf(keyWeek(k))));
+src/game/live.js:193:  for (const s of Object.keys(d.season.daily)) seen.add(+s);
+src/game/live.js:194:  return [...seen].filter((s) => seasonClaimable(d, s) > 0).sort((a, b) => b - a);
+src/game/live.js:196:export const addDailyStamp = (d, week) => { const s = seasonOf(week); d.season.daily[s] = (d.season.daily[s] || 0) + 1; };
+src/game/live.js:198:// the visitor who drops by today (rotates), its daily gift once per day
+src/game/live.js:201:  if (!d.vis[id] || d.season.visDay >= day) return 0;
+src/game/live.js:202:  d.season.visDay = day;
+src/game/live.js:210:export function showMedal(d, w, k, gold) { // -> { bronze, gold, coins, stamps, rosette } newly earned
+src/game/live.js:212:  const b = d.show.marks[key] || 0;
+src/game/live.js:215:  d.show.marks[key] = nb;
+src/game/live.js:221:export const medalOf = (d, w, k) => { const b = d.show.marks[boardKey(w, k)] || 0; return b & 2 ? 'gold' : b & 1 ? 'bronze' : ''; };
+src/game/live.js:223:// the weeks the archive shows (the player's first Show week up to last week), newest first
+src/game/live.js:225:  const from = d.show.from || week;
+src/game/live.js:234:// whose size is not known yet counts as 30 cats, so a bot never shows a 2-second clear.
+src/game/live.js:286:  if (d.season.visDay > day) { d.season.visDay = day; hit = true; }
+src/game/live.js:292:// c: { stars, resident, res: [ids], week, streak, dailyDone, party (star cost), show: {have, need} | null }
+src/game/live.js:294:// claimable rows: a newcomer's first request, today's puzzle (until played), this week's Cat Show medals; then the nearest.
+src/game/live.js:299:  if (!c.dailyDone) add({ k: 'daily', have: Math.min(7, c.streak || 0), need: 7 }, 1);
+src/game/live.js:300:  if (c.show && c.show.have < c.show.need) add({ k: 'show', have: c.show.have, need: c.show.need }, 2);
+src/game/live.js:304:    const s = seasonOf(c.week);
+src/game/live.js:306:    const done = d.season.claim[s] || 0;
+src/game/live.js:307:    const step = seasonSteps(s, st)[done];
+src/game/live.js:308:    if (step) add({ k: 'season', have: Math.min(st, step.at), need: step.at, visitor: step.visitor || '' });
+src/game/live.js:316:// c: { claim: 'quests'|'season'|'rush'|'', req: index of a ready request or -1, jarFull, build: affordable next build }
+src/game/live.js:317:// priority: a reward waiting to be claimed > a finished resident request > a full tip jar > the next build > nothing
+
+ succeeded in 887ms:
+// Friend challenge links: ?c=<base64url JSON> names one exact board and one goal. No accounts, no backend: the link is
+// all there is, so decode() trusts nothing in it (shape, numbers, name) and clamps every field.
+//   { v: 1, n: board level number, b: bench seats, k: 'l' level | 'd' daily | 's' Cat Show | 'r' Caf� Rush,
+//     m: 'chain' | 'seats' | 'time', g: target (chain size, seats used, or tenths of a second), nm?: sender name,
+//     x?: 1 = the chain goal is already the board's best (the recipient is asked to match it, not beat it),
+//     i?: share id (a few base36 chars): ties the sender's handoff to the recipient's open, first move, clear and reshare }
+export const MODES = ['chain', 'seats', 'time'];
+const KINDS = ['l', 'd', 's', 'r'];
+const MAX_LEN = 400;
+
+const int = (v, lo, hi) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, Math.round(+v))) : null);
+
+// letters, digits, spaces and a few name marks only; at most 12 characters
+export function cleanName(s) {
+  if (typeof s !== 'string') return '';
+  return s.normalize('NFC').replace(/[^\p{L}\p{N} '.-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 12).trim();
+}
+
+function b64url(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (const x of bytes) bin += String.fromCharCode(x);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function unb64url(s) {
+  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+  return new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0)));
+}
+
+export function encode(d) {
+  const o = { v: 1, n: d.n, b: d.b, k: d.k, m: d.m, g: d.g };
+  const nm = cleanName(d.nm);
+  if (nm) o.nm = nm;
+  if (d.x) o.x = 1;
+  if (d.i && /^[a-z0-9]{1,8}$/.test(d.i)) o.i = d.i;
+  return b64url(JSON.stringify(o));
+}
+
+// baseBench(n): the board's own seat count; a link may add at most two seats (the sender's perk seats), never remove any
+export function decode(code, baseBench) {
+  if (typeof code !== 'string' || !code || code.length > MAX_LEN || !/^[A-Za-z0-9_-]+$/.test(code)) return null;
+  let o;
+  try { o = JSON.parse(unb64url(code)); } catch { return null; }
+  if (!o || typeof o !== 'object' || Array.isArray(o) || o.v !== 1) return null;
+  const n = int(o.n, 1, 999);
+  const m = MODES.includes(o.m) ? o.m : null;
+  if (n == null || !m) return null;
+  const k = KINDS.includes(o.k) ? o.k : 'l';
+  const base = baseBench(n);
+  const b = int(o.b, base, base + 2) ?? base;
+  let g;
+  if (m === 'chain') g = int(o.g, 2, 8);
+  else if (m === 'seats') g = int(o.g, 0, b);
+  else g = int(o.g, 30, 9000); // 3 s .. 15 min, in tenths
+  if (g == null) return null;
+  const out = { n, b, k, m, g, nm: cleanName(o.nm) };
+  if (m === 'chain' && o.x === 1) out.x = 1;
+  if (typeof o.i === 'string' && /^[a-z0-9]{1,8}$/.test(o.i)) out.i = o.i;
+  return out;
+}
+
+// a fresh share id for the funnel (not a user id: random, per share)
+export const shareId = () => Math.floor(Math.random() * 36 ** 6).toString(36).padStart(6, '0');
+
+// how the run went against the goal: 'beat' | 'tie' | 'miss' (v = the player's own chain / seats / tenths)
+export function judge(m, g, v) {
+  if (m === 'chain') return v > g ? 'beat' : v === g ? 'tie' : 'miss';
+  if (m === 'seats') return v < g ? 'beat' : v === g ? 'tie' : 'miss';
+  return v < g ? 'beat' : v === g ? 'tie' : 'miss';
+}
+
+// Turkish genitive of a name with an apostrophe (Ana'nin, Ali'nin, Murat'in, G�l'�n): last vowel harmony, -n- after a vowel
+export function trGenitive(name) {
+  const vow = 'aiouei��AIOUEI��';
+  const low = name.toLocaleLowerCase('tr');
+  let last = '';
+  for (const c of low) if (vow.toLocaleLowerCase('tr').includes(c)) last = c;
+  const suf = { a: 'in', i: 'in', o: 'un', u: 'un', e: 'in', i: 'in', �: '�n', �: '�n' }[last] || 'in';
+  const endsVowel = vow.toLocaleLowerCase('tr').includes(low.at(-1) || '');
+  return `${name}'${endsVowel ? 'n' : ''}${suf}`;
+}
+// Versioned localStorage save. Safe when storage is blocked.
+import { TASK_POOL } from '../game/econ.js';
+
+const KEY = 'lco_save';
+const VERSION = 8;
+
+const defaults = () => ({
+  v: VERSION,
+  level: 1,
+  coins: 50,
+  bestStars: {},
+  settings: { sound: true, music: true, haptics: true, lang: guessLang(), notify: false }, // music: older saves get it on through the defaults merge
+  daily: { last: '', streak: 0, doneDay: '', shieldW: -1 }, // shieldW: the week whose one free missed day is spent
+  ads: { wins: 0, lastInterstitial: 0, removeAds: false },
+  counters: {},
+  boosters: { hint: 3, scoop: 2, undo: 3 },
+  cafe: { stars: 0, built: {}, hintDay: '', hintN: 0, scoopLevel: 0, love: {}, party: 0, hearts: {}, wear: {}, petDay: {}, street: 0, reno: {}, style: {} }, // street: Cat Street pieces built (src/game/street.js); reno: area id -> owned theme-set bits; style: area id -> shown set // hintN: free perk hints used on hintDay; love: resident id -> affection level 0..3 (treats)
+  lives: { n: 5, t: 0 }, // t = when the next life regen started (0 while full)
+  purr: { n: 0, pend: 0, lost: 0, seatLv: 0 }, // Purr Streak count + the bonus waiting for the next level (0/1/2) + the level last lost (so a restart cannot fake a first try) + the level whose bonus bench seat is still owed
+  quests: { day: 0, list: [], chest: 0 }, // 3 daily tasks: { id, p: progress, c: claimed }
+  login: { last: 0, idx: 0 }, // 7-day calendar: last claimed day number, claims in this cycle
+  show: { week: 0, decor: {}, marks: {}, goals: {}, from: 0 }, // weekly Cat Show: decor = rosettes won (theme id), marks = board key ('<week>a|b') -> medal bits (1 bronze, 2 gold), goals = computed board goals, from = first Show week (archive start)
+  shop: { starterShown: false, offerDay: -1 }, // offerDay: the day the hub's Shop 'Offer' badge was last seen (once a day)
+  iap: { owned: {}, tx: [] }, // non-consumables owned + recent transaction ids (no double grants)
+  clock: { max: 0 }, // highest time ever seen: the rollback guard
+  // v8 retention (src/game/live.js): tip jar fill start, resident requests, Caf� Rush, season stamps/claims, visiting cats
+  jar: { t: 0, total: 0 },
+  req: { list: [], next: 0, n: 0, done: 0, fresh: '' }, // fresh: the newcomer whose first request leads the hub (kept across reloads)
+  rush: { week: 0, best: 0, cats: 0, pend: null, cups: {} },
+  season: { daily: {}, claim: {}, visDay: 0 },
+  vis: {},
+  meta: { firstOpen: 0, sessions: 0, funnel: {}, ret: {}, shareNudge: 0, dares: 0 }, // shareNudge: the first "show a friend" prompt was shown; dares: friend challenges played
+});
+
+function guessLang() {
+  try {
+    return (navigator.language || 'en').toLowerCase().startsWith('tr') ? 'tr' : 'en';
+  } catch {
+    return 'en';
+  }
+}
+
+function merge(base, over) {
+  for (const k of Object.keys(base)) {
+    if (over && over[k] !== undefined) {
+      if (isObj(base[k])) merge(base[k], isObj(over[k]) ? over[k] : {});
+      else base[k] = over[k];
+    }
+  }
+  return base;
+}
+
+// v1 (MVP) saves keep level, coins, stars and settings; v2 adds booster counts (they stay at the defaults).
+// v3 adds the Cat Caf�: an MVP player gets a head start of caf� stars for the levels already cleared (capped), nothing pre-built.
+function migrate(raw) {
+  if (!Number.isInteger(raw.v) || raw.v < 2) raw.v = 2;
+  if (raw.v < 3) {
+    const done = Number.isInteger(raw.level) && raw.level > 1 ? raw.level - 1 : 0;
+    if (!isObj(raw.cafe)) raw.cafe = { stars: Math.min(12, done) };
+    raw.v = 3;
+  }
+  // v4 adds lives, streak, tasks, login, Cat Show, shop and meta: all take their defaults (an MVP player starts with full lives).
+  if (raw.v < 4) raw.v = 4;
+  // v5 adds resident affection (cafe.love) and purr.lost: both default to empty, nothing to convert.
+  if (raw.v < 5) raw.v = 5;
+  // v6: residents move in earlier (a resident every 2-3 tasks). A player who already has a resident through its old task
+  // keeps it: the task that brings that resident now is marked built too (a free decor piece, never a lost cat).
+  if (raw.v < 6) {
+    const b = isObj(raw.cafe) && isObj(raw.cafe.built) ? raw.cafe.built : null;
+    if (b) for (const [from, to] of [['counter_lamps', 'counter_pastry'], ['counter_plant', 'counter_chalkboard'], ['window_bookshelf', 'window_plants'], ['window_lights', 'window_rug']]) if (b[from] && !b[to]) b[to] = 1;
+    raw.v = 6;
+  }
+  // v7 adds the Cat Show board (show.best/ch/mark/markWeek), purr.seatLv and cafe.party: all take their defaults.
+  if (raw.v < 7) raw.v = 7;
+  // v8: Cat Show mastery (show.marks: board key -> medal bits) replaces the ribbon track (show.ribbons/claimed/best/ch/
+  // mark/markWeek are dropped). A player who won that week's old Show board keeps it as a bronze (gold with the judges'
+  // mark) on board A of that week. The retention systems take their defaults.
+  if (raw.v < 8) {
+    const w = isObj(raw.show) ? raw.show : null;
+    if (w && Number.isInteger(w.ch) && w.ch > 0 && Number.isInteger(w.week) && w.week > 0) w.marks = { [w.week + 'a']: w.ch & 3 };
+    raw.v = 8;
+  }
+  return raw;
+}
+
+const isObj = (o) => !!o && typeof o === 'object' && !Array.isArray(o);
+
+// Repair anything a corrupt or hand-edited save could break.
+function validate(d) {
+  const num = (v, min, dflt) => (Number.isFinite(v) && v >= min ? v : dflt);
+  d.v = VERSION;
+  d.level = Number.isInteger(d.level) && d.level >= 1 ? d.level : 1;
+  d.coins = num(d.coins, 0, 50);
+  if (!isObj(d.bestStars)) d.bestStars = {};
+  if (!isObj(d.counters)) d.counters = {};
+  const s = d.settings;
+  s.sound = !!s.sound;
+  s.music = !!s.music;
+  s.haptics = !!s.haptics;
+  if (s.lang !== 'en' && s.lang !== 'tr') s.lang = guessLang();
+  d.daily.last = String(d.daily.last ?? '');
+  d.daily.doneDay = String(d.daily.doneDay ?? '');
+  d.daily.streak = num(d.daily.streak, 0, 0);
+  d.daily.shieldW = num(d.daily.shieldW, -1, -1);
+  d.ads.wins = num(d.ads.wins, 0, 0);
+  d.ads.lastInterstitial = num(d.ads.lastInterstitial, 0, 0);
+  d.ads.removeAds = !!d.ads.removeAds;
+  const c = d.cafe;
+  c.stars = Number.isInteger(c.stars) && c.stars >= 0 ? c.stars : 0;
+  if (!isObj(c.built)) c.built = {};
+  if (!isObj(c.love)) c.love = {};
+  for (const k of Object.keys(c.love)) c.love[k] = Number.isInteger(c.love[k]) ? Math.min(3, Math.max(0, c.love[k])) : 0;
+  c.hintDay = String(c.hintDay ?? '');
+  c.scoopLevel = num(c.scoopLevel, 0, 0);
+  c.street = Number.isInteger(c.street) && c.street >= 0 ? Math.min(c.street, 1e5) : 0;
+  if (!isObj(c.reno)) c.reno = {};
+  for (const k of Object.keys(c.reno)) if (!(Number.isInteger(c.reno[k]) && c.reno[k] > 0 && c.reno[k] <= 7)) delete c.reno[k];
+  if (!isObj(c.style)) c.style = {};
+  for (const k of Object.keys(c.style)) if (!['lantern', 'cocoa', 'blossom'].includes(c.style[k])) delete c.style[k];
+  c.party = Number.isInteger(c.party) && c.party >= 0 ? c.party : 0; // rooftop parties hosted after the last area
+  c.hintN = Number.isInteger(c.hintN) ? Math.min(9, Math.max(0, c.hintN)) : 0; // older saves: a set hintDay counts as 1 used (see main.js hintsUsed)
+  const L = d.lives;
+  L.n = Number.isInteger(L.n) ? Math.min(5, Math.max(0, L.n)) : 5;
+  L.t = num(L.t, 0, 0);
+  d.purr.n = Number.isInteger(d.purr.n) && d.purr.n >= 0 ? d.purr.n : 0;
+  d.purr.lost = Number.isInteger(d.purr.lost) && d.purr.lost >= 0 ? d.purr.lost : 0;
+  d.purr.pend = d.purr.pend === 1 || d.purr.pend === 2 ? d.purr.pend : 0;
+  d.purr.seatLv = Number.isInteger(d.purr.seatLv) && d.purr.seatLv >= 0 ? d.purr.seatLv : 0;
+  const q = d.quests;
+  q.day = num(q.day, 0, 0);
+  q.chest = q.chest ? 1 : 0;
+  q.list = Array.isArray(q.list) ? q.list.filter((x) => isObj(x) && typeof x.id === 'string' && TASK_POOL.some((p) => p.id === x.id)).slice(0, 3).map((x) => ({ id: x.id, p: num(x.p, 0, 0), c: x.c ? 1 : 0 })) : [];
+  d.login.last = num(d.login.last, 0, 0);
+  d.login.idx = Number.isInteger(d.login.idx) && d.login.idx >= 0 && d.login.idx <= 7 ? d.login.idx : 0;
+  const w = d.show;
+  w.week = num(w.week, 0, 0);
+  if (!isObj(w.decor)) w.decor = {};
+  const intMap = (o, max) => { for (const k of Object.keys(o)) if (!(Number.isInteger(o[k]) && o[k] >= 0 && o[k] <= max)) delete o[k]; return o; };
+  w.marks = intMap(isObj(w.marks) ? w.marks : {}, 3);
+  for (const k of Object.keys(w.marks)) if (!/^\d+[ab]$/.test(k)) delete w.marks[k];
+  if (!isObj(w.goals)) w.goals = {};
+  for (const k of Object.keys(w.goals)) { const g = w.goals[k]; if (!isObj(g) || (g.kind !== 'seats' && g.kind !== 'chain') || !Number.isInteger(g.n) || g.n < 0 || g.n > 9) delete w.goals[k]; }
+  const gk = Object.keys(w.goals).sort((a, b) => parseInt(b, 10) - parseInt(a, 10));
+  for (const k of gk.slice(12)) delete w.goals[k]; // computed goal cache: recent weeks only
+  w.from = num(w.from, 0, 0);
+  s.notify = !!s.notify;
+  for (const k of ['hearts', 'petDay']) c[k] = intMap(isObj(c[k]) ? c[k] : {}, 1e7);
+  if (!isObj(c.wear)) c.wear = {};
+  for (const k of Object.keys(c.wear)) if (!['hat', 'scarf', 'crown'].includes(c.wear[k])) delete c.wear[k];
+  d.jar.t = num(d.jar.t, 0, 0);
+  d.jar.total = num(d.jar.total, 0, 0);
+  const R = d.req;
+  R.next = num(R.next, 0, 0);
+  R.n = Number.isInteger(R.n) && R.n >= 0 ? R.n : 0;
+  R.done = Number.isInteger(R.done) && R.done >= 0 ? R.done : 0;
+  R.list = Array.isArray(R.list) ? R.list.filter((x) => isObj(x) && typeof x.k === 'string' && typeof x.who === 'string' && Number.isInteger(x.need) && x.need > 0).slice(0, 2).map((x) => ({ k: x.k, who: x.who, need: x.need, p: Math.min(x.need, num(x.p, 0, 0)), c: Number.isInteger(x.c) && x.c >= 0 && x.c < 8 ? x.c : 0, s: num(x.s, 0, 0) })) : [];
+  const ru = d.rush;
+  ru.week = num(ru.week, 0, 0);
+  ru.best = num(ru.best, 0, 0);
+  ru.cats = num(ru.cats, 0, 0);
+  ru.pend = isObj(ru.pend) && Number.isInteger(ru.pend.rank) && ru.pend.rank > 0 ? { week: num(ru.pend.week, 0, 0), rank: ru.pend.rank } : null;
+  ru.cups = intMap(isObj(ru.cups) ? ru.cups : {}, 1e4);
+  const se = d.season;
+  se.daily = intMap(isObj(se.daily) ? se.daily : {}, 1e4);
+  se.claim = intMap(isObj(se.claim) ? se.claim : {}, 1e3);
+  se.visDay = num(se.visDay, 0, 0);
+  if (!isObj(d.vis)) d.vis = {};
+  d.shop.starterShown = !!d.shop.starterShown;
+  d.shop.offerDay = Number.isInteger(d.shop.offerDay) ? d.shop.offerDay : -1;
+  if (!isObj(d.iap.owned)) d.iap.owned = {};
+  d.iap.tx = Array.isArray(d.iap.tx) ? d.iap.tx.filter((x) => typeof x === 'string').slice(-30) : [];
+  d.clock.max = num(d.clock.max, 0, 0);
+  const m = d.meta;
+  m.firstOpen = num(m.firstOpen, 0, 0);
+  m.sessions = num(m.sessions, 0, 0);
+  m.shareNudge = m.shareNudge ? 1 : 0;
+  m.dares = num(m.dares, 0, 0);
+  if (!isObj(m.funnel)) m.funnel = {};
+  if (!isObj(m.ret)) m.ret = {};
+  for (const k of ['hint', 'scoop', 'undo']) d.boosters[k] = Number.isInteger(d.boosters[k]) && d.boosters[k] >= 0 ? d.boosters[k] : 0;
+  return d;
+}
+
+function load() {
+  const d = defaults();
+  let fresh = true;
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (isObj(raw)) {
+      fresh = false;
+      const m = migrate(raw);
+      merge(d, m);
+      // bestStars is a free-form map
+      if (isObj(m.bestStars)) d.bestStars = m.bestStars;
+      if (isObj(m.counters)) d.counters = m.counters;
+      if (isObj(m.cafe) && isObj(m.cafe.built)) d.cafe.built = m.cafe.built;
+      if (isObj(m.cafe) && isObj(m.cafe.love)) d.cafe.love = m.cafe.love;
+      for (const k of ['hearts', 'wear', 'petDay', 'reno', 'style']) if (isObj(m.cafe) && isObj(m.cafe[k])) d.cafe[k] = m.cafe[k];
+      if (isObj(m.show) && isObj(m.show.marks)) d.show.marks = m.show.marks;
+      if (isObj(m.show) && isObj(m.show.goals)) d.show.goals = m.show.goals;
+      if (isObj(m.season)) for (const k of ['daily', 'claim']) if (isObj(m.season[k])) d.season[k] = m.season[k];
+      if (isObj(m.vis)) d.vis = m.vis;
+      if (isObj(m.rush) && isObj(m.rush.cups)) d.rush.cups = m.rush.cups;
+      if (isObj(m.iap) && isObj(m.iap.owned)) d.iap.owned = m.iap.owned;
+      if (isObj(m.show) && isObj(m.show.decor)) d.show.decor = m.show.decor;
+      if (isObj(m.meta)) { if (isObj(m.meta.funnel)) d.meta.funnel = m.meta.funnel; if (isObj(m.meta.ret)) d.meta.ret = m.meta.ret; }
+    }
+  } catch {
+    /* blocked or corrupt: fresh save */
+  }
+  if (fresh) d.meta.firstOpen = Date.now();
+  return validate(d);
+}
+
+export const save = {
+  data: load(),
+  commit() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(this.data));
+    } catch {
+      /* ignore */
+    }
+  },
+  reset() {
+    this.data = defaults();
+    this.commit();
+  },
+};
+// Local analytics stub: console + counters in the save. Funnel = first time each milestone was reached (a timestamp, for D1/D7 style reads).
+import { save } from './save.js';
+import { now } from './clock.js';
+
+export function track(name, props = {}) {
+  const c = save.data.counters;
+  c[name] = (c[name] || 0) + 1;
+  save.commit();
+  if (import.meta.env.DEV) console.log('[an]', name, JSON.stringify(props));
+}
+
+// session-1 funnel milestones: l1, l3, first_resident, l10
+export function funnel(step) {
+  const f = save.data.meta.funnel;
+  if (f[step]) return;
+  f[step] = now();
+  track('funnel_' + step, { session: save.data.meta.sessions });
+}
+
+// D1 / D7 proxies: days since the first open, checked on every app open
+export function retention() {
+  const m = save.data.meta;
+  if (!m.firstOpen) return;
+  const days = Math.floor((now() - m.firstOpen) / 86400000);
+  for (const [k, n] of [['d1', 1], ['d7', 7]]) {
+    if (days >= n && !m.ret[k]) {
+      m.ret[k] = now();
+      track('retention_' + k, { days });
+    }
+  }
+}
+import { defineConfig } from 'vite';
+import { readdirSync, statSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { join, relative, sep } from 'node:path';
+
+// After the build: write dist/sw.js that precaches every built file under a cache name derived from the file contents
+// (a new build = a new cache; the old one is deleted on activate). Relative URLs, so it works in a subfolder.
+function offlineSw() {
+  let outDir = 'dist';
+  return {
+    name: 'lco-offline-sw',
+    apply: 'build',
+    configResolved(c) { outDir = c.build.outDir; },
+    closeBundle() {
+      const files = [];
+      const walk = (d) => {
+        for (const n of readdirSync(d)) {
+          const f = join(d, n);
+          if (statSync(f).isDirectory()) walk(f);
+          else files.push(relative(outDir, f).replaceAll(sep, '/'));
+        }
+      };
+      walk(outDir);
+      const list = files.filter((f) => f !== 'sw.js' && f !== 'privacy.html').sort();
+      const hash = createHash('sha1').update(list.join('|') + list.map((f) => statSync(join(outDir, f)).size).join(',')).digest('hex').slice(0, 10);
+      const urls = ['./', ...list.filter((f) => f !== 'index.html')];
+      writeFileSync(join(outDir, 'sw.js'), `// generated by vite.config.js: do not edit
+const CACHE = 'lco-${hash}';
+const URLS = ${JSON.stringify(urls)};
+self.addEventListener('install', (e) => {
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(URLS)).then(() => self.skipWaiting()));
+});
+self.addEventListener('activate', (e) => {
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k.startsWith('lco-') && k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+});
+self.addEventListener('fetch', (e) => {
+  const r = e.request;
+  if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return; // fonts and ad scripts go straight to the network
+  e.respondWith(caches.match(r, { ignoreSearch: true }).then((hit) => hit || fetch(r).catch(() => (r.mode === 'navigate' ? caches.match('./') : Response.error()))));
+});
+`);
+    },
+  };
+}
+
+export default defineConfig({
+  base: './',
+  plugins: [offlineSw()],
+});
+{
+  "name": "long-cat-out",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs && node scripts/check-sfx.mjs && node scripts/check-dare.mjs"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -Encoding utf8 -LiteralPath src/kit/clip.js; $s[180..247]; $s[343..412]; Get-Content -Encoding utf8 -LiteralPath data/street.js; rg -n "dailyBoard|dailyClear|dailyStreak|generateDaily|reqEvent|renov" src/main.js src/game' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -Encoding utf8 -LiteralPath src/main.js; $s[650..800]; $s[1317..1384]; Get-Content -Encoding utf8 -LiteralPath src/kit/clock.js, data/live.js, RELEASE.md' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 1007ms:
+// ---- share clip + friend challenge ----
+// The win keeps the board and the move list; kit/clip.js re-renders the best moment (the biggest bench chain, else the
+// clear) as a vertical clip. Share hands it over with a challenge link to this exact board (kit/dare.js).
+let clip;
+const noBenchWin = () => S.winPeak === 0 && game.board.cats.length >= 10; // a clean sweep of a real board (not L1's three cats)
+function prepClip() {
+  S.winPeak = game.state ? game.state.benchPeak : 0;
+  const plan = planClip(game.log, true);
+  if (!plan) return clip.clear();
+  const result = plan.kind === 'chain' ? t('chainX', { n: plan.n }) : S.winPeak === 0 ? t('clipNoBench') : t('clipClear');
+  clip.set({
+    board: game.board,
+    log: game.log.slice(),
+    plan,
+    text: { combo: [t('purrfect'), t('combo2'), t('combo3')], chainX: (n) => t('chainX', { n }), lastSeat: t('lastSeat'), title: t('title'), board: boardName(), result, can: t('clipCan'), link: t('clipLink'), bench: (u, n) => t('clipBench', { u, n }), oneSeat: t('clipOneSeat'), chain: t('clipChain') },
+  });
+}
+// the win card's share parts: the clip preview (a chain, or a clean sweep), the labelled Share clip button at a real
+// high (chain x3+, a clean sweep), and once ever, at the first chain x3, a "Show a friend!" nudge on it
+function shareOn() {
+  const preview = clip.has() && (S.chainBest >= 2 || noBenchWin());
+  const big = clip.has() && (S.chainBest >= 3 || noBenchWin());
+  const nudge = big && S.chainBest >= 3 && !save.data.meta.shareNudge;
+  if (nudge) { save.data.meta.shareNudge = 1; save.commit(); track('share_nudge', { n: S.n }); }
+  return { chain: preview, dare: big, nudge };
+}
+// the preview starts after the card has settled; the encode runs behind it (real time, ~8 s) so Share has the video
+function clipPreview() {
+  const token = S.winToken;
+  clearTimeout(S.clipTimer);
+  const still = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  S.clipTimer = setTimeout(() => {
+    if (token !== S.winToken || ui.screen !== 'win' || !clip.has()) return;
+    const cv = document.querySelector('#modal .chainclip canvas');
+    // Share clip shows only once there is a real video to send (no MediaRecorder: the captioned peak still, at once)
+    const reveal = () => { if (token !== S.winToken) return; const b = document.querySelector('#modal [data-act=shareclip]'); if (b) b.hidden = false; };
+    if (cv) clip.start(cv, still, reveal);
+    if (!canRecord()) reveal();
+  }, 500);
+}
+const srcName = (k, n) => (k === 'd' ? t('dailyLevel') : k === 's' ? t('showBoard') : k === 'r' ? t('rush') : t('level', { n }));
+const boardName = () => (S.show ? (S.show.kind === 'friend' ? srcName(S.show.k, S.n) : S.show.kind === 'rush' ? t('rush') : t('showBoardN', { k: S.show.k.toUpperCase() })) : S.daily ? t('dailyLevel') : t('level', { n: S.n }));
+const timed = () => !!S.show && (S.show.kind === 'rush' || (S.show.kind === 'friend' && S.show.m === 'time'));
+// "Ana's" / "Ana'nin"; no name: "your friend's" / "Arkadasinin"
+const whoOf = (nm) => (nm ? (save.data.settings.lang === 'tr' ? dare.trGenitive(nm) : nm + "'s") : t('dareWho'));
+const dareGoal = (m, g, x) => (m === 'chain' ? t(x ? 'dareGoalChainMatch' : 'dareGoalChain', { n: g }) : m === 'time' ? t('dareGoalTime', { t: (g / 10).toFixed(1) }) : g === 0 ? t('dareGoalNoBench') : t('dareGoalSeats', { n: g }));
+// the challenge this run sends: the same board and seats, and what the player did on it
+function myDare() {
+  const sh = S.show;
+  const k = sh ? (sh.kind === 'rush' ? 'r' : sh.kind === 'friend' ? sh.k : 's') : S.daily ? 'd' : 'l';
+  const peak = S.winPeak || 0;
+  let m;
+  if (timed()) m = 'time';
+  else if (sh && sh.kind === 'friend' && sh.m === 'seats') m = 'seats';
+  else m = (S.chainBest || 0) >= 2 ? 'chain' : 'seats';
+  const g = m === 'time' ? Math.max(30, Math.round((S.lastMs || 0) / 100)) : m === 'chain' ? S.chainBest : peak;
+  return checkDare({ n: S.n, b: S.bench0 || game.board.meta.benchSize, k, m, g });
+}
+// A dare goes out only if the recipient can really reach it: the sender's moves are replayed on the exact board and
+// seat count the link carries. A run that bought a seat or used a Scoop (the friend may have neither) or that does not
+// replay to the same result falls back to "clear it with these seats", which the board always allows. A chain that is
+// already the board's best (exhaustive search on that seat count) asks the friend to match it, not beat it.
+const dareCache = { token: -1, d: null };
+function checkDare(d) {
+  if (dareCache.token === S.winToken && dareCache.d) return { ...dareCache.d };
+  const out = { ...d };
+  if (d.m !== 'time') {
+    const board = generate(d.n);
+    board.meta.benchSize = d.b;
+    const st = createState(board);
+    let ok = true, chain = 0;
+    for (const o of game.log) {
+      if (o.op === 'tap') {
+        const r = rulesTap(st, o.id);
+        if (!r.ok || r.failed) { ok = !r.failed && !!r.bonk; if (!ok) break; continue; }
+        chain = Math.max(chain, r.events.filter((e) => e.type === 'board').length);
+      } else if (o.op === 'undo') rulesUndo(st, true);
+      else { ok = false; break; } // 'seat' or 'scoop'
+    }
+    ok = ok && st.aliveCount === 0 && (d.m === 'chain' ? chain >= d.g : st.benchPeak <= d.g);
+    if (!ok) { out.m = 'seats'; out.g = d.b; track('dare_fallback', { n: d.n, m: d.m }); }
+    else if (d.m === 'chain') {
+      const mc = maxChain(new Sim(compile(board), d.b));
+      if (mc.complete && d.g >= mc.best) out.x = 1;
+    }
+  }
+  dareCache.token = S.winToken;
+  dareCache.d = out;
+  return { ...out };
+}
+function dareText(d) {
+  const board = boardName();
+  if (d.m === 'chain') return t(d.x ? 'shareDareChainMatch' : 'shareDareChain', { c: d.g, board });
+  if (d.m === 'time') return t('shareDareTime', { t: (d.g / 10).toFixed(1), board });
+  return d.g === 0 ? t('shareDareNoBench', { board }) : t('shareDareSeats', { c: d.g, board });
+}
+const dareUrl = (d) => location.origin + location.pathname + '?c=' + dare.encode(d);
+// a ?c= link opened the game: decoded (and clamped) once, then dropped from the address bar
+function readDare() {
+  let code = null;
+  try { code = new URLSearchParams(location.search).get('c'); } catch { /* no URL API */ }
+  if (!code) return null;
+  try { const u = new URL(location.href); u.searchParams.delete('c'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch { /* file:// */ }
+  const d = dare.decode(code, (n) => generate(n).meta.benchSize);
+  track(d ? 'dare_open' : 'dare_bad', d ? { m: d.m, k: d.k, i: d.i || '' } : {});
+  return d;
+}
+function dareLanding(d) {
+  S.dare = d;
+  ui.dare({ who: d.nm || t('dareFriend'), goal: dareGoal(d.m, d.g, d.x), board: srcName(d.k, d.n), seats: d.b, fresh: save.data.level <= 1, peek: COLORS[generate(d.n).cats[0].color] });
+}
+function startDare(d) {
+  const goal = d.m === 'chain' ? { kind: 'chain', n: d.g } : d.m === 'seats' ? { kind: 'seats', n: d.g } : null;
+  startLevel(d.n, false, { kind: 'friend', m: d.m, g: d.g, nm: d.nm, k: d.k, b: d.b, x: d.x, i: d.i, goal });
+  S.dareMoved = false;
+  track('dare_play', { m: d.m, i: d.i || '' });
+}
+// after the challenge (or Not now): the normal flow, a new player straight into level 1
+function afterDare() {
+  S.dare = null;
+  if (save.data.level < CAFE_FROM) tryStart(save.data.level);
+  else startHome();
+}
+function onFriendWin() {
+  const sh = S.show;
+  const d = save.data;
+  audio.clear();
+  haptics.success();
+  const ms = S.rushT0 ? performance.now() - S.rushT0 : 0;
+  S.lastMs = ms;
+  const v = sh.m === 'chain' ? S.chainBest || 0 : sh.m === 'seats' ? S.winPeak || 0 : Math.round(ms / 100);
+  const res = dare.judge(sh.m, sh.g, v);
+  d.meta.dares++;
+  save.commit();
+  track('dare_done', { m: sh.m, res, i: sh.i || '' }); // the funnel's clear step
+  const n = sh.m === 'time' ? (sh.g / 10).toFixed(1) : sh.g;
+  const vv = sh.m === 'time' ? (ms / 1000).toFixed(1) : v;
+  const line = t(`dare_${res}_${sh.m}`, { who: whoOf(sh.nm), n, v: vv });
+  const sp = shareOn();
+  ui.win({ stars: 1, title: res === 'miss' ? 'winTitle1' : 'winTitle', coins: 0, peek: peekColor(), purr: '', ach: [], show: true, showTag: t('dareTitle'), friend: { res, line }, chain: sp.chain, dare: true });
+  clipPreview();
+}
+
+// the continue card: what went wrong (the stuck cat, seats vs the missing carrier), then the ways out
+function failInfo() {
+  const st = game.state;
+  const sid = st && st.pending && st.pending.length ? st.pending[0] : null;
+  const color = sid != null ? COLORS[game.board.cats[sid].color] : peekColor();
+  const sp = sid != null && game.vis.stuck.length ? game.stuckPos(0) : null;
+  // how far down the belt the stuck cat's carrier is: the loss names the distance, not just "not here yet"
+  const away = st && sid != null ? st.carriers.findIndex((c) => c.color === game.board.cats[sid].color) : -1;
+    document.documentElement.lang = l;
+    if (S.mode === 'home') ui.home(homeInfo());
+    else if (S.mode === 'cafe') ui.cafe(cafeInfo());
+    ui.settings(settingsInfo());
+  },
+};
+
+// Share: the challenge line with the link (withClip: the encoded clip with it; without MediaRecorder, the captioned peak
+// PNG). Its own flag, so Next stays live while a share sheet is open.
+async function doShare(withClip) {
+  const d = myDare();
+  d.i = dare.shareId();
+  const text = dareText(d);
+  const url = dareUrl(d);
+  S.lastShare = { text, url, clip: !!withClip };
+  const from = S.show && S.show.kind === 'friend' ? S.show.i || '' : null; // a recipient sharing on: the reshare step
+  if (from != null) track('dare_reshare', { i: from, to: d.i });
+  if (withClip && clip.has()) {
+    const f = clip.ready() || (canRecord() ? null : await clip.png()); // no long await: the tap's user activation must still hold
+    if (f) {
+      const how = await shareFile(f, `long-cat-out-${d.k === 'l' ? 'level-' + S.n : 'challenge'}`, text, url);
+      track('share', { kind: f.ext, how, m: d.m });
+      track('dare_handoff', { i: d.i, via: 'clip', how });
+      if (how === 'saved') ui.toast(t('clipSavedLink'));
+      else if (how === 'saved-nolink') { ui.toast(t('clipSaved')); ui.copyLink(text, url); }
+      // many chat apps keep the video and drop the text beside it: the playable link follows as its own message
+      if (how === 'shared' || how === 'saved-nolink') ui.dareLink({ text, url, board: boardName(), goal: dareGoal(d.m, d.g, d.x), seats: d.b, peek: peekColor() }, () => sendLink(text, url, d.i));
+      return;
+    }
+  }
+  await sendLink(text, url, d.i);
+}
+// the challenge text + link on its own (the Dare button, and the follow-up after a clip)
+async function sendLink(text, url, id) {
+  track('dare_handoff', { i: id, via: 'link' });
+  try {
+    if (navigator.share) await navigator.share({ text, url });
+    else if (!navigator.clipboard) ui.copyLink(text, url);
+    else {
+      await navigator.clipboard.writeText(text + ' ' + url);
+      ui.toast(t('linkCopied')); // only once the write resolved
+    }
+  } catch (e) {
+    if (e && e.name !== 'AbortError') ui.copyLink(text, url); // share sheet or clipboard refused: the link waits to be copied by hand
+  }
+}
+
+const settingsInfo = () => ({ notifyOk: live.eventsOpen(save.data) && notify.supported(), settings: save.data.settings, removeAds: ads.isRemoved(), canInstall: pwa.canInstall() });
+
+// ---- boot ----
+async function boot() {
+  game = new Game(document.getElementById('game'));
+  setTexts(); // popups speak the saved language from the first frame
+  game.on.free = onFree;
+  game.on.bonk = onBonk;
+  game.on.mech = (e) => { if (game.demo) return; if (e.type === 'wake' || e.type === 'thaw') audio.pop(); else if (e.type === 'knock' || e.type === 'reveal') audio.land(); };
+  game.on.win = onWin;
+  clip = makeShareClip();
+  game.on.fail = onFail;
+  game.on.depart = ({ chain }) => { if (game.demo) return; audio.depart(chain - 1); haptics.success(); if (!game.demo && !S.undid) quest('carrier'); };
+  // a bench chain (2+ parked cats hop in from one tap): the share clip keeps the best one of the level
+  game.on.chain = ({ n }) => { if (game.demo) return; S.chainBest = Math.max(S.chainBest || 0, n); track('chain', { n, lv: S.n }); if (!S.show) funnel('first_chain'); };
+  game.on.hop = ({ k }) => { if (game.demo) return; audio.chain(k - 1); haptics.light(); };
+  game.on.chainLand = ({ k, last }) => { if (game.demo || !last) return; audio.star(Math.min(3, k)); haptics.success(); }; // the chain's last landing: the big accent
+  game.on.land = (e) => { if (game.demo) return; audio.land(); if (e && e.kind === 'carrier') haptics.light(); }; // the tick lands with the cat, not the tap
+  game.on.scoopCan = () => canPayBooster('scoop', SCOOP_COST) || (ui.toast(t('noCoins')), false);
+  game.on.scoop = () => { payBooster('scoop', SCOOP_COST); ui.setTut(''); ui.setHud(hudInfo()); track('scoop'); };
+  game.on.scoopFull = () => ui.toast(t('offerSub'));
+// Rollback-guarded clock: time never goes backwards. Setting the device clock back cannot replay a day, a week or a life timer.
+import { save } from './save.js';
+
+export function now() {
+  const c = save.data.clock;
+  const t = Date.now();
+  if (c.max > t + 2 * 86400000) c.max = t + 2 * 86400000; // one wrong-date session can pin the game at most 2 days ahead
+  if (t > c.max) c.max = t; // persisted with the next commit
+  return c.max;
+}
+// Long-term retention data (src/game/live.js): seasons, visiting cats, resident requests, outfits, Caf� Rush bots.
+// Seasons rotate every 4 weeks through this list; each season invites two permanent visiting cats with stamps.
+export const SEASONS = [
+  { id: 'lantern', name: { en: 'Lantern Lane', tr: 'Fener Sokagi' }, color: '#d9733a', visitors: ['maple', 'hazel'] },
+  { id: 'cocoa', name: { en: 'Cocoa Snow', tr: 'Kakaolu Kar' }, color: '#4f8fc0', visitors: ['pip', 'frost'] },
+  { id: 'blossom', name: { en: 'Blossom Breeze', tr: '�i�ek Esintisi' }, color: '#e07aa5', visitors: ['sakura', 'bean'] },
+];
+
+// visiting cats: portrait art public/assets/r7/vis7_<id>.webp; tapping one in the caf� once a day gives `gift`
+export const VISITORS = {
+  maple: { name: 'Maple', line: { en: 'I brought a lantern for the stairs!', tr: 'Merdivenlere bir fener getirdim!' } },
+  hazel: { name: 'Hazel', line: { en: 'Acorns are fancy hats, you know.', tr: 'Palamutlar sik birer sapkadir, biliyor musun?' } },
+  pip: { name: 'Pip', line: { en: 'Cocoa for everyone! Mind the foam.', tr: 'Herkese kakao! K�p�ge dikkat.' } },
+  frost: { name: 'Frost', line: { en: 'Brr... your caf� is so warm.', tr: 'Brr... kafen ne kadar sicak.' } },
+  sakura: { name: 'Sakura', line: { en: 'The petals followed me here!', tr: 'Yapraklar beni buraya kadar takip etti!' } },
+  bean: { name: 'Bean', line: { en: 'Rain or shine, I visit!', tr: 'Yagmur da olsa g�nes de olsa gelirim!' } },
+};
+export const VISIT_GIFT = { coins: 15 };
+
+// stamps needed for the season's 1st and 2nd visitor; past the last one, every SEASON_GIFT_EVERY more stamps pays a gift
+export const VISIT_AT = [8, 20];
+export const SEASON_GIFT_EVERY = 6;
+export const SEASON_GIFT = { coins: 60, hint: 1 };
+export const REPEAT_GIFT = { coins: 150, scoop: 1 }; // a visitor already living in the caf� (a later lap of the list)
+
+// resident requests: one new every REQ_EVERY_H hours, at most REQ_MAX waiting
+export const REQ_KINDS = [
+  { k: 'win', need: 2, coins: 30, hearts: 1 },
+  { k: 'color', need: 9, coins: 25, hearts: 1 },
+  { k: 'carrier', need: 8, coins: 25, hearts: 1 },
+  { k: 'tidy', need: 1, coins: 40, hearts: 2 },
+  { k: 'daily', need: 1, coins: 35, hearts: 2 },
+];
+export const SNACKS = [
+  { en: 'a fish snack', tr: 'balik atistirmaligi' },
+  { en: 'warm milk', tr: 'ilik s�t' },
+  { en: 'a catnip cookie', tr: 'kedi nanesi kurabiyesi' },
+  { en: 'a new yarn ball', tr: 'yeni bir y�n yumagi' },
+  { en: 'a tuna tart', tr: 'ton balikli tart' },
+];
+
+// resident outfits, unlocked by affection hearts (pets, requests, treats); art res7_<id>_<outfit>.webp
+export const OUTFITS = [
+  { id: 'hat', need: 8, name: { en: 'Knit beanie', tr: '�rg� bere' } },
+  { id: 'scarf', need: 20, name: { en: 'Cosy scarf', tr: 'Sicak atki' } },
+  { id: 'crown', need: 40, name: { en: 'Best-friend crown', tr: 'Can dostu taci' } },
+];
+
+// Caf� Rush practice bots: clearly bots, never shown as people. Their times are simulated per week (live.rushBots).
+export const RUSH_BOTS = ['Whisk', 'Tabby', 'Biscotti', 'Sprocket', 'Pounce', 'Gizmo', 'Noodle-9', 'Toast', 'Pixel', 'Muffin', 'Bolt', 'Sesame', 'Button', 'Waffle', 'Cog', 'Dot', 'Ziggy', 'Bean-0', 'Patch'];
+export const RUSH_PRIZES = [
+  { coins: 150, cup: 'gold' },
+  { coins: 100, cup: 'silver' },
+  { coins: 80, cup: 'bronze' },
+];
+export const RUSH_PRIZE_TOP10 = { coins: 40 };
+export const RUSH_PRIZE_REST = { coins: 20 };
+# Long Cat Out! - web release steps (owner)
+
+Web only. No Android/iOS, no accounts, no money. Nothing here has been published.
+
+## 1. Build and check
+
+```
+npm install
+npm run check          # core + economy + web sanity (manifest, icons, privacy, ads off)
+npm run build          # -> dist/ (relative base './', service worker dist/sw.js generated)
+```
+
+Test it: `npm run preview`, open the shown URL on a phone-sized window. Offline play: load once, go offline (DevTools > Network > Offline), reload; the game still starts. The Settings screen shows "Install app" in browsers that offer it (Chrome/Edge/Android).
+
+`dist/` works on any static host and in a subfolder (all paths are relative).
+
+## 2. Host it (needed for the privacy URL and for itch.io-style sharing)
+
+- Cloudflare Pages: connect the repo, build command `npm run build`, output directory `dist`, root directory `studio/long-cat-out`. Or drag-drop the `dist` folder in the dashboard.
+- GitHub Pages: publish the `dist` folder (e.g. the `gh-pages` branch or an Actions deploy). It serves from `https://USER.github.io/REPO/`; the relative base handles that.
+- Privacy page ends up at `<your-url>/privacy.html`.
+
+## 3. Placeholders to fill
+
+| Where | Placeholder | What to put |
+|---|---|---|
+| `public/privacy.html` | `[DATE]`, `[TARIH]`, `[CONTACT EMAIL]`, `[ILETISIM E-POSTASI]` | date and your contact email |
+| `store/listing.md` | `[BRACKETS]` if any appear | store-specific fields |
+| `.env.production` (create) | `VITE_H5_CLIENT_ID` | your AdSense publisher id, `ca-pub-...` |
+| portal forms | contact email, developer name | yours |
+
+## 4. Portal submission (pick one or several)
+
+Use `store/listing.md` for texts and tags, `store/shots/` for screenshots (1080x1920, `en-*` and `tr-*`), `store/shots/cover.png` (1280x720) for the cover, `public/icons/icon-512.png` for the icon.
+
+- itch.io: create a project, kind "HTML", upload `dist` as a zip, tick "This file will be played in the browser", viewport 540x960, enable fullscreen. Add the privacy URL in the description.
+- CrazyGames: developer portal, upload the zip of `dist`. They use their own ad SDK; their rules apply. Until an SDK integration exists, build as-is (the H5 provider stays off) and read their ads/monetization section.
+- Poki: apply through their developer site. They require their SDK for ads and events; not integrated here yet.
+
+## 5. Google H5 Games Ads (optional, later)
+
+The game ships with the provider code but it is OFF. Steps:
+
+1. Create a Google AdSense account and add your game site. Apply for "AdSense for Games" / H5 Games Ads and wait for approval. This needs a live public URL with the privacy page.
+2. After approval, copy your publisher id (`ca-pub-XXXXXXXXXXXXXXXX`).
+3. Create `.env.production` next to `package.json`:
+
+```
+VITE_ADS_PROVIDER=h5
+VITE_H5_CLIENT_ID=ca-pub-XXXXXXXXXXXXXXXX
+VITE_H5_TEST=1
+```
+
+4. `npm run build`, deploy, and check that Google test ads appear (rewarded ad on the continue offer, interstitial after a win from level 8).
+5. When happy, set `VITE_H5_TEST=0` and rebuild/deploy for real ads.
+
+Notes: `?noads=1` on the game URL loads no ad network at all (for portals that supply their own ads; rewarded buttons then give nothing). Players with the "No Ads" flag see no interstitials. Show a consent banner where required (EU/UK) before enabling ads; the privacy page already mentions Google ads.
+
+Where the id goes: only `.env.production` (`VITE_H5_CLIENT_ID`). It is read in `src/kit/ads.js`.
+
+## 6. In-app purchases
+
+Stay a documented stub. `src/kit/iap.js` has a fail-closed backend in production builds (nothing can be bought). The shop UI still exists; hide or keep it per portal rules. A future payment backend plugs in with `setBackend()` behind the same interface.
+
+## 7. Refresh screenshots after art changes
+
+```
+PORT=5193 node scripts/store-shots.mjs
+```
+
+## 8. Updating the live game
+
+Each build gets a new cache name in `dist/sw.js` (content hash), so returning players get the new version on their next visit. Just redeploy `dist/`.
+
+ succeeded in 1052ms:
+      const w = CLIP_W / z.s;
+      const h = CLIP_H / z.s;
+      const sx = z.x - z.x / z.s;
+      const sy = z.y - z.y / z.s;
+      o.drawImage(cv, sx * DPR, sy * DPR, w * DPR, h * DPR, 0, 0, out.width, out.height);
+    } else o.drawImage(cv, 0, 0);
+    ctx = o;
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // top band: the bench before the move, then the chain counter counting up, hop by hop
+    const st = g.state;
+    const f = g.chainFx;
+    const k = f ? f.k : 0;
+    if (k >= 1 && plan.kind === 'chain') {
+      const pop = t - counter.t < 0.25 ? 1 + 0.35 * (1 - (t - counter.t) / 0.25) : 1;
+      ctx.save();
+      ctx.translate(CLIP_W / 2, TOP / 2 + 6);
+      ctx.scale(pop, pop);
+      ctx.rotate(-0.04);
+      pill(ctx, 0, 0, 230, 54, k >= plan.n ? '#ff5d8f' : '#ff8fb3');
+      label(ctx, `${text.chain} x${k}`, 0, 2, 38, '#fff6e5', 210);
+      ctx.restore();
+    } else if (st) {
+      const tight = !!tightCap;
+      const s = tightCap || text.board;
+      ctx.save();
+      ctx.font = `700 22px ${FONT}`;
+      const w = Math.min(CLIP_W - 24, ctx.measureText(s).width + 34);
+      pill(ctx, CLIP_W / 2, TOP / 2 + 6, w, 40, tight ? '#ffd43b' : '#fffaf0');
+      label(ctx, s, CLIP_W / 2, TOP / 2 + 7, 22, tight ? NAVY : NAVY, w - 22, 'rgba(0,0,0,0)');
+      ctx.restore();
+    }
+    // bottom band: the brand and the board, always on
+    ctx.save();
+    ctx.fillStyle = 'rgba(29,43,83,0.86)';
+    ctx.fillRect(0, CLIP_H - BOT + 8, CLIP_W, BOT - 8);
+    label(ctx, text.title, CLIP_W / 2, CLIP_H - BOT / 2 - 4, 26, '#ffd43b');
+    ctx.font = `600 15px ${FONT}`;
+    ctx.fillStyle = '#fff6e5';
+    ctx.fillText(text.board, CLIP_W / 2, CLIP_H - 14);
+    ctx.restore();
+    // end card: the result, the dare, the name of the game
+    if (endAt != null) {
+      const u = clamp((t - endAt) / 0.35, 0, 1);
+      ctx.save();
+      ctx.globalAlpha = u;
+      ctx.fillStyle = 'rgba(29,43,83,0.9)';
+      ctx.fillRect(0, 0, CLIP_W, CLIP_H);
+      const y = CLIP_H * 0.36;
+      ctx.translate(CLIP_W / 2, y);
+      const s = 0.8 + 0.2 * u;
+      ctx.scale(s, s);
+      label(ctx, text.result, 0, 0, 54, '#ff8fb3', CLIP_W - 40, '#0e1630');
+      label(ctx, text.can, 0, 70, 36, '#ffffff', CLIP_W - 40, '#0e1630');
+      label(ctx, text.title, 0, 150, 34, '#ffd43b', CLIP_W - 40, '#0e1630');
+      ctx.font = `600 18px ${FONT}`;
+      ctx.fillStyle = '#fff6e5';
+      ctx.fillText(text.board, 0, 188);
+      fit(ctx, text.link, 16, CLIP_W - 48, 600);
+      ctx.fillStyle = '#9fe8e1';
+      ctx.fillText(text.link, 0, 232);
+      ctx.restore();
+    }
+  }
+
+  return {
+    canvas: out,
+          v.className = 'clipvid';
+          v.src = URL.createObjectURL(r.blob);
+          v.addEventListener('loadeddata', () => { if (cv.isConnected) cv.replaceWith(v); }, { once: true });
+          v.play().catch(() => {});
+        }
+      });
+    },
+    ready: () => done,
+    encoding: () => !!job && !done,
+    // the peak moment as a PNG with its caption (no MediaRecorder, or the video is not ready inside the tap)
+    async png() {
+      if (!src) return null;
+      if (png) return png;
+      const p = clipPlayer(src);
+      p.seek('peak');
+      const blob = await new Promise((res) => p.canvas.toBlob(res, 'image/png'));
+      png = blob ? { blob, ext: 'png' } : null;
+      return png;
+    },
+    // QA: stills of the clip at given times (seconds, 'peak', 'end') as JPEG data URLs, in one fresh run
+    frames(times) {
+      if (!src) return null;
+      const p = clipPlayer(src);
+      return times.map((x) => ({ at: +p.seek(x).toFixed(2), url: p.canvas.toDataURL('image/jpeg', 0.85) }));
+    },
+  };
+}
+
+// share a file (with the text and the challenge link) when the platform can, else download it and copy the text;
+// returns 'shared' | 'saved' (link copied) | 'saved-nolink' (the clipboard write failed or is missing) | 'cancel'
+export async function shareFile({ blob, ext }, name, text, url) {
+  const file = typeof File !== 'undefined' ? new File([blob], `${name}.${ext}`, { type: blob.type }) : null;
+  if (file && navigator.canShare && navigator.canShare({ files: [file] }) && navigator.share) {
+    try {
+      await navigator.share({ files: [file], text: url ? `${text} ${url}` : text });
+      return 'shared';
+    } catch (e) {
+      if (e && e.name === 'AbortError') return 'cancel';
+    }
+  }
+  const href = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = href;
+  a.download = `${name}.${ext}`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(href), 4000);
+  try {
+    if (!navigator.clipboard) return 'saved-nolink';
+    await navigator.clipboard.writeText(url ? `${text} ${url}` : text);
+    return 'saved';
+  } catch { return 'saved-nolink'; } // no permission (the download took the tap's user activation)
+}
+// Cat Street (src/game/street.js): the chapters past the cat house rooftop. Shop houses are built one after another
+// in this order; past the last one the list starts a new lap ("Bakery 2", ...), a little dearer, so it never ends.
+// Art: public/assets/r7/street_<id>.webp (exterior), keeper_<id>.webp (the shopkeeper who moves in), appr_<id>.webp (the
+// keeper's kitten apprentice: the first repeat lap brings one per shop, so lap 2 changes what the street shows).
+export const HOUSE_TASKS = 8;
+// tasks 0-3 and 7 are the same for every house; 4-6 are the shop's own pieces
+export const COMMON = [
+  { en: 'Foundation', tr: 'Temel' },
+  { en: 'Brick walls', tr: 'Tugla duvarlar' },
+  { en: 'Front door', tr: '�n kapi' },
+  { en: 'Windows', tr: 'Pencereler' },
+  null, null, null,
+  { en: 'Roof and chimney', tr: '�ati ve baca' },
+];
+export const SHOPS = [
+  {
+    id: 'bakery', name: { en: 'Bakery', tr: 'Firin' },
+    apprentice: { name: 'Bun', line: { en: 'I kneaded this one myself! It is mostly paws.', tr: 'Bunu kendim yogurdum! �ogu pati izi.' } },
+    keeper: { name: 'Crumb', line: { en: 'Fresh bread for every cat on the street!', tr: 'Sokaktaki her kediye taze ekmek!' } },
+    own: [{ en: 'Bread oven', tr: 'Ekmek firini' }, { en: 'Bread shelves', tr: 'Ekmek raflari' }, { en: 'Peach awning', tr: 'Seftali rengi tente' }],
+  },
+  {
+    id: 'library', name: { en: 'Library', tr: 'K�t�phane' },
+    apprentice: { name: 'Dewey', line: { en: 'I read a whole page today. Out loud!', tr: 'Bug�n koca bir sayfa okudum. Sesli!' } },
+    keeper: { name: 'Page', line: { en: 'Shh... the books are napping.', tr: 'Sst... kitaplar uyuyor.' } },
+    own: [{ en: 'Bookshelves', tr: 'Kitap raflari' }, { en: 'Reading nook', tr: 'Okuma k�sesi' }, { en: 'Reading lamp', tr: 'Okuma lambasi' }],
+  },
+  {
+    id: 'florist', name: { en: 'Flower Shop', tr: '�i�ek�i' },
+    apprentice: { name: 'Sprout', line: { en: 'I watered everything. Twice. Even the cat.', tr: 'Her seyi suladim. Iki kere. Kediyi bile.' } },
+    keeper: { name: 'Petal', line: { en: 'A tulip for you, and one for me.', tr: 'Bir lale sana, bir lale bana.' } },
+    own: [{ en: 'Flower boxes', tr: '�i�ek kasalari' }, { en: 'Rose arch', tr: 'G�l kemeri' }, { en: 'Green awning', tr: 'Yesil tente' }],
+  },
+  {
+    id: 'tea', name: { en: 'Tea House', tr: '�ay Evi' },
+    apprentice: { name: 'Sugar', line: { en: 'One lump or seven?', tr: 'Bir seker mi, yedi mi?' } },
+    keeper: { name: 'Earl', line: { en: 'Milk first? Fish first!', tr: '�nce s�t m�? �nce balik!' } },
+    own: [{ en: 'Paper lanterns', tr: 'K�git fenerler' }, { en: 'Tea counter', tr: '�ay tezgahi' }, { en: 'Teapot sign', tr: 'Demlik tabelasi' }],
+  },
+  {
+    id: 'toy', name: { en: 'Toy Shop', tr: 'Oyuncak�i' },
+    apprentice: { name: 'Button', line: { en: 'This mouse squeaks too. I checked. A lot.', tr: 'Bu fare de ciyakliyor. Denedim. �ok.' } },
+    keeper: { name: 'Bobbin', line: { en: 'Every mouse here squeaks. I checked.', tr: 'Buradaki her fare ciyakliyor. Denedim.' } },
+    own: [{ en: 'Yarn display', tr: 'Y�n yumagi vitrini' }, { en: 'Toy mouse shelf', tr: 'Oyuncak fare rafi' }, { en: 'Yellow awning', tr: 'Sari tente' }],
+  },
+  {
+    id: 'music', name: { en: 'Music Shop', tr: 'M�zik D�kkani' },
+    apprentice: { name: 'Tempo', line: { en: 'Ba-dum-tss... meow!', tr: 'Ba-dum-tiss... miyav!' } },
+    keeper: { name: 'Forte', line: { en: 'Purr in C major, please.', tr: 'Do maj�rde mirla l�tfen.' } },
+    own: [{ en: 'Gramophone', tr: 'Gramofon' }, { en: 'Little piano', tr: 'K���k piyano' }, { en: 'Music stand', tr: 'Nota sehpasi' }],
+  },
+];
+// stars per task: 2 (3 for the last two pieces), +1 from the 4th house on (a house is ~5 days of play then)
+export const taskCost = (house, i) => 2 + (i >= HOUSE_TASKS - 2 ? 1 : 0) + Math.min(1, Math.floor(house / 3));
+export const HOUSE_REWARD = { coins: 200, scoop: 1, hint: 1 };
+
+// Renovation: a finished cat-house room can be restyled with a theme set (garland + rug), one per season.
+// Art: reno_<id>_garland.webp, reno_<id>_rug.webp. The current season's set is featured.
+export const RENO = [
+  { id: 'lantern', name: { en: 'Autumn Lanterns', tr: 'Sonbahar Fenerleri' }, cost: 5 },
+  { id: 'cocoa', name: { en: 'Cocoa Snow', tr: 'Kakaolu Kar' }, cost: 5 },
+  { id: 'blossom', name: { en: 'Blossom Breeze', tr: '�i�ek Esintisi' }, cost: 5 },
+];
+src/main.js:166:  if (ev === 'carrier') live.reqEvent(save.data, ev, n); // resident requests count the same moments ('win' only counts new levels, the daily and new Show medals)
+src/main.js:385:// Cat Street (past the rooftop) and the renovation sets of a finished room
+src/main.js:394:  if (!a || !cafe.areaDone(S.area) || !cafe.partyOpen()) return null; // renovation opens once the whole house is built
+src/main.js:517:  if (!S.undid && !(S.noQuest && S.mode === 'play')) for (const id of ids) live.reqEvent(save.data, 'cat', 1, game.board.cats[id].color);
+src/main.js:561:  if (r.bronze || r.gold) live.reqEvent(d, 'win'); // a new Show medal counts for requests, a replay does not
+src/main.js:612:    live.reqEvent(d, 'daily');
+src/main.js:623:  if (full && !dailyRepeat) live.reqEvent(d, 'win'); // a replayed old level or daily never fills a resident's 'win' request
+src/main.js:625:  if (full && !dailyRepeat && game.state && game.state.benchPeak <= 2) live.reqEvent(d, 'tidy');
+src/main.js:940:  // renovation: buy (and apply) the offered theme set of this finished room, or cycle the owned ones
+src/game\street.js:1:// Cat Street + renovation: the meta past the cat house rooftop (data/street.js). Pure functions over the save data
+src/game\street.js:39:// ---- renovation ----
+src/game\live.js:115:export function reqEvent(d, ev, n = 1, color = -1) { // ev: win | cat | carrier | tidy | daily -> true when progress moved
+src/game\cafe.js:121:// renovation clutter (paint, tools): fades out as the area's tasks are built and is gone once half the area is built,
+
+codex
+The game already has a Daily, a four-week Season, and exact-board dares. The two gaps I’ll focus on are what a completed café gives players to work toward and how a challenge reaches a friend in one message.
+web search: 
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'rg -n "export function|DAILY|daily|shield|weekNum|dayNum|dateKey" src/game/econ.js src/main.js src/core/generate.js src/core/rules.js src/game/street.js | Select-Object -First 130; $s=Get-Content -Encoding utf8 -LiteralPath qa/sol-r9-4.md; $s[0..24]' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 747ms:
+src/game/street.js:11:export function house(k) {
+src/game/street.js:29:export function streetBuild(d) {
+src/game/street.js:43:export function renoNext(d, areaId, featured = '') {
+src/game/street.js:48:export function renoBuy(d, areaId, ti) { // -> true when bought (and applied)
+src/game/street.js:57:export function renoCycle(d, areaId) {
+src/core/generate.js:24:export function levelKind(n) {
+src/core/generate.js:46:export function flavourOf(n) {
+src/core/generate.js:54:export function mechPlan(n) {
+src/core/generate.js:68:export function params(n) {
+src/core/generate.js:844:export function generate(n) {
+src/game/econ.js:22:export function grant(d, r) {
+src/game/econ.js:28:export function livesTick(d, now) {
+src/game/econ.js:38:export function lives(d, now) { livesTick(d, now); return d.lives.n; }
+src/game/econ.js:39:export function livesMs(d, now) { // ms until the next life, 0 when full
+src/game/econ.js:43:export function loseLife(d, now) {
+src/game/econ.js:50:export function addLife(d, n = 1) {
+src/game/econ.js:54:export function refillLives(d) { d.lives.n = MAX_LIVES; d.lives.t = 0; }
+src/game/econ.js:57:export function purrWin(d, firstTry) {
+src/game/econ.js:64:export function purrConsume(d) { const k = d.purr.pend; d.purr.pend = 0; return k; } // 0 none, 1 hint+seat, 2 hint+seat+scoop
+src/game/econ.js:67:// ---- daily tasks (3 a day) + chest ----
+src/game/econ.js:77:export function questsRoll(d, day) {
+src/game/econ.js:88:export function questEvent(d, ev, day, n = 1) {
+src/game/econ.js:98:export function questClaim(d, id, day) { // -> coins paid, 0 when not claimable (no double pay)
+src/game/econ.js:108:export function chestClaim(d) {
+src/game/econ.js:119:export function loginState(d, day) { // -> { avail, idx }: idx = today's reward when avail, else the count already claimed this cycle
+src/game/econ.js:125:export function loginClaim(d, day) {
+src/game/econ.js:139:export function showRoll(d, day) {
+src/game/econ.js:150:// daily tasks, the weekly show and the daily streak until real time caught up. Pull them back to today.
+src/game/econ.js:151:export function clampAhead(d, day) {
+src/game/econ.js:157:  for (const k of ['last', 'doneDay']) if (d.daily[k] && +d.daily[k] > day) { d.daily[k] = String(day); hit = true; }
+src/game/econ.js:163:export function interstitialOk(d, level, now) {
+src/game/econ.js:173:export function dots(d, now) {
+src/main.js:35:const S = { mode: 'home', n: 1, daily: false, show: false, area: 0, tries: {}, freeBack: {} }; // show: false | { kind: 'show', w, k, goal } | { kind: 'rush', w }
+src/main.js:53:const dayNum = () => econ.dayOf(now());
+src/main.js:54:const todayKey = () => String(dayNum());
+src/main.js:55:// the daily puzzle is curated: of three generated candidates for the day, the board whose winning line holds the most
+src/main.js:57:let dailyMemo = null;
+src/main.js:58:function dailyLevel() {
+src/main.js:59:  const day = dayNum();
+src/main.js:60:  if (dailyMemo && dailyMemo.day === day) return dailyMemo.n;
+src/main.js:68:  dailyMemo = { day, n: best };
+src/main.js:72:// forgiving streak: one missed day a week is covered by a shield (the streak survives a two-day gap once per week)
+src/main.js:73:const shieldFree = (today = dayNum()) => save.data.daily.shieldW !== econ.weekOf(+today);
+src/main.js:74:function streak(today = dayNum()) {
+src/main.js:75:  const d = save.data.daily;
+src/main.js:78:  return gap <= 1 || (gap === 2 && shieldFree(today)) ? d.streak : 0;
+src/main.js:80:// attempts, seat prices and the Purr "lost" flag are per level; the daily puzzle reuses a level number, so it gets its own key
+src/main.js:81:const triesKey = () => (S.show ? S.show.kind + (S.show.w || '') + (S.show.k || '') : S.daily ? 'd' : '') + S.n;
+src/main.js:87:  dailyDone: save.data.daily.doneDay === todayKey(),
+src/main.js:146:  const day = dayNum();
+src/main.js:165:  if (S.noQuest && S.mode === 'play') return; // a replayed daily puzzle farms no task progress
+src/main.js:166:  if (ev === 'carrier') live.reqEvent(save.data, ev, n); // resident requests count the same moments ('win' only counts new levels, the daily and new Show medals)
+src/main.js:167:  if (econ.questEvent(save.data, ev, dayNum(), n)) {
+src/main.js:174:  econ.questsRoll(d, dayNum());
+src/main.js:176:    login: econ.loginState(d, dayNum()),
+src/main.js:186:const weekNum = () => econ.weekOf(dayNum());
+src/main.js:228:  const w = weekNum();
+src/main.js:251:  const showDot = boards.some((b) => !b.medal) && econ.showEndsMs(dayNum(), now()) < econ.DAY_MS;
+src/main.js:252:  // what inviting the next visitor changes: its portrait, the room its nook goes in, the daily gift
+src/main.js:258:    show: { name: cafe.loc(th.name), color: th.color, endsMs: econ.showEndsMs(dayNum(), now()), boards, bronze: live.SHOW_BRONZE_COINS, gold: live.SHOW_GOLD_COINS, rosette: !!d.show.decor[th.id], archN: arch.length, dot: showDot },
+src/main.js:260:    rush: { endsMs: econ.showEndsMs(dayNum(), now()), best: d.rush.best, rank, rows, pend: d.rush.pend && { rank: d.rush.pend.rank, prize: live.rushPrize(d.rush.pend.rank) }, dot: !!d.rush.pend },
+src/main.js:274:const msToMidnight = () => Math.max(0, econ.dayStart(dayNum() + 1) - now());
+src/main.js:275:const dailyInfo = () => ({ shield: shieldFree(), streak: streak(), done: save.data.daily.doneDay === todayKey(), ms: msToMidnight(), chests: Array.from({ length: 7 }, (_, i) => live.streakChest(i + 1)), stamp: live.eventsOpen(save.data) });
+src/main.js:279:  const day = dayNum();
+src/main.js:280:  const w = weekNum();
+src/main.js:284:  const dailyDone = d.daily.doneDay === todayKey();
+src/main.js:288:  const goals = live.goals(d, now(), { stars: cafe.stars(), res, week: w, streak: streak(), dailyDone, party: cafe.partyOpen() ? cafe.PARTY_COST : 0, show: showW })
+src/main.js:290:  // badge budget: at most 3 red dots, claimable rewards first, then an event ending within a day, then the daily puzzle
+src/main.js:296:    ['daily', !dailyDone],
+src/main.js:327:    daily: { streak: streak(), done: dailyDone, ms: msToMidnight() },
+src/main.js:353:  if (live.eventsOpen(d)) list.push({ tag: 'show', ms: econ.showEndsMs(dayNum(), now()) + 60000, title: t('nShowTitle'), body: t('nShowBody') });
+src/main.js:368:function tryStart(n, daily = false, show = false) {
+src/main.js:370:  if (daily) { startLevel(n, true); return true; } // the daily puzzle: retries are free, no life is spent // Cat Show / Café Rush retries are free and unlimited: no life is spent
+src/main.js:376:  startLevel(n, daily);
+src/main.js:383:const cafeInfo = (justBuilt, L = liveHub()) => ({ street: streetInfo(), reno: renoInfo(), live: L, stars: cafe.stars(), level: save.data.level, area: S.area, justBuilt, coins: save.data.coins, lives: livesInfo(), dots: L.dots, day: dayNum(), offer: starterOpen() && save.data.shop.offerDay !== dayNum(), rosettes: rosettes(), party: cafe.partyOpen() ? { n: cafe.parties(), cost: cafe.PARTY_COST, ok: cafe.stars() >= cafe.PARTY_COST, coins: cafe.PARTY_REWARD.coins } : null });
+src/main.js:395:  const featured = live.seasonDef(live.seasonOf(weekNum())).id;
+src/main.js:429:function startLevel(n, daily = false, show = false) {
+src/main.js:431:  if (S.offerSeen) { S.offerSeen = false; save.data.shop.offerDay = dayNum(); save.commit(); }
+src/main.js:434:  S.daily = daily;
+src/main.js:440:  game.autoHint = !daily && !show && n <= 3; // L3's arrow points past the tempting pink pair; L4 is a real choice now: no tap-by-tap guide, only a nudge after a costly park
+src/main.js:449:  S.dayKey = todayKey(); // one snapshot decides daily-repeat for the whole attempt, even across midnight
+src/main.js:450:  S.noQuest = daily && save.data.daily.doneDay === S.dayKey;
+src/main.js:451:  const special = daily || show; // the daily puzzle and the Cat Show board: no perks, no lessons
+src/main.js:455:  if (!daily && !show && n === save.data.level && save.data.purr.pend) {
+src/main.js:466:  if (!daily && !show && save.data.purr.seatLv === n) board.meta.benchSize++;
+src/main.js:501:  ui.play({ ...hudInfo(), level: n, daily, show: show ? (show.kind === 'friend' ? t('dareTitle') : show.kind === 'rush' ? t('rush') : t('showBoardN', { k: show.k.toUpperCase() })) : false, rush: !!show && (show.kind === 'rush' || (show.kind === 'friend' && show.m === 'time')), tut });
+src/main.js:502:  track('level_start', { n, daily });
+src/main.js:546:    const prev = sh.w === weekNum() ? d.rush.best || 0 : 0;
+src/main.js:547:    const best = sh.w === weekNum() && live.rushResult(d, ms);
+src/main.js:576:  const dailyRepeat = S.daily && d.daily.doneDay === dayKey;
+src/main.js:577:  // a daily already cleared today pays nothing (no coin farming)
+src/main.js:579:  const first = !S.daily && S.n === d.level;
+src/main.js:580:  // coins pay on a first clear (and the daily); replaying an old level only drops a few coins, so it cannot be farmed
+src/main.js:581:  const full = first || S.daily;
+src/main.js:583:  // hard / super-hard bonus, the daily bonus and the café perks; every part is listed on the win card
+src/main.js:586:  if (dailyRepeat) { /* a daily already cleared today pays nothing (no coin farming) */ } else if (!full) parts.push({ k: 'payReplay', n: 5 });
+src/main.js:592:    if (S.daily) parts.push({ k: 'payDaily', n: 25 });
+src/main.js:593:    if (S.daily) parts.push({ k: 'payStreak', n: live.streakChest(streak(+dayKey) + 1).coins }); // the streak chest (its boosters below)
+src/main.js:604:  if (!S.daily) d.bestStars[S.n] = Math.max(d.bestStars[S.n] || 0, stars);
+src/main.js:606:  if (S.daily && d.daily.doneDay !== dayKey) {
+src/main.js:607:    if (d.daily.last && d.daily.streak && +dayKey - +d.daily.last === 2 && shieldFree(+dayKey)) d.daily.shieldW = econ.weekOf(+dayKey); // the missed day spent this week's shield
+src/main.js:608:    d.daily.streak = streak(+dayKey) + 1; // one day snapshot (taken at level start) for the whole daily bookkeeping
+src/main.js:609:    chest = live.streakChest(d.daily.streak);
+src/main.js:612:    live.reqEvent(d, 'daily');
+src/main.js:613:    d.daily.last = dayKey;
+src/main.js:614:    d.daily.doneDay = dayKey;
+src/main.js:617:  // economy: Purr Streak, daily tasks, resident requests (a replayed daily puzzle pays nothing)
+src/main.js:620:  if (!S.daily && d.purr.lost === S.n) d.purr.lost = 0;
+src/main.js:623:  if (full && !dailyRepeat) live.reqEvent(d, 'win'); // a replayed old level or daily never fills a resident's 'win' request
+src/main.js:625:  if (full && !dailyRepeat && game.state && game.state.benchPeak <= 2) live.reqEvent(d, 'tidy');
+src/main.js:626:  const purr = S.daily ? '' : d.purr.pend ? t('purrReady') : d.purr.n > 0 ? t('purrProg', { n: d.purr.n, g: econ.purrGoal(d) }) : '';
+src/main.js:632:  const canBuild = !S.daily && d.level >= CAFE_FROM && cafe.anyAffordable();
+src/main.js:637:  const nextTask = !S.daily && d.level >= CAFE_FROM ? cafe.ALL_TASKS.find((x) => !cafe.isBuilt(x.id)) : null;
+src/main.js:646:  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, peek: peekColor(), cafeStars, canBuild, cafeNext, purr: chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, ach, ...shareOn() });
+src/main.js:691:const srcName = (k, n) => (k === 'd' ? t('dailyLevel') : k === 's' ? t('showBoard') : k === 'r' ? t('rush') : t('level', { n }));
+src/main.js:692:const boardName = () => (S.show ? (S.show.kind === 'friend' ? srcName(S.show.k, S.n) : S.show.kind === 'rush' ? t('rush') : t('showBoardN', { k: S.show.k.toUpperCase() })) : S.daily ? t('dailyLevel') : t('level', { n: S.n }));
+src/main.js:700:  const k = sh ? (sh.kind === 'rush' ? 'r' : sh.kind === 'friend' ? sh.k : 's') : S.daily ? 'd' : 'l';
+src/main.js:815:    tip: S.daily ? t('dailyRetryFree') : t(st && st.carriers[0] && freeCats(st).some((i) => game.board.cats[i].color === st.carriers[0].color) ? 'failTip2' : 'failTip'),
+src/main.js:820:    offer: !S.show && !S.daily && save.data.meta.sessions >= 2 && econ.starterDue(save.data) && starterOpen() && { coins: iap.PRODUCTS.starter.coins, scoop: iap.PRODUCTS.starter.scoop, price: iap.PRODUCTS.starter.price },
+src/main.js:828:  if (!S.show && !S.daily) { // Cat Show practice and the daily puzzle are free to retry: no life, no streak
+src/main.js:854:  daily: () => tryStart(dailyLevel(), true),
+src/main.js:863:    if (live.pet(save.data, id, dayNum())) { // the day's first pet: +1 affection heart
+src/main.js:993:  shop() { if (save.data.shop.offerDay !== dayNum()) { save.data.shop.offerDay = dayNum(); save.commit(); } ui.shop(shopInfo()); track('shop_open', { from: S.mode }); },
+src/main.js:1015:    if (!econ.questClaim(save.data, id, dayNum())) return;
+src/main.js:1017:    track('daily_task_done', { id });
+src/main.js:1026:    track('daily_chest');
+src/main.js:1034:    const r = econ.loginClaim(save.data, dayNum());
+src/main.js:1055:    const w = weekNum();
+src/main.js:1075:    const r = live.seasonClaim(d, s, dayNum());
+src/main.js:1127:  dailysheet() { lui.dailySheet(dailyInfo()); track('daily_sheet'); },
+**Overall 8/10, up from 7/10.** Long Cat Out! now meets your top-100 benchmark as a design. The paws-first leap gives the game a recognizable move, and watching a full bench empty after one good decision is its best payoff. The biggest remaining gaps are giving players a fresh reason to return and getting a shared clip to turn into a friend's first move.
+
+| Dimension | Previous | Current | Assessment |
+|---|---:|---:|---|
+| Presentation | 8 | **8** | The caf�, street, and puzzle board feel like one world. On short phones, the rails and world labels still crowd each other. |
+| Appeal | 8 | **8** | The faces, sleeping bench cats, and resident arrivals sell the fantasy. The straight bodies still read as patterned tubes at rest. |
+| Juice | 6 | **8** | The crouch, reaching paws, and fold give the send a clear rhythm. The chain counter now leaves the carrier mouth visible. |
+| Fun | 7 | **8** | Choosing which cat can afford to wait gives the puzzle real stakes. The press preview makes those stakes easier to read, and the first four boards teach distinct decisions. |
+| Retention | 7 | **7** | The first resident request gives the next win a purpose, and apprentices make the second Cat Street lap worth seeing. Completed floors and later laps still offer weaker reasons to return. |
+| Virality | 5 | **7** | The clip tells a clear one-seat-left story. The exact-board dare gives friends an achievable goal, including a match target when the sender has already hit the board maximum. The clip-to-link handoff still adds friction. |
+| **Overall** | **7** | **8** | The biggest gain is in the move players repeat every few seconds. |
+
+I scored from the captures and current implementation, including the later changes in [the R9 notes](qa/r9-notes.md). `npm run check` passed. I didn't play on a physical phone or verify share delivery, and the analytics are local, so retention and virality are design scores without player outcome data.
+
+### Highest-priority fixes
+
+1. **Presentation - fix the 375x667 hub layout.** Collapse completed and locked floors into a single picker in Cat Street. Give building names a lane below the fa�ades and reserve space beside Tasks for the claim badge. The current street capture has names under rail buttons, and the caf� capture has the build cost tucked behind the currency row.
+2. **Appeal - make the resting cat silhouette read at board size.** Start with the orange tabby. Give it shoulders under the head, a softer belly contour, and a tapered rump. Wrap the stripes around those forms, then check straight cats and tight bends at 375 px before applying the treatment to other breeds.
+3. **Juice - make the landing move the objects it touches.** Anchor the front paws to the carrier lip for a beat, compress the mat as the body folds, and give the loaded carrier a small settle. Give occupied cushions a quick rebound as each cat springs off. Fit those reactions into the existing timing.
+4. **Fun - teach the recovery at the first full-bench loss.** Keep the failed cat, all occupied cushions, and the carrier queue visible above a shorter sheet. Highlight the carrier the cat needs and show how many departures away it is. Lead with **Take back** and **Retry**, and put the Starter Bundle behind **More help**. In a fresh-phone test, check whether players change their next choice after undoing.
+5. **Retention - always show what the next win can build.** Replace the large **Floor complete!** card with the next available build and a tap to that room. Give an in-room resident request one home by removing its duplicate goal tile. For Cat Street lap three, give each shop a visible renovation and a shop-specific resident request so the next completion changes something players can see or do.
+6. **Virality - make a single message sufficient.** Give **Dare a friend** a rich link preview with the actual chain goal, seat count, and peak frame. Keep the video export available for posting. Verify the link from send to first move on iOS and Android in iMessage and WhatsApp, and collect the existing share-ID events off-device so you can see where recipients drop out.
+
+web search: https://www.w3.org/TR/web-share/
+web search: 
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command '$s=Get-Content -Encoding utf8 -LiteralPath src/game/live.js; $s[136..151]; $s=Get-Content -Encoding utf8 -LiteralPath src/game/econ.js; $s[0..24]; Get-Content -Encoding utf8 -LiteralPath src/game/street.js' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 804ms:
+}
+export const reqReady = (d) => d.req.list.some((x) => x.p >= x.need);
+
+// ---- daily puzzle streak chest (the streak itself lives in d.daily: a missed day resets it) ----
+export function streakChest(streak) {
+  const s = Math.max(1, Math.min(7, streak));
+  const r = { coins: 20 + 10 * s };
+  if (s === 3) r.hint = 1;
+  if (s === 5) r.scoop = 1;
+  if (s === 7) { r.scoop = 1; r.undo = 1; r.coins += 30; }
+  return r;
+}
+
+// ---- seasons: 4 weeks each, rotating through data/live.js SEASONS ----
+export const seasonOf = (week) => Math.floor(week / 4);
+export const seasonDef = (s) => SEASONS[((s % SEASONS.length) + SEASONS.length) % SEASONS.length];
+// Economy and long-term systems (DESIGN-V2 section 5). Pure functions over the save data `d` and a caller-supplied `now` (ms),
+// so they are testable in node. The caller passes the rollback-guarded clock (src/kit/clock.js).
+import { EVENT_THEMES } from '../../data/events.js';
+
+export const MAX_LIVES = 5;
+export const REGEN_MS = 25 * 60 * 1000;
+export const DAY_MS = 86400000;
+export const INTERSTITIAL_GAP_MS = 3 * 60 * 1000;
+export const FIRST_SESSION_MS = 5 * 60 * 1000;
+export const INTERSTITIAL_FROM = 8;
+export const HARD_FROM = 15; // first level that can be hard
+export const LIFE_REFILL_COST = 300;
+export const SEAT_COSTS = [120, 200, 300]; // the n-th paid seat within one level
+export const SEAT_COST = SEAT_COSTS[0];
+
+export const dayOf = (now) => Math.floor((now - new Date(now).getTimezoneOffset() * 60000) / DAY_MS);
+export const dayStart = (day) => { // local midnight of a day number, in ms
+  const approx = day * DAY_MS;
+  return approx + new Date(approx + DAY_MS / 2).getTimezoneOffset() * 60000;
+};
+
+export function grant(d, r) {
+  if (r.coins) d.coins += r.coins;
+  for (const k of ['hint', 'scoop', 'undo']) if (r[k]) d.boosters[k] += r[k];
+}
+// Cat Street + renovation: the meta past the cat house rooftop (data/street.js). Pure functions over the save data
+// `d` so node can test them (scripts/check-econ.mjs). d.cafe.street = street tasks built so far (all houses in a row);
+// d.cafe.reno[areaId] = bitmask of owned theme sets, d.cafe.style[areaId] = the set shown ('' = none).
+import { grant } from './econ.js';
+import { SHOPS, COMMON, HOUSE_TASKS, taskCost, HOUSE_REWARD, RENO } from '../../data/street.js';
+
+export { SHOPS, HOUSE_TASKS, HOUSE_REWARD, RENO };
+
+// house k of the street (endless: laps over SHOPS) -> { k, lap, id, name: {en,tr}, keeper, apprentice, tasks: [{ name, cost }] }
+// apprentice: on the first repeat lap (lap 1) each shop's keeper takes on a kitten apprentice who moves in with the house
+export function house(k) {
+  const s = SHOPS[k % SHOPS.length];
+  const lap = Math.floor(k / SHOPS.length);
+  const name = lap ? { en: `${s.name.en} ${lap + 1}`, tr: `${s.name.tr} ${lap + 1}` } : s.name;
+  const tasks = COMMON.map((c, i) => ({ i, name: c || s.own[i - 4], cost: taskCost(k, i) }));
+  return { k, lap, id: s.id, name, keeper: s.keeper, apprentice: lap === 1 ? s.apprentice : null, tasks };
+}
+export const built = (d) => d.cafe.street || 0;
+export const housesDone = (d) => Math.floor(built(d) / HOUSE_TASKS);
+export const curHouse = (d) => house(housesDone(d));
+export const nextTask = (d) => { const h = curHouse(d); return { house: h, ...h.tasks[built(d) % HOUSE_TASKS] }; };
+export const houseLeft = (d) => { const h = curHouse(d); return h.tasks.slice(built(d) % HOUSE_TASKS).reduce((a, x) => a + x.cost, 0); };
+// shopkeepers living on the street (one per shop kind, laps add no new keeper)
+export const keepers = (d) => SHOPS.slice(0, Math.min(SHOPS.length, housesDone(d))).map((s) => s.id);
+// kitten apprentices on the street (one per shop, from the first repeat lap)
+export const apprentices = (d) => SHOPS.slice(0, Math.max(0, Math.min(SHOPS.length, housesDone(d) - SHOPS.length))).map((s) => s.id);
+
+// builds the next street piece -> { name, cost, houseDone, reward } or null (not enough stars)
+export function streetBuild(d) {
+  const t = nextTask(d);
+  if (d.cafe.stars < t.cost) return null;
+  d.cafe.stars -= t.cost;
+  d.cafe.street = built(d) + 1;
+  const houseDone = d.cafe.street % HOUSE_TASKS === 0;
+  if (houseDone) grant(d, HOUSE_REWARD);
+  return { ...t, houseDone, reward: houseDone ? HOUSE_REWARD : null };
+}
+
+// ---- renovation ----
+export const renoOwned = (d, areaId, ti) => !!((d.cafe.reno[areaId] || 0) & (1 << ti));
+export const renoCount = (d) => Object.values(d.cafe.reno).reduce((n, b) => n + ((b & 1) + ((b >> 1) & 1) + ((b >> 2) & 1)), 0);
+// the set to offer next in a room: the featured one (current season) first, then the list order; -1 = all owned
+export function renoNext(d, areaId, featured = '') {
+  const order = RENO.map((_, i) => i).sort((a, b) => (RENO[b].id === featured) - (RENO[a].id === featured));
+  const i = order.find((k) => !renoOwned(d, areaId, k));
+  return i == null ? -1 : i;
+}
+export function renoBuy(d, areaId, ti) { // -> true when bought (and applied)
+  const r = RENO[ti];
+  if (!r || renoOwned(d, areaId, ti) || d.cafe.stars < r.cost) return false;
+  d.cafe.stars -= r.cost;
+  d.cafe.reno[areaId] = (d.cafe.reno[areaId] || 0) | (1 << ti);
+  d.cafe.style[areaId] = r.id;
+  return true;
+}
+// cycles the owned sets of a room (and "none") -> the new style id
+export function renoCycle(d, areaId) {
+  const own = RENO.filter((_, i) => renoOwned(d, areaId, i)).map((r) => r.id);
+  if (!own.length) return '';
+  const list = ['', ...own];
+  const next = list[(list.indexOf(d.cafe.style[areaId] || '') + 1) % list.length];
+  if (next) d.cafe.style[areaId] = next; else delete d.cafe.style[areaId];
+  return next;
+}
+
+web search: 'discard'
+codex
+I’d give the finished café a **six-month album fed by the Daily and weekly events**, and make **one playable link the primary thing players send**. R9 already has resident requests, a forgiving streak, exact-board dares, and a strong one-seat-left replay. The next build should make those systems pay off after the house is done and carry a friend from the first message to their first move. [R9 notes](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/r9-notes.md>) · [Sol’s review](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/sol-r9-4.md>)
+
+Everything below fits a static HTTPS build with local saves and share URLs. It requires zero accounts, backend services, or ad changes. The numbers are launch targets for the design.
+
+## Retention · six changes
+
+| Change | What the player gets and where it goes | What earns a pass in stills |
+|---|---|---|
+| **1. Give completed rooms a next move** | Replace **Floor complete!** with the next actionable build. One tap jumps to the room or shop. Example: **Library reading lamp · 2/3 stars**. From Cat Street lap three, ship **3 visible upgrades per shop across 6 shops**, priced at **2, 2, and 3 stars**. Reuse the façades and add overlays such as the Library lamp and Bakery awning. Keep an in-room resident request on its cat bubble and use the goals strip for a different goal. | On a completed ground floor, the destination, missing star, and next action are readable above **Play**. A before/after Street pair shows the lamp actually lighting up the Library. The resident request appears once. |
+| **2. Give the café a permanent photo album** | Add **Album** inside Residents. Launch **6 themed pages × 4 named postcards**, enough for **24 weekly rewards**. The first card on each page can use existing resident art and a room scene. Completing a page unlocks a matching framed print the player can hang in a finished room. Each empty slot names its source and links to the event or archive. | A **3/4** page shows three distinct photos, the missing card, and exactly how to earn it. The **4/4** still shows the framed-print reward and an **Hang in café** action. A room still shows that print on the wall. |
+| **3. Put a seven-day pop-up in Events** | Feature one weekly event using the Cat Show’s existing two-board flow. Earn **1 stamp from each event board** and **1 from the first Daily clear that week**. **3 stamps** unlock the postcard and **60 coins**. Ship **24 weeks of data** with solver-checked layouts and a featured shop or resident. When a week ends, its coin reward closes and the postcard moves to an archive with **1 catch-up postcard per week**. The four-week Season keeps its visitor track. | Events opens on a card that reads **Library Reading Week · 2/3 · 1d 11h left** and shows the postcard and the one remaining action. A rollover still shows the new event and the old postcard available in the archive. |
+| **4. Make Daily clears count toward something lasting** | Keep the existing **one missed-day shield per week** and daily chest payouts. Add a permanent Daily record with rewards at **7, 14, 30, 60, and 90 total clears**. At **7 and 14**, grant **1 Hint** and **1 Undo**, respectively. At **30, 60, and 90**, unlock a portrait frame, a café pennant, and a wall clock. Put the next milestone on the Daily sheet and in the Daily win summary. Credit each date once. | A Day 29 win shows **29/30 clears** beside a silhouette of the frame. A missed-day pair shows the shield consumed and the total preserved. At Day 30, the unlocked frame appears on the resident portrait. |
+| **5. Make today’s request belong to a specific cat** | Use Tasks to show **2 rotating resident jobs each day** and pay for the **first one completed**. Seed a **14-day rotation** from existing win, cat, carrier, and tidy-clear hooks. Examples: **Help Dewey shelve 6 carriers** or **Clear a board with at most 2 cushions for Bun**. Pay **30 coins + 1 heart** to the featured cat. After claim, the same slot shows tomorrow’s cat and reset time. | The hub shows a named cat, one measurable goal, and the reward together. Capture **4/6**, **Claim**, and **Tomorrow · Bun**. At 375×667, the task fits in the existing two-tile strip with **Play** fully visible. |
+| **6. Let real friend results give players a reason to reopen** | Add **Friend Results** to Events and put **Rematch** next to the most recent imported result. Opening a reply link imports a replay-checked result on that browser. Keep the **latest 12 results**, deduplicated by result ID. A card might read **Ana matched your ×3 · Level 13 · 5 cushions**. One tap reopens that exact board. This gives the café real social proof from the links players receive. | A fresh save reads **Open a friend’s result link to start**. After importing a reply, the card shows both scores, the board, and **Rematch**. Reopening the same reply leaves one entry. |
+
+## Virality · six changes
+
+| Change | What the player gets and where it goes | What earns a pass in stills |
+|---|---|---|
+| **1. Send one playable dare from the win card** | **Dare a friend** opens the native share sheet in **1 game tap**, with **1 HTTPS URL** ready before clip encoding. Offer **Copy dare link** where native sharing is unavailable and a selectable URL if copying fails. Generate **8 static Open Graph cards** at build time for chain, clean sweep, Daily, and reply, in EN and TR. The opened page renders the exact score and replay from the URL payload. | Capture the win card while encoding, the actual received chat bubble, and the opened dare. The button is ready on the win card, one message contains the playable link, and that message opens the intended board. [Web Share API](https://www.w3.org/TR/web-share/) · [Open Graph protocol](https://ogp.me/) |
+| **2. Put the exact dare inside every clip** | Keep the **720×1280** vertical replay and the one-seat-left opener. Burn a short, typeable challenge URL into a safe strip for the **entire 6–9 second clip**. Add a QR to the same exact board, seat count, and goal on the **final 3 seconds** and on the PNG fallback. A compact versioned token carries the challenge without a URL-shortening service. | The opening, peak, end card, and fallback PNG all carry the URL. At **360 px wide**, the URL is readable and the QR scans from a chat-transcoded copy. The decoded board, seats, and goal agree with the caption. Share targets can discard accompanying fields, which is why the link belongs in the image itself. [Web Share API share-target behavior](https://www.w3.org/TR/web-share/#share-targets) |
+| **3. Land on the challenge in one tap** | Open directly on **Ana dares you · Beat ×3 · Level 13 · 5 cushions**, with a muted replay preview when the link carries one. **Play dare** starts the exact board in **1 tap**. On a fresh browser, keep the current carrier and cushion highlights through the first move. Pin the board generator revision in the token and continue decoding existing `?c=` links. | Capture the received link opening and the first playable frame. The goal, level, and seat count agree across both. The carrier and cushion are legible on the first board, and the **Play dare** button fits on the landing at 375×667 in EN and TR. |
+| **4. Give every clear a reply worth sending** | Show both scores on the result sheet with **Send result** as the main action. Example: **Ana ×3 · You ×4**. A tie gets **I matched it**, and a clear below target gets **Send result** and **Try again**. The reply link carries the original challenge ID, the result, and a bounded move log. The browser replays the log before putting the score in Friend Results. | Capture beat, tie, and below-target results. Each shows the two scores and an obvious reply action. Then open the reply on the original sender’s browser and capture the same result with **Rematch**. |
+| **5. Let a dare travel beyond the original pair** | After a match or beat, offer **Pass it on** alongside **Send result**. Keep the exact board and seat count, set the next target from the player’s result, and carry the **latest 3 replay-checked runs**. Use the existing board-ceiling check to turn a max-chain result into **Match ×5**. The next friend can answer or pass it on again. | A third-person landing shows **Ana ×3 → Deniz ×4 → Your turn**, with one clear target. A ceiling case shows **Match ×5** on both landing and board. The thread remains readable in the Turkish short-phone capture. |
+| **6. Ask for a share at the moment that tells a story** | Feature **Dare a friend** on **three** win moments: a **×3+ bench chain**, a **zero-park clear on a board with 10+ cats**, and a **first clear of today’s Daily**. Give each its own headline and use the actual peak frame in the win card. Show the explanatory nudge **once per browser**, on the first qualifying win. Keep ordinary wins focused on **Next** and friend wins focused on the reply. | Capture a one-seat-left ×3, a zero-park clear, a Daily first clear, and an ordinary win. Each featured card makes the feat legible in one glance. The ordinary win keeps **Next** visually dominant, and the featured cards keep both buttons visible at 375×667. |
+
+## Build order and the 8+ bar
+
+1. **First playable slice:** ship the completed-room card, the first album page and event, and the single-link dare through landing and reply. That tests both loops end to end with existing art.
+2. **Then build out the calendar and relay:** load all 24 weeks, add the Daily milestones and rotating requests, ship the Street overlays, and finish the clip URL, QR, and pass-along flow.
+3. **Score the result on visible evidence and actual handoffs.** For retention, capture a completed-house save on an ordinary day, after a claim, after a missed day, at weekly rollover, and at weeks 4, 12, and 24. Each state needs a visible next action, a specific payoff, and a reason to return. For virality, run sender → received message → first move → reply on **iPhone/iMessage, iPhone/WhatsApp, and Android/WhatsApp**. Test a clipboard refusal and a received file with its caption removed. Require every supported route to reach the exact dare from one message or from the link burned into the file.
+
+Capture the critical states in **EN and TR at 375×667**. Stills can earn the 8+ **design** score for clarity and progression. Physical-phone tests establish delivery, and the existing local counters can support playtests. Population retention and viral lift remain unmeasured with this setup.
+tokens used
+66,344
+I’d give the finished café a **six-month album fed by the Daily and weekly events**, and make **one playable link the primary thing players send**. R9 already has resident requests, a forgiving streak, exact-board dares, and a strong one-seat-left replay. The next build should make those systems pay off after the house is done and carry a friend from the first message to their first move. [R9 notes](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/r9-notes.md>) · [Sol’s review](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/sol-r9-4.md>)
+
+Everything below fits a static HTTPS build with local saves and share URLs. It requires zero accounts, backend services, or ad changes. The numbers are launch targets for the design.
+
+## Retention · six changes
+
+| Change | What the player gets and where it goes | What earns a pass in stills |
+|---|---|---|
+| **1. Give completed rooms a next move** | Replace **Floor complete!** with the next actionable build. One tap jumps to the room or shop. Example: **Library reading lamp · 2/3 stars**. From Cat Street lap three, ship **3 visible upgrades per shop across 6 shops**, priced at **2, 2, and 3 stars**. Reuse the façades and add overlays such as the Library lamp and Bakery awning. Keep an in-room resident request on its cat bubble and use the goals strip for a different goal. | On a completed ground floor, the destination, missing star, and next action are readable above **Play**. A before/after Street pair shows the lamp actually lighting up the Library. The resident request appears once. |
+| **2. Give the café a permanent photo album** | Add **Album** inside Residents. Launch **6 themed pages × 4 named postcards**, enough for **24 weekly rewards**. The first card on each page can use existing resident art and a room scene. Completing a page unlocks a matching framed print the player can hang in a finished room. Each empty slot names its source and links to the event or archive. | A **3/4** page shows three distinct photos, the missing card, and exactly how to earn it. The **4/4** still shows the framed-print reward and an **Hang in café** action. A room still shows that print on the wall. |
+| **3. Put a seven-day pop-up in Events** | Feature one weekly event using the Cat Show’s existing two-board flow. Earn **1 stamp from each event board** and **1 from the first Daily clear that week**. **3 stamps** unlock the postcard and **60 coins**. Ship **24 weeks of data** with solver-checked layouts and a featured shop or resident. When a week ends, its coin reward closes and the postcard moves to an archive with **1 catch-up postcard per week**. The four-week Season keeps its visitor track. | Events opens on a card that reads **Library Reading Week · 2/3 · 1d 11h left** and shows the postcard and the one remaining action. A rollover still shows the new event and the old postcard available in the archive. |
+| **4. Make Daily clears count toward something lasting** | Keep the existing **one missed-day shield per week** and daily chest payouts. Add a permanent Daily record with rewards at **7, 14, 30, 60, and 90 total clears**. At **7 and 14**, grant **1 Hint** and **1 Undo**, respectively. At **30, 60, and 90**, unlock a portrait frame, a café pennant, and a wall clock. Put the next milestone on the Daily sheet and in the Daily win summary. Credit each date once. | A Day 29 win shows **29/30 clears** beside a silhouette of the frame. A missed-day pair shows the shield consumed and the total preserved. At Day 30, the unlocked frame appears on the resident portrait. |
+| **5. Make today’s request belong to a specific cat** | Use Tasks to show **2 rotating resident jobs each day** and pay for the **first one completed**. Seed a **14-day rotation** from existing win, cat, carrier, and tidy-clear hooks. Examples: **Help Dewey shelve 6 carriers** or **Clear a board with at most 2 cushions for Bun**. Pay **30 coins + 1 heart** to the featured cat. After claim, the same slot shows tomorrow’s cat and reset time. | The hub shows a named cat, one measurable goal, and the reward together. Capture **4/6**, **Claim**, and **Tomorrow · Bun**. At 375×667, the task fits in the existing two-tile strip with **Play** fully visible. |
+| **6. Let real friend results give players a reason to reopen** | Add **Friend Results** to Events and put **Rematch** next to the most recent imported result. Opening a reply link imports a replay-checked result on that browser. Keep the **latest 12 results**, deduplicated by result ID. A card might read **Ana matched your ×3 · Level 13 · 5 cushions**. One tap reopens that exact board. This gives the café real social proof from the links players receive. | A fresh save reads **Open a friend’s result link to start**. After importing a reply, the card shows both scores, the board, and **Rematch**. Reopening the same reply leaves one entry. |
+
+## Virality · six changes
+
+| Change | What the player gets and where it goes | What earns a pass in stills |
+|---|---|---|
+| **1. Send one playable dare from the win card** | **Dare a friend** opens the native share sheet in **1 game tap**, with **1 HTTPS URL** ready before clip encoding. Offer **Copy dare link** where native sharing is unavailable and a selectable URL if copying fails. Generate **8 static Open Graph cards** at build time for chain, clean sweep, Daily, and reply, in EN and TR. The opened page renders the exact score and replay from the URL payload. | Capture the win card while encoding, the actual received chat bubble, and the opened dare. The button is ready on the win card, one message contains the playable link, and that message opens the intended board. [Web Share API](https://www.w3.org/TR/web-share/) · [Open Graph protocol](https://ogp.me/) |
+| **2. Put the exact dare inside every clip** | Keep the **720×1280** vertical replay and the one-seat-left opener. Burn a short, typeable challenge URL into a safe strip for the **entire 6–9 second clip**. Add a QR to the same exact board, seat count, and goal on the **final 3 seconds** and on the PNG fallback. A compact versioned token carries the challenge without a URL-shortening service. | The opening, peak, end card, and fallback PNG all carry the URL. At **360 px wide**, the URL is readable and the QR scans from a chat-transcoded copy. The decoded board, seats, and goal agree with the caption. Share targets can discard accompanying fields, which is why the link belongs in the image itself. [Web Share API share-target behavior](https://www.w3.org/TR/web-share/#share-targets) |
+| **3. Land on the challenge in one tap** | Open directly on **Ana dares you · Beat ×3 · Level 13 · 5 cushions**, with a muted replay preview when the link carries one. **Play dare** starts the exact board in **1 tap**. On a fresh browser, keep the current carrier and cushion highlights through the first move. Pin the board generator revision in the token and continue decoding existing `?c=` links. | Capture the received link opening and the first playable frame. The goal, level, and seat count agree across both. The carrier and cushion are legible on the first board, and the **Play dare** button fits on the landing at 375×667 in EN and TR. |
+| **4. Give every clear a reply worth sending** | Show both scores on the result sheet with **Send result** as the main action. Example: **Ana ×3 · You ×4**. A tie gets **I matched it**, and a clear below target gets **Send result** and **Try again**. The reply link carries the original challenge ID, the result, and a bounded move log. The browser replays the log before putting the score in Friend Results. | Capture beat, tie, and below-target results. Each shows the two scores and an obvious reply action. Then open the reply on the original sender’s browser and capture the same result with **Rematch**. |
+| **5. Let a dare travel beyond the original pair** | After a match or beat, offer **Pass it on** alongside **Send result**. Keep the exact board and seat count, set the next target from the player’s result, and carry the **latest 3 replay-checked runs**. Use the existing board-ceiling check to turn a max-chain result into **Match ×5**. The next friend can answer or pass it on again. | A third-person landing shows **Ana ×3 → Deniz ×4 → Your turn**, with one clear target. A ceiling case shows **Match ×5** on both landing and board. The thread remains readable in the Turkish short-phone capture. |
+| **6. Ask for a share at the moment that tells a story** | Feature **Dare a friend** on **three** win moments: a **×3+ bench chain**, a **zero-park clear on a board with 10+ cats**, and a **first clear of today’s Daily**. Give each its own headline and use the actual peak frame in the win card. Show the explanatory nudge **once per browser**, on the first qualifying win. Keep ordinary wins focused on **Next** and friend wins focused on the reply. | Capture a one-seat-left ×3, a zero-park clear, a Daily first clear, and an ordinary win. Each featured card makes the feat legible in one glance. The ordinary win keeps **Next** visually dominant, and the featured cards keep both buttons visible at 375×667. |
+
+## Build order and the 8+ bar
+
+1. **First playable slice:** ship the completed-room card, the first album page and event, and the single-link dare through landing and reply. That tests both loops end to end with existing art.
+2. **Then build out the calendar and relay:** load all 24 weeks, add the Daily milestones and rotating requests, ship the Street overlays, and finish the clip URL, QR, and pass-along flow.
+3. **Score the result on visible evidence and actual handoffs.** For retention, capture a completed-house save on an ordinary day, after a claim, after a missed day, at weekly rollover, and at weeks 4, 12, and 24. Each state needs a visible next action, a specific payoff, and a reason to return. For virality, run sender → received message → first move → reply on **iPhone/iMessage, iPhone/WhatsApp, and Android/WhatsApp**. Test a clipboard refusal and a received file with its caption removed. Require every supported route to reach the exact dare from one message or from the link burned into the file.
+
+Capture the critical states in **EN and TR at 375×667**. Stills can earn the 8+ **design** score for clarity and progression. Physical-phone tests establish delivery, and the existing local counters can support playtests. Population retention and viral lift remain unmeasured with this setup.

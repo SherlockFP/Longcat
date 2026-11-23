@@ -141,7 +141,7 @@ export class Game {
         top = this.benchY + this.bw * (r7 ? 0.5 : 0.4) + (r7 ? 2 : 6);
         this.boardTop = top;
         this.laneB = (r7 ? 80 : 84) * k + this.safeB + (this.extraBottom || 0) * (r7 ? 0.55 : 1) + 2; // r7: the hint is a bubble that may overlap the rug's bottom edge // CSS bottom of the toast lane above the booster bar (and the hint card)
-        bottom = this.demo ? this.bottom : this.laneB + (r7 ? 12 : LANE); // r7: toasts may sit over the rug's bottom edge
+        bottom = this.demo ? this.bottom : this.laneB + (r7 ? 12 : LANE) + (this.tipExtra || 0); // r7: toasts may sit over the rug's bottom edge; a 2-line hint lifts the board by its extra lines
       }
       const availH = H - top - bottom - 2 * padOut;
       this.cell = Math.max(16, Math.floor(Math.min(availW / w, availH / h, 74)));
@@ -172,9 +172,10 @@ export class Game {
     return [this.ox + (x + 0.5) * this.cell, this.oy + (y + 0.5) * this.cell];
   }
 
-  load(board, { demo = false, top = 104, bottom = 112, extraBottom = 0 } = {}) {
+  load(board, { demo = false, top = 104, bottom = 112, extraBottom = 0, tipExtra = 0 } = {}) {
     this.board = board;
     this.extraBottom = extraBottom;
+    this.tipExtra = tipExtra;
     this.state = createState(board);
     this.demo = demo;
     this.top = top;

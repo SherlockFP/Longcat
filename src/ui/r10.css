@@ -1,0 +1,172 @@
+/* R10 retention: Cat Street upgrades + remixes, the finished-floor card, the Daily record, resident jobs, the album and
+   postcards, the pop-up week card, Friend Results, café keepsakes. Everything fits 375x667 without scrolling. */
+
+/* ---- Cat Street: a shop façade with its upgrades / remix (ui.js facade()) ---- */
+.sh .fac { position: relative; width: 100%; }
+.sh .fac .shimg { width: 100%; }
+.sh .ovl { position: absolute; pointer-events: none; height: auto; z-index: 1; }
+.sh .ov-bunting { left: -3%; width: 106%; top: 17%; }
+.sh .ov-planter { left: 9%; width: 82%; top: 42%; }
+.sh .ov-lights { left: -3%; width: 106%; top: 46%; }
+.sh .ov-garland { left: -5%; width: 110%; top: 15%; }
+.sh .ov-sign { left: -30%; width: 46%; bottom: 0; z-index: 2; filter: drop-shadow(-3px 4px 3px rgba(40,20,5,.35)); }
+.sh .ovl.gh { opacity: .5; filter: saturate(.5) brightness(1.25) drop-shadow(0 0 6px rgba(255,205,90,.95)); animation: upGhost 1.6s ease-in-out infinite alternate; }
+@keyframes upGhost { to { opacity: .8; } }
+.sh .sguest { position: absolute; left: 2%; bottom: 14px; width: 40%; height: auto; z-index: 3; filter: drop-shadow(-3px 4px 3px rgba(40,20,5,.35)); }
+.sh .sguest.sil { filter: brightness(.15) opacity(.4); }
+.sh.sc.up .hcost, .sh.sc.mix .hcost { top: 36%; }
+.sh.sc.up.fresh .fac, .sh.sc.mix.fresh .fac { animation: build7s .7s cubic-bezier(.2,1.5,.4,1) both; }
+
+/* ---- the finished-floor card: the next build, where it is, the stars still missing, Go ---- */
+.nbcard .trow.nextfloor .tname small.nfdone { display: flex; align-items: center; gap: 3px; color: #2a7a4a; font-weight: 700; }
+.nbcard .trow.nextfloor .tname small.nfdone svg { width: 13px; height: 13px; stroke: #2a7a4a; }
+.nbcard .trow.nextfloor .tname small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.1; }
+.nbcard .trow.nextfloor .tname b { line-height: 1.05; }
+.nbcard .trow.nextfloor .tname small.nfneed { color: #b4511f; font-weight: 700; }
+.nbcard .trow.nextfloor .tname small.nfneed.ok { color: #2a7a4a; }
+.nbcard .trow .cost.go { flex-direction: column; gap: 0; line-height: 1; }
+.nbcard .trow .cost.go b { font-size: 16px; }
+.nbcard .trow .cost.go em { font: 700 13px var(--font); font-style: normal; color: #fff; }
+.nbcard .trow .cost.go img { width: 18px; height: 18px; }
+
+/* ---- the Daily record: on the Daily win card and the Daily sheet ---- */
+.drecrow, .drecbar { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 6px; border-radius: 14px; background: #fffaf0; color: var(--ink); text-align: left; }
+.drecrow { margin: 4px auto 0; max-width: 300px; }
+.drecrow.got { background: linear-gradient(#fff6d8, #ffe7a8); box-shadow: 0 0 0 2px #e9b440; }
+.drecrow span, .drecbar span { display: flex; flex-direction: column; min-width: 0; }
+.drecrow b, .drecbar b { font: 700 14px/1.1 var(--font); }
+.drecrow small, .drecbar small { font: 600 11.5px/1.15 var(--font); color: var(--oak-d); }
+.drart { width: 38px; height: 38px; object-fit: contain; flex: none; }
+.drart.sil { filter: brightness(.2) opacity(.45); }
+.drecbar { border: 2px solid rgba(90,52,24,.25); }
+.drecbar .lbar { flex: 1; min-width: 60px; }
+
+/* ---- resident jobs (Tasks sheet) ---- */
+.qsec small { font: 600 11px var(--font); color: var(--oak-d); text-transform: none; letter-spacing: 0; }
+.jobs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+.jobt { position: relative; display: flex; align-items: center; gap: 4px; padding: 10px 6px 4px 3px; border-radius: 14px; background: #fffaf0; border: 2px solid rgba(90,52,24,.22); color: var(--ink); text-align: left; min-width: 0; }
+.jobt.ready { border-color: #3c9a5c; background: #eefbe9; }
+.jobt.next { grid-column: 1 / -1; border-style: dashed; }
+.jobt .jp { width: 38px; height: 38px; object-fit: contain; flex: none; }
+.jobt > span { display: flex; flex-direction: column; min-width: 0; flex: 1; gap: 1px; }
+.jobt b { font: 700 12.5px/1.05 var(--font); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.jobt small { font: 600 10.5px/1.1 var(--font); color: var(--oak-d); }
+.jobt .jbar { position: relative; display: block; height: 11px; border-radius: 6px; background: #f1e1c5; overflow: hidden; font-style: normal; }
+.jobt .jbar i { display: block; height: 100%; background: linear-gradient(90deg, #8fd16a, #3c9a5c); }
+.jobt .jbar em { position: absolute; inset: 0; font: 700 9px/11px var(--font); font-style: normal; text-align: center; color: var(--ink); }
+.jobt .jrw { position: absolute; right: 4px; top: -7px; display: flex; align-items: center; gap: 1px; padding: 0 5px; border-radius: 999px; background: #fff3d6; border: 1.5px solid #e2a640; font: 700 10px/15px var(--font); font-style: normal; color: #7a4a12; white-space: nowrap; }
+.jobt .jrw img { width: 12px; height: 12px; }
+.jobt .btn.xs { padding: 4px 8px; font-size: 12px; flex: none; }
+
+/* ---- postcards ---- */
+.pc { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 4px 4px 3px; border-radius: 6px; background: #fffdf7; box-shadow: 0 2px 0 rgba(90,52,24,.25), 0 0 0 1px rgba(90,52,24,.15); transform: rotate(-1.2deg); min-width: 0; }
+.pc:nth-child(2n) { transform: rotate(1.3deg); }
+.pcph { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; border-radius: 3px; background: #e8d6b6; }
+.pcph .pcbg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 70%; }
+.pcph .pcmid { position: absolute; left: 50%; bottom: 4%; height: 92%; width: auto; transform: translateX(-50%); }
+.pcph .pcfg { position: absolute; left: 50%; bottom: 2%; height: 74%; width: auto; transform: translateX(-50%); filter: drop-shadow(-2px 3px 2px rgba(40,20,5,.35)); }
+.pcph .pcmid + .pcfg { left: 66%; height: 56%; }
+.pc .pcn { font: 700 11.5px/1.1 var(--font); color: var(--ink); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
+.pc.empty { background: rgba(255,250,240,.6); box-shadow: none; border: 2px dashed rgba(90,52,24,.35); transform: none; }
+.pc.empty .pcph { background: rgba(232,214,182,.5); }
+.pc.empty .pcfg.sil, .pc.sil .pcfg, .pc.sil .pcmid { filter: brightness(.15) opacity(.5); }
+.pc.empty .pcn { color: var(--oak-d); font-size: 10.5px; }
+.pc .pcgo { border: 0; padding: 2px 8px; border-radius: 999px; background: #3c9a5c; color: #fff; font: 700 10.5px/1.2 var(--font); }
+.pc.empty small { font: 600 10px/1.2 var(--font); color: var(--oak-d); text-align: center; }
+.pc.mini { width: 78px; flex: none; padding: 3px; }
+.pc.mini .pcn { display: none; }
+.pc.big { width: min(72vw, 280px); padding: 8px 8px 6px; }
+.pc.big .pcn { font-size: 16px; }
+
+/* ---- album sheet ---- */
+.album .albhead { display: flex; align-items: center; gap: 6px; }
+.album .albhead > span { flex: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; }
+.album .albhead b { font: 700 18px/1.1 var(--font); color: var(--ink); }
+.album .albhead small { font: 600 11.5px var(--font); color: var(--oak-d); }
+.album .albhead .arr { flex: none; }
+.albgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 10px; padding: 2px 4px; }
+.albprint { display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px; border-radius: 14px; background: #fffaf0; border: 2px dashed rgba(90,52,24,.3); text-align: left; color: var(--ink); }
+.albprint.done { border: 2px solid #e9b440; background: linear-gradient(#fff6d8, #ffeec4); }
+.albprint .prt { width: 48px; height: 48px; object-fit: contain; flex: none; }
+.albprint .prt.sil { filter: brightness(.2) opacity(.4); }
+.albprint span { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.albprint b { font: 700 13.5px/1.1 var(--font); }
+.albprint small { font: 600 11px/1.15 var(--font); color: var(--oak-d); }
+.albprint .btn { flex: none; }
+.albdots { display: flex; justify-content: center; gap: 6px; }
+.albdots i { width: 8px; height: 8px; border-radius: 50%; background: rgba(90,52,24,.25); }
+.albdots i.full { background: #e9b440; }
+.albdots i.on { outline: 2px solid var(--ink); outline-offset: 1px; }
+.albbtn { position: absolute; right: 10px; top: calc(8px + var(--safe-t, 0px)); display: flex; flex-direction: column; align-items: center; gap: 0; width: 66px; padding: 3px 2px 4px; border-radius: 14px; background: #fffaf0; border: 2.5px solid var(--oak-d); box-shadow: 0 3px 0 rgba(90,52,24,.55); color: var(--ink); }
+.albbtn img { width: 34px; height: 34px; object-fit: contain; }
+.albbtn b { font: 700 12px/1 var(--font); }
+.albbtn small { font: 600 10px/1.1 var(--font); color: var(--oak-d); }
+
+/* ---- a new postcard ---- */
+.pcard { position: fixed; inset: 0; z-index: 320; background: radial-gradient(70% 50% at 50% 38%, rgba(255,226,160,.4), rgba(30,15,5,.68)); }
+.pcard .pcin { position: absolute; left: 50%; top: 12%; transform: translateX(-50%); animation: pcIn .7s cubic-bezier(.2,1.3,.4,1) both; }
+@keyframes pcIn { from { transform: translateX(-50%) translateY(-60px) rotate(-14deg) scale(.6); opacity: 0; } }
+.pcard .pccard { animation-delay: .5s; }
+.pcpage { display: flex; align-items: center; gap: 8px; padding: 4px 10px 4px 4px; border-radius: 14px; background: linear-gradient(#fff6d8, #ffe7a8); box-shadow: 0 0 0 2px #e9b440; text-align: left; }
+.pcpage .prt { width: 52px; height: 52px; object-fit: contain; }
+.pcpage span { display: flex; flex-direction: column; }
+.pcpage b { font: 700 15px/1.1 var(--font) !important; }
+.pcbtns { display: flex; align-items: center; gap: 10px; }
+.pcard.calm .pcin, .pcard.calm .pccard { animation: none; }
+
+/* ---- Events: the pop-up week card ---- */
+.popcard { display: flex; align-items: center; gap: 8px; padding: 6px 8px 6px 6px; border-radius: 16px; background: linear-gradient(#fffaf0, #f7e7c9); border: 2.5px solid var(--oak-d); box-shadow: 0 3px 0 rgba(90,52,24,.45); text-align: left; color: var(--ink); }
+.popcard.paid { border-color: #3c9a5c; }
+.popt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.popt b { font: 700 15px/1.1 var(--font); }
+.popt small { font: 600 11px/1.15 var(--font); color: var(--oak-d); }
+.popt small.pprize { color: #7a4a12; }
+.psts { display: flex; gap: 5px; }
+.pst { position: relative; display: flex; flex-direction: column; align-items: center; font-style: normal; }
+.pst img { width: 26px; height: 26px; filter: grayscale(1) opacity(.35); }
+.pst.on img { filter: none; }
+.pst em { font: 700 9px/1 var(--font); font-style: normal; color: var(--oak-d); }
+.popact { flex: none; display: flex; flex-direction: column; align-items: flex-end; max-width: 108px; }
+.popact .btn.xs { white-space: normal; line-height: 1.05; padding: 6px 9px; }
+.popact small.pdone { font: 700 11.5px/1.15 var(--font); color: #2a7a4a; text-align: right; }
+.stabs.ev4 .stab { padding-left: 6px; padding-right: 6px; font-size: 13px; }
+
+/* ---- Events: archive postcards ---- */
+.arow .apc { position: relative; flex: none; width: 40px; height: 40px; display: flex; flex-direction: column; align-items: center; justify-content: center; border: 0; padding: 0; background: none; }
+.arow .apc img { width: 34px; height: 34px; object-fit: contain; }
+.arow .apc img.sil { filter: brightness(.15) opacity(.35); }
+.arow .apc i { position: absolute; right: 0; bottom: 0; width: 15px; height: 15px; border-radius: 50%; background: #3c9a5c; color: #fff; font: 700 10px/15px var(--font); font-style: normal; }
+.arow .apc.get { border-radius: 10px; background: #eefbe9; box-shadow: 0 0 0 2px #3c9a5c; }
+.arow .apc.get img { width: 26px; height: 26px; }
+.arow .apc em { font: 700 10px/1 var(--font); font-style: normal; color: #2a7a4a; }
+
+/* ---- Events: Friend Results ---- */
+.frrow { display: flex; align-items: center; gap: 6px; padding: 5px 6px; border-radius: 14px; background: #fffaf0; border: 2px solid rgba(90,52,24,.2); text-align: left; color: var(--ink); }
+.frrow.latest { border-color: #e07aa5; }
+.frrow .frl { width: 34px; height: 34px; object-fit: contain; flex: none; }
+.frt { flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.frt b { font: 700 13px/1.1 var(--font); }
+.frt small { font: 600 11px/1.15 var(--font); color: var(--oak-d); }
+.frt .frvs { font: 700 11.5px/1.2 var(--font); color: #a0406c; }
+.frempty { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 14px 10px; text-align: center; color: var(--ink); }
+.frempty .frl { width: 70px; height: 70px; object-fit: contain; }
+.frempty b { font: 700 16px/1.15 var(--font); }
+.frempty small { font: 600 12px/1.25 var(--font); color: var(--oak-d); }
+.card.dare .dreply { margin: 0; padding: 4px 10px; border-radius: 12px; background: #fff0f6; color: #a0406c; font: 700 13px/1.15 var(--font); }
+
+/* ---- café keepsakes: a framed print, the pennant, the clock; the frame on resident portraits ---- */
+.stage .wall7 { position: absolute; height: auto; transform: translate(-50%, -50%); pointer-events: none; z-index: 2; filter: drop-shadow(-3px 4px 3px rgba(40,20,5,.35)); }
+.stage .wall7.fresh { animation: printIn .8s cubic-bezier(.2,1.5,.4,1) both; }
+@keyframes printIn { from { transform: translate(-50%, -90%) rotate(-8deg) scale(.4); opacity: 0; } }
+.stage .pen7 { left: 34%; top: 14%; width: 11%; }
+.stage .clk7 { left: 87%; top: 20%; width: 10%; }
+.rcard .rp { position: relative; }
+.rcard .rp .rframe { position: absolute; left: 50%; top: -4%; height: 108%; width: auto; transform: translateX(-50%); object-fit: contain; z-index: 2; pointer-events: none; }
+.rcard .rp.framed > img:not(.rframe) { transform: scale(.66) translateY(8%); }
+@media (prefers-reduced-motion: reduce) {
+  .sh .ovl.gh, .sh.sc.up.fresh .fac, .sh.sc.mix.fresh .fac, .pcard .pcin, .stage .wall7.fresh { animation: none !important; }
+}
+/* the hub's job tile: its reward on the cat */
+.goal .gi { position: relative; }
+.goal .gi .gjrw { position: absolute; left: -4px; bottom: -6px; display: flex; align-items: center; gap: 1px; padding: 0 4px 0 1px; border-radius: 999px; background: #fff3d6; border: 1.5px solid #e2a640; font: 700 9.5px/13px var(--font); font-style: normal; color: #7a4a12; }
+.goal .gi .gjrw img { width: 11px !important; height: 11px !important; position: static !important; }

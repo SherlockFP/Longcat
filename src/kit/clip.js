@@ -2,7 +2,9 @@
 // win keeps the board and the move list (Game.log), and an offscreen Game (fixed 360x640 CSS px at 2x = 720x1280,
 // 9:16) replays it. Everything before the moment is fast-forwarded without drawing; then the setup taps (the nearly
 // full bench), the chain tap and the cascade play at real speed with a tap ripple, a big chain counter and captions,
-// and a short end card ("Can you beat it?") closes it. Reads with sound off. MediaRecorder turns it into an MP4 /
+// and a short end card ("Can you beat it?") closes it. Reads with sound off. The dare's short link (text.url: the
+// typeable core of the challenge code, kit/dare.js) is burned into the bottom band for the whole clip and big on the end
+// card, so a file that loses its caption in a chat app still carries the exact board. MediaRecorder turns it into an MP4 /
 // WebM; without one, Share hands over a PNG of the peak moment with the caption.
 import { Game } from '../game/game.js';
 import { FONT, drawPaw } from '../game/render.js';
@@ -12,7 +14,7 @@ export const CLIP_H = 640;
 const DPR = 2;
 const FPS = 30;
 const TOP = 66; // caption band above the carriers (the counter, "4 of 5 seats taken!")
-const BOT = 64; // brand band under the board ("Long Cat Out!" + the board name)
+const BOT = 70; // brand band under the board ("Long Cat Out!" + the dare's short link, the whole clip)
 const END = 2.2; // end card seconds
 const NAVY = '#1d2b53';
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -38,7 +40,7 @@ export function planClip(log, won) {
   return { from, peak: p, kind, n: kind === 'chain' ? best : 0 };
 }
 
-// src: { board, log, plan, text: { combo[], chainX(n), lastSeat, title, board, result, can, link, bench(u, n), chain } }
+// src: { board, log, plan, text: { combo[], chainX(n), lastSeat, title, board, result, can, link, url, goal, bench(u, n), chain } }
 export function clipPlayer(src) {
   const { board, log, plan, text } = src;
   const cv = document.createElement('canvas');
@@ -211,35 +213,56 @@ export function clipPlayer(src) {
       label(ctx, s, CLIP_W / 2, TOP / 2 + 7, 22, tight ? NAVY : NAVY, w - 22, 'rgba(0,0,0,0)');
       ctx.restore();
     }
-    // bottom band: the brand and the board, always on
+    // bottom band: the brand and the dare's short link, always on (the link survives a chat app dropping the caption)
     ctx.save();
-    ctx.fillStyle = 'rgba(29,43,83,0.86)';
-    ctx.fillRect(0, CLIP_H - BOT + 8, CLIP_W, BOT - 8);
-    label(ctx, text.title, CLIP_W / 2, CLIP_H - BOT / 2 - 4, 26, '#ffd43b');
-    ctx.font = `600 15px ${FONT}`;
-    ctx.fillStyle = '#fff6e5';
-    ctx.fillText(text.board, CLIP_W / 2, CLIP_H - 14);
+    ctx.fillStyle = 'rgba(29,43,83,0.9)';
+    ctx.fillRect(0, CLIP_H - BOT + 6, CLIP_W, BOT - 6);
+    label(ctx, text.title, CLIP_W / 2, CLIP_H - BOT + 24, 21, '#ffd43b');
+    if (text.url) {
+      const sz = fit(ctx, text.url, 15, CLIP_W - 44, 700);
+      const w = Math.min(CLIP_W - 16, ctx.measureText(text.url).width + 22);
+      ctx.beginPath();
+      ctx.roundRect(CLIP_W / 2 - w / 2, CLIP_H - 32, w, sz + 11, (sz + 11) / 2);
+      ctx.fillStyle = '#fffaf0';
+      ctx.fill();
+      ctx.fillStyle = NAVY;
+      ctx.fillText(text.url, CLIP_W / 2, CLIP_H - 32 + (sz + 11) / 2 + 1);
+    } else {
+      ctx.font = `600 15px ${FONT}`;
+      ctx.fillStyle = '#fff6e5';
+      ctx.fillText(text.board, CLIP_W / 2, CLIP_H - 18);
+    }
     ctx.restore();
-    // end card: the result, the dare, the name of the game
+    // end card: the result, the dare (goal, board, seats), the link to that exact board, the name of the game
     if (endAt != null) {
       const u = clamp((t - endAt) / 0.35, 0, 1);
       ctx.save();
       ctx.globalAlpha = u;
-      ctx.fillStyle = 'rgba(29,43,83,0.9)';
+      ctx.fillStyle = 'rgba(29,43,83,0.93)';
       ctx.fillRect(0, 0, CLIP_W, CLIP_H);
-      const y = CLIP_H * 0.36;
-      ctx.translate(CLIP_W / 2, y);
+      ctx.translate(CLIP_W / 2, CLIP_H * 0.25);
       const s = 0.8 + 0.2 * u;
       ctx.scale(s, s);
       label(ctx, text.result, 0, 0, 54, '#ff8fb3', CLIP_W - 40, '#0e1630');
-      label(ctx, text.can, 0, 70, 36, '#ffffff', CLIP_W - 40, '#0e1630');
-      label(ctx, text.title, 0, 150, 34, '#ffd43b', CLIP_W - 40, '#0e1630');
-      ctx.font = `600 18px ${FONT}`;
-      ctx.fillStyle = '#fff6e5';
-      ctx.fillText(text.board, 0, 188);
-      fit(ctx, text.link, 16, CLIP_W - 48, 600);
+      label(ctx, text.can, 0, 64, 34, '#ffffff', CLIP_W - 40, '#0e1630');
+      if (text.goal) { fit(ctx, text.goal, 19, CLIP_W - 48, 700); ctx.fillStyle = '#fff6e5'; ctx.fillText(text.goal, 0, 108); }
+      fit(ctx, text.link, 17, CLIP_W - 48, 600);
       ctx.fillStyle = '#9fe8e1';
-      ctx.fillText(text.link, 0, 232);
+      ctx.fillText(text.link, 0, 156);
+      if (text.url) {
+        const sz = fit(ctx, text.url, 21, CLIP_W - 56, 700);
+        const w = Math.min(CLIP_W - 20, ctx.measureText(text.url).width + 30);
+        ctx.beginPath();
+        ctx.roundRect(-w / 2, 176, w, sz + 22, 14);
+        ctx.fillStyle = '#fffaf0';
+        ctx.fill();
+        ctx.lineWidth = 3;
+        ctx.strokeStyle = '#ff5d8f';
+        ctx.stroke();
+        ctx.fillStyle = NAVY;
+        ctx.fillText(text.url, 0, 176 + (sz + 22) / 2 + 1);
+      }
+      label(ctx, text.title, 0, 262, 32, '#ffd43b', CLIP_W - 40, '#0e1630');
       ctx.restore();
     }
   }
@@ -369,7 +392,8 @@ export function makeShareClip() {
   };
 }
 
-// share a file (with the text and the challenge link) when the platform can, else download it and copy the text;
+// share a file (with the text and the challenge link) when the platform can, else copy the link and download the file
+// in the same tap (the copy first: the clipboard needs the tap's user activation, the download does not);
 // returns 'shared' | 'saved' (link copied) | 'saved-nolink' (the clipboard write failed or is missing) | 'cancel'
 export async function shareFile({ blob, ext }, name, text, url) {
   const file = typeof File !== 'undefined' ? new File([blob], `${name}.${ext}`, { type: blob.type }) : null;
@@ -381,6 +405,10 @@ export async function shareFile({ blob, ext }, name, text, url) {
       if (e && e.name === 'AbortError') return 'cancel';
     }
   }
+  let copied = false;
+  try {
+    if (navigator.clipboard) { await navigator.clipboard.writeText(url ? `${text} ${url}` : text); copied = true; }
+  } catch { /* no permission */ }
   const href = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = href;
@@ -389,9 +417,5 @@ export async function shareFile({ blob, ext }, name, text, url) {
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(href), 4000);
-  try {
-    if (!navigator.clipboard) return 'saved-nolink';
-    await navigator.clipboard.writeText(url ? `${text} ${url}` : text);
-    return 'saved';
-  } catch { return 'saved-nolink'; } // no permission (the download took the tap's user activation)
+  return copied ? 'saved' : 'saved-nolink';
 }

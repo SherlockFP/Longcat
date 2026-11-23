@@ -289,7 +289,7 @@ export function clampAheadLive(d, now) {
 }
 
 // ---- the hub's "next goals" strip: at most 2 rows, claimable ones first ----
-// c: { stars, resident, res: [ids], week, streak, dailyDone, party (star cost), show: {have, need} | null }
+// c: { stars, resident, res: [ids], week, streak, dailyDone, party (star cost), show: {have, need} | null, job: today's open resident job | null }
 // The next resident is the thread of the hub and lives on the build card, so it is not repeated here. Pinned after the
 // claimable rows: a newcomer's first request, today's puzzle (until played), this week's Cat Show medals; then the nearest.
 export function goals(d, now, c) {
@@ -297,6 +297,7 @@ export function goals(d, now, c) {
   const add = (g, pin = 9) => { if (g.need > 0) out.push({ ...g, pct: Math.min(1, g.have / g.need), pin }); };
   d.req.list.forEach((x, i) => add({ k: 'req', i, have: x.p, need: x.need, who: x.who, req: x, fresh: d.req.fresh === x.who }, d.req.fresh === x.who ? 0 : 9));
   if (!c.dailyDone) add({ k: 'daily', have: Math.min(7, c.streak || 0), need: 7 }, 1);
+  if (c.job) add({ k: 'job', have: c.job.p, need: c.job.need, who: c.job.who, job: c.job }, c.job.done ? 0 : 1.5); // R10: today's resident job
   if (c.show && c.show.have < c.show.need) add({ k: 'show', have: c.show.have, need: c.show.need }, 2);
   const o = nextOutfit(d, c.res);
   if (o) add({ k: 'outfit', have: o.have, need: o.need, who: o.id, outfit: o.outfit });
@@ -309,7 +310,7 @@ export function goals(d, now, c) {
   }
   if (c.party) add({ k: 'party', have: Math.min(c.stars, c.party), need: c.party });
   // claimable first, then the pinned rows in order, then the nearest (largest share done); ties keep the order above
-  return out.map((g, i) => ({ g, i })).sort((a, b) => (b.g.pct >= 1) - (a.g.pct >= 1) || a.g.pin - b.g.pin || b.g.pct - a.g.pct || a.i - b.i).map((x) => x.g).slice(0, 2);
+  return out.map((g, i) => ({ g, i })).sort((a, b) => (b.g.pct >= 1) - (a.g.pct >= 1) || a.g.pin - b.g.pin || b.g.pct - a.g.pct || a.i - b.i).map((x) => x.g).slice(0, 4); // the hub shows 2 (after dropping a request that already shows over its cat)
 }
 
 // ---- the hub's one spotlight: the single most useful thing to do now (r10 retention) ----

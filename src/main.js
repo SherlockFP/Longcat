@@ -19,13 +19,17 @@ import { pwa, initPwa } from './kit/pwa.js';
 import * as econ from './game/econ.js';
 import * as cafe from './game/cafe.js';
 import { makeShareClip, planClip, shareFile, canRecord } from './kit/clip.js';
+import { houseCard } from './kit/card.js';
 import * as dare from './kit/dare.js';
 import './i18n-dare.js';
 import * as live from './game/live.js';
 import * as street from './game/street.js';
+import * as r10 from './game/r10.js';
 import * as lui from './ui/live.js';
+import * as rui from './ui/r10.js';
 import { notify } from './kit/notify.js';
 import './i18n-live.js';
+import './i18n-r10.js';
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -161,9 +165,11 @@ function econTick() {
   if (a || b || d.lives.n !== before || z2 || jt !== d.jar.t || r || ru || f) save.commit();
   if ((r || ru) && S.mode === 'cafe' && !ui.sheet && ui.screen === 'cafe' && !document.getElementById('arrival')) ui.cafe(cafeInfo());
 }
+// today's resident jobs count the same moments as the resident requests (R10)
+const jobEv = (ev, n = 1) => r10.jobsEvent(save.data, dayNum(), resOwned(), ev, n);
 function quest(ev, n = 1) {
   if (S.noQuest && S.mode === 'play') return; // a replayed daily puzzle farms no task progress
-  if (ev === 'carrier') live.reqEvent(save.data, ev, n); // resident requests count the same moments ('win' only counts new levels, the daily and new Show medals)
+  if (ev === 'carrier') { live.reqEvent(save.data, ev, n); jobEv(ev, n); } // resident requests count the same moments ('win' only counts new levels, the daily and new Show medals)
   if (econ.questEvent(save.data, ev, dayNum(), n)) {
     save.commit();
     if (S.mode === 'cafe') ui.setDots(dots());
@@ -178,7 +184,17 @@ function questsInfo() {
     tasks: d.quests.list.filter((x) => econ.taskDef(x.id)).map((x) => { const def = econ.taskDef(x.id); return { id: x.id, p: x.p, need: def.need, coins: def.coins, c: x.c, done: econ.taskDone(x) }; }),
     chest: { ready: econ.chestReady(d), opened: !!d.quests.chest },
     chestReward: econ.CHEST,
+    jobs: jobsInfo(),
   };
+}
+// today's 2 resident jobs (R10): the first one finished pays; after the claim the slot names tomorrow's cat
+function jobsInfo() {
+  const d = save.data;
+  const res = resOwned();
+  if (!res.length) return null;
+  const list = r10.jobsToday(d, dayNum(), res).map((j) => ({ ...j, name: resName(j.who) }));
+  const tw = r10.jobsTomorrow(dayNum(), res);
+  return { list, paid: d.jobs.paid, reward: r10.JOB_REWARD, tomorrow: { who: tw, name: resName(tw) }, ms: msToMidnight() };
 }
 // ---- Cat Show mastery: two fixed boards a week (the same for everyone), each with one published goal ----
 // Board A: the fewest seats it can be cleared with (searched). Board B: the biggest bench chain on the generator's own
@@ -223,6 +239,50 @@ const resOwned = () => cafe.RESIDENTS.filter((r) => cafe.isBuilt(r.task.id)).map
 const resName = (id) => (cafe.RESIDENTS.find((r) => r.id === id) || {}).name || '';
 const visName = (id) => (live.VISITORS[id] || {}).name || '';
 const jarNow = () => live.jarState(save.data, now(), resOwned().length, cafe.love());
+// R10 pop-up week: the event, its stamps (board A, board B, the week's first Daily), its postcard and the one next step
+const popMedals = (w) => ({ a: !!live.medalOf(save.data, w, 'a'), b: !!live.medalOf(save.data, w, 'b') });
+const cardInfo = (i) => { const c = r10.WEEKS[i]; return { i, name: cafe.loc(c.card), bg: c.bg, mid: c.mid || '', fg: c.fg, ev: cafe.loc(c.ev) }; };
+function popInfo(w = weekNum()) {
+  const d = save.data;
+  const p = r10.popOf(w);
+  const st = r10.popStamps(d, w, popMedals(w));
+  const paid = !!d.pop.paid[w];
+  const next = st.n >= r10.POP_STAMPS ? (paid ? null : { k: 'claim' }) : !st.a ? { k: 'board', w, b: 'a' } : !st.b ? { k: 'board', w, b: 'b' } : { k: 'daily', done: d.daily.doneDay === todayKey() };
+  return { name: cafe.loc(p.ev), card: cardInfo(p.i), have: r10.hasCard(d, p.i), stamps: st, need: r10.POP_STAMPS, coins: r10.POP_COINS, paid, next, endsMs: econ.showEndsMs(dayNum(), now()) };
+}
+// the album (R2): 6 pages x 4 postcards; an empty slot names its week and where to get it
+let albumPage = 0;
+// an empty album opens on the page holding this week's postcard (page 1 alone can be all "Comes in 10 weeks")
+const firstAlbumPage = () => { const d = save.data; const i = r10.PAGES.findIndex((_, p) => r10.pageHave(d, p) > 0 && !r10.pageDone(d, p)); if (i >= 0) return i; const j = r10.PAGES.findIndex((_, p) => r10.pageHave(d, p) > 0); if (j >= 0) return j; return Math.max(0, r10.PAGES.findIndex((_, p) => pageInfo(p).cards.some((c) => c.src === 'now'))); };
+// a full page's print hangs in a finished room: the room after the ones already holding a print, else the ground floor
+function hangRoom(p) {
+  const d = save.data;
+  const done = cafe.AREAS.map((_, i) => i).filter((i) => cafe.areaDone(i));
+  const held = Object.keys(d.album.hung).map(Number);
+  const cur = held.find((k) => d.album.hung[k] === p);
+  if (cur != null) return cur;
+  return done.find((i) => !held.includes(i)) ?? 0;
+}
+function pageInfo(p) {
+  const d = save.data;
+  const pg = r10.PAGES[p];
+  const w = weekNum();
+  const open = live.eventsOpen(d);
+  const cards = r10.pageCards(p).map((i) => {
+    const c = cardInfo(i);
+    if (r10.hasCard(d, i)) return { ...c, own: true };
+    const ago = live.archiveWeeks(d, w).find((x) => r10.popIndex(x) === i);
+    const ahead = r10.nextCardWeek(d, w, i);
+    return { ...c, own: false, src: !open ? 'locked' : ahead === 0 ? 'now' : ago != null ? 'arch' : 'soon', weeks: ahead };
+  });
+  const hungIn = Object.keys(d.album.hung).find((k) => d.album.hung[k] === p);
+  return { p, name: cafe.loc(pg.name), print: pg.print, have: r10.pageHave(d, p), cards, done: r10.pageDone(d, p), hung: hungIn != null ? cafe.loc(cafe.AREAS[+hungIn].name) : '', from: live.EVENTS_FROM };
+}
+const albumInfo = () => ({ page: pageInfo(albumPage), pages: r10.PAGES.length, total: r10.cardsOwned(save.data), all: r10.WEEKS.length, prints: r10.PAGES.map((_, p) => r10.pageDone(save.data, p)) });
+// friend results (R6): the latest replies to this player's dares, newest first, with Rematch on the exact board
+function friendsInfo() {
+  return save.data.fr.list.slice(0, 3).map((e) => ({ ...e, board: srcName(e.k, e.n), res: e.pg == null ? '' : dare.judge(e.m, e.pg, e.g) }));
+}
 function eventsInfo() {
   const d = save.data;
   const w = weekNum();
@@ -230,7 +290,7 @@ function eventsInfo() {
   if (!open) return { open, from: live.EVENTS_FROM };
   const th = econ.themeOf(w);
   const boards = ['a', 'b'].map((k) => ({ w, k, medal: live.medalOf(d, w, k), goal: showGoal(w, k) }));
-  const arch = live.archiveWeeks(d, w).map((x) => ({ w: x, ago: w - x, name: cafe.loc(econ.themeOf(x).name), boards: ['a', 'b'].map((k) => ({ k, medal: live.medalOf(d, x, k) })) }));
+  const arch = live.archiveWeeks(d, w).map((x) => { const pi = r10.popIndex(x); const m = popMedals(x); return { w: x, ago: w - x, name: cafe.loc(r10.WEEKS[pi].ev), boards: ['a', 'b'].map((k) => ({ k, medal: live.medalOf(d, x, k) })), card: { own: r10.hasCard(d, pi), fg: r10.WEEKS[pi].fg, ok: !r10.hasCard(d, pi) && m.a && m.b && r10.catchOpen(d, w) } }; });
   // Rush: the board's cat count sets the bots' simulated times; the table shows the top 3 and you
   if (!(d.rush.week === w && d.rush.cats)) { d.rush.cats = generate(rushLevel(w)).cats.length; save.commit(); }
   const bots = live.rushBots(w, d.rush.cats);
@@ -256,7 +316,9 @@ function eventsInfo() {
   return {
     open,
     show: { name: cafe.loc(th.name), color: th.color, endsMs: econ.showEndsMs(dayNum(), now()), boards, bronze: live.SHOW_BRONZE_COINS, gold: live.SHOW_GOLD_COINS, rosette: !!d.show.decor[th.id], archN: arch.length, dot: showDot },
-    arch: { weeks: arch },
+    arch: { weeks: arch, catchOpen: r10.catchOpen(d, w) },
+    pop: popInfo(w),
+    friends: { list: friendsInfo(), n: d.fr.list.length },
     rush: { endsMs: econ.showEndsMs(dayNum(), now()), best: d.rush.best, rank, rows, pend: d.rush.pend && { rank: d.rush.pend.rank, prize: live.rushPrize(d.rush.pend.rank) }, dot: !!d.rush.pend },
     season: { name: cafe.loc(sd.name), color: sd.color, endsMs: live.seasonEndsMs(s, now()), stamps, max: steps[steps.length - 1].at, steps: steps.map((x, i) => ({ ...x, state: i < done ? 'done' : stamps >= x.at ? 'ready' : '' })), claim, preview, dot: ready.length > 0, owned: live.visitorsOwned(d).length, all: Object.keys(live.VISITORS).map((id) => ({ id, name: visName(id), own: !!d.vis[id], cur: sd.visitors.includes(id) })) },
   };
@@ -272,7 +334,7 @@ function cafeSheetInfo() {
   };
 }
 const msToMidnight = () => Math.max(0, econ.dayStart(dayNum() + 1) - now());
-const dailyInfo = () => ({ shield: shieldFree(), streak: streak(), done: save.data.daily.doneDay === todayKey(), ms: msToMidnight(), chests: Array.from({ length: 7 }, (_, i) => live.streakChest(i + 1)), stamp: live.eventsOpen(save.data) });
+const dailyInfo = () => ({ shield: shieldFree(), streak: streak(), done: save.data.daily.doneDay === todayKey(), ms: msToMidnight(), chests: Array.from({ length: 7 }, (_, i) => live.streakChest(i + 1)), stamp: live.eventsOpen(save.data), drec: drecInfo() });
 // the hub's retention layer: rail badges, the goals strip, pets due, outfits, today's visitor, Rush cups (max 3 dots)
 function liveHub() {
   const d = save.data;
@@ -285,7 +347,10 @@ function liveHub() {
   const nr = cafe.nextResident();
   const need = nr ? cafe.starsToResident(nr) : 0;
   const showW = open ? { have: ['a', 'b'].filter((k) => live.medalOf(d, w, k)).length, need: 2 } : null; // this week's Cat Show medals
-  const goals = live.goals(d, now(), { stars: cafe.stars(), res, week: w, streak: streak(), dailyDone, party: cafe.partyOpen() ? cafe.PARTY_COST : 0, show: showW })
+  // today's resident job (R10): the slot with the most progress; after the claim the slot names tomorrow's cat
+  const jobs = r10.jobsToday(d, day, res);
+  const jb = d.jobs.paid ? null : jobs.slice().sort((x, y) => y.p / y.need - x.p / x.need)[0];
+  const goals = live.goals(d, now(), { stars: cafe.stars(), res, week: w, streak: streak(), dailyDone, party: cafe.partyOpen() ? cafe.PARTY_COST : 0, show: showW, job: jb ? { ...jb, name: resName(jb.who) } : null })
     .map((g) => ({ ...g, name: g.k === 'outfit' ? resName(g.who) : g.name, vname: g.visitor ? visName(g.visitor) : '' }));
   // badge budget: at most 3 red dots, claimable rewards first, then an event ending within a day, then the daily puzzle
   const want = [
@@ -327,7 +392,9 @@ function liveHub() {
     daily: { streak: streak(), done: dailyDone, ms: msToMidnight() },
     season: open ? { stamps: live.stampsOf(d, live.seasonOf(w)) } : null,
     dots: on,
-    goals: shown.slice(0, 3),
+    goals: shown.slice(0, 4),
+    // residents whose request already shows as a bubble over them in a room (the goals strip skips those)
+    bubbleWho: d.req.list.filter((x) => x.p >= x.need || d.req.fresh === x.who).map((x) => x.who),
     wear: d.cafe.wear,
     pet: Object.fromEntries(res.filter((id) => live.petReady(d, id, day)).map((id) => [id, 1])),
     visitor: vid && { id: vid, name: visName(vid), line: live.VISITORS[vid].line, gift: d.season.visDay < day },
@@ -380,13 +447,19 @@ function tryStart(n, daily = false, show = false) {
 // ---- flow ----
 // the Cat Show rosettes the player has won hang on the café wall (one per theme, in its colour)
 const rosettes = () => econ.earnedDecor(save.data).map((id) => econ.THEMES.find((x) => x.id === id)).filter(Boolean).map((x) => ({ id: x.id, color: x.color, name: cafe.loc(x.name) }));
-const cafeInfo = (justBuilt, L = liveHub()) => ({ street: streetInfo(), reno: renoInfo(), live: L, stars: cafe.stars(), level: save.data.level, area: S.area, justBuilt, coins: save.data.coins, lives: livesInfo(), dots: L.dots, day: dayNum(), offer: starterOpen() && save.data.shop.offerDay !== dayNum(), rosettes: rosettes(), party: cafe.partyOpen() ? { n: cafe.parties(), cost: cafe.PARTY_COST, ok: cafe.stars() >= cafe.PARTY_COST, coins: cafe.PARTY_REWARD.coins } : null });
+const cafeInfo = (justBuilt, L = liveHub()) => ({ wall: wallInfo(), street: streetInfo(), reno: renoInfo(), live: L, stars: cafe.stars(), level: save.data.level, area: S.area, justBuilt, coins: save.data.coins, lives: livesInfo(), dots: L.dots, day: dayNum(), offer: starterOpen() && save.data.shop.offerDay !== dayNum(), rosettes: rosettes(), party: cafe.partyOpen() ? { n: cafe.parties(), cost: cafe.PARTY_COST, ok: cafe.stars() >= cafe.PARTY_COST, coins: cafe.PARTY_REWARD.coins } : null });
 
+// R10 café keepsakes: framed album prints hung per room, the Daily record's pennant and clock (ground floor)
+function wallInfo() {
+  const d = save.data;
+  const hung = Object.fromEntries(Object.entries(d.album.hung).map(([room, p]) => [room, r10.PAGES[p] ? r10.PAGES[p].print : 0]));
+  return { hung, pennant: r10.drecHas(d, 'pennant'), clock: r10.drecHas(d, 'clock'), frame: r10.drecHas(d, 'frame') };
+}
 // Cat Street (past the rooftop) and the renovation sets of a finished room
 function streetInfo() {
   const d = save.data;
   const nt = street.nextTask(d);
-  return { open: cafe.partyOpen(), done: street.housesDone(d), at: street.built(d) % street.HOUSE_TASKS, next: nt, left: street.houseLeft(d), ok: cafe.stars() >= nt.cost };
+  return { open: cafe.partyOpen(), shops: street.keepers(d).length, done: street.housesDone(d), at: street.atPiece(d), next: nt, left: street.houseLeft(d), ok: cafe.stars() >= nt.cost, looks: Object.fromEntries(street.ALL_SHOPS.map((x) => [x.id, street.shopLook(d, x.id)])) };
 }
 function renoInfo() {
   const d = save.data;
@@ -492,7 +565,7 @@ function startLevel(n, daily = false, show = false) {
   S.scareMoves = 0;
   S.tut3b = false;
   S.tut = tut;
-  game.load(board, { extraBottom: tut ? 64 : 0 });
+  game.load(board, { extraBottom: tut ? 64 : 0, tipExtra: tut ? tipExtra(tut) : 0 });
   game.rulesTeach = friend;
   game.waitTags = !special && n === 4; // L4's clue: the free cats show how many carriers they would wait on a cushion
   clip.clear();
@@ -514,7 +587,7 @@ setInterval(() => {
 function onFree({ ids, step, purrfect }) {
   if (game.demo) return;
   if (!S.undid) quest('cat', ids.length); // replays after a paid undo do not count twice
-  if (!S.undid && !(S.noQuest && S.mode === 'play')) for (const id of ids) live.reqEvent(save.data, 'cat', 1, game.board.cats[id].color);
+  if (!S.undid && !(S.noQuest && S.mode === 'play')) { for (const id of ids) live.reqEvent(save.data, 'cat', 1, game.board.cats[id].color); jobEv('cat', ids.length); }
   if (timed() && !S.rushT0) S.rushT0 = performance.now();
   if (S.show && S.show.kind === 'friend' && !S.dareMoved) { S.dareMoved = true; track('dare_first_move', { i: S.show.i || '', m: S.show.m }); }
   audio.mrrp(step);
@@ -540,8 +613,7 @@ function onShowWin() {
   haptics.success();
   if (sh.kind === 'friend') return onFriendWin();
   if (sh.kind === 'rush') {
-    const ms = S.rushT0 ? performance.now() - S.rushT0 : 0;
-    S.lastMs = ms;
+    const ms = S.lastMs || 0;
     econTick(); // a week that turned over mid-run pays last week's prize first
     const prev = sh.w === weekNum() ? d.rush.best || 0 : 0;
     const best = sh.w === weekNum() && live.rushResult(d, ms);
@@ -551,29 +623,34 @@ function onShowWin() {
     const rank = live.rushRank(bots, Math.min(ms, d.rush.best || ms));
     save.commit();
     track('rush_win', { ms: Math.round(ms), rank, best });
-    ui.win({ stars: 1, title: best ? 'winTitle' : 'winTitle2', coins: 0, peek, purr: t('rushTime', { t: (ms / 1000).toFixed(1), n: rank }) + (best ? ' · ' + t('showBest') : '') + split, ach: [], show: true, again: true, showTag: t('rush') });
+    ui.win({ stars: 1, title: best ? 'winTitle' : 'winTitle2', coins: 0, peek, purr: t('rushTime', { t: (ms / 1000).toFixed(1), n: rank }) + (best ? ' · ' + t('showBest') : '') + split, ach: [], show: true, again: true, showTag: t('rush'), ...shareOn(rank <= 3 ? 'rush3' : null) });
     return;
   }
   const goal = sh.goal;
   const peak = game.state ? game.state.benchPeak : 0;
   const gold = goal.kind === 'chain' ? S.chainBest >= goal.n : peak <= goal.n;
   const r = live.showMedal(d, sh.w, sh.k, gold);
-  if (r.bronze || r.gold) live.reqEvent(d, 'win'); // a new Show medal counts for requests, a replay does not
+  if (r.bronze || r.gold) { live.reqEvent(d, 'win'); jobEv('win'); } // a new Show medal counts for requests, a replay does not
+  const popNow = sh.w === weekNum() && r.bronze && r10.popReady(d, sh.w, popMedals(sh.w)); // the pop-up's 3rd stamp
   let rosette = false;
   if (r.gold && live.bothGold(d, sh.w) && !d.show.decor[econ.themeOf(sh.w).id]) { d.show.decor[econ.themeOf(sh.w).id] = 1; rosette = true; }
   save.commit();
   track('show_board_win', { w: sh.w, k: sh.k, gold, peak, chain: S.chainBest, stamps: r.stamps });
   const line = gold ? t('medalGoldWon') : t('medalBronzeWon', { goal: goalText(goal) });
-  ui.win({ stars: 1, title: gold ? 'winTitle' : 'winTitle2', coins: r.coins, coinsBefore: d.coins - r.coins, peek, ribbons: r.stamps, purr: line + (rosette ? ' · ' + t('rosetteWon') : ''), ach: [], show: true, showTag: t('showBoardN', { k: sh.k.toUpperCase() }) });
+  const pop = sh.w === weekNum() && r.bronze ? ' · ' + t(popNow ? 'popReadyLine' : 'popStampLine', { n: r10.popStamps(d, sh.w, popMedals(sh.w)).n, m: r10.POP_STAMPS }) : '';
+  ui.win({ stars: 1, title: gold ? 'winTitle' : 'winTitle2', coins: r.coins, coinsBefore: d.coins - r.coins, peek, ribbons: r.stamps, purr: line + (rosette ? ' · ' + t('rosetteWon') : '') + pop, ach: [], show: true, showTag: t('showBoardN', { k: sh.k.toUpperCase() }), ...shareOn(gold ? 'gold' : null) });
 }
 
 function onWin(stars) {
   ui.setTut('');
+  S.dailyFirst = false;
+  if (timed()) S.lastMs = S.rushT0 ? performance.now() - S.rushT0 : 0; // before the clip: its burned-in dare carries the time
   prepClip();
   if (S.show) return onShowWin();
   const d = save.data;
   const dayKey = S.dayKey || todayKey();
   const dailyRepeat = S.daily && d.daily.doneDay === dayKey;
+  S.dailyFirst = S.daily && !dailyRepeat; // today's Daily, first clear: a share moment
   // a daily already cleared today pays nothing (no coin farming)
   // perk: +5 coins per coin-perk level on every win (Mochi 1, Pepper +2)
   const first = !S.daily && S.n === d.level;
@@ -603,6 +680,7 @@ function onWin(stars) {
   }
   if (!S.daily) d.bestStars[S.n] = Math.max(d.bestStars[S.n] || 0, stars);
   let chest = null;
+  let drecNew = null;
   if (S.daily && d.daily.doneDay !== dayKey) {
     if (d.daily.last && d.daily.streak && +dayKey - +d.daily.last === 2 && shieldFree(+dayKey)) d.daily.shieldW = econ.weekOf(+dayKey); // the missed day spent this week's shield
     d.daily.streak = streak(+dayKey) + 1; // one day snapshot (taken at level start) for the whole daily bookkeeping
@@ -610,6 +688,8 @@ function onWin(stars) {
     econ.grant(d, { ...chest, coins: 0 }); // the chest's coins are in the pay breakdown
     if (live.eventsOpen(d)) live.addDailyStamp(d, econ.weekOf(+dayKey));
     live.reqEvent(d, 'daily');
+    drecNew = r10.drecClear(d, +dayKey); // the permanent Daily record: this date counts once
+    if (live.eventsOpen(d)) r10.popDaily(d, econ.weekOf(+dayKey)); // the week's first Daily clear stamps the pop-up
     d.daily.last = dayKey;
     d.daily.doneDay = dayKey;
   }
@@ -620,6 +700,8 @@ function onWin(stars) {
   if (!S.daily && d.purr.lost === S.n) d.purr.lost = 0;
   if (first && d.purr.seatLv === S.n) d.purr.seatLv = 0; // the streak's bench seat is used up once its level is cleared
   quest('win');
+  if (full && !dailyRepeat) jobEv('win');
+  if (full && !dailyRepeat && game.state && game.state.benchPeak <= 2) jobEv('tidy');
   if (full && !dailyRepeat) live.reqEvent(d, 'win'); // a replayed old level or daily never fills a resident's 'win' request
   if (game.board.meta.kind !== 'normal') quest('hard');
   if (full && !dailyRepeat && game.state && game.state.benchPeak <= 2) live.reqEvent(d, 'tidy');
@@ -643,9 +725,21 @@ function onWin(stars) {
   if (peak === 0) ach.push({ k: 'nobench', text: t('achNoBench') });
   // the win card is the payoff moment: never an upsell on it (the Starter Bundle shows once, on a lost bench instead)
   const pay = parts.length > 1 || (parts[0] && parts[0].k === 'payReplay') ? parts.map((p) => `${t(p.k, { n: p.v })} +${p.n}`).join(' · ') : '';
-  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, peek: peekColor(), cafeStars, canBuild, cafeNext, purr: chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, ach, ...shareOn() });
+  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, peek: peekColor(), cafeStars, canBuild, cafeNext, purr: chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, drec: drecNew ? drecInfo(drecNew) : null, ach, ...shareOn() });
   for (let i = 0; i < stars; i++) setTimeout(() => audio.star(i), 300 + i * 300);
   clipPreview();
+}
+
+// the Daily record on the win card and the Daily sheet: the total, the next milestone (its art as a silhouette), or what
+// this clear just unlocked
+const DREC_ART = { frame: 'drec_frame', pennant: 'drec_pennant', clock: 'drec_clock' };
+const drecArt = (m) => (m.item ? DREC_ART[m.item] : m.reward.hint ? 'btn_hint' : 'btn_undo');
+const drecName = (m) => (m.item ? cafe.loc(m.name) : t(m.reward.hint ? 'drecHint' : 'drecUndo'));
+function drecInfo(got = []) {
+  const d = save.data;
+  const nx = r10.drecNext(d);
+  const g = got[got.length - 1];
+  return { n: d.drec.n, got: g ? { art: drecArt(g), name: drecName(g), at: g.at } : null, next: nx && { at: nx.at, art: drecArt(nx), name: drecName(nx) } };
 }
 
 // ---- share clip + friend challenge ----
@@ -658,21 +752,40 @@ function prepClip() {
   const plan = planClip(game.log, true);
   if (!plan) return clip.clear();
   const result = plan.kind === 'chain' ? t('chainX', { n: plan.n }) : S.winPeak === 0 ? t('clipNoBench') : t('clipClear');
+  const wd = winDare(); // the clip and the Dare button name the same dare (one share id)
   clip.set({
     board: game.board,
     log: game.log.slice(),
     plan,
-    text: { combo: [t('purrfect'), t('combo2'), t('combo3')], chainX: (n) => t('chainX', { n }), lastSeat: t('lastSeat'), title: t('title'), board: boardName(), result, can: t('clipCan'), link: t('clipLink'), bench: (u, n) => t('clipBench', { u, n }), oneSeat: t('clipOneSeat'), chain: t('clipChain') },
+    text: { combo: [t('purrfect'), t('combo2'), t('combo3')], chainX: (n) => t('chainX', { n }), lastSeat: t('lastSeat'), title: t('title'), board: boardName(), result, can: t('clipCan'), link: t('clipLink'), url: shortUrl(wd), goal: `${dareGoal(wd.m, wd.g, wd.x)} · ${t('dareBoard', { board: boardName(), n: wd.b })}`, bench: (u, n) => t('clipBench', { u, n }), oneSeat: t('clipOneSeat'), chain: t('clipChain') },
   });
 }
-// the win card's share parts: the clip preview (a chain, or a clean sweep), the labelled Share clip button at a real
-// high (chain x3+, a clean sweep), and once ever, at the first chain x3, a "Show a friend!" nudge on it
-function shareOn() {
+// the win card's share parts: the clip preview (a chain, or a clean sweep) and, at a moment that tells a story, Dare a
+// friend as a labelled pink pill with the moment's own headline: the first chain x3 (with a once-per-browser "Show a
+// friend!" nudge), a new best chain, any chain x3+, a clean sweep of a real board, the first clear of today's Daily, a
+// Cat Show gold, a Café Rush top 3 (extra: 'gold' | 'rush3'). Ordinary wins keep Next first and the round share icon.
+function shareOn(extra) {
+  const d = save.data;
+  const friend = S.show && S.show.kind === 'friend';
   const preview = clip.has() && (S.chainBest >= 2 || noBenchWin());
-  const big = clip.has() && (S.chainBest >= 3 || noBenchWin());
-  const nudge = big && S.chainBest >= 3 && !save.data.meta.shareNudge;
-  if (nudge) { save.data.meta.shareNudge = 1; save.commit(); track('share_nudge', { n: S.n }); }
-  return { chain: preview, dare: big, nudge };
+  const c = S.chainBest || 0;
+  let k = '';
+  if (friend) k = '';
+  else if (c >= 3 && !d.meta.shareNudge) k = 'first3';
+  else if (c >= 3 && c > (d.meta.bestChain || 0)) k = 'best';
+  else if (S.dailyFirst) k = 'daily';
+  else if (extra) k = extra;
+  else if (noBenchWin()) k = 'sweep';
+  else if (c >= 3) k = 'chain';
+  if (!friend && c > (d.meta.bestChain || 0)) d.meta.bestChain = Math.min(8, c);
+  const nudge = k === 'first3';
+  if (nudge) d.meta.shareNudge = 1;
+  save.commit();
+  if (k) track('share_offer_' + k);
+  if (nudge) track('share_nudge', { n: S.n });
+  S.moment = k;
+  const head = { first3: t('momFirst3', { n: c }), best: t('momBest', { n: c }), sweep: t('momSweep'), daily: t('momDaily'), gold: t('momGold'), rush3: t('momRush') }[k] || '';
+  return { chain: preview, dare: !!k, nudge, moment: head };
 }
 // the preview starts after the card has settled; the encode runs behind it (real time, ~8 s) so Share has the video
 function clipPreview() {
@@ -694,6 +807,40 @@ const timed = () => !!S.show && (S.show.kind === 'rush' || (S.show.kind === 'fri
 // "Ana's" / "Ana'nın"; no name: "your friend's" / "Arkadaşının"
 const whoOf = (nm) => (nm ? (save.data.settings.lang === 'tr' ? dare.trGenitive(nm) : nm + "'s") : t('dareWho'));
 const dareGoal = (m, g, x) => (m === 'chain' ? t(x ? 'dareGoalChainMatch' : 'dareGoalChain', { n: g }) : m === 'time' ? t('dareGoalTime', { t: (g / 10).toFixed(1) }) : g === 0 ? t('dareGoalNoBench') : t('dareGoalSeats', { n: g }));
+// how much taller the hint card is than one line (a 2-line hint would cover the board's bottom row otherwise)
+function tipExtra(text) {
+  const el = document.createElement('div');
+  el.className = 'tut';
+  el.style.visibility = 'hidden';
+  const host = document.getElementById('ui') || document.body;
+  host.appendChild(el);
+  el.textContent = 'x';
+  const one = el.getBoundingClientRect().height;
+  el.textContent = text;
+  const h = el.getBoundingClientRect().height;
+  el.remove();
+  return Math.max(0, Math.round(h - one));
+}
+// a result in words: x4, 2 seats, 12.3s
+const valText = (m, v) => (m === 'chain' ? 'x' + v : m === 'time' ? t('valTime', { t: (v / 10).toFixed(1) }) : t('valSeats', { n: v }));
+// the one dare of this win (cached per attempt): the exact board and what the player did on it, one share id (burned
+// into the clip, so the clip and the link name the same dare), the player's optional name, and on a friend's board the
+// reply (their share id + target), the thread so far (the latest 3 runs) and the next round number
+const winDareC = { token: -1, d: null };
+function winDare() {
+  if (winDareC.token === S.winToken && winDareC.d) return { ...winDareC.d, th: winDareC.d.th && [...winDareC.d.th] };
+  const d = myDare();
+  d.i = dare.shareId();
+  if (save.data.meta.nick) d.nm = save.data.meta.nick;
+  const sh = S.show;
+  if (sh && sh.kind === 'friend') {
+    d.rd = (sh.rd || 1) + 1;
+    if (sh.i && d.m === sh.m) { d.r = sh.i; d.pg = sh.g; d.th = [...(sh.th || []), { nm: sh.nm || '', v: sh.g }].slice(-3); }
+  }
+  winDareC.token = S.winToken;
+  winDareC.d = d;
+  return { ...d, th: d.th && [...d.th] };
+}
 // the challenge this run sends: the same board and seats, and what the player did on it
 function myDare() {
   const sh = S.show;
@@ -740,11 +887,18 @@ function checkDare(d) {
 }
 function dareText(d) {
   const board = boardName();
+  const sh = S.show;
+  if (d.r && sh && sh.kind === 'friend') { // a reply: the round, both results
+    const res = dare.judge(d.m, d.pg, d.g);
+    return t(res === 'beat' ? 'backBeat' : res === 'tie' ? 'backTie' : 'backMiss', { r: d.rd || 2, board, pv: valText(d.m, d.pg), v: valText(d.m, d.g) });
+  }
   if (d.m === 'chain') return t(d.x ? 'shareDareChainMatch' : 'shareDareChain', { c: d.g, board });
   if (d.m === 'time') return t('shareDareTime', { t: (d.g / 10).toFixed(1), board });
   return d.g === 0 ? t('shareDareNoBench', { board }) : t('shareDareSeats', { c: d.g, board });
 }
 const dareUrl = (d) => location.origin + location.pathname + '?c=' + dare.encode(d);
+// what the clip shows: the link without its scheme, with the typeable core only (board, seats, goal, share id)
+const shortUrl = (d) => location.host + location.pathname + '?c=' + dare.shortCode(d);
 // a ?c= link opened the game: decoded (and clamped) once, then dropped from the address bar
 function readDare() {
   let code = null;
@@ -753,15 +907,32 @@ function readDare() {
   try { const u = new URL(location.href); u.searchParams.delete('c'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch { /* file:// */ }
   const d = dare.decode(code, (n) => generate(n).meta.benchSize);
   track(d ? 'dare_open' : 'dare_bad', d ? { m: d.m, k: d.k, i: d.i || '' } : {});
+  if (d && d.r) importReply(d);
   return d;
+}
+// a reply link (R6): the result goes into Friend Results once it is plausible on that exact board (a chain no bigger than
+// the board's searched maximum on those seats; seats within the board's bench); the same result id stays one entry
+function importReply(d) {
+  if (d.m === 'chain') {
+    const board = generate(d.n);
+    const mc = maxChain(new Sim(compile(board), d.b));
+    if (mc.complete && d.g > mc.best) { track('fr_bad', { n: d.n }); return; }
+  }
+  const e = r10.frImport(save.data, d, now());
+  if (!e) return;
+  save.commit();
+  track('fr_import', { mine: e.mine ? 1 : 0, m: d.m });
+  if (e.mine) S.frNew = e.id; // the landing says it landed only when it answers one of this browser's dares
 }
 function dareLanding(d) {
   S.dare = d;
-  ui.dare({ who: d.nm || t('dareFriend'), goal: dareGoal(d.m, d.g, d.x), board: srcName(d.k, d.n), seats: d.b, fresh: save.data.level <= 1, peek: COLORS[generate(d.n).cats[0].color] });
+  // the thread so far: "Ana x3 -> Deniz x4 -> Your turn" (the earlier runs, then the sender's own)
+  const thread = d.th && d.th.length ? [...d.th, { nm: d.nm, v: d.g }].map((e) => `${e.nm || t('dareFriend')} ${valText(d.m, e.v)}`) : [];
+  ui.dare({ who: d.nm || t('dareFriend'), goal: dareGoal(d.m, d.g, d.x), board: srcName(d.k, d.n), seats: d.b, fresh: save.data.level <= 1, peek: COLORS[generate(d.n).cats[0].color], reply: d.r && S.frNew === d.i ? t('frAdded', { name: d.nm || t('dareFriend') }) : '', thread, round: d.rd || 1, nick: save.data.meta.nick });
 }
 function startDare(d) {
   const goal = d.m === 'chain' ? { kind: 'chain', n: d.g } : d.m === 'seats' ? { kind: 'seats', n: d.g } : null;
-  startLevel(d.n, false, { kind: 'friend', m: d.m, g: d.g, nm: d.nm, k: d.k, b: d.b, x: d.x, i: d.i, goal });
+  startLevel(d.n, false, { kind: 'friend', m: d.m, g: d.g, nm: d.nm, k: d.k, b: d.b, x: d.x, i: d.i, th: d.th, rd: d.rd, goal });
   S.dareMoved = false;
   track('dare_play', { m: d.m, i: d.i || '' });
 }
@@ -776,8 +947,7 @@ function onFriendWin() {
   const d = save.data;
   audio.clear();
   haptics.success();
-  const ms = S.rushT0 ? performance.now() - S.rushT0 : 0;
-  S.lastMs = ms;
+  const ms = S.lastMs || 0;
   const v = sh.m === 'chain' ? S.chainBest || 0 : sh.m === 'seats' ? S.winPeak || 0 : Math.round(ms / 100);
   const res = dare.judge(sh.m, sh.g, v);
   d.meta.dares++;
@@ -787,7 +957,10 @@ function onFriendWin() {
   const vv = sh.m === 'time' ? (ms / 1000).toFixed(1) : v;
   const line = t(`dare_${res}_${sh.m}`, { who: whoOf(sh.nm), n, v: vv });
   const sp = shareOn();
-  ui.win({ stars: 1, title: res === 'miss' ? 'winTitle1' : 'winTitle', coins: 0, peek: peekColor(), purr: '', ach: [], show: true, showTag: t('dareTitle'), friend: { res, line }, chain: sp.chain, dare: true });
+  // both scores side by side ("Ana x3 · You x4") and the round this reply will start
+  const vs = [`${sh.nm || t('dareFriend')} ${valText(sh.m, sh.g)}`, `${t('dareYou')} ${valText(sh.m, sh.m === 'time' ? Math.round(ms / 100) : v)}`];
+  track('dare_result_' + res);
+  ui.win({ stars: 1, title: res === 'miss' ? 'winTitle1' : 'winTitle', coins: 0, peek: peekColor(), purr: '', ach: [], show: true, showTag: t('dareTitle'), friend: { res, line, vs, round: (sh.rd || 1) + 1 }, chain: sp.chain, dare: true });
   clipPreview();
 }
 
@@ -932,9 +1105,15 @@ const actions = {
     ui.cafe(cafeInfo('street'));
     if (r.houseDone) {
       track('street_house', { k: r.house.k });
-      const ap = r.house.apprentice; // the first repeat lap: the keeper's kitten apprentice moves in (new on the street)
-      if (ap) track('street_apprentice', { id: r.house.id });
-      setTimeout(() => { if (S.mode === 'cafe') { audio.star(2); lui.arrival(ap ? { kind: 'apprentice', id: r.house.id, name: ap.name, keeper: r.house.keeper.name, line: ap.line, place: cafe.loc(r.house.name), reward: r.reward } : { kind: 'keeper', id: r.house.id, name: r.house.keeper.name, line: r.house.keeper.line, place: cafe.loc(r.house.name), reward: r.reward }); } }, 900);
+      const h = r.house;
+      const ap = h.apprentice; // the first repeat lap: the keeper's kitten apprentice moves in (new on the street)
+      if (ap) track('street_apprentice', { id: h.id });
+      // lap 3: the shop's upgrades are done (the keeper shows them off); remix laps: the lap's guest moves in
+      const a = ap ? { kind: 'apprentice', id: h.id, name: ap.name, keeper: h.keeper.name, line: ap.line, place: cafe.loc(h.name), reward: r.reward }
+        : h.kind === 'up' ? { kind: 'upgrade', id: h.id, name: h.keeper.name, line: h.keeper.line, place: t('streetUpName', { house: cafe.loc(h.name) }), reward: r.reward }
+          : h.kind === 'mix' ? { kind: 'guest', id: h.id, art: h.guest.art, name: h.guest.name, line: { en: `I came for ${h.theme.name.en}. Can I stay?`, tr: `${h.theme.name.tr} için geldim. Kalabilir miyim?` }, place: cafe.loc(h.name), theme: cafe.loc(h.theme.name), reward: r.reward }
+            : { kind: 'keeper', id: h.id, name: h.keeper.name, line: h.keeper.line, place: cafe.loc(h.name), reward: r.reward };
+      setTimeout(() => { if (S.mode === 'cafe') { audio.star(2); lui.arrival(a); } }, 900);
     }
   },
   // renovation: buy (and apply) the offered theme set of this finished room, or cycle the owned ones
@@ -1049,6 +1228,66 @@ const actions = {
   events({ tab }) { lui.eventsTab(tab); lui.eventsSheet(eventsInfo()); track('events_open', { tab: lui.eventsTab() }); },
   evtab({ tab }) { lui.eventsTab(tab); lui.eventsSheet(eventsInfo()); },
   archpage({ p }) { lui.setArchPage(p); lui.eventsSheet(eventsInfo()); },
+  // ---- R10: pop-up week, album, catch-up, friend results, resident jobs ----
+  popclaim() {
+    const d = save.data;
+    const w = weekNum();
+    const r = r10.popClaim(d, w, popMedals(w));
+    if (!r) return;
+    save.commit();
+    audio.clear();
+    haptics.success();
+    track('pop_claim', { w, card: r.card });
+    syncCoins();
+    lui.eventsSheet(eventsInfo());
+    rui.postcard({ card: cardInfo(r.card), coins: r.coins, page: r.page >= 0 ? pageInfo(r.page) : null });
+  },
+  catchup({ w }) {
+    const d = save.data;
+    const r = r10.catchUp(d, weekNum(), +w, popMedals(+w));
+    if (!r) return;
+    save.commit();
+    audio.star(1);
+    track('pop_catchup', { w: +w, card: r.card });
+    lui.eventsSheet(eventsInfo());
+    rui.postcard({ card: cardInfo(r.card), coins: 0, page: r.page >= 0 ? pageInfo(r.page) : null });
+  },
+  pcclose() { rui.closePostcard(); },
+  rematch({ id }) {
+    const e = save.data.fr.list.find((x) => x.id === id);
+    if (!e) return;
+    ui.hideSheet();
+    track('fr_rematch', { m: e.m });
+    startDare({ n: e.n, b: e.b, k: e.k, m: e.m, g: e.g, nm: e.nm, x: 0, i: e.id });
+  },
+  album({ p }) { rui.closePostcard(); if (p != null) albumPage = +p; else albumPage = firstAlbumPage(); rui.album(albumInfo()); track('album_open'); },
+  albpage({ p }) { albumPage = Math.max(0, Math.min(r10.PAGES.length - 1, +p || 0)); rui.album(albumInfo()); },
+  hang({ p }) {
+    const d = save.data;
+    const room = hangRoom(+p);
+    if (!r10.hangPrint(d, +p, room)) return;
+    rui.closePostcard();
+    save.commit();
+    audio.clear();
+    track('print_hang', { p: +p, room });
+    ui.hideSheet();
+    S.area = room;
+    ui.cafe(cafeInfo('print'));
+    ui.toast(t('printHung', { room: cafe.loc(cafe.AREAS[room].name) }));
+  },
+  jobclaim({ s }) {
+    const d = save.data;
+    const r = r10.jobsClaim(d, dayNum(), resOwned(), +s);
+    if (!r) return;
+    save.commit();
+    audio.star(0);
+    haptics.success();
+    track('job_claim', { who: r.who });
+    syncCoins();
+    ui.toast(t('jobThanks', { name: resName(r.who), c: r.coins }));
+    if (ui.sheet === 'quests') ui.quests(questsInfo());
+    if (S.mode === 'cafe' && !ui.sheet) ui.cafe(cafeInfo());
+  },
   rushplay() {
     if (!live.eventsOpen(save.data)) return;
     ui.hideSheet();
@@ -1189,7 +1428,13 @@ const actions = {
     track('show_board_play', { w: wk, k });
   },
   home: () => startHome(),
-  dareplay() { if (S.dare) { ui.hideModal(); startDare(S.dare); } },
+  dareplay() {
+    if (!S.dare) return;
+    const nm = dare.cleanName(document.getElementById('darename')?.value || ''); // optional: shown on this player's reply
+    if (nm !== save.data.meta.nick) { save.data.meta.nick = nm; save.commit(); if (nm) track('dare_nick'); }
+    ui.hideModal();
+    startDare(S.dare);
+  },
   dareskip() { ui.hideModal(); track('dare_skip'); afterDare(); },
   retry: () => tryStart(S.n, S.daily, S.show),
   adheart: guarded(async () => {
@@ -1293,6 +1538,7 @@ const actions = {
     try { await doShare(false); } finally { S.sharing = false; }
   },
   // Share clip: the encoded replay of the best moment with the same text + link (the button only shows when it is ready)
+  sharehouse: (o) => shareHouse(o),
   async shareclip() {
     if (S.sharing) return;
     S.sharing = true;
@@ -1322,44 +1568,92 @@ const actions = {
   },
 };
 
-// Share: the challenge line with the link (withClip: the encoded clip with it; without MediaRecorder, the captioned peak
-// PNG). Its own flag, so Next stays live while a share sheet is open.
+// Share: the challenge line with the link (withClip: the encoded clip with it, its short link burned in; without
+// MediaRecorder, the captioned peak PNG). Its own flag, so Next stays live while a share sheet is open.
 async function doShare(withClip) {
-  const d = myDare();
-  d.i = dare.shareId();
+  const d = winDare();
+  r10.noteSent(save.data, d.i); // every share id is kept so this browser knows its own dares when a reply comes back
+  save.commit();
   const text = dareText(d);
   const url = dareUrl(d);
-  S.lastShare = { text, url, clip: !!withClip };
+  S.lastShare = { text, url, clip: !!withClip, moment: S.moment || '' };
+  track('share_tap_' + (withClip ? 'clip' : S.moment || (d.r ? 'reply' : 'plain')));
   const from = S.show && S.show.kind === 'friend' ? S.show.i || '' : null; // a recipient sharing on: the reshare step
   if (from != null) track('dare_reshare', { i: from, to: d.i });
+  const goal = `${dareGoal(d.m, d.g, d.x)} · ${t('dareBoard', { board: boardName(), n: d.b })}`;
   if (withClip && clip.has()) {
     const f = clip.ready() || (canRecord() ? null : await clip.png()); // no long await: the tap's user activation must still hold
     if (f) {
       const how = await shareFile(f, `long-cat-out-${d.k === 'l' ? 'level-' + S.n : 'challenge'}`, text, url);
       track('share', { kind: f.ext, how, m: d.m });
+      track('share_done_' + how);
       track('dare_handoff', { i: d.i, via: 'clip', how });
+      // no share sheet: the link was copied and the clip saved in the same tap (the clip shows the link too)
       if (how === 'saved') ui.toast(t('clipSavedLink'));
-      else if (how === 'saved-nolink') { ui.toast(t('clipSaved')); ui.copyLink(text, url); }
+      else if (how === 'saved-nolink') { ui.toast(t('clipSaved')); ui.shareSheet({ title: t('shareDareBtn'), goal, url, text, copied: false }); }
       // many chat apps keep the video and drop the text beside it: the playable link follows as its own message
-      if (how === 'shared' || how === 'saved-nolink') ui.dareLink({ text, url, board: boardName(), goal: dareGoal(d.m, d.g, d.x), seats: d.b, peek: peekColor() }, () => sendLink(text, url, d.i));
+      if (how === 'shared') ui.dareLink({ text, url, board: boardName(), goal: dareGoal(d.m, d.g, d.x), seats: d.b, peek: peekColor() }, () => sendLink(text, url, d.i));
       return;
     }
   }
-  await sendLink(text, url, d.i);
+  await sendLink(text, url, d.i, { goal, clip: clip.has() });
 }
-// the challenge text + link on its own (the Dare button, and the follow-up after a clip)
-async function sendLink(text, url, id) {
+// the challenge text + link on its own (the Dare button, and the follow-up after a clip). No share sheet in this browser:
+// the link is copied in the same tap and a sheet shows what was copied (with the clip's end card, the link burned in)
+// and offers the clip as a file too.
+async function sendLink(text, url, id, o = {}) {
   track('dare_handoff', { i: id, via: 'link' });
-  try {
-    if (navigator.share) await navigator.share({ text, url });
-    else if (!navigator.clipboard) ui.copyLink(text, url);
-    else {
-      await navigator.clipboard.writeText(text + ' ' + url);
-      ui.toast(t('linkCopied')); // only once the write resolved
-    }
-  } catch (e) {
-    if (e && e.name !== 'AbortError') ui.copyLink(text, url); // share sheet or clipboard refused: the link waits to be copied by hand
+  if (navigator.share) {
+    try { await navigator.share({ text, url }); track('share_done_shared'); } catch (e) { if (e && e.name !== 'AbortError') linkSheet(text, url, o, false); }
+    return;
   }
+  let copied = false;
+  try { if (navigator.clipboard) { await navigator.clipboard.writeText(text + ' ' + url); copied = true; } } catch { /* refused */ }
+  track('share_done_' + (copied ? 'copied' : 'nocopy'));
+  linkSheet(text, url, o, copied);
+}
+function linkSheet(text, url, o, copied) {
+  let img = '';
+  try { if (o.clip && clip.has()) img = (clip.frames(['end']) || [])[0]?.url || ''; } catch { img = ''; }
+  ui.shareSheet({ title: t('shareDareBtn'), goal: o.goal || '', img, url, text, copied, file: o.clip && clip.has() ? 'clip' : '' }, async () => {
+    const f = clip.ready() || (await clip.png());
+    if (!f) return;
+    const how = await shareFile(f, `long-cat-out-${S.n}`, text, url);
+    track('share_done_' + how);
+    ui.toast(t(how === 'saved' ? 'clipSavedLink' : 'clipSaved'));
+  });
+}
+
+// a new floor of the Cat House or a new shop on Cat Street: a picture of it with the game's link burned in
+async function shareHouse({ k, to, id }) {
+  if (S.sharing) return;
+  S.sharing = true;
+  try {
+    const url = location.origin + location.pathname;
+    const base = { brand: t('title'), cta: t('cardCta'), url: location.host + location.pathname };
+    let info;
+    if (k === 'floor') {
+      const i = Math.max(0, Math.min(cafe.AREAS.length, +to || 0));
+      const area = cafe.AREAS[i];
+      const res = area ? area.tasks.find((x) => x.resident) : null;
+      const title = area ? t('cardFloor', { name: cafe.loc(area.name) }) : t('cardHouseDone');
+      const floors = Math.min(cafe.AREAS.length, i + 1);
+      info = { ...base, title, sub: t('cardFloorSub', { n: floors }), tower: floors, art: res ? [{ name: 'res7_' + res.resident.id + '_idle', x: 600, y: 650, h: 200 }] : [] };
+    } else {
+      const h = street.ALL_SHOPS.find((x) => x.id === id);
+      const sid = h ? h.id : 'bakery';
+      info = { ...base, title: t('cardShop', { place: h ? cafe.loc(h.name) : '' }), sub: t(street.keepers(save.data).length > 1 ? 'cardShopSub' : 'cardShopSub1', { n: street.keepers(save.data).length }), art: [{ name: 'street_' + sid, x: 300, y: 640, h: 470 }, { name: 'keeper_' + sid, x: 575, y: 646, h: 220 }] };
+    }
+    const card = await houseCard(info);
+    if (!card) return;
+    S.lastHouseCard = card.url;
+    const text = t('shareHouseText', { title: info.title });
+    track('share_tap_house_' + (k === 'floor' ? 'floor' : 'street'));
+    const how = await shareFile(card, 'long-cat-out-' + (k === 'floor' ? 'house' : 'street'), text, url);
+    track('share_done_' + how);
+    if (how === 'saved') ui.toast(t('cardSaved'));
+    else if (how === 'saved-nolink') ui.shareSheet({ title: t('shareHouse'), goal: info.title, img: card.url, wide: true, url, text, copied: false });
+  } finally { S.sharing = false; }
 }
 
 const settingsInfo = () => ({ notifyOk: live.eventsOpen(save.data) && notify.supported(), settings: save.data.settings, removeAds: ads.isRemoved(), canInstall: pwa.canInstall() });
@@ -1545,12 +1839,14 @@ async function boot() {
       toast: (s) => ui.toast(s),
       today: () => dayNum(),
       lives: () => econ.lives(save.data, now()),
-      clip: () => ({ has: clip.has(), plan: clip.src && clip.src.plan, ready: !!clip.ready(), encoding: clip.encoding(), canRecord: canRecord() }),
+      clip: () => ({ has: clip.has(), plan: clip.src && clip.src.plan, ready: !!clip.ready(), encoding: clip.encoding(), canRecord: canRecord(), url: clip.src && clip.src.text.url, goal: clip.src && clip.src.text.goal }),
+      dareDecode: (c) => dare.decode(c, (n) => generate(n).meta.benchSize),
       async clipEncode() { for (let i = 0; i < 150 && clip.encoding(); i++) await new Promise((r) => setTimeout(r, 100)); const r = clip.ready() || (await clip.png()); return r && { ext: r.ext, size: r.blob.size }; },
       clipFrames: (times) => clip.frames(times),
-      dareLink: () => { const d = myDare(); return { d, text: dareText(d), url: dareUrl(d) }; },
+      dareLink: () => { const d = winDare(); return { d, text: dareText(d), url: dareUrl(d), short: shortUrl(d) }; },
+      houseCard: () => S.lastHouseCard || null,
       dareCode: (o) => dare.encode(o),
-      logSeat: () => game.log.push({ op: 'seat', t: game.clock }), // qa: as if a seat had been bought mid-run
+      logSeat: () => { dareCache.token = -1; winDareC.token = -1; return game.log.push({ op: 'seat', t: game.clock }); }, // qa: as if a seat had been bought mid-run
       counters: () => ({ ...save.data.counters }),
       lastShare: () => S.lastShare || null,
       freeId: () => solverHint(game.state),

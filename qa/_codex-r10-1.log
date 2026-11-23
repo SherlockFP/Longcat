@@ -1,0 +1,576 @@
+OpenAI Codex v0.171.0
+--------
+workdir: C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+model: gpt-6.2-sol
+provider: openai
+approval: never
+sandbox: read-only
+reasoning effort: high
+reasoning summaries: none
+session id: 01a20973-f131-7ce0-9573-f2a02f92b2ba
+--------
+user
+You are co-director at a top hybrid-casual studio scoring Long Cat Out! (web). Last review qa/sol-r9-4.md: overall 8 (presentation 8, appeal 8, juice 8, fun 8, retention 7, virality 7). Read qa/r9-notes.md (R10 section = what changed) and qa/sol-r10-plan.md (your plan). Score honestly 1-10 each: presentation, appeal, juice, fun, retention, virality, overall. 8 = on par with a solid top-100 hybrid-casual puzzle game in that dimension. Then list the most important remaining fixes per dimension below 9 (concrete, buildable, no backend).
+
+codex
+I’ll read the R10 notes and plan alongside the prior review, then use the screenshots and animation strips to score each dimension against your top-100 benchmark.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Raw 'qa/sol-r10-plan.md'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Raw 'qa/r9-notes.md'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "Get-Content -Raw 'qa/sol-r9-4.md'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 1404ms:
+**Overall 8/10, up from 7/10.** Long Cat Out! now meets your top-100 benchmark as a design. The paws-first leap gives the game a recognizable move, and watching a full bench empty after one good decision is its best payoff. The biggest remaining gaps are giving players a fresh reason to return and getting a shared clip to turn into a friend�?Ts first move.
+
+| Dimension | Previous | Current | Assessment |
+|---|---:|---:|---|
+| Presentation | 8 | **8** | The cafAc, street, and puzzle board feel like one world. On short phones, the rails and world labels still crowd each other. |
+| Appeal | 8 | **8** | The faces, sleeping bench cats, and resident arrivals sell the fantasy. The straight bodies still read as patterned tubes at rest. |
+| Juice | 6 | **8** | The crouch, reaching paws, and fold give the send a clear rhythm. The chain counter now leaves the carrier mouth visible. |
+| Fun | 7 | **8** | Choosing which cat can afford to wait gives the puzzle real stakes. The press preview makes those stakes easier to read, and the first four boards teach distinct decisions. |
+| Retention | 7 | **7** | The first resident request gives the next win a purpose, and apprentices make the second Cat Street lap worth seeing. Completed floors and later laps still offer weaker reasons to return. |
+| Virality | 5 | **7** | The clip tells a clear one-seat-left story. The exact-board dare gives friends an achievable goal, including a match target when the sender has already hit the board maximum. The clip-to-link handoff still adds friction. |
+| **Overall** | **7** | **8** | The biggest gain is in the move players repeat every few seconds. |
+
+I scored from the captures and current implementation, including the later changes in [the R9 notes](qa/r9-notes.md). `npm run check` passed. I didn�?Tt play on a physical phone or verify share delivery, and the analytics are local, so retention and virality are design scores without player outcome data.
+
+### Highest-priority fixes
+
+1. **Presentation �?" fix the 375A-667 hub layout.** Collapse completed and locked floors into a single picker in Cat Street. Give building names a lane below the faAades and reserve space beside Tasks for the claim badge. The current street capture has names under rail buttons, and the cafAc capture has the build cost tucked behind the currency row.
+2. **Appeal �?" make the resting cat silhouette read at board size.** Start with the orange tabby. Give it shoulders under the head, a softer belly contour, and a tapered rump. Wrap the stripes around those forms, then check straight cats and tight bends at 375 px before applying the treatment to other breeds.
+3. **Juice �?" make the landing move the objects it touches.** Anchor the front paws to the carrier lip for a beat, compress the mat as the body folds, and give the loaded carrier a small settle. Give occupied cushions a quick rebound as each cat springs off. Fit those reactions into the existing timing.
+4. **Fun �?" teach the recovery at the first full-bench loss.** Keep the failed cat, all occupied cushions, and the carrier queue visible above a shorter sheet. Highlight the carrier the cat needs and show how many departures away it is. Lead with **Take back** and **Retry**, and put the Starter Bundle behind **More help**. In a fresh-phone test, check whether players change their next choice after undoing.
+5. **Retention �?" always show what the next win can build.** Replace the large **Floor complete!** card with the next available build and a tap to that room. Give an in-room resident request one home by removing its duplicate goal tile. For Cat Street lap three, give each shop a visible renovation and a shop-specific resident request so the next completion changes something players can see or do.
+6. **Virality �?" make a single message sufficient.** Give **Dare a friend** a rich link preview with the actual chain goal, seat count, and peak frame. Keep the video export available for posting. Verify the link from send to first move on iOS and Android in iMessage and WhatsApp, and collect the existing share-ID events off-device so you can see where recipients drop out.
+
+ succeeded in 1473ms:
+# Round 9 notes (for Sol)
+
+## Juice
+- Signature send: 60ms crouch, noodle stretch (head 1.6x tail speed, body thins), sideways leap arc with ground shadow, paws land first, accordion body (120ms), white-tip tail snap. ~510ms, taps overlap. Land sound/haptic/counter pop fire on paw landing. Carrier grate door swings. Legs reduced to front/back pair.
+- Chain: slow-mo 0.6x for 0.25s only on 2nd+ hops; glowing trail, gold screen edge glow, rising sparkles.
+- Bodies (render.js): code-made knit texture, edge stitches, inner belly shadow, soft sheen, tapered tail.
+
+## Fun / readability
+- Press preview while holding a free cat: exit lane with chevrons, speech bubble showing destination (carrier pattern badge or cushion + wait count), amber "LAST SEAT" tag (TR "SON MINDER") or red "!" if no seat. Blocked cats bonk with red lane + blocker highlight.
+- Last free cushion pulses amber with "!" tag.
+- L4: each free cat shows wait-count badge before first tap; tut4 text updated EN+TR.
+- QA asserts L1 first carrier leaves < 10s (measured 2.6s).
+
+## Virality
+- Clip from replay (src/kit/clip.js): offscreen 720x1280 9:16 replay, skips to 2 moves before best moment (biggest chain or final clear), captions (seats taken, CHAIN xN, game strip), 2.2s end card "Can you beat it?" + link. MediaRecorder MP4 preferred, WebM fallback; PNG peak-frame fallback. L13 clip ~6.3s, ~0.75MB.
+- Win card: 9:16 preview then looping video; pink "Share clip" on chain x3+ or no-park clear on 10+ cat boards; Web Share with file/text/link, else download + copy text. Challenge landing link.
+- Old live-filming code removed.
+
+## Retention
+- (report pending at time of writing)
+
+## Checks
+- build, check, full QA pass (0 console errors, no scroll failures at 375x667). Nothing committed.
+
+## Virality (r8 high finding)
+- Clip (src/kit/clip.js): opens on the tight bench. Window reaches up to 4 moves back, then setup moves made with 2+ free seats are fast-forwarded, so frame 1 reads "Only ONE seat left!" (TR "Tek minder kald��!"); caption latches through the deciding tap.
+- Punch-in on the deciding tap (camera leans 1.16x on the tap, slides to the bench at 1.10x while the cushions empty, eases out before the end card). Recorded frame is a separate canvas: zoomed world, then unzoomed caption bands.
+- One chain caption: the in-game "Chain x3!" stamp is off in the clip (Game.noStamp); only the top band counts CHAIN x1..x3.
+- Win card: the labelled pink button is now "Dare a friend" / "Meydan oku" (text + exact-board link, live at once). "Share clip" sits on the clip preview and stays hidden until the MP4/WebM is encoded (no MediaRecorder: the captioned still is offered at once). A tap can no longer send a still by accident.
+- QA: 101a asserts clip button hidden while encoding; 101b2-clip-punch frame; 101e / 101h2 assert Share clip shows once encoded.
+- Not done: real iOS/Android share-sheet link survival is unverified (WhatsApp/iMessage may drop text when a file is attached; Dare a friend sends text + link only, which is the safer path).
+
+## Retention + virality (r9, sol-r8 findings)
+- Hub thread: the build card names the next resident with their portrait and the stars still to spend ("Biscuit moves in after 3 stars" / "3 y��ld��z sonra Biscuit ta�Y��n��yor"); a piece that brings a resident keeps "moves in". The resident row left the goals strip (no duplicate).
+- Goals strip cut from 3 rows to 2. Order: claimable, a newcomer's first request, today's Daily puzzle (until played), this week's Cat Show medals (0/2, opens Events > Show), then the nearest of outfit/season/party.
+- First request after arrival: live.reqArrive gives the new resident an easy ask at once (Win 2 levels, else Fill carriers; skipped if 2 requests already wait). The arrival card shows "Luna asks: Win 2 levels"; back in the hub that request leads the goals with an orange border (cleared on claim).
+- Dare recipient: landing text "Tap a cat to send it. Only the front carrier boards. The others wait on cushions." (TR natural). On the challenge board the hint card says the rule, and the front carrier ("Boards here") and first cushion ("Waits here") get dashed gold rings until the first tap (static under reduced motion).
+- Clipboard: shareFile returns 'saved-nolink' when the clipboard write fails; "Link copied" only after writeText resolves. Otherwise a bar at the top shows the link plus "Copy challenge link" (TR "Davet linkini kopyala"); the tap is a fresh gesture, falls back to execCommand, and if that fails too, says "Press and hold the link to copy it" with the link selected.
+- QA: 90a hub thread, 90b arrival with first request, 90c hub led by that request, 90d/90e Daily + Cat Show goals (EN/TR), 91a copy bar after a refused clipboard (asserts no "copied" toast), 91b success toast + copied text carries ?c=, 91c TR bar at 375x667. 101g asserts the dare rule card + rings. 40a now expects 2 goals.
+- Not done: real iOS/Android iMessage/WhatsApp link delivery still untested (needs devices). No analytics funnel for the three handoffs yet.
+
+## Round 10 (sol-r9-3 findings: juice, virality, retention)
+### Juice (high)
+- Send reads at game speed: crouch is 100 ms (was 60) and deeper (head pulls back 0.28 cells, body 1.32x wide), released over the first 80 ms. Front paws shoot out on the spring, gallop (alternating) along the board, sit wide of the ears and reach 0.34 cells ahead across the gap. Hind legs kick back on take-off and tuck forward as the rear catches up in the fold. Reduced motion: no crouch/kick/tuck. Strip: qa/_leap-strip.jpg (100 ms = crouch with paws out, 160-210 ms = paws leading).
+- Chain counter moved off the carrier to the strip of air under the bench (centre). It appears with the first landing and ticks per landing (x1, x2, ...), not per jump; the last landing gets the full words in gold ("Chain x3!"), a 1.3x pop, a gold sparkle burst, star sound + success haptic. The combo popup stays quiet for the counter's whole life. Strip: qa/_chain-strip.jpg; frame 103a.
+### Virality (high)
+- One share path: after Share clip goes out (or saves without a link) a bar offers "Send the dare link too" with a preview of what the friend gets (goal A� board A� seats) and one Send link button (text + link only). EN/TR, fits 375x667 (103b, 103c).
+- Dares are checked on the exact board + seat count the link carries: the sender's move log is replayed on generate(n) with b seats. A run that bought a seat or used a Scoop, or that does not replay to the same result, falls back to "clear it with these seats" (always reachable).
+- Match vs beat: core/search.js maxChain() searches every winning line (all boards < 1 ms). When the sender's chain is already the board's best, the link carries x=1: "Match my chain x2 on Level 2! It is the best this board allows." / landing "Match a chain x2"; the friend's tie reads "You matched ...". L13 keeps "Beat" (its best is x5).
+- Funnel on one share id (link field i, random per share): dare_handoff (via clip/link), dare_open, dare_play, dare_first_move, dare_done (clear), dare_reshare (from -> to). Local counters only (kit/analytics.js stub); session-1 funnel adds first_chain and first_request next to l1/l3/l4_start/l10_reach/first_resident.
+### Retention (medium)
+- Newcomer loop in the room: the newcomer's first ask sits over the cat (task, progress bar, reward +coins +hearts); the Claim bubble shows its reward too; right after a claim the resident says the next reason to come back ("Next: Fill 6 carriers for Luna" or "New request in 3h. See you soon!") until the next level starts (103f-103i).
+- Bug fixed: req.fresh was missing from the save defaults, so the newcomer thread was dropped on every reload.
+- Cat Street first repeat lap: each shop's keeper takes a kitten apprentice (6 new sprites, appr_<id>.webp: Bun, Dewey, Sprout, Sugar, Button, Tempo). The house under construction shows the apprentice's silhouette ("An apprentice moves in"); finishing it plays the arrival with keeper + kitten ("Page's apprentice Dewey moved in!"); finished lap-2 shops show the kitten beside the keeper (103j, 103k).
+### Still weak / not done
+- Real iOS/Android share-sheet delivery (iMessage, WhatsApp) still untested; needs devices. The follow-up link bar is the mitigation.
+- Analytics are local counters, no backend: the funnel exists but nothing is collected off-device. Phone first-session tests not run.
+- The newcomer's ask also shows in the goals strip (duplicate when the resident is in the current room).
+- Lap 3+ of Cat Street still repeats keepers + apprentices.
+
+## Round 11 (sol-r10 plan, retention half)
+### R1 completed rooms + Cat Street past lap 2
+- "Floor complete!" is gone. A finished floor's card is the next build on the floor under construction: "�o" Ground floor done A� Fluffy round rug A� Next: Floor 2 A� Cushion Corner A� 1 more �~. needed A� win a level", star pill 1/2 + Go; one tap jumps to that room. With the whole house built it leads to Cat Street; the house-done ceremony says "The house is done!" with a To Cat Street button (104a).
+- Street units (src/game/street.js, data/street.js): lap 1 shops, lap 2 apprentices (as before), lap 3 = 3 visible upgrades per original shop at 2/2/3 stars (bunting garland, window planter, the shop's signature prop: bread cart, reading lamp, flower cart, tea table, pinwheel toy stand, busker stage), then 3 new shop kinds with new keepers (Fish Market/Gill, Post Office/Stamp, Yarn Shop/Purl), then endless remix laps over all 9 shops: repaint (hue/saturation), festival decoration, a guest of the lap (visitor or apprentice art), street party. Six remix laps never repeat a shop+look+guest (check-econ). Every shop shows its current look wherever it stands (street.shopLook). Upgrades/remix finish with their own arrival card. "Shops open" now counts real shops.
+- In-room request dedupe: a request already shown as a bubble over its cat in the current room is dropped from the goals strip.
+### R2 album, R3 pop-up week
+- Residents > Album (6 pages x 4 postcards). Postcards are photos composed from game art (room/street + faAade + cat), named EN/TR. Empty slots name their week and link to Events (this week) / the archive, or say when they come. A full page unlocks its framed print (6 GPT prints) with Hang in cafAc; it hangs on a room wall (104j-104l).
+- Events > Cat Show tab opens on the week's pop-up card (24 weeks of data, data/r10.js): name, postcard, 3 stamps (board A, board B, the week's first Daily clear), time left, and the one remaining action as the button (Play board B / Clear today's Daily / Claim). 3 stamps = postcard + 60 coins (104g, 104h). The boards are the existing generated Cat Show boards (generator-guaranteed solvable). Archive rows show each past week's postcard; one catch-up postcard a week once both of its boards are cleared (no coins) (104i).
+### R4 Daily record, R5 resident jobs, R6 Friend Results
+- Daily record: total Daily clears, each date once; 7 = Hint, 14 = Undo, 30 = golden portrait frame (on every resident portrait), 60 = cafAc pennant, 90 = cat wall clock (ground floor). Daily win card shows "Daily record 29/30 A� Next: Golden portrait frame" with the frame's silhouette; also on the Daily sheet (104p-104r). The weekly streak shield is unchanged; the record never resets.
+- Resident jobs: 2 a day from a 14-day rotation (win / cat / carrier / tidy hooks), each tied to a named resident; the first one done pays 30 coins + 1 heart; then the slot shows "Tomorrow A� Luna A� New jobs in 5h". In Tasks and as a hub goal tile with its reward (104m-104o).
+- Friend Results (Events > Friends): a dare answered and shared on is also a reply link (r = the dare's share id, pg = its target). Opening it imports the result (dedup by result id, latest 12, chain results above the board's searched maximum are rejected), the landing says it landed, and the row reads "Ana beat your A-2 A� Level 13 A� 5 cushions A� You A-2 A� Ana A-3" with Rematch on the exact board (104s-104u).
+### Checks
+- check-econ: R10 unit checks + the 120-day sim now asserts a resident job to claim every day from day 3 and a new collectible every week from day 15 (postcards, prints, street sights, Daily keepsakes); by day 120: 18 postcards, 4 prints, Daily record 103, 25 street units.
+- New art (7 GPT sheets, art-src/r7/r10.sh + proc_r10.py): up_<shop> x6, up_bunting/planter/lights, street_+keeper_ fish/post/yarn, drec_frame/pennant/clock, print_0-5, album_book, pop_stamp, fr_letter.
+### Still weak / not done
+- Reply links carry no move log: the import is a plausibility check (board ceiling, clamps), not a replay.
+- Virality half of the sol-r10 plan (V1-V6) not done in this round.
+- The album's cycle is 24 weeks: an empty slot on a page can say "Comes in 10 weeks"; catch-up only reaches weeks since the player's first Event week.
+- Remix laps reuse faAades with a CSS hue turn (the windows/books shift colour too); they read as repaints, not new buildings.
+
+## Round 11b (sol-r10 plan, virality half)
+### V2 the link inside every clip
+- Dare links are now a v2 token (kit/dare.js): a short typeable core `2l13-5-c3-ab12cd` (token version = generator revision, kind + board, seats, goal with an `m` for match, share id), then optional extras after a dot (base64url JSON: sender name, reply id + target, thread of the latest 3 runs, round). The core alone plays the exact board and goal; it decodes typed in capitals. Old v1 `?c=eyJ...` links still decode.
+- One share id per win (main.js winDare), so the clip and the link name the same dare. The clip burns `host/?c=<core>` into the bottom band for the whole clip (frame 1 to end) and big on the end card under the goal line "Beat a chain x3 A� Level 13 A� 5 seats" (105a/105b/105c). The PNG fallback (peak frame) carries the band too. QA decodes the burned-in code and checks board, seats, goal and id agree with the link.
+- No QR (no decoder available here to verify one scans).
+### V1 one-tap share
+- Dare a friend: native share sheet in one tap (text + link). No share sheet in the browser: the link is copied in the same tap and an in-game share sheet says so, previews the clip's end card (link burned in), keeps the link selectable and offers Save clip; a refused clipboard gets Copy link (fresh gesture) / select-to-copy (105d, 105f TR 667). Replaces the old copy bar.
+- Share clip without Web Share files: the link is copied first, then the clip downloads, in one tap; toast "Clip saved and link copied: paste the link next to the clip" (105e).
+- index.html has static link-preview text (og:title/description, icon). Per-dare preview cards need a server, so none.
+### V3-V5 recipient loop
+- Landing: "Deniz dares you!", goal, board A� seats, the thread "Round 3 A� Ana x3 -> Deniz x4 -> Your turn", the rule for new players, an optional "Your name" field (kept on this browser, shown on this player's replies), Play (105g, 105k TR 667).
+- Result: both scores as chips (winner pink) + round; beat -> "Dare them back", tie -> "I matched it! Send", miss -> Retry + "Send result" (105h miss, 105i beat).
+- The counter-dare carries the player's own result as the new target, the reply (their share id + target, still imported into Friend Results), the thread (latest 3 runs) and round+1, all in the URL, validated and clamped on decode. Share text: "Round 4 on Level 13: you got x2, I got x3. Your move!". The next friend lands on "Ana x2 -> Deniz x2 -> Ece x3 -> Your turn" (105j). A reply to someone else's dare no longer says "landed in your Friend Results" on the landing.
+### V6 share moments
+- Dare a friend is the labelled pink pill with its own headline at: the first chain x3 (plus the once-only nudge, now with room above the row), a new best chain, today's Daily first clear, Cat Show gold, CafAc Rush top 3, a clean sweep, any chain x3+. Ordinary wins keep Next + the round icon (105l, and an ordinary-win assert).
+- New floor (floor ceremony) and new shop / upgrade / guest on Cat Street (arrival card): Share makes a 720x900 picture (the house tower over its street + the new resident, or the shop faAade + keeper) with the game's link burned in (105m, 105n, 105o).
+### Local share counters
+- share_offer_<moment>, share_tap_<moment|clip|reply|plain|house_floor|house_street>, share_done_<shared|saved|saved-nolink|copied|nocopy|cancel>, dare_result_<beat|tie|miss>, dare_nick, plus the existing dare funnel. All in save.data.counters; nothing leaves the device.
+### Checks
+- check-dare: v2 core round trip, capitalised core, daily/time/match cores, full link with thread + round, hostile extras (names, ids, thread values, round, length) clamped or dropped, bad cores refused, v1 still decodes.
+### Still weak
+- Real iOS/Android delivery (iMessage, WhatsApp) still untested; the burned-in link is the fallback when a chat drops the caption.
+- Link previews are static (one text card for every dare); no per-dare image without a server.
+- No QR on the end card.
+- Counter-dares are checked by replaying the sender's own run before sending (as before); an imported reply is still only a plausibility check, not a replay of the replier's moves.
+
+## R10
+- Retention half (R1-R6): completed rooms and Cat Street past lap 2, collector's album + pop-up Event week with catch-up, Daily record, resident jobs (a claim every day from day 3), Friend Results.
+- Virality half (V1-V6): v2 typeable dare link burned into every clip and end card, one-tap share sheet with copy/save fallbacks, dare landing with thread + name, counter-dare result (beat/tie/miss), pink "Dare a friend" at share moments, house/street share pictures.
+- Local share counters only; no backend, no QR, previews are static.
+
+
+ succeeded in 1496ms:
+I�?Td give the finished cafAc a **six-month album fed by the Daily and weekly events**, and make **one playable link the primary thing players send**. R9 already has resident requests, a forgiving streak, exact-board dares, and a strong one-seat-left replay. The next build should make those systems pay off after the house is done and carry a friend from the first message to their first move. [R9 notes](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/r9-notes.md>) A� [Sol�?Ts review](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/sol-r9-4.md>)
+
+Everything below fits a static HTTPS build with local saves and share URLs. It requires zero accounts, backend services, or ad changes. The numbers are launch targets for the design.
+
+## Retention A� six changes
+
+| Change | What the player gets and where it goes | What earns a pass in stills |
+|---|---|---|
+| **1. Give completed rooms a next move** | Replace **Floor complete!** with the next actionable build. One tap jumps to the room or shop. Example: **Library reading lamp A� 2/3 stars**. From Cat Street lap three, ship **3 visible upgrades per shop across 6 shops**, priced at **2, 2, and 3 stars**. Reuse the faAades and add overlays such as the Library lamp and Bakery awning. Keep an in-room resident request on its cat bubble and use the goals strip for a different goal. | On a completed ground floor, the destination, missing star, and next action are readable above **Play**. A before/after Street pair shows the lamp actually lighting up the Library. The resident request appears once. |
+| **2. Give the cafAc a permanent photo album** | Add **Album** inside Residents. Launch **6 themed pages A- 4 named postcards**, enough for **24 weekly rewards**. The first card on each page can use existing resident art and a room scene. Completing a page unlocks a matching framed print the player can hang in a finished room. Each empty slot names its source and links to the event or archive. | A **3/4** page shows three distinct photos, the missing card, and exactly how to earn it. The **4/4** still shows the framed-print reward and an **Hang in cafAc** action. A room still shows that print on the wall. |
+| **3. Put a seven-day pop-up in Events** | Feature one weekly event using the Cat Show�?Ts existing two-board flow. Earn **1 stamp from each event board** and **1 from the first Daily clear that week**. **3 stamps** unlock the postcard and **60 coins**. Ship **24 weeks of data** with solver-checked layouts and a featured shop or resident. When a week ends, its coin reward closes and the postcard moves to an archive with **1 catch-up postcard per week**. The four-week Season keeps its visitor track. | Events opens on a card that reads **Library Reading Week A� 2/3 A� 1d 11h left** and shows the postcard and the one remaining action. A rollover still shows the new event and the old postcard available in the archive. |
+| **4. Make Daily clears count toward something lasting** | Keep the existing **one missed-day shield per week** and daily chest payouts. Add a permanent Daily record with rewards at **7, 14, 30, 60, and 90 total clears**. At **7 and 14**, grant **1 Hint** and **1 Undo**, respectively. At **30, 60, and 90**, unlock a portrait frame, a cafAc pennant, and a wall clock. Put the next milestone on the Daily sheet and in the Daily win summary. Credit each date once. | A Day 29 win shows **29/30 clears** beside a silhouette of the frame. A missed-day pair shows the shield consumed and the total preserved. At Day 30, the unlocked frame appears on the resident portrait. |
+| **5. Make today�?Ts request belong to a specific cat** | Use Tasks to show **2 rotating resident jobs each day** and pay for the **first one completed**. Seed a **14-day rotation** from existing win, cat, carrier, and tidy-clear hooks. Examples: **Help Dewey shelve 6 carriers** or **Clear a board with at most 2 cushions for Bun**. Pay **30 coins + 1 heart** to the featured cat. After claim, the same slot shows tomorrow�?Ts cat and reset time. | The hub shows a named cat, one measurable goal, and the reward together. Capture **4/6**, **Claim**, and **Tomorrow A� Bun**. At 375A-667, the task fits in the existing two-tile strip with **Play** fully visible. |
+| **6. Let real friend results give players a reason to reopen** | Add **Friend Results** to Events and put **Rematch** next to the most recent imported result. Opening a reply link imports a replay-checked result on that browser. Keep the **latest 12 results**, deduplicated by result ID. A card might read **Ana matched your A-3 A� Level 13 A� 5 cushions**. One tap reopens that exact board. This gives the cafAc real social proof from the links players receive. | A fresh save reads **Open a friend�?Ts result link to start**. After importing a reply, the card shows both scores, the board, and **Rematch**. Reopening the same reply leaves one entry. |
+
+## Virality A� six changes
+
+| Change | What the player gets and where it goes | What earns a pass in stills |
+|---|---|---|
+| **1. Send one playable dare from the win card** | **Dare a friend** opens the native share sheet in **1 game tap**, with **1 HTTPS URL** ready before clip encoding. Offer **Copy dare link** where native sharing is unavailable and a selectable URL if copying fails. Generate **8 static Open Graph cards** at build time for chain, clean sweep, Daily, and reply, in EN and TR. The opened page renders the exact score and replay from the URL payload. | Capture the win card while encoding, the actual received chat bubble, and the opened dare. The button is ready on the win card, one message contains the playable link, and that message opens the intended board. [Web Share API](https://www.w3.org/TR/web-share/) A� [Open Graph protocol](https://ogp.me/) |
+| **2. Put the exact dare inside every clip** | Keep the **720A-1280** vertical replay and the one-seat-left opener. Burn a short, typeable challenge URL into a safe strip for the **entire 6�?"9 second clip**. Add a QR to the same exact board, seat count, and goal on the **final 3 seconds** and on the PNG fallback. A compact versioned token carries the challenge without a URL-shortening service. | The opening, peak, end card, and fallback PNG all carry the URL. At **360 px wide**, the URL is readable and the QR scans from a chat-transcoded copy. The decoded board, seats, and goal agree with the caption. Share targets can discard accompanying fields, which is why the link belongs in the image itself. [Web Share API share-target behavior](https://www.w3.org/TR/web-share/#share-targets) |
+| **3. Land on the challenge in one tap** | Open directly on **Ana dares you A� Beat A-3 A� Level 13 A� 5 cushions**, with a muted replay preview when the link carries one. **Play dare** starts the exact board in **1 tap**. On a fresh browser, keep the current carrier and cushion highlights through the first move. Pin the board generator revision in the token and continue decoding existing `?c=` links. | Capture the received link opening and the first playable frame. The goal, level, and seat count agree across both. The carrier and cushion are legible on the first board, and the **Play dare** button fits on the landing at 375A-667 in EN and TR. |
+| **4. Give every clear a reply worth sending** | Show both scores on the result sheet with **Send result** as the main action. Example: **Ana A-3 A� You A-4**. A tie gets **I matched it**, and a clear below target gets **Send result** and **Try again**. The reply link carries the original challenge ID, the result, and a bounded move log. The browser replays the log before putting the score in Friend Results. | Capture beat, tie, and below-target results. Each shows the two scores and an obvious reply action. Then open the reply on the original sender�?Ts browser and capture the same result with **Rematch**. |
+| **5. Let a dare travel beyond the original pair** | After a match or beat, offer **Pass it on** alongside **Send result**. Keep the exact board and seat count, set the next target from the player�?Ts result, and carry the **latest 3 replay-checked runs**. Use the existing board-ceiling check to turn a max-chain result into **Match A-5**. The next friend can answer or pass it on again. | A third-person landing shows **Ana A-3 �+' Deniz A-4 �+' Your turn**, with one clear target. A ceiling case shows **Match A-5** on both landing and board. The thread remains readable in the Turkish short-phone capture. |
+| **6. Ask for a share at the moment that tells a story** | Feature **Dare a friend** on **three** win moments: a **A-3+ bench chain**, a **zero-park clear on a board with 10+ cats**, and a **first clear of today�?Ts Daily**. Give each its own headline and use the actual peak frame in the win card. Show the explanatory nudge **once per browser**, on the first qualifying win. Keep ordinary wins focused on **Next** and friend wins focused on the reply. | Capture a one-seat-left A-3, a zero-park clear, a Daily first clear, and an ordinary win. Each featured card makes the feat legible in one glance. The ordinary win keeps **Next** visually dominant, and the featured cards keep both buttons visible at 375A-667. |
+
+## Build order and the 8+ bar
+
+1. **First playable slice:** ship the completed-room card, the first album page and event, and the single-link dare through landing and reply. That tests both loops end to end with existing art.
+2. **Then build out the calendar and relay:** load all 24 weeks, add the Daily milestones and rotating requests, ship the Street overlays, and finish the clip URL, QR, and pass-along flow.
+3. **Score the result on visible evidence and actual handoffs.** For retention, capture a completed-house save on an ordinary day, after a claim, after a missed day, at weekly rollover, and at weeks 4, 12, and 24. Each state needs a visible next action, a specific payoff, and a reason to return. For virality, run sender �+' received message �+' first move �+' reply on **iPhone/iMessage, iPhone/WhatsApp, and Android/WhatsApp**. Test a clipboard refusal and a received file with its caption removed. Require every supported route to reach the exact dare from one message or from the link burned into the file.
+
+Capture the critical states in **EN and TR at 375A-667**. Stills can earn the 8+ **design** score for clarity and progression. Physical-phone tests establish delivery, and the existing local counters can support playtests. Population retention and viral lift remain unmeasured with this setup.
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files -g 'AGENTS.md' -g '"'!node_modules'"' -g '"'!dist'"' -g '"'!qa'"'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'No seat left|One more try|Take back|first_request|dare_first_move|street\\.shopLook|Comes in' src" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg --files qa | rg '10[345]|r10'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content -Raw package.json' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ exited 1 in 1404ms:
+ succeeded in 1466ms:
+src\main.js:461:  return { open: cafe.partyOpen(), shops: street.keepers(d).length, done: street.housesDone(d), at: street.atPiece(d), next: nt, left: street.houseLeft(d), ok: cafe.stars() >= nt.cost, looks: Object.fromEntries(street.ALL_SHOPS.map((x) => [x.id, street.shopLook(d, x.id)])) };
+src\main.js:591:  if (S.show && S.show.kind === 'friend' && !S.dareMoved) { S.dareMoved = true; track('dare_first_move', { i: S.show.i || '', m: S.show.m }); }
+src\main.js:1146:    if (r.first) track('first_request_claim', { who: r.who }); // the session-1 funnel's last step
+src\main.js:1147:    funnel('first_request');
+src\main.js:1344:    funnel('first_request');
+src\i18n.js:19:    offerTitle: 'One more try?',
+src\i18n.js:145:    takeBack: 'Take back',
+src\i18n.js:184:    stuckWhy: 'No seat left!',
+src\ui\ui.js:252:// festival and brings a guest, piece by piece. Every shop shows its current look (street.shopLook) wherever it stands.
+src\ui\ui.js:526:  // continue offer: first the why (the stuck cat stays visible above the bench with a "No seat left!" tag and the
+src\i18n-r10.js:20:    albNow: 'This week · Events', albArch: 'In the archive', albLocked: 'Events open after level {n}', albSoon: 'Comes in {n} weeks', albNext: 'Comes next week',
+
+ succeeded in 1639ms:
+qa\_r10-prompt.txt
+qa\_codex-r10-1.log
+qa\sol-r10-run.log
+qa\sol-r10-plan.md
+qa\sol-r10-1.md
+qa\r10-102.log
+
+ succeeded in 1651ms:
+{
+  "name": "long-cat-out",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "check": "node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs && node scripts/check-sfx.mjs && node scripts/check-dare.mjs"
+  },
+  "devDependencies": {
+    "vite": "^8.0.0"
+  }
+}
+
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'npm run check' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'function |const .*=' src/kit/dare.js | Select-Object -First 65" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'restore|undo|snapshot|preTap|waitN|waitCount|moreHelp' src/ui/ui.js src/main.js | Select-Object -First 70" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'og:|twitter:' index.html" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 1564ms:
+13:  <meta property="og:type" content="website" />
+14:  <meta property="og:title" content="Long Cat Out! Can you beat my chain?" />
+15:  <meta property="og:description" content="A friend dared you on one exact board. Tap Play and try to beat their chain. Free in your browser, no sign-up." />
+16:  <meta property="og:image" content="./icons/icon-512.png" />
+17:  <meta name="twitter:card" content="summary" />
+
+ succeeded in 1986ms:
+src/ui/ui.js:102:const RES_IMG = { coins: 'v2/ui_coin.webp', hint: 'v2/ui_hint.webp', scoop: 'v2/ui_scoop.webp', undo: 'v2/ui_undo.webp' };
+src/ui/ui.js:113:const chips = (r, cls = '') => `<span class="chips ${cls}">${['coins', 'hint', 'scoop', 'undo'].filter((k) => r[k]).map((k) => `<span class="chip">${img(RES_IMG[k])}<b>${k === 'coins' ? r[k] : 'x' + r[k]}</b></span>`).join('')}${r.decor ? `<span class="chip dc">${decorSvg}</span>` : ''}${r.outfit ? `<span class="chip">${r7('hud_yarn')}</span>` : ''}</span>`;
+src/ui/ui.js:416:  ${info.show ? (info.rush ? `<div class="rushclock" id="rushclock" aria-live="off">0.0s</div>` : `<div class="goalpill" id="goalpill" hidden>${r7('hud_medal')}<b></b></div>`) : `<div class="boosters">${bst('hint')}${bst('scoop')}${bst('undo')}</div>`}
+src/ui/ui.js:434:    for (const k of ['hint', 'scoop', 'undo']) {
+src/ui/ui.js:447:      b.classList.toggle('dim', k === 'undo' && !i.canUndo);
+src/ui/ui.js:551:    // the first lost bench on a level: one free Take Back (the losing tap undone) leads the options
+src/ui/ui.js:552:    const back = info.freeBack ? opt('takeback', 'mint', img('v2/ui_undo.webp', 'oi'), t('takeBack'), t('free'), 'freeback') : '';
+src/ui/ui.js:561:    const takeBack = back && !info.practice ? `<button class="btn green sm tb" data-act="takeback">${img('v2/ui_undo.webp', 'mini')}<b>${t('takeBack')}</b><small>${t('free')}</small></button>` : '';
+src/ui/ui.js:569:  ${more.length ? `<button class="morechip" data-act="morehelp"><b>${t('moreHelp')}</b><i>&#9662;</i></button><div class="opts morebox n${more.length}">${more.join('')}</div>` : ''}
+src/ui/ui.js:602:  <div class="setrow"><button class="link" data-act="restore">${t('restore')}</button></div>
+src/ui/ui.js:876:<button class="link" data-act="restore">${t('restore')}</button>`);
+src/main.js:6:import { findBlocker, isFailed, canUndo, dogLeft, isHidden, tap as rulesTap, createState, undo as rulesUndo } from './core/rules.js';
+src/main.js:103:  costs: { hint: HINT_COST, undo: UNDO_COST, scoop: SCOOP_COST },
+src/main.js:521:  S.dayKey = todayKey(); // one snapshot decides daily-repeat for the whole attempt, even across midnight
+src/main.js:588:  if (!S.undid) quest('cat', ids.length); // replays after a paid undo do not count twice
+src/main.js:685:    d.daily.streak = streak(+dayKey) + 1; // one day snapshot (taken at level start) for the whole daily bookkeeping
+src/main.js:735:const drecArt = (m) => (m.item ? DREC_ART[m.item] : m.reward.hint ? 'btn_hint' : 'btn_undo');
+src/main.js:859:      } else if (o.op === 'undo') rulesUndo(st, true);
+src/main.js:974:    // the first lost bench on a level offers one free Take Back (the losing tap undone), so the lesson can be applied
+src/main.js:1171:  restore: guarded(async () => {
+src/main.js:1172:    const ids = await iap.restore();
+src/main.js:1173:    ui.toast(t(ids.length ? 'restored' : 'nothingRestore'));
+src/main.js:1396:  // the free Take Back on a level's first lost bench: the losing tap is undone, nothing is charged
+src/main.js:1399:    if (!game.undoMove()) return ui.toast(t('noUndo'));
+src/main.js:1456:    if (!game.undoMove()) return ui.toast(t('noUndo')); // nothing is charged unless the move was really taken back
+src/main.js:1457:    S.undid = true; // the undone move's cats and carrier are not credited to the daily tasks twice
+src/main.js:1469:  undo() {
+src/main.js:1472:    if (!payBooster('undo', UNDO_COST)) return ui.toast(t('noCoins'));
+src/main.js:1473:    if (game.undoMove()) S.undid = true;
+src/main.js:1475:    track('undo');
+
+ succeeded in 2008ms:
+12:export const MODES = ['chain', 'seats', 'time'];
+13:const KINDS = ['l', 'd', 's', 'r'];
+14:const MAX_LEN = 400;
+15:const MCH = { chain: 'c', seats: 's', time: 't' };
+16:const CHM = { c: 'chain', s: 'seats', t: 'time' };
+17:const ID = /^[a-z0-9]{1,8}$/;
+18:const THREAD = 3;
+20:const int = (v, lo, hi) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, Math.round(+v))) : null);
+23:export function cleanName(s) {
+28:function b64url(str) {
+29:  const bytes = new TextEncoder().encode(str);
+31:  for (const x of bytes) bin += String.fromCharCode(x);
+34:function unb64url(s) {
+35:  const bin = atob(s.replace(/-/g, '+').replace(/_/g, '/'));
+39:export function encodeV1(d) {
+40:  const o = { v: 1, n: d.n, b: d.b, k: d.k, m: d.m, g: d.g };
+41:  const nm = cleanName(d.nm);
+50:export function shortCode(d) {
+53:export function encode(d) {
+54:  const ex = {};
+55:  const nm = cleanName(d.nm);
+58:  const th = (Array.isArray(d.th) ? d.th : []).slice(-THREAD).map((e) => [cleanName(e.nm), Math.round(+e.v) || 0]);
+63:const V2 = /^2([ldsr])(\d{1,3})-(\d{1,2})-([cst])(\d{1,4})(m?)(?:-([a-z0-9]{1,8}))?$/;
+64:const goalRange = (m, b) => (m === 'chain' ? [2, 8] : m === 'seats' ? [0, b] : [30, 9000]); // time: 3 s .. 15 min, in tenths
+65:function decodeV2(code, baseBench) {
+66:  const dot = code.indexOf('.');
+67:  const core = (dot < 0 ? code : code.slice(0, dot)).toLowerCase(); // typed from a video: the phone may capitalise it
+68:  const mm = V2.exec(core);
+70:  const n = int(mm[2], 1, 999);
+71:  const m = CHM[mm[4]];
+72:  const base = baseBench(n);
+73:  const b = int(mm[3], base, base + 2) ?? base;
+74:  const g = int(mm[5], ...goalRange(m, b));
+75:  const out = { n, b, k: mm[1], m, g, nm: '' };
+84:    const pg = int(ex.pg, ...goalRange(m, b));
+88:    const th = ex.th.slice(-THREAD).filter((e) => Array.isArray(e)).map((e) => ({ nm: cleanName(e[0]), v: int(e[1], ...goalRange(m, b)) })).filter((e) => e.v != null);
+91:  const rd = int(ex.rd, 1, 99);
+97:export function decode(code, baseBench) {
+104:  const n = int(o.n, 1, 999);
+105:  const m = MODES.includes(o.m) ? o.m : null;
+107:  const k = KINDS.includes(o.k) ? o.k : 'l';
+108:  const base = baseBench(n);
+109:  const b = int(o.b, base, base + 2) ?? base;
+115:  const out = { n, b, k, m, g, nm: cleanName(o.nm) };
+119:    const pg = m === 'chain' ? int(o.pg, 2, 8) : m === 'seats' ? int(o.pg, 0, b) : int(o.pg, 30, 9000);
+126:export const shareId = () => Math.floor(Math.random() * 36 ** 6).toString(36).padStart(6, '0');
+129:export function judge(m, g, v) {
+136:export function trGenitive(name) {
+137:  const vow = 'aıoueiöüAIOUEİÖÜ';
+138:  const low = name.toLocaleLowerCase('tr');
+140:  for (const c of low) if (vow.toLocaleLowerCase('tr').includes(c)) last = c;
+141:  const suf = { a: 'ın', ı: 'ın', o: 'un', u: 'un', e: 'in', i: 'in', ö: 'ün', ü: 'ün' }[last] || 'in';
+142:  const endsVowel = vow.toLocaleLowerCase('tr').includes(low.at(-1) || '');
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content src/kit/dare.js -TotalCount 25' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "rg -n 'localhost|dareBase|shortCode|clipOrigin|publicOrigin|canonical|location.origin' src index.html netlify.toml vercel.json" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'Get-Content src/ui/ui.js | Select-Object -Skip 519 -First 58' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ exited 1 in 1354ms:
+rg: netlify.toml: The system cannot find the file specified. (os error 2)
+rg: vercel.json: The system cannot find the file specified. (os error 2)
+src\main.js:884:const dareUrl = (d) => location.origin + location.pathname + '?c=' + dare.encode(d);
+src\main.js:886:const shortUrl = (d) => location.host + location.pathname + '?c=' + dare.shortCode(d);
+src\main.js:1617:    const url = location.origin + location.pathname;
+src\kit\dare.js:50:export function shortCode(d) {
+src\kit\dare.js:61:  return shortCode(d) + (Object.keys(ex).length ? '.' + b64url(JSON.stringify(ex)) : '');
+
+ succeeded in 1661ms:
+// Friend challenge links: ?c=<code> names one exact board and one goal. No accounts, no backend: the link is all there
+// is, so decode() trusts nothing in it (shape, numbers, names) and clamps every field.
+// v2 (current): a short, typeable core, then optional extras after a dot:
+//   2<k><n>-<b>-<m><g>[m][-<i>][.<base64url JSON extras>]      e.g. 2l13-5-c3-ab12cd
+//   the leading 2 is the token version and pins the board generator revision (bump it when generate() changes);
+//   k: l level | d daily | s Cat Show | r CafAc Rush; m: c chain | s seats | t time (tenths of a second); a trailing m on
+//   the goal = match (the chain is already the board's best); i: share id. The core alone plays the exact board and goal
+//   (it is what the clip burns in, so a friend can type it); the extras carry the names and the reply thread:
+//   { nm: sender name, r: the share id this run answered, pg: that dare's target, th: [[name, value], ...] the latest
+//     earlier runs on this board (oldest first, at most 3), rd: round of the back-and-forth (1 = the first dare) }
+// v1 (still decoded): base64url JSON { v: 1, n, b, k, m: 'chain'|'seats'|'time', g, nm?, x?, i?, r?, pg? }.
+export const MODES = ['chain', 'seats', 'time'];
+const KINDS = ['l', 'd', 's', 'r'];
+const MAX_LEN = 400;
+const MCH = { chain: 'c', seats: 's', time: 't' };
+const CHM = { c: 'chain', s: 'seats', t: 'time' };
+const ID = /^[a-z0-9]{1,8}$/;
+const THREAD = 3;
+
+const int = (v, lo, hi) => (Number.isFinite(+v) ? Math.max(lo, Math.min(hi, Math.round(+v))) : null);
+
+// letters, digits, spaces and a few name marks only; at most 12 characters
+export function cleanName(s) {
+  if (typeof s !== 'string') return '';
+  return s.normalize('NFC').replace(/[^\p{L}\p{N} '.-]/gu, '').replace(/\s+/g, ' ').trim().slice(0, 12).trim();
+
+ succeeded in 1758ms:
+  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? `<button class="btn pink sm sharebtn dsend" data-act="share">${SHARE_SVG}<span>${t('dareSendResult')}</span></button>` : ''}` : `<button class="btn teal sm" data-act="home">${t('home')}</button>${shareBtn}`}</div>
+</div></div>`);
+    if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);
+    if (cn && info.cafeStars) flyStar(cn, info.cafeStars);
+  },
+
+  // continue offer: first the why (the stuck cat stays visible above the bench with a "No seat left!" tag and the
+  // card explains seats vs the missing carrier), then the ways out. Options the player cannot pay lead to the shop.
+  // a friend's challenge link: who dares, the goal, the board, and (a new player) the one rule; Play goes straight in
+  dare(info) {
+    document.getElementById('modal')?.remove();
+    root.insertAdjacentHTML('beforeend', `
+<div class="backdrop" id="modal"><div class="card teal dare">
+  ${r7c('cat_head_' + info.peek + '_happy', 'peek')}
+  <div class="purr showtag">${t('dareTitle')}</div>
+  <h2 class="title yellow">${escHtml(t('dareFrom', { name: info.who }))}</h2>
+  <div class="dgoal">${r7('hud_medal')}<b>${info.goal}</b></div>
+  <div class="dboard">${escHtml(t('dareBoard', { board: info.board, n: info.seats }))}</div>
+  ${info.thread && info.thread.length ? `<div class="dthread">${info.round > 1 ? `<i class="drd">${t('dareRound', { n: info.round })}</i>` : ''}${info.thread.map((e) => `<span>${escHtml(e)}</span>`).join('<em>&rarr;</em>')}<em>&rarr;</em><b>${t('dareYourTurn')}</b></div>` : ''}
+  ${info.reply ? `<p class="dreply" data-act="events" data-tab="friends">${escHtml(info.reply)}</p>` : ''}
+  ${info.fresh ? `<p class="dhow">${t('dareHow')}</p>` : ''}
+  <label class="dname"><span>${t('dareName')}</span><input id="darename" maxlength="12" autocomplete="nickname" enterkeyhint="done" placeholder="${t('dareNameHint')}" value="${escHtml(info.nick || '')}"></label>
+  <button class="btn" data-act="dareplay">${t('darePlay')}</button>
+  <button class="link" data-act="dareskip">${t('dareSkip')}</button>
+</div></div>`);
+  },
+
+  fail(info) {
+    cur = { screen: 'fail', info, hud: cur.hud };
+    const scoopOk = info.scoop > 0 || info.coins >= info.scoopCost;
+    const opt = (act, tone, icon, b, sm, cls = '') => `<button class="opt ${tone} ${cls}" data-act="${act}">${icon}<b>${b}</b><small>${sm}</small></button>`;
+    // the first lost bench on a level: one free Take Back (the losing tap undone) leads the options
+    const back = info.freeBack ? opt('takeback', 'mint', img('v2/ui_undo.webp', 'oi'), t('takeBack'), t('free'), 'freeback') : '';
+    const scoop = scoopOk ? opt('offerscoop', 'mint', img('v2/ui_scoop.webp', 'oi'), t('scoop'), info.scoop > 0 ? t('scoopUse', { n: info.scoop }) : `${img('ui_coin.webp', 'mini')}${info.scoopCost}`) : '';
+    // only what can be paid looks like a button: a seat the purse cannot cover is a quiet "Get coins" link instead
+    const seat = info.canSeat ? opt('coinseat', 'gold', img('v2/ui_coin.webp', 'oi'), t('extraSeat'), `${img('ui_coin.webp', 'mini')}${info.seatCost}`) : '';
+    const short = !info.canSeat && info.store ? `<button class="link getc" data-act="shop">${t('seatShort', { n: info.seatCost, h: info.coins })} A� <b>${t('getCoins')}</b></button>` : '';
+    const ad = info.ad ? opt('adheart', 'green', adSvg, t('adSeatShort'), t('watchAd')) : '';
+    const tag = info.stuckAt ? `<div class="stucktag" style="left:${info.stuckAt.x}px;top:${info.stuckAt.y}px">${t('stuckWhy')}</div>` : '';
+    const more = info.practice ? [] : [scoop, seat, ad].filter(Boolean);
+    const offer = info.offer ? `<button class="offercard slimoffer" data-act="starter"><i class="ribbon">${t('bestValue')}</i><span class="oc-t"><b>${t('starterBundle')}</b><small>${t('starterLine', { c: info.offer.coins.toLocaleString(lang()), s: info.offer.scoop })}</small></span><span class="oc-p">${info.offer.price}</span></button>` : '';
+    const takeBack = back && !info.practice ? `<button class="btn green sm tb" data-act="takeback">${img('v2/ui_undo.webp', 'mini')}<b>${t('takeBack')}</b><small>${t('free')}</small></button>` : '';
+    root.insertAdjacentHTML('beforeend', `
+<div class="backdrop offerb" id="modal">${tag}<div class="card cream offer slim r7fail">
+  <h2 class="title navy">${t('offerTitle')}</h2>
+  <div class="why">${info.why || t('offerSub')}</div>
+  ${info.lifeLost ? `<div class="lifeline">&#9829; ${t('lifeLost')}</div>` : ''}
+  ${info.tip ? `<div class="tip">${info.tip}</div>` : ''}
+  <div class="row frow">${takeBack}<button class="btn ${takeBack ? 'teal' : ''} sm" data-act="retry">${t('retry')}</button><button class="round" data-act="home" aria-label="${t('home')}"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button></div>
+  ${more.length ? `<button class="morechip" data-act="morehelp"><b>${t('moreHelp')}</b><i>&#9662;</i></button><div class="opts morebox n${more.length}">${more.join('')}</div>` : ''}
+  ${info.practice ? '' : short}
+  ${offer}
+</div></div>`);
+  },
+
+  // combo pill in the gap between the bench and the rug (--combo-y, set from the board layout): never over a cat,
+  // the LEVEL pill, the belt, the boosters or the hint card; it takes no taps
+  combo(text) {
+
+ exited 1 in 24763ms:
+
+> long-cat-out@0.1.0 check
+> node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs && node scripts/check-sfx.mjs && node scripts/check-dare.mjs
+
+FAIL worst gen time 89.8ms (level 255) >= 60ms
+
+level  size   kind    cats  carriers  colors  bench  peak  detours  gen_ms
+1      5x6    normal  3     1         -       5      0     0        0.8
+5      6x8    normal  12    4         4       5      4     4        10.3
+10     6x8    normal  12    4         4       5      4     3        17.6
+15     7x9    hard    15    5         5       5      4     5        1.8
+30     7x9    normal  15    5         4       5      4     3        18.5
+60     8x11   normal  18    6         4       5      4     5        32.3
+100    8x11   normal  18    6         5       5      4     5        14.9
+250    8x11   normal  18    6         5       5      4     4        24.9
+500    8x10   normal  15    5         4       5      4     3        5.2
+
+mechanics per range (levels carrying each, total pieces)
+  L1-7: dog 0, yarn 0, mystery 0, frozen 0, mixed 0, pieces 0
+  L8-11: dog 2, yarn 0, mystery 0, frozen 0, mixed 0, pieces 2
+  L12-39: dog 6, yarn 13, mystery 0, frozen 0, mixed 5, pieces 23
+  L40-54: dog 2, yarn 4, mystery 7, frozen 0, mixed 3, pieces 17
+  L55-69: dog 1, yarn 6, mystery 3, frozen 8, mixed 7, pieces 21
+  L70-600: dog 113, yarn 166, mystery 66, frozen 175, mixed 166, pieces 688
+
+kinds {"normal":532,"hard":48,"super":20}; hard at 15,25,42,52,59,77,87,106...; super at 34,67,96,122,149,175...
+
+decisions per range (averages; dead = losing taps / legal taps, long = share of cats 4+ cells)
+  L5-14 normal n=10   traps 2.30  late 0.60  chains 1.50  3-chains 0.60  dead 0.088  free 3.05  startSafe 4.7  fill 0.74  long 0.26  colours 4.0  cats 12.3
+  L15-39 normal n=22   traps 4.45  late 2.41  chains 1.82  3-chains 0.77  dead 0.136  free 3.52  startSafe 5.9  fill 0.75  long 0.34  colours 4.5  cats 15.1
+  L15-39 hard   n=3    traps 6.33  late 2.67  chains 1.33  3-chains 1.00  dead 0.178  free 3.12  startSafe 6.0  fill 0.76  long 0.31  colours 5.7  cats 17.0
+  L40-99 normal n=53   traps 4.91  late 2.85  chains 1.74  3-chains 0.77  dead 0.146  free 3.56  startSafe 6.6  fill 0.76  long 0.39  colours 4.7  cats 17.0
+  L40-99 hard   n=7    traps 5.71  late 3.00  chains 2.00  3-chains 1.43  dead 0.185  free 3.43  startSafe 5.7  fill 0.74  long 0.43  colours 4.7  cats 17.1
+  L100-249 normal n=133  traps 5.05  late 3.06  chains 1.77  3-chains 0.71  dead 0.189  free 3.19  startSafe 5.7  fill 0.75  long 0.36  colours 4.8  cats 17.3
+  L100-249 hard   n=17   traps 5.94  late 3.82  chains 1.71  3-chains 1.06  dead 0.220  free 3.19  startSafe 5.1  fill 0.72  long 0.36  colours 4.9  cats 17.6
+  L250-600 normal n=310  traps 4.97  late 3.11  chains 1.64  3-chains 0.71  dead 0.190  free 3.15  startSafe 5.4  fill 0.74  long 0.36  colours 4.9  cats 17.4
+  L250-600 hard   n=41   traps 5.24  late 3.24  chains 1.78  3-chains 1.12  dead 0.240  free 3.26  startSafe 5.7  fill 0.75  long 0.38  colours 4.7  cats 17.6
+levels missing the full band (floor still held): 94; normal levels from L10 with a delayed trap: 445/455
+search misses 0 (avg 14 nodes)
+gen avg 16.57ms, worst 89.8ms (level 255), total 9940ms for 600 levels
+
+1 check(s) failed
+
+codex
+The completed-floor card now points to the next build, and the dare captures show a playable reply loop. I’m checking the browser fallbacks and automated checks before assigning the final scores.
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'node scripts/check-sfx.mjs' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'node scripts/check-dare.mjs' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'node scripts/check-econ.mjs' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command 'node scripts/check-web.mjs' in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ succeeded in 727ms:
+check-web ok
+
+ succeeded in 733ms:
+check-sfx ok (20 sfx + music)
+
+ succeeded in 736ms:
+check-dare ok
+
+ succeeded in 780ms:
+  120-day R10: 18 postcards, 4 prints, Daily record 103, street 25 units (mix Toy Shop)
+  120-day street: 25 units, 0/4 of Toy Shop, 10 renovation sets
+  120-day sim: L499 on day 120 (house done after L60); collection 15 on day 14 -> 108 on day 120 (visitors 6, outfits 24, rosettes 3, cups 0); requests done 320; jar coins 26068
+  café pacing: residents after L3 mochi, L5 biscuit, L11 luna, L16 pudding, L25 noodle, L39 pepper, L46 clover, L60 captain; areas done after L8, L18, L33, L46, L60
+econ checks passed
+
+exec
+"C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe" -Command "node scripts/check-core.mjs | Select-String 'FAIL|checks passed|search misses|gen avg|check\\(s\\)'" in C:\Users\Admin\Documents\Msjelly\studio\long-cat-out
+ exited 1 in 15471ms:
+FAIL worst gen time 61.0ms (level 305) >= 60ms
+
+1 check(s) failed
+
+search misses 0 (avg 14 nodes)
+gen avg 10.94ms, worst 61.0ms (level 305), total 6563ms for 600 levels
+
+
+
+codex
+**Overall 8/10, unchanged from R9.** Long Cat Out! meets the solid top-100 benchmark as a design. R10 brings retention and virality up from 7 to 8. The best moment is still the same one: making a risky bench decision and watching it pay off in a chain.
+
+| Dimension | R9 | R10 | Assessment |
+|---|---:|---:|---|
+| Presentation | 8 | **8** | The café, street, and puzzle board feel like one world. Cat Street still crowds the shop façades with controls while leaving a large stretch of empty road. |
+| Appeal | 8 | **8** | The sleeping bench cats and postcard portraits sell the fantasy. At rest, the straight cats still read as patterned tubes with expressive faces. |
+| Juice | 8 | **8** | The paws-first leap has a recognizable rhythm, and the chain count makes each landing legible. The carrier and cushions could react more visibly to contact. |
+| Fun | 8 | **8** | Choosing which cat can afford to wait gives the puzzle real stakes. The free Take back makes a full-bench loss recoverable, but the lesson still relies on reading the sheet. |
+| Retention | 7 | **8** | Finished rooms point to the next build. Resident jobs give today a goal, and the album and Daily record give repeat visits a lasting payoff. A nearly complete album page can still stall for weeks. |
+| Virality | 7 | **8** | A single link opens the exact board, and the named thread and counter-dare give the recipient a reason to reply. The clip still asks viewers to type the URL if it arrives without a caption. |
+| **Overall** | **8** | **8** | The progression and sharing loops now match the quality of the core puzzle. |
+
+### Most important remaining fixes
+
+1. **Presentation.** At 375 × 667, collapse the completed-floor rail into a single house picker on Cat Street. Move shop names into a dedicated row below the façades and use the recovered road space to keep both goal tiles and Play visible.
+2. **Appeal.** Start with the orange tabby. Widen the shoulders under the head, round the belly, taper the rump, and wrap the stripes around those contours. Check it at board size on both straight cats and tight bends before rolling it out to other breeds.
+3. **Juice.** Give each landing a visible contact beat. Hold the paws briefly on the carrier lip, compress the body into the opening, and let the carrier settle with a small dip. Rebound each cushion as its cat launches during a chain. Fit these reactions into the current timing and preserve overlapping taps.
+4. **Fun.** Turn the first full-bench loss into a playable lesson. Pulse the needed carrier or its queue badge and show how many departures away it is. After **Take back**, briefly mark the restored free cushion and one cat that can board immediately, where available. Check whether fresh players change their next choice without a prompt.
+5. **Retention.** Shorten the wait for the first framed print. Make one page completable within the first four event weeks, let players use their weekly archive claim on any already-released postcard, and show the exact board or release date in each missing slot.
+6. **Virality.** Add a scannable QR for the public HTTPS dare URL to the end card and fallback PNG. Verify send → received message → first move → reply on iPhone/iMessage, iPhone/WhatsApp, and Android/WhatsApp, including a clip stripped of its caption. Carry a compact move log in reply URLs and replay it locally before crediting chain or clean-sweep scores in Friend Results.
+
+I scored from the supplied captures, notes, plan, and repo checks. The economy simulation, web, audio, and dare checks passed. The core check found zero solver misses across 600 levels, but exceeded its 60 ms worst-case generation budget on both runs. Physical-phone delivery and player retention remain unmeasured, so the retention and virality scores reflect design quality. [R10 notes](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/r9-notes.md>) · [R10 plan](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/sol-r10-plan.md>)
+tokens used
+96,236
+**Overall 8/10, unchanged from R9.** Long Cat Out! meets the solid top-100 benchmark as a design. R10 brings retention and virality up from 7 to 8. The best moment is still the same one: making a risky bench decision and watching it pay off in a chain.
+
+| Dimension | R9 | R10 | Assessment |
+|---|---:|---:|---|
+| Presentation | 8 | **8** | The café, street, and puzzle board feel like one world. Cat Street still crowds the shop façades with controls while leaving a large stretch of empty road. |
+| Appeal | 8 | **8** | The sleeping bench cats and postcard portraits sell the fantasy. At rest, the straight cats still read as patterned tubes with expressive faces. |
+| Juice | 8 | **8** | The paws-first leap has a recognizable rhythm, and the chain count makes each landing legible. The carrier and cushions could react more visibly to contact. |
+| Fun | 8 | **8** | Choosing which cat can afford to wait gives the puzzle real stakes. The free Take back makes a full-bench loss recoverable, but the lesson still relies on reading the sheet. |
+| Retention | 7 | **8** | Finished rooms point to the next build. Resident jobs give today a goal, and the album and Daily record give repeat visits a lasting payoff. A nearly complete album page can still stall for weeks. |
+| Virality | 7 | **8** | A single link opens the exact board, and the named thread and counter-dare give the recipient a reason to reply. The clip still asks viewers to type the URL if it arrives without a caption. |
+| **Overall** | **8** | **8** | The progression and sharing loops now match the quality of the core puzzle. |
+
+### Most important remaining fixes
+
+1. **Presentation.** At 375 × 667, collapse the completed-floor rail into a single house picker on Cat Street. Move shop names into a dedicated row below the façades and use the recovered road space to keep both goal tiles and Play visible.
+2. **Appeal.** Start with the orange tabby. Widen the shoulders under the head, round the belly, taper the rump, and wrap the stripes around those contours. Check it at board size on both straight cats and tight bends before rolling it out to other breeds.
+3. **Juice.** Give each landing a visible contact beat. Hold the paws briefly on the carrier lip, compress the body into the opening, and let the carrier settle with a small dip. Rebound each cushion as its cat launches during a chain. Fit these reactions into the current timing and preserve overlapping taps.
+4. **Fun.** Turn the first full-bench loss into a playable lesson. Pulse the needed carrier or its queue badge and show how many departures away it is. After **Take back**, briefly mark the restored free cushion and one cat that can board immediately, where available. Check whether fresh players change their next choice without a prompt.
+5. **Retention.** Shorten the wait for the first framed print. Make one page completable within the first four event weeks, let players use their weekly archive claim on any already-released postcard, and show the exact board or release date in each missing slot.
+6. **Virality.** Add a scannable QR for the public HTTPS dare URL to the end card and fallback PNG. Verify send → received message → first move → reply on iPhone/iMessage, iPhone/WhatsApp, and Android/WhatsApp, including a clip stripped of its caption. Carry a compact move log in reply URLs and replay it locally before crediting chain or clean-sweep scores in Friend Results.
+
+I scored from the supplied captures, notes, plan, and repo checks. The economy simulation, web, audio, and dare checks passed. The core check found zero solver misses across 600 levels, but exceeded its 60 ms worst-case generation budget on both runs. Physical-phone delivery and player retention remain unmeasured, so the retention and virality scores reflect design quality. [R10 notes](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/r9-notes.md>) · [R10 plan](<C:/Users/Admin/Documents/Msjelly/studio/long-cat-out/qa/sol-r10-plan.md>)

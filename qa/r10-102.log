@@ -1,0 +1,90 @@
+  L5 meta {"traps":2,"chains":2,"chain3":0,"bench":5}
+  trap cat 7 {"ok":true,"boards":0,"wake":false,"used":5,"failed":false} bench [ 3, 5 ]
+  shot 10c-gen-trap
+  shot 28f-chain-x2
+  shot 28g-chain3-slowmo
+  shot 28h-win-chain
+  chain clip {"has":true,"plan":{"from":1,"peak":5,"kind":"chain","n":3},"ready":true,"encoding":false,"canRecord":true} {"ext":"mp4","size":713975}
+  shot 09c-offer-slim-tr
+  shot 24e-dog-wake-beat
+  shot 24f-dog-trot-paws
+  shot 18e-cafe-cushion-half
+  shot 18f-cafe-cushion-built
+  shot 18g-cafe-patio-built
+  shot 18h-cafe-rooftop-built
+  rooftop guests captain,noodle
+  shot 19d-residents-all
+  shot 29a-l3-pair-parked
+  shot 29b-press-preview
+  shot 29c-fail-takeback
+  shot 29d-cafe-rosettes
+  shot 29e-show-board-sheet
+  shot 29f-show-board-play
+  shot 29g-show-board-win
+  shot 29h-show-board-tr
+  shot 90a-hub-thread
+  shot 90b-arrive-first-request
+  shot 90c-hub-first-request
+  shot 90d-hub-daily-show
+  shot 90e-hub-daily-show-tr
+  shot 91a-copy-link-bar
+  shot 91b-link-copied
+  shot 91c-667-copy-link-bar-tr
+  shot 103a-chain-counter-last
+  chain counter {"n":2,"k":1,"land":1} {"n":2,"k":2,"land":2}
+  L2 dare {"n":2,"b":5,"k":"l","m":"chain","g":2,"x":1} Match my chain x2 on Level 2! It is the best this board allows.
+  shot 103b-dare-link-after-clip
+  shot 103c-667-dare-link-tr
+  shot 103d-dare-landing-match
+  shot 103e-dare-matched
+  shot 103f-room-newcomer-ask
+  shot 103g-room-claim-reward
+  shot 103h-room-next-goal
+  shot 103i-667-room-ask-tr
+  shot 103j-street-apprentice
+  shot 103k-apprentice-arrival
+  shot 104a-floor-done-next
+  shot 104b-street-lamp-before
+  shot 104c-street-upgrades-done
+  shot 104d-street-lamp-after
+  shot 104e-street-new-shop
+  shot 104f-street-remix
+  shot 104g-events-popup
+  shot 104h-postcard-new
+  shot 104i-archive-catchup
+  shot 104j-album-3of4
+  shot 104k-album-4of4
+  shot 104l-room-print
+  shot 104m-hub-job
+  shot 104n-tasks-jobs
+  shot 104o-tasks-job-tomorrow
+  shot 104p-daily-record-29
+  shot 104q-daily-sheet-record
+  shot 104r-residents-frame
+  shot 104s-friends-empty
+  shot 104t-reply-landing
+  shot 104u-friends-result
+  shot 104v-667-hub-tr
+  shot 104w-667-popup-tr
+  shot 104x-667-album-tr
+  shot 104y-667-tasks-jobs-tr
+  shot 104z-667-friends-tr
+  shot 30a-667-hub
+  shot 30b-667-house
+  shot 30c-667-quests
+  shot 30c-667-show
+  shot 30c-667-shop
+  shot 30c-667-residents
+  shot 30c-667-settings
+  shot 30c-667-starter
+  shot 30c-667-settings-tr
+  shot 30d-667-nolives
+  shot 30e-667-l12
+  shot 30e-667-l30
+  note: L55 cell 30 at 375x667 (the 10-row boards need ~700px for 40px cells; 375x812 keeps >= 40)
+  shot 30e-667-l55
+  shot 30f-667-win
+  shot 30g-667-fail
+  shot 30h-667-fail-more
+final state {"screen":"fail","sheet":"","mode":"play","level":49,"bench":[4,4],"departed":0,"leaving":0,"busy":false,"alive":13,"over":true,"free":[],"blocked":[5,7,10,13,14,15,17],"anims":0,"cell":41,"board":[8,10]}
+errors: 0

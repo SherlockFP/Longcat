@@ -2,7 +2,7 @@
 import { TASK_POOL } from '../game/econ.js';
 
 const KEY = 'lco_save';
-const VERSION = 8;
+const VERSION = 9;
 
 const defaults = () => ({
   v: VERSION,
@@ -29,7 +29,14 @@ const defaults = () => ({
   rush: { week: 0, best: 0, cats: 0, pend: null, cups: {} },
   season: { daily: {}, claim: {}, visDay: 0 },
   vis: {},
-  meta: { firstOpen: 0, sessions: 0, funnel: {}, ret: {}, shareNudge: 0, dares: 0 }, // shareNudge: the first "show a friend" prompt was shown; dares: friend challenges played
+  // v9 (R10, src/game/r10.js): pop-up week stamps (daily: week -> 1, paid: week -> 1, cu: the week a catch-up postcard was
+  // taken), the album (cards: postcard index -> 1, hung: room index -> page), the Daily record, resident jobs, friend results
+  pop: { daily: {}, paid: {}, cu: -1 },
+  album: { cards: {}, hung: {} },
+  drec: { n: 0, last: -1, got: 0 },
+  jobs: { day: -1, p: [0, 0], paid: 0 },
+  fr: { list: [], sent: [] },
+  meta: { firstOpen: 0, sessions: 0, funnel: {}, ret: {}, shareNudge: 0, dares: 0, bestChain: 0, nick: '' }, // shareNudge: the first "show a friend" prompt was shown; dares: friend challenges played; bestChain: the best bench chain ever (a new best is a share moment); nick: the optional name on this player's dares
 });
 
 function guessLang() {
@@ -80,6 +87,8 @@ function migrate(raw) {
     if (w && Number.isInteger(w.ch) && w.ch > 0 && Number.isInteger(w.week) && w.week > 0) w.marks = { [w.week + 'a']: w.ch & 3 };
     raw.v = 8;
   }
+  // v9 adds the pop-up week, album, Daily record, jobs and friend results: all take their defaults.
+  if (raw.v < 9) raw.v = 9;
   return raw;
 }
 
@@ -175,8 +184,30 @@ function validate(d) {
   m.sessions = num(m.sessions, 0, 0);
   m.shareNudge = m.shareNudge ? 1 : 0;
   m.dares = num(m.dares, 0, 0);
+  m.bestChain = Math.min(8, num(m.bestChain, 0, 0));
+  m.nick = typeof m.nick === 'string' ? m.nick.slice(0, 12) : '';
   if (!isObj(m.funnel)) m.funnel = {};
   if (!isObj(m.ret)) m.ret = {};
+  const P = d.pop;
+  P.daily = intMap(isObj(P.daily) ? P.daily : {}, 1);
+  P.paid = intMap(isObj(P.paid) ? P.paid : {}, 1);
+  P.cu = Number.isInteger(P.cu) ? P.cu : -1;
+  const A = d.album;
+  A.cards = intMap(isObj(A.cards) ? A.cards : {}, 1);
+  for (const k of Object.keys(A.cards)) if (!(+k >= 0 && +k < 24)) delete A.cards[k];
+  A.hung = intMap(isObj(A.hung) ? A.hung : {}, 5);
+  for (const k of Object.keys(A.hung)) if (!(+k >= 0 && +k < 5)) delete A.hung[k];
+  d.drec.n = Number.isInteger(d.drec.n) && d.drec.n >= 0 ? d.drec.n : 0;
+  d.drec.last = Number.isInteger(d.drec.last) ? d.drec.last : -1;
+  d.drec.got = Number.isInteger(d.drec.got) && d.drec.got >= 0 && d.drec.got < 32 ? d.drec.got : 0;
+  const J = d.jobs;
+  J.day = Number.isInteger(J.day) ? J.day : -1;
+  J.p = Array.isArray(J.p) ? [0, 1].map((i) => num(J.p[i], 0, 0)) : [0, 0];
+  J.paid = J.paid === 1 || J.paid === 2 ? J.paid : 0;
+  const F = d.fr;
+  F.sent = Array.isArray(F.sent) ? F.sent.filter((x) => typeof x === 'string' && /^[a-z0-9]{1,8}$/.test(x)).slice(-30) : [];
+  F.list = Array.isArray(F.list) ? F.list.filter((x) => isObj(x) && typeof x.id === 'string' && /^[a-z0-9]{1,8}$/.test(x.id) && Number.isInteger(x.n) && Number.isInteger(x.b) && ['chain', 'seats', 'time'].includes(x.m) && Number.isInteger(x.g)).slice(0, 12)
+    .map((x) => ({ id: x.id, nm: typeof x.nm === 'string' ? x.nm.slice(0, 12) : '', n: x.n, b: x.b, k: ['l', 'd', 's', 'r'].includes(x.k) ? x.k : 'l', m: x.m, g: x.g, pg: Number.isInteger(x.pg) ? x.pg : null, mine: !!x.mine, t: num(x.t, 0, 0) })) : [];
   for (const k of ['hint', 'scoop', 'undo']) d.boosters[k] = Number.isInteger(d.boosters[k]) && d.boosters[k] >= 0 ? d.boosters[k] : 0;
   return d;
 }
@@ -200,6 +231,7 @@ function load() {
       if (isObj(m.show) && isObj(m.show.goals)) d.show.goals = m.show.goals;
       if (isObj(m.season)) for (const k of ['daily', 'claim']) if (isObj(m.season[k])) d.season[k] = m.season[k];
       if (isObj(m.vis)) d.vis = m.vis;
+      for (const [o, ks] of [['pop', ['daily', 'paid']], ['album', ['cards', 'hung']]]) if (isObj(m[o])) for (const k of ks) if (isObj(m[o][k])) d[o][k] = m[o][k];
       if (isObj(m.rush) && isObj(m.rush.cups)) d.rush.cups = m.rush.cups;
       if (isObj(m.iap) && isObj(m.iap.owned)) d.iap.owned = m.iap.owned;
       if (isObj(m.show) && isObj(m.show.decor)) d.show.decor = m.show.decor;

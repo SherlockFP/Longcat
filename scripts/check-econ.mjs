@@ -1,11 +1,12 @@
 // Economy checks: node scripts/check-econ.mjs (lives, Purr Streak, daily tasks, login, Cat Show, retention systems + a
-// 60-day simulated player, IAP, ads rules, save migration)
+// 120-day simulated player, R10 album/pop-up/Daily record/jobs/friend results, IAP, ads rules, save migration)
 const stored = { v: null };
 globalThis.localStorage = { getItem: () => stored.v, setItem: (k, v) => { stored.v = v; } };
 const { save } = await import('../src/kit/save.js');
 const E = await import('../src/game/econ.js');
 const L = await import('../src/game/live.js');
 const ST = await import('../src/game/street.js');
+const R = await import('../src/game/r10.js');
 const { applyPurchase, PRODUCTS } = await import('../src/kit/iap.js');
 
 let failures = 0;
@@ -296,7 +297,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   d.meta.firstOpen = start;
   const days = [];
   let stars = 0;
-  const collection = () => ST.housesDone(d) + ST.renoCount(d) + L.visitorsOwned(d).length + L.outfitsOwned(d, resAt(d.level)) + E.earnedDecor(d).length + Object.values(d.rush.cups).reduce((a, b) => a + b, 0);
+  const collection = () => ST.streetSights(d) + R.cardsOwned(d) + R.printsHung(d) + (d.drec.got >> 2 ? 1 : 0) + ((d.drec.got >> 3) & 1) + ((d.drec.got >> 4) & 1) + ST.renoCount(d) + L.visitorsOwned(d).length + L.outfitsOwned(d, resAt(d.level)) + E.earnedDecor(d).length + Object.values(d.rush.cups).reduce((a, b) => a + b, 0);
   let doneDay = -1;
   for (let dd = 0; dd < 120; dd++) {
     const earn = new Set();
@@ -315,12 +316,15 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
       L.reqTick(d, now, res);
       if (E.loginClaim(d, day)) { earn.add('login'); if (E.LOGIN_REWARDS[d.login.idx - 1].outfit && L.giftOutfit(d, res)) earn.add('outfit-gift'); }
       for (const id of res.slice(dd % Math.max(1, res.length)).concat(res).slice(0, 2)) if (L.pet(d, id, day)) earn.add('pet');
+      R.jobsToday(d, day, res);
       // play this visit's half of the day's levels
       for (let k = 0; k < levels / 2; k++) {
         d.level++;
         { const k = levelKind(d.level - 1); stars += k === 'super' ? 3 : k === 'hard' ? 2 : 1; }
         L.reqEvent(d, 'win');
         L.reqEvent(d, 'carrier', 4);
+        R.jobsEvent(d, day, res, 'win'); R.jobsEvent(d, day, res, 'carrier', 4); R.jobsEvent(d, day, res, 'cat', 15);
+        if (d.level % 3 === 0) R.jobsEvent(d, day, res, 'tidy');
         for (let c = 0; c < 15; c++) L.reqEvent(d, 'cat', 1, (d.level * 7 + c * 3) % 8);
         if (d.level % 3 === 0) L.reqEvent(d, 'tidy');
         E.questEvent(d, 'win', day); E.questEvent(d, 'carrier', day, 4); E.questEvent(d, 'cat', day, 15);
@@ -330,8 +334,10 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
         d.daily.streak = +d.daily.last === day - 1 ? d.daily.streak + 1 : 1;
         d.daily.last = String(day);
         E.grant(d, L.streakChest(d.daily.streak));
-        if (L.eventsOpen(d)) L.addDailyStamp(d, week);
+        if (L.eventsOpen(d)) { L.addDailyStamp(d, week); R.popDaily(d, week); }
         L.reqEvent(d, 'daily');
+        const ms = R.drecClear(d, day);
+        if (ms.length) earn.add('drec');
         earn.add('daily');
       }
       if (hour === 20 && L.eventsOpen(d)) { // the week's Show boards and a Rush run
@@ -340,7 +346,12 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
         if (L.bothGold(d, week)) d.show.decor[E.themeOf(week).id] = 1;
         if (!d.rush.best) L.rushResult(d, 30 * 2400);
         if (L.rushClaim(d)) earn.add('rush');
+        const med = { a: !!L.medalOf(d, week, 'a'), b: !!L.medalOf(d, week, 'b') };
+        const pc = R.popClaim(d, week, med);
+        if (pc) { earn.add('postcard'); if (pc.page >= 0) { R.hangPrint(d, pc.page, R.printsHung(d) % 5); earn.add('print'); } }
+        for (const pw of L.archiveWeeks(d, week)) { const c = R.catchUp(d, week, pw, { a: !!L.medalOf(d, pw, 'a'), b: !!L.medalOf(d, pw, 'b') }); if (c) { earn.add('postcard'); if (c.page >= 0) R.hangPrint(d, c.page, R.printsHung(d) % 5); break; } }
       }
+      for (let s = 0; s < 2; s++) if (R.jobsClaim(d, day, res, s)) earn.add('job');
       for (let i = d.req.list.length - 1; i >= 0; i--) if (L.reqClaim(d, i, now)) earn.add('request');
       // past the finished house the stars go to Cat Street, with a renovation set every few street pieces
       if (d.level > houseDone) {
@@ -361,6 +372,14 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
     }
     days.push({ dd, level: d.level, earn: [...earn], ticking: [...ticking], items: collection(), street: d.cafe.street });
   }
+  // R10: past day 2 a resident job pays every single day (a new cat, a new goal), and the collection (postcards, prints,
+  // street sights, Daily keepsakes) gains something new every week, before and after the house is finished
+  days.slice(2).forEach((x) => ok(x.earn.includes('job'), `day ${x.dd + 1}: a resident job to finish and claim (got ${x.earn.join(', ')})`));
+  for (let i = 14; i < days.length; i++) ok(days[i].items > days[i - 7].items, `a new collectible every week (day ${days[i].dd + 1}: ${days[i - 7].items} -> ${days[i].items})`);
+  ok(R.cardsOwned(d) >= 16, `postcards by day 120: ${R.cardsOwned(d)}`);
+  ok(d.drec.n >= 90 && R.drecHas(d, 'clock'), `the Daily record reaches its 90-clear clock by day 120 (${d.drec.n})`);
+  ok(R.printsHung(d) >= 3, `framed prints hung by day 120: ${R.printsHung(d)}`);
+  console.log(`  120-day R10: ${R.cardsOwned(d)} postcards, ${R.printsHung(d)} prints, Daily record ${d.drec.n}, street ${ST.housesDone(d)} units (${ST.curHouse(d).kind} ${ST.curHouse(d).name.en})`);
   days.forEach((x) => ok(x.earn.length >= 3, `day ${x.dd + 1}: at least 3 things to collect or do (got ${x.earn.join(', ') || 'none'})`));
   days.slice(1).forEach((x) => ok(x.ticking.length >= 1, `day ${x.dd + 1}: a timer ticks toward the next reward`));
   const after = days.filter((x) => x.level > houseDone);
@@ -370,7 +389,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   const last = days[days.length - 1];
   ok(ST.housesDone(d) >= 6, `by day 120 the street has a few shops (got ${ST.housesDone(d)})`);
   ok(ST.housesDone(d) <= 40, `the street does not race ahead of the art (got ${ST.housesDone(d)} houses)`);
-  console.log(`  120-day street: ${ST.housesDone(d)} shops, ${d.cafe.street % ST.HOUSE_TASKS}/8 of ${ST.curHouse(d).name.en}, ${ST.renoCount(d)} renovation sets`);
+  console.log(`  120-day street: ${ST.housesDone(d)} units, ${ST.atPiece(d)}/${ST.curHouse(d).tasks.length} of ${ST.curHouse(d).name.en}, ${ST.renoCount(d)} renovation sets`);
   ok(L.visitorsOwned(d).length >= 2, `visiting cats by day 60: ${L.visitorsOwned(d).length}`);
   console.log(`  120-day sim: L${last.level} on day 120 (house done after L${houseDone}); collection ${days[13].items} on day 14 -> ${last.items} on day 120 (visitors ${L.visitorsOwned(d).length}, outfits ${L.outfitsOwned(d, resAt(d.level))}, rosettes ${E.earnedDecor(d).length}, cups ${Object.values(d.rush.cups).reduce((a, b) => a + b, 0)}); requests done ${d.req.done}; jar coins ${d.jar.total}`);
 }
@@ -401,6 +420,68 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   const bots = L.rushBots(2900, 20);
   ok(bots[0].ms >= 20 * 1600 && bots.every((b) => b.ms % 100 === 0), `Rush bots: no superhuman time (fastest ${bots[0].ms} ms for 20 cats)`);
   ok(L.rushBots(2900, 0)[0].ms >= 30 * 1600, 'an unknown board size never shows a 2-second bot');
+}
+
+// ---------------- R10: street laps past 2, pop-up week + album, Daily record, jobs, friend results ----------------
+{
+  const d = fresh();
+  eq([12, 17, 18, 20, 21].map((k) => ST.house(k).kind), ['up', 'up', 'build', 'build', 'mix'], 'lap 3 upgrades, then new shops, then remix laps');
+  eq(ST.house(12).tasks.map((x) => x.cost), [2, 2, 3], 'each shop has 3 visible upgrades at 2, 2 and 3 stars');
+  eq([18, 19, 20].map((k) => ST.house(k).id), ['fish', 'post', 'yarn'], 'three new shop kinds with new keepers');
+  const sig = new Set();
+  for (let k = 21; k < 21 + 9 * 6; k++) { const h = ST.house(k); sig.add(h.id + h.theme.id + h.guest.name); }
+  eq(sig.size, 9 * 6, 'six remix laps never repeat a shop + look + guest');
+  for (let k = 0; k < 80; k++) if (ST.unitOf(ST.unitStart(k)) !== k) ok(false, `unit ${k} starts where unitOf finds it`);
+  d.cafe.street = ST.unitStart(13) + 2; // the Library's bunting and planter are up
+  eq(ST.shopLook(d, 'library').ups, ['bunting', 'planter'], 'a shop shows its upgrades so far');
+  d.cafe.stars = 3;
+  const r = ST.streetBuild(d);
+  ok(r.houseDone && r.reward.coins === 120 && ST.shopLook(d, 'library').ups.includes('sign'), 'the reading lamp completes the Library upgrades');
+  // pop-up week + album
+  const w = 2900;
+  ok(!R.popClaim(d, w, { a: true, b: true }), 'two board stamps are not enough');
+  ok(R.popDaily(d, w) && !R.popDaily(d, w), "the week's first Daily clear stamps it once");
+  const c0 = d.coins;
+  const pc = R.popClaim(d, w, { a: true, b: true });
+  ok(pc && d.coins === c0 + R.POP_COINS && R.hasCard(d, R.popIndex(w)), '3 stamps: postcard + coins');
+  ok(!R.popClaim(d, w, { a: true, b: true }), 'claimed once');
+  ok(!R.catchUp(d, w + 1, w - 1, { a: true, b: false }), 'catch-up needs both boards of the past week');
+  ok(R.catchUp(d, w + 1, w - 1, { a: true, b: true }) && !R.catchUp(d, w + 1, w - 2, { a: true, b: true }), 'one catch-up postcard a week');
+  for (const i of R.pageCards(3)) d.album.cards[i] = 1;
+  ok(R.pageDone(d, 3) && R.hangPrint(d, 3, 1) && d.album.hung[1] === 3 && !R.hangPrint(d, 2, 0), 'a full page hangs its print; an open page cannot');
+  ok(R.hangPrint(d, 3, 2) && d.album.hung[2] === 3 && d.album.hung[1] === undefined, 'a print hangs in one room at a time');
+  eq(R.WEEKS.length, 24, '24 weeks of pop-up data');
+  ok(R.WEEKS.every((x) => x.ev.en && x.ev.tr && x.card.en && x.card.tr && x.bg && x.fg), 'every week has EN+TR names and postcard art');
+  // Daily record: each date once, milestones
+  const e = fresh();
+  for (let day = 100; day < 106; day++) R.drecClear(e, day);
+  eq(R.drecClear(e, 105), [], 'a date counts once');
+  const h0 = e.boosters.hint;
+  eq(R.drecClear(e, 107).map((m) => m.at), [7], 'the 7th clear (after a missed day) is the first milestone');
+  ok(e.boosters.hint === h0 + 1 && R.drecNext(e).at === 14, '7 clears: a Hint; next 14');
+  e.drec.n = 29; R.drecClear(e, 200);
+  ok(R.drecHas(e, 'frame') && !R.drecHas(e, 'pennant'), '30 clears unlock the portrait frame');
+  // jobs: two a day, the first finished pays, tomorrow names a cat
+  const j = fresh();
+  const res = ['mochi', 'biscuit', 'luna'];
+  const list = R.jobsToday(j, 500, res);
+  ok(list.length === 2 && list[0].who !== list[1].who, 'two jobs for two different cats');
+  R.jobsEvent(j, 500, res, list[0].k, list[0].need);
+  const jc = j.coins;
+  ok(R.jobsClaim(j, 500, res, 0) && j.coins === jc + 30 && j.cafe.hearts[list[0].who] === 1, 'the first finished job pays 30 coins + 1 heart');
+  R.jobsEvent(j, 500, res, list[1].k, list[1].need);
+  ok(!R.jobsClaim(j, 500, res, 1), 'only the first job pays');
+  ok(R.jobsToday(j, 501, res)[0].p === 0 && R.jobsTomorrow(500, res) === R.jobsToday(j, 501, res)[0].who, 'a new day resets the jobs; tomorrow names the cat');
+  const kinds = new Set(); for (let day = 0; day < 14; day++) R.jobsToday(j, day, res).forEach((x) => kinds.add(x.k));
+  eq([...kinds].sort(), ['carrier', 'cat', 'tidy', 'win'], 'the 14-day rotation uses the win, cat, carrier and tidy hooks');
+  // friend results: keep the latest 12, one entry per result id, mark replies to my own dares
+  const f = fresh();
+  R.noteSent(f, 'abc123');
+  ok(R.frImport(f, { i: 'r1', r: 'abc123', pg: 3, nm: 'Ana', n: 13, b: 5, k: 'l', m: 'chain', g: 3 }, 1).mine, 'a reply to my dare is mine');
+  R.frImport(f, { i: 'r1', r: 'abc123', pg: 3, nm: 'Ana', n: 13, b: 5, k: 'l', m: 'chain', g: 3 }, 2);
+  eq(f.fr.list.length, 1, 'reopening the same reply keeps one entry');
+  for (let k = 0; k < 20; k++) R.frImport(f, { i: 'x' + k, nm: 'B', n: 2, b: 5, k: 'l', m: 'seats', g: 1 }, 3 + k);
+  ok(f.fr.list.length === 12 && f.fr.list[0].id === 'x19', 'the latest 12 results, newest first');
 }
 
 // ---------------- wrong device date: stamps in the future are pulled back to today ----------------
@@ -475,12 +556,12 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
     return mod.save.data;
   };
   let d = await load({ v: 1, level: 35, coins: 120, settings: { sound: false } });
-  eq([d.v, d.level, d.coins, d.settings.sound], [8, 35, 120, false], 'MVP save keeps level, coins and settings');
+  eq([d.v, d.level, d.coins, d.settings.sound], [9, 35, 120, false], 'MVP save keeps level, coins and settings');
   eq([d.lives.n, d.purr.n, d.quests.list.length, d.login.last, Object.keys(d.show.marks).length], [5, 0, 0, 0, 0], 'MVP save gets the new systems at defaults');
   eq(d.meta.firstOpen, 0, 'an old save never counts as a fresh install (no first-5-minutes ad block)');
   ok(d.cafe.stars === 12, 'the MVP cafe head start is still applied');
   d = await load({ v: 3, level: 9, coins: 5, cafe: { stars: 1, built: { a: 1 } }, boosters: { hint: 1, scoop: 0, undo: 0 }, ads: { removeAds: true } });
-  eq([d.v, d.cafe.built.a, d.boosters.hint, d.ads.removeAds], [8, 1, 1, true], 'v3 save keeps the cafe, boosters and the ads flag');
+  eq([d.v, d.cafe.built.a, d.boosters.hint, d.ads.removeAds], [9, 1, 1, true], 'v3 save keeps the cafe, boosters and the ads flag');
   d = await load({ v: 4, lives: { n: 99, t: -5 }, purr: { n: -2, pend: 7 }, quests: { day: 'x', list: [1, { id: 'wins', p: 'a', c: 5 }], chest: 3 }, login: { last: 5, idx: 99 }, show: { week: 3, ribbons: -1, claimed: [1, 'z', 99, 2], decor: [] }, iap: { owned: 5, tx: [1, 'ok'] }, clock: { max: 'q' }, meta: { firstOpen: 'x', funnel: 3 } });
   eq([d.lives.n, d.lives.t, d.purr.n, d.purr.pend, d.quests.day, d.quests.chest], [5, 0, 0, 0, 0, 1], 'corrupt economy fields are repaired');
   eq(d.quests.list, [{ id: 'wins', p: 0, c: 1 }], 'task list is repaired');
@@ -488,11 +569,11 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   d = await load({ v: 5, level: 20, cafe: { stars: 2, built: { counter_counter: 1, counter_lamps: 1, counter_plant: 1, window_bookshelf: 1 } } });
   eq([d.cafe.built.counter_pastry, d.cafe.built.counter_chalkboard, d.cafe.built.window_plants, d.cafe.built.window_rug, d.cafe.stars], [1, 1, 1, undefined, 2], 'v5 save keeps its residents after they move to earlier tasks');
   d = await load({ v: 7, level: 30, show: { week: 2900, ch: 3, best: 2, mark: 2, markWeek: 2900, decor: { beach_day: 1 } } });
-  eq([d.v, d.show.marks['2900a'], d.show.ch, d.show.decor.beach_day, d.jar.t, d.req.list.length, d.rush.best, d.settings.notify], [8, 3, undefined, 1, 0, 0, 0, false], 'v7 save: this week Show board medal carries over, retention systems at defaults, reminders off');
+  eq([d.v, d.show.marks['2900a'], d.show.ch, d.show.decor.beach_day, d.jar.t, d.req.list.length, d.rush.best, d.settings.notify], [9, 3, undefined, 1, 0, 0, 0, false], 'v7 save: this week Show board medal carries over, retention systems at defaults, reminders off');
   d = await load({ v: 8, show: { marks: { '12a': 9, x: 1, '13b': 2 }, goals: { '12a': { kind: 'seats', n: 2 }, '12b': { kind: 'zz', n: 1 } } }, req: { list: [{ k: 'win', who: 'mochi', need: 2, p: 99, c: 77 }, 5] }, cafe: { hearts: { mochi: -3, luna: 4 }, wear: { mochi: 'tiara', luna: 'hat' } }, rush: { pend: { rank: 'x' }, cups: { gold: 2 } }, vis: { maple: 3 } });
   eq([d.show.marks, Object.keys(d.show.goals), d.req.list, d.cafe.hearts, d.cafe.wear, d.rush.pend, d.rush.cups, d.vis], [{ '13b': 2 }, ['12a'], [{ k: 'win', who: 'mochi', need: 2, p: 2, c: 0, s: 0 }], { luna: 4 }, { luna: 'hat' }, null, { gold: 2 }, { maple: 3 }], 'corrupt v8 retention fields are repaired, good ones kept');
   d = await load('{not json');
-  ok(d.v === 8 && d.meta.firstOpen > 0 && d.lives.n === 5, 'corrupt JSON gives a fresh save stamped as a new install');
+  ok(d.v === 9 && d.meta.firstOpen > 0 && d.lives.n === 5, 'corrupt JSON gives a fresh save stamped as a new install');
   d = await load(undefined);
   ok(d.meta.firstOpen > 0, 'a missing save is a new install');
 }
