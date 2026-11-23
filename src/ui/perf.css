@@ -1,0 +1,6 @@
+/* r10 perf: the GPU mode row in Settings, its toggle sized like the toggles in the grid (word never under the knob) */
+.setrow.pfgpu .toggle { width: 84px; height: 40px; padding: 0; flex: none; }
+.setrow.pfgpu .toggle i { width: 28px; height: 28px; top: 3px; }
+.setrow.pfgpu .toggle.on i { left: 44px; }
+.setrow.pfgpu .toggle b { position: absolute; top: 0; bottom: 0; left: 33px; right: 3px; display: flex; align-items: center; justify-content: center; font-size: 13px; letter-spacing: -.02em; white-space: nowrap; }
+.setrow.pfgpu .toggle.on b { left: 3px; right: 36px; }

@@ -1,0 +1,64 @@
+{
+ "label": "baseline-swraster",
+ "query": "",
+ "dpr": 3,
+ "size": "375x812",
+ "out": {
+  "x4": {
+   "hub": {
+    "frames": 19,
+    "p50": 166.6,
+    "p95": 183.4,
+    "max": 183.4,
+    "cost50": 2.4,
+    "cost95": 3.6,
+    "renderer": "canvas"
+   },
+   "L1": {
+    "frames": 12,
+    "p50": 266.6,
+    "p95": 283.4,
+    "max": 283.4,
+    "cost50": 2.6,
+    "cost95": 3.2,
+    "renderer": "canvas"
+   },
+   "L60": {
+    "frames": 8,
+    "p50": 416.7,
+    "p95": 466.6,
+    "max": 466.6,
+    "cost50": 7.2,
+    "cost95": 8,
+    "renderer": "canvas"
+   },
+   "L60run": {
+    "frames": 6,
+    "p50": 450,
+    "p95": 483.2,
+    "max": 483.2,
+    "cost50": 8,
+    "cost95": 16,
+    "renderer": "canvas"
+   },
+   "chain": {
+    "frames": 6,
+    "p50": 349.9,
+    "p95": 449.9,
+    "max": 449.9,
+    "cost50": 4.9,
+    "cost95": 9.6,
+    "renderer": "canvas"
+   },
+   "win": {
+    "frames": 7,
+    "p50": 533.3,
+    "p95": 700,
+    "max": 700,
+    "cost50": 10.8,
+    "cost95": 14.8,
+    "renderer": "canvas"
+   }
+  }
+ }
+}

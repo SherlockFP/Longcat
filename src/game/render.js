@@ -81,6 +81,9 @@ function strokeTaper(ctx, path, a, b, c) {
   ctx.lineWidth = lw;
 }
 
+// a body window's silhouette with the current stroke style and width (perf bakes: shadows, rim light)
+export function bodyShape(ctx, path, a, b, c) { strokeTaper(ctx, path, a, b, c); }
+
 // ---- shapes ----
 function heart(ctx, x, y, r) {
   ctx.beginPath();
@@ -229,7 +232,7 @@ export function drawBody(ctx, path, a, b, o) {
   ctx.globalAlpha = al;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
-  if (o.glow) {
+  if (o.glow && !o.part) {
     ctx.strokeStyle = `rgba(255,214,59,${0.35 + 0.35 * o.glow})`;
     ctx.lineWidth = w + c * (0.35 + 0.2 * o.glow);
     strokeSlice(ctx, path, a, b);
@@ -237,14 +240,18 @@ export function drawBody(ctx, path, a, b, o) {
   // soft contact shadow down-left (one warm light from the upper right)
   const felt = !!IMG['r7/tex_felt'];
   const rim = felt ? shade(pal.base, -0.32) : NAVY;
-  ctx.save();
-  ctx.translate(-c * 0.05, c * 0.07);
-  ctx.strokeStyle = felt ? 'rgba(60,30,10,0.25)' : 'rgba(20,40,70,0.22)';
-  ctx.lineWidth = w + 6;
-  strokeTaper(ctx, path, a, b, c);
-  ctx.restore();
+  // o.part (perf bakes, src/game/perf.js): 'body' = no shadow, no tail; 'still' = no shadow; 'tail' = the tail only
+  if (!o.part) {
+    ctx.save();
+    ctx.translate(-c * 0.05, c * 0.07);
+    ctx.strokeStyle = felt ? 'rgba(60,30,10,0.25)' : 'rgba(20,40,70,0.22)';
+    ctx.lineWidth = w + 6;
+    strokeTaper(ctx, path, a, b, c);
+    ctx.restore();
+  }
 
-  if (len > c * 0.3) drawTail(ctx, path, a, o, rim);
+  if (len > c * 0.3 && o.part !== 'body') drawTail(ctx, path, a, o, rim);
+  if (o.part === 'tail') { ctx.restore(); return; }
 
   // little legs (behind the body) while sprinting: they stick out past the fur and swing
   if (o.run != null && len > c * 0.6) {

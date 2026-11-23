@@ -10,6 +10,7 @@ import { railHtml as liveRail, goalsHtml } from './live.js';
 import { OUTFITS } from '../game/live.js';
 import { drecHas, cardsOwned, WEEKS } from '../game/r10.js';
 import { house as streetHouse, SHOPS } from '../game/street.js';
+import { gpuRow } from './perf.js';
 
 const root = document.getElementById('ui');
 let actions = {};
@@ -596,7 +597,7 @@ export const ui = {
 <div class="backdrop" id="modal"><div class="card cream settings">
   <h2 class="title navy">${t('settings')}</h2>
   <div class="setgrid">${tog('sound', t('sound'))}${tog('music', t('music'))}${tog('haptics', t('haptics'))}${info.notifyOk ? tog('notify', t('notifications')) : ''}</div>
-  <div class="setrow"><span>${t('language')}</span><div class="segs">${langs}</div></div>
+  <div class="setrow"><span>${t('language')}</span><div class="segs">${langs}</div></div>${gpuRow()}
   ${info.canInstall ? `<div class="setrow"><span>${t('installApp')}</span><button class="seg wide" data-act="install">${t('install')}</button></div>` : ''}
   <div class="setrow"><span>${t('removeAds')}</span>${info.removeAds ? `<b class="owned">${t('owned')}</b>` : `<button class="seg wide" data-act="shop">${t('shop')}</button>`}</div>
   <div class="setrow"><button class="link" data-act="restore">${t('restore')}</button></div>
