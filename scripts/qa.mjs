@@ -2305,6 +2305,67 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }
+  // ---- R11 ret (sol-r11-3 fix 5): past the early resident thread the map's strip is the nearest album reward (the
+  // postcard, the exact stamp / board left, a button straight to it); a completed page opens the room with Hang
+  // pre-selected; from the 3rd win of a day the win card names tomorrow. QA_SKIP_RET=1 skips it. ----
+  if (!process.env.QA_SKIP_RET) {
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    const cfgR = (lg) => `settings: { lang: '${lg}', sound: false, music: false, haptics: false }`;
+    // today's day / week numbers as the game counts them (local midnight, weeks from Monday)
+    const DAYX = '(Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000))';
+    const day = await ev(DAYX);
+    const wk = Math.floor((day + 3) / 7);
+    const ci = ((wk % 24) + 24) % 24;
+    const page = Math.floor(ci / 4);
+    const others = Array.from({ length: 4 }, (_, j) => page * 4 + j).filter((i) => i !== ci);
+    const noClip = (sel) => ev(`[...document.querySelectorAll(${JSON.stringify(sel)})].every((e) => e.scrollWidth <= e.clientWidth + 1)`);
+    for (const lg of ['en', 'tr']) {
+      // 1. a fresh event week: the card names this week's postcard and "3 stamps: clear Show board A", button = Board A
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 30, coins: 300, meta: { sessions: 6 }, cafe: { stars: 0, built: {} }, ${cfgR(lg)} }))`);
+      await boot(); await qa('home()'); await sleep(900);
+      const c1 = await ev('(() => { const b = document.querySelector("#cafe .room .rtalb .rtcard"); return b ? { act: b.dataset.act, k: b.dataset.k || "", txt: b.textContent } : null; })()');
+      if (!c1 || c1.act !== 'showplay' || c1.k !== 'a') throw new Error(`r11-ret ${lg}: the map should show the album card with Board A: ${JSON.stringify(c1)}`);
+      if (!(lg === 'en' ? /3 stamps: clear Show board A/ : /3 damga: Şov A tahtasını geç/).test(c1.txt)) throw new Error(`r11-ret ${lg}: the card should name the exact step: ${c1.txt}`);
+      if (!(await noClip('#cafe .rtcard .gt b, #cafe .rtcard .gcta'))) throw new Error(`r11-ret ${lg}: album card text clipped`);
+      if (await ev('getComputedStyle(document.querySelector("#cafe .room > .goals:not(.rtalb)") || document.body).display !== "none" && !!document.querySelector("#cafe .room > .goals:not(.rtalb)")')) throw new Error(`r11-ret ${lg}: the album card should take the strip's place, not stack on it`);
+      await shot(`r11-ret-map-${lg}`);
+      // 2. the last card of a page, all three stamps in: Claim -> the room with Hang pre-selected, the postcard over it
+      const cards = Object.fromEntries(others.map((i) => [i, 1]));
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 30, coins: 300, meta: { sessions: 6 }, cafe: { stars: 0, built: {} }, show: { week: ${wk}, decor: {}, marks: { "${wk}a": 1, "${wk}b": 1 }, goals: {}, from: ${wk - 2} }, pop: { daily: { "${wk}": 1 }, paid: {}, cu: -1 }, album: { cards: ${JSON.stringify(cards)}, hung: {} }, ${cfgR(lg)} }))`);
+      await boot(); await qa('home()'); await sleep(900);
+      const c2 = await ev('document.querySelector("#cafe .rtalb .rtcard")?.dataset.act || ""');
+      if (c2 !== 'popclaim') throw new Error(`r11-ret ${lg}: three stamps: the card should claim (${c2})`);
+      if (!(lg === 'en' ? /Completes the .+ print!/ : /tablosunu tamamlar!/).test(await ev('document.querySelector("#cafe .rtalb .rtcard").textContent'))) throw new Error(`r11-ret ${lg}: the last card of a page should say it completes the print`);
+      await shot(`r11-ret-claim-${lg}`);
+      await ev('document.querySelector("#cafe .rtalb .rtcard").click()');
+      await waitFor('!!document.getElementById("pcard")', 8000); await sleep(700);
+      if (!(await ev('!!document.querySelector("#cafe.vroom .nbcard .rthang .rtsel") && !document.querySelector("#cafe .hubmap")'))) throw new Error(`r11-ret ${lg}: a completed page should open the room with the hang card`);
+      await shot(`r11-ret-pagedone-${lg}`);
+      await ev('document.querySelector("#pcard [data-act=pcclose]").click()'); await sleep(500);
+      if (!(await ev('document.activeElement && document.activeElement.classList.contains("rtsel")'))) throw new Error(`r11-ret ${lg}: Hang should be pre-selected`);
+      if (!(await noClip('#cafe .nbcard .rthang .tname b'))) throw new Error(`r11-ret ${lg}: hang card text clipped`);
+      await shot(`r11-ret-hang-${lg}`);
+      await ev('document.querySelector("#cafe .nbcard .rtsel").click()'); await sleep(700);
+      const hung = await ev('Object.values(JSON.parse(localStorage.getItem("lco_save")).album.hung)');
+      if (!hung.includes(page)) throw new Error(`r11-ret ${lg}: Hang should hang page ${page}: ${JSON.stringify(hung)}`);
+      if (await ev('!!document.querySelector("#cafe .nbcard .rthang")')) throw new Error(`r11-ret ${lg}: the hang card should leave once the print is up`);
+      // 3. the 3rd win of the day: the win card names tomorrow
+      await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 30, coins: 300, meta: { sessions: 6 }, cafe: { stars: 0, built: {} }, ret: { wd: ${await ev(DAYX)}, wn: 2, hang: -1 }, ${cfgR(lg)} }))`);
+      await boot(); await qa('level(30)'); await sleep(600); await qa('winNow()');
+      await waitFor('window.__qa.state().screen === "win"', 30000); await waitFor('!!document.querySelector("#modal .card.win")', 15000); await sleep(1000);
+      const tm = await ev('document.querySelector("#modal .card.win .rttm")?.textContent || ""');
+      if (!(lg === 'en' ? /3 wins today! Tomorrow:/ : /Bugün 3 galibiyet! Yarın:/).test(tm)) throw new Error(`r11-ret ${lg}: the 3rd win should name tomorrow: ${tm}`);
+      await shot(`r11-ret-win-${lg}`);
+    }
+    // the wide screen: the same album card in the left panel
+    await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 30, coins: 300, meta: { sessions: 6 }, cafe: { stars: 0, built: {} }, ${cfgR('en')} }))`);
+    await boot(); await qa('home()'); await sleep(1200);
+    if (!(await ev('!!document.querySelector("#hubL .rtside .rtcard")'))) throw new Error('r11-ret: the wide left panel should carry the album card');
+    await shot('r11-ret-wide');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save")');
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

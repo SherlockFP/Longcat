@@ -46,6 +46,9 @@ import { shopActions } from './ui/shop.js';
 import './i18n-hub.js';
 import * as hub from './ui/hub.js';
 import './i18n-r11.js';
+import './i18n-r11-ret.js';
+import * as rret from './ui/r11-ret.js'; // R11 retention lane: album card, hang card, tomorrow on the win card
+import * as rtg from './game/r11-ret.js';
 import './ui/r11.css'; // R11 fix round 1: plaque pack line, on-demand clip, featured goal, one Play
 import './ui/r11b.css'; // R11 fix round 2: win card rows, thread bar, video progress
 
@@ -303,6 +306,18 @@ function hangRoom(p) {
   const cur = held.find((k) => d.album.hung[k] === p);
   if (cur != null) return cur;
   return done.find((i) => !held.includes(i)) ?? 0;
+}
+// R11 ret: a page just completed: its print waits with Hang pre-selected, and the player goes straight to that room
+function retPageDone(p) {
+  rtg.setHang(save.data, p);
+  save.commit();
+  if (S.mode !== 'cafe') return; // the hub shows the hang card next time
+  ui.hideSheet();
+  S.area = hangRoom(p);
+  hub.roomMode();
+  ui.setCafeView('room');
+  ui.cafe(cafeInfo());
+  track('ret_page_done', { p });
 }
 function pageInfo(p) {
   const d = save.data;
@@ -795,6 +810,8 @@ function onWin(stars) {
   // R11 fix 2: the replay card keeps only the order bonus in words (the rest of the breakdown is the coin chip's title)
   const payHi = parts.filter((p) => p.k === 'payUrgent' || p.k === 'payVip').map((p) => `${t(p.k, { n: p.v })} +${p.n}`).join(' · ');
   ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, payHi, peek: peekColor(), cafeStars, canBuild, cafeNext, purr: chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, drec: drecNew ? drecInfo(drecNew) : null, ach, adopt: S.quickAdopt || '', ...shareOn() });
+  rret.winCard(rtg.winDay(d, dayNum()), rtg.tomorrow(d, { day: dayNum(), res: resOwned(), dailyDone: d.daily.doneDay === todayKey(), streak: streak() })); // R11 ret
+  save.commit();
   for (let i = 0; i < stars; i++) setTimeout(() => audio.star(i), 300 + i * 300);
   cui.onWin(S.n, first); // a pack's last level: its reward and host
   clipPreview();
@@ -1353,6 +1370,7 @@ const actions = {
     track('pop_claim', { w, card: r.card });
     syncCoins();
     lui.eventsSheet(eventsInfo());
+    if (r.page >= 0) retPageDone(r.page);
     rui.postcard({ card: cardInfo(r.card), coins: r.coins, page: r.page >= 0 ? pageInfo(r.page) : null });
   },
   catchup({ w }) {
@@ -1363,6 +1381,7 @@ const actions = {
     audio.star(1);
     track('pop_catchup', { w: +w, card: r.card });
     lui.eventsSheet(eventsInfo());
+    if (r.page >= 0) retPageDone(r.page);
     rui.postcard({ card: cardInfo(r.card), coins: 0, page: r.page >= 0 ? pageInfo(r.page) : null });
   },
   pcclose() { rui.closePostcard(); },
@@ -1388,6 +1407,21 @@ const actions = {
     ui.cafe(cafeInfo('print'));
     ui.toast(t('printHung', { room: cafe.loc(cafe.AREAS[room].name) }));
   },
+  // R11 ret: the room's hang card (Hang pre-selected), the map's album card leading there, and Later
+  rthang({ p, room }) {
+    const d = save.data;
+    const a = cafe.areaDone(+room) ? +room : hangRoom(+p);
+    if (!r10.hangPrint(d, +p, a)) return;
+    rtg.clearHang(d);
+    save.commit();
+    audio.clear();
+    track('print_hang', { p: +p, room: a, from: 'ret' });
+    S.area = a;
+    ui.cafe(cafeInfo('print'));
+    ui.toast(t('printHung', { room: cafe.loc(cafe.AREAS[a].name) }));
+  },
+  rthangroom({ p }) { ui.hideSheet(); S.area = hangRoom(+p); hub.roomMode(); ui.setCafeView('room'); ui.cafe(cafeInfo()); track('ret_hang_go', { p: +p }); },
+  rtlater() { rtg.clearHang(save.data); save.commit(); ui.cafe(cafeInfo()); },
   jobclaim({ s }) {
     const d = save.data;
     const r = r10.jobsClaim(d, dayNum(), resOwned(), +s);

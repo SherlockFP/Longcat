@@ -12,6 +12,7 @@ import { taskDone } from '../game/econ.js';
 import { cardsOwned, WEEKS } from '../game/r10.js';
 import { CHAPTER_LEN, CHAPTERS, PROPS } from '../../data/hub.js';
 import { goalsHtml, featGoalHtml, featGoal } from './live.js';
+import { retMap, retRoom, retPanel } from './r11-ret.js'; // R11 retention lane: the album card, the hang card
 
 const root = document.getElementById('ui');
 const r7 = (name, cls = '') => `<img class="${cls}" src="${assetUrl('r7/' + name + '.webp')}" alt="" draggable="false">`;
@@ -32,6 +33,7 @@ export const chapterName = (c) => loc(CHAPTERS[(c - 1) % CHAPTERS.length]);
 
 // ---- entry points ----
 export function home() { mapOn = true; mapScroll = null; }
+export function roomMode() { mapOn = false; } // R11 ret: a completed album page sends the player to a room
 export const mapShown = () => mapOn && !!document.querySelector('#cafe.on .hubmap');
 
 export function hubAfter(screen, info) {
@@ -39,6 +41,7 @@ export function hubAfter(screen, info) {
   if (screen === 'cafe') {
     tabs(info);
     if (mapOn) showMap(info); else { hideMap(); layoutResidents(); }
+    retRoom(info, mapOn);
   }
   panels();
 }
@@ -165,6 +168,7 @@ function showMap(info) {
   if (!m) { room.insertAdjacentHTML('beforeend', '<div class="hubmap"></div>'); m = room.querySelector('.hubmap'); }
   const W = room.clientWidth || 360;
   m.innerHTML = mapHtml(cur, W);
+  retMap(true, info);
   m.dataset.w = W;
   const sc = m.querySelector('.hmscroll');
   const G = geometry(cur, W);
@@ -202,6 +206,7 @@ function showMap(info) {
 function hideMap() {
   const m = document.querySelector('#cafe .hubmap');
   if (m) m.remove();
+  retMap(false);
   const c = document.getElementById('cafe');
   if (c) c.classList.remove('hm-on');
   const bar = document.querySelector('#cafe .tabbar');
@@ -431,6 +436,7 @@ ${Lv && Lv.goals && Lv.goals.length ? `<h4>${t('hsGoals')}</h4><div class="hsgoa
 <h4>${t('hsAlbum')}</h4>
 <button class="hsrow" data-act="album">${r7('album_book', 'hsi')}<span><b>${t('hsAlbumSub', { a: cards, b: WEEKS.length })}</b><i class="hsbar"><i style="width:${Math.round((cards / Math.max(1, WEEKS.length)) * 100)}%"></i></i></span></button>
 </div>`;
+  retPanel(L, Lv);
   const off = !live();
   L.classList.toggle('off', off);
   Rr.classList.toggle('off', off);

@@ -986,6 +986,8 @@ ${info.ad === false ? '' : `<button class="btn green sm" data-act="adlife">${adS
     }
   },
 
+  setCafeView(v) { cafeView = v; }, // R11 ret: a completed album page opens the room view
+
   hideSheet() {
     const m = document.getElementById('sheet');
     if (m) m.remove();
