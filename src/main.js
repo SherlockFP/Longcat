@@ -30,6 +30,9 @@ import * as rui from './ui/r10.js';
 import { notify } from './kit/notify.js';
 import './i18n-live.js';
 import './i18n-r10.js';
+import './i18n-orders.js';
+import * as ord from './game/orders.js';
+import * as ordUi from './ui/orders.js';
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -572,6 +575,7 @@ function startLevel(n, daily = false, show = false) {
   S.bench0 = board.meta.benchSize; // the seats this attempt started with (a friend challenge link carries them)
   ui.none();
   ui.play({ ...hudInfo(), level: n, daily, show: show ? (show.kind === 'friend' ? t('dareTitle') : show.kind === 'rush' ? t('rush') : t('showBoardN', { k: show.k.toUpperCase() })) : false, rush: !!show && (show.kind === 'rush' || (show.kind === 'friend' && show.m === 'time')), tut });
+  ordUi.startOrder(n, board, special); // adoption order: intro card + the keeper strip (normal levels only)
   track('level_start', { n, daily });
   if (!special && n === 4) funnel('l4_start');
   if (!special && n === 10) funnel('l10_reach');
@@ -670,6 +674,7 @@ function onWin(stars) {
     if (S.daily) parts.push({ k: 'payStreak', n: live.streakChest(streak(+dayKey) + 1).coins }); // the streak chest (its boosters below)
     const perk = 5 * cafe.perkLevel('coins') + cafe.love();
     if (perk) parts.push({ k: 'payCafe', n: perk });
+    if (first) parts.push(...ord.payParts(S.n, game.board.meta.kind)); // Urgent / VIP order bonus
   }
   const reward = parts.reduce((t, p) => t + p.n, 0);
   let cafeStars = 0;
@@ -1686,6 +1691,7 @@ async function boot() {
   };
   game.on.combo = (text) => { if (S.mode === 'play') ui.combo(text); };
   game.on.demoReset = () => game.load(generate(1), { demo: true, top: 146, bottom: 246 });
+  ordUi.initOrders(game, { cur: () => S }); // adoption orders: wraps the hooks above (strip, ceremony, album tab)
   ui.init(actions);
   initPwa();
   pwa.onChange(() => { if (ui.screen === 'settings') ui.settings(settingsInfo()); });

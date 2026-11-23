@@ -1,0 +1,114 @@
+/* Adoption orders (src/ui/orders.js): the strip at the belt's left end, the intro card, the delivery ceremony, the
+   album's Adopted cats tab and the doorstep cats on Cat Street. Fits 375x667 without scrolling. */
+
+/* ---- strip: the keeper in a shop door at the left end of the belt ---- */
+.ordstrip { position: fixed; z-index: 1; pointer-events: none; display: flex; flex-direction: column; align-items: center; gap: 2px; --ps: 44px; }
+.ordstrip[hidden] { display: none; }
+.ordstrip .osdoor { position: relative; width: var(--ps); height: calc(var(--ps) * 1.1); border-radius: 999px 999px 9px 9px; border: 3px solid #8e5530; background: #fde9c8; box-shadow: -2px 3px 0 rgba(60,30,10,.28); }
+.ordstrip .osface { position: absolute; inset: 0; border-radius: inherit; background-repeat: no-repeat; background-size: 150% auto; background-position: 50% 4%; }
+.ordstrip .osawn { position: absolute; left: -4px; right: -4px; bottom: -5px; height: 8px; z-index: 2; border-radius: 3px; background: repeating-linear-gradient(90deg, #bd582f 0 7px, #fff6e5 7px 14px); box-shadow: 0 2px 0 rgba(60,30,10,.25); }
+.ordstrip.k-urgent .osdoor { border-color: #e5383b; }
+.ordstrip.k-vip .osdoor { border-color: #e7b416; box-shadow: 0 0 0 2px #fff3b0, -2px 3px 0 rgba(60,30,10,.28); }
+.ordstrip .oscount { display: flex; align-items: center; gap: 1px; margin-top: 3px; padding: 0 5px 0 1px; border-radius: 999px; background: #fff6e5; border: 2px solid var(--navy, #1d2b53); font: 700 12px var(--font, sans-serif); color: var(--navy, #1d2b53); white-space: nowrap; }
+.ordstrip .oscount .osc { width: 17px; height: 17px; }
+.ordstrip .osmood { position: absolute; right: -8px; top: -6px; z-index: 3; width: 21px; height: 21px; border-radius: 50%; background: #fff; border: 2px solid var(--navy, #1d2b53); display: none; place-items: center; }
+.ordstrip .osmood svg { width: 13px; height: 13px; display: none; }
+.ordstrip .mh { fill: #ff5c8a; }
+.ordstrip .md { fill: #3ea2ff; }
+.ordstrip[data-mood=happy] .osmood, .ordstrip[data-mood=worried] .osmood { display: grid; animation: osmood .35s cubic-bezier(.2,1.6,.4,1); }
+.ordstrip[data-mood=happy] .mh, .ordstrip[data-mood=worried] .md { display: block; }
+.ordstrip[data-mood=happy] .osdoor { animation: oshappy .9s ease-in-out infinite; }
+.ordstrip[data-mood=worried] .osdoor { animation: osworry .5s ease-in-out infinite; }
+.ordstrip.bump .osdoor { animation: osbump .42s cubic-bezier(.2,1.6,.4,1); }
+.ostag { position: absolute; left: 50%; bottom: 24px; z-index: 4; display: flex; align-items: center; gap: 1px; padding: 0 5px 0 0; border-radius: 999px; border: 2px solid #fff; background: #e5383b; color: #fff; font: 700 9.5px var(--font, sans-serif); font-style: normal; letter-spacing: .02em; transform: translateX(-50%) rotate(-6deg); white-space: nowrap; box-shadow: 0 2px 0 rgba(0,0,0,.2); }
+.ostag img { width: 17px; height: 17px; margin: -3px 0 -3px -3px; }
+.ostag.vip { background: linear-gradient(#ffe270, #e7b416); color: #5a3b00; }
+.ordstrip .osplus { position: absolute; left: 55%; top: 20%; z-index: 5; font: 700 16px var(--font, sans-serif); font-style: normal; color: #fff; text-shadow: 0 2px 0 var(--navy, #1d2b53), 0 0 3px var(--navy, #1d2b53); animation: osplus .9s ease-out both; }
+@keyframes osbump { 0% { transform: scale(1); } 40% { transform: scale(1.18, .9); } 100% { transform: scale(1); } }
+@keyframes oshappy { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
+@keyframes osworry { 0%, 100% { transform: rotate(0); } 25% { transform: rotate(-4deg); } 75% { transform: rotate(4deg); } }
+@keyframes osmood { from { transform: scale(0); } to { transform: scale(1); } }
+@keyframes osplus { from { transform: translateY(6px); opacity: 0; } 20% { opacity: 1; } to { transform: translateY(-26px); opacity: 0; } }
+
+/* ---- intro card: who ordered, how many cats, why (never blocks a tap) ---- */
+.ordintro { position: fixed; left: 50%; z-index: 1; pointer-events: none; transform: translate(-50%, 0); width: min(340px, calc(100% - 24px)); box-sizing: border-box; display: flex; align-items: center; gap: 10px; padding: 8px 12px 8px 8px; background: #fff6e5; border: 3px solid #8e5530; border-radius: 18px; box-shadow: 0 6px 0 rgba(60,30,10,.25); animation: oiin .35s cubic-bezier(.2,1.4,.4,1) both; }
+.ordintro .oiface { flex: none; width: 62px; height: 62px; border-radius: 50%; border: 3px solid #8e5530; background: #fde9c8 no-repeat 50% 4% / 150% auto; }
+.ordintro .oitext { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 0; text-align: left; }
+.ordintro .oitext b { font: 700 16px/1.15 var(--font, sans-serif); color: var(--navy, #1d2b53); }
+.ordintro .oitext small { font: 700 12.5px/1.2 var(--font, sans-serif); color: #8e5530; }
+.ordintro .ostag { position: static; transform: none; margin: 0 0 1px; font-size: 11px; }
+.ordintro.fly { animation: oifly .45s ease-in forwards; }
+.ordintro.fade { transition: opacity .25s; opacity: 0; }
+@keyframes oiin { from { transform: translate(-50%, -14px) scale(.85); opacity: 0; } to { transform: translate(-50%, 0) scale(1); opacity: 1; } }
+@keyframes oifly { to { transform: translate(calc(-50% + var(--dx, 0px)), var(--dy, 0px)) scale(.15); opacity: 0; } }
+
+/* ---- the delivery ceremony (before the win card; tap skips) ---- */
+.ordcer { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: rgba(40,22,8,.55); pointer-events: auto; animation: ocfade .2s ease-out; }
+.ordcer.out { opacity: 0; transition: opacity .2s; }
+.occard { width: min(340px, calc(100% - 24px)); box-sizing: border-box; display: flex; flex-direction: column; gap: 8px; padding: 10px 12px; background: #fff6e5; border: 4px solid #8e5530; border-radius: 24px; box-shadow: 0 8px 0 rgba(0,0,0,.25); animation: ocpop .35s cubic-bezier(.2,1.4,.4,1); }
+.occard.k-urgent { border-color: #e5383b; }
+.occard.k-vip { border-color: #e7b416; background: linear-gradient(#fffbe6, #fff1c4); }
+.ochead { display: flex; align-items: center; justify-content: center; gap: 6px; }
+.ochead b { font: 700 21px var(--font, sans-serif); color: var(--navy, #1d2b53); }
+.ochead .ostag { position: static; transform: none; font-size: 11px; }
+.ocscene { position: relative; height: 196px; border-radius: 16px; overflow: hidden; background: linear-gradient(#cfe6df 0, #e8f1e6 70%, #d9b48a 70%, #c99d6f 100%); }
+.ocscene .ocshop { position: absolute; left: 44%; bottom: 8px; height: 180px; width: auto; transform: translateX(-50%); filter: drop-shadow(-4px 5px 4px rgba(40,20,5,.3)); }
+.ocscene .ocdoor { position: absolute; left: 50%; bottom: 10px; width: 0; height: 0; z-index: 2; }
+.ocscene .occat { position: absolute; left: -19px; bottom: 0; width: 38px; height: auto; animation: ochop .95s calc(var(--i) * .22s + .25s) both ease-in-out; }
+.ocscene .ocsteps { position: absolute; left: 6px; bottom: 4px; z-index: 1; display: flex; }
+.ocscene .ocstep { width: 26px; height: auto; margin-right: -4px; }
+.ocscene .ockeeper { position: absolute; right: -8px; bottom: 0; z-index: 3; width: 104px; height: auto; filter: drop-shadow(-3px 4px 3px rgba(40,20,5,.3)); }
+.ocscene .ocbub { position: absolute; right: 6px; top: 8px; z-index: 4; max-width: 46%; padding: 4px 8px; border-radius: 14px; border: 2px solid var(--navy, #1d2b53); background: #fff; font: 700 12.5px/1.15 var(--font, sans-serif); font-style: normal; color: var(--navy, #1d2b53); text-align: left; animation: ocpop .35s .45s cubic-bezier(.2,1.6,.4,1) both; }
+.ocad { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 14px; background: #fff; text-align: left; }
+.ocad .ocnew { flex: none; width: 46px; height: 46px; animation: ocpop .4s 1s cubic-bezier(.2,1.6,.4,1) both; }
+.ocadt { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.ocadt b { font: 700 14px/1.15 var(--font, sans-serif); color: var(--navy, #1d2b53); }
+.ocadt small { font: 700 12px/1.15 var(--font, sans-serif); color: #8e5530; }
+.ocsegs { display: flex; gap: 3px; margin-top: 2px; }
+.ocsegs i { flex: 1; height: 7px; border-radius: 4px; background: #ead7bb; }
+.ocsegs i.on { background: #43b047; }
+.ocrew { display: flex; align-items: center; justify-content: center; gap: 6px; padding: 3px 10px; border-radius: 14px; border: 2.5px solid #b37a00; background: linear-gradient(#ffe88a, #ffc93c); font: 700 14px var(--font, sans-serif); color: #5a3b00; animation: ocpop .4s 1.2s cubic-bezier(.2,1.6,.4,1) both; }
+.ocrew .ocb { width: 34px; height: 34px; }
+.oci { width: 16px; height: 16px; vertical-align: -3px; margin-right: 1px; }
+.octap { font: 700 12px var(--font, sans-serif); color: #8e5530; opacity: .8; text-align: center; }
+.ordcer.calm .occat { animation: none; transform: translateX(calc(var(--i) * -30px - 34px)); }
+@keyframes ochop { 0% { transform: translate(-150px, 0); opacity: 0; } 12% { opacity: 1; } 35% { transform: translate(-100px, -26px); } 55% { transform: translate(-56px, 0); } 75% { transform: translate(-22px, -16px); opacity: 1; } 100% { transform: translate(0, -8px) scale(.3); opacity: 0; } }
+@keyframes ocpop { from { transform: scale(.6); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes ocfade { from { opacity: 0; } }
+
+/* ---- album: Postcards | Adopted cats tabs, one Adopted page per shop ---- */
+.ordtabs { display: flex; gap: 6px; }
+.ordtabs .otab { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; gap: 4px; height: 34px; padding: 0 6px; border-radius: 999px; border: 2.5px solid #c9a57a; background: #f3e3c6; font: 700 13.5px var(--font, sans-serif); color: #8e5530; cursor: pointer; white-space: nowrap; }
+.ordtabs .otab.on { background: #fff; border-color: var(--navy, #1d2b53); color: var(--navy, #1d2b53); cursor: default; }
+.ordtabs .otab b { overflow: hidden; text-overflow: ellipsis; }
+.ordtabs .oti { flex: none; width: 24px; height: 24px; }
+.adscene { position: relative; height: 96px; display: flex; align-items: flex-end; gap: 6px; padding: 0 4px 0 6px; border-radius: 14px; overflow: hidden; background: linear-gradient(#cfe6df 0, #e8f1e6 72%, #d9b48a 72%); }
+.adscene .adshop { flex: none; height: 90px; width: auto; margin-bottom: 2px; }
+.adscene .adsteps { position: absolute; left: 4px; bottom: 1px; display: flex; }
+.adscene .adstep { width: 22px; height: auto; margin-right: -3px; }
+.adscene .adtalk { flex: 1; min-width: 0; align-self: center; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left; }
+.adscene .adtalk small { font: 700 12px/1.2 var(--font, sans-serif); color: var(--navy, #1d2b53); }
+.adscene .adnow { padding: 1px 7px; border-radius: 999px; background: #43b047; color: #fff; font: 700 11px var(--font, sans-serif); font-style: normal; }
+.adscene .adkeeper { flex: none; height: 86px; width: auto; }
+.adgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.adcat { display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 4px 2px 5px; border-radius: 12px; border: 2px solid #ead7bb; background: #fff; min-width: 0; }
+.adcat img { width: 42px; height: 42px; }
+.adcat b { font: 700 13px var(--font, sans-serif); color: var(--navy, #1d2b53); max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.adcat small { font: 700 10.5px/1.1 var(--font, sans-serif); color: #8e5530; }
+.adcat.empty { border-style: dashed; border-color: #c9a57a; background: transparent; }
+.adcat.empty img.sil { filter: brightness(.25) opacity(.3); }
+.adcat.rew { background: #fff4cf; border-color: #e7b416; }
+.adcat.rew.done { background: #e3f6d8; border-color: #43b047; }
+.adcat.rew b { white-space: normal; font-size: 12px; }
+.adcat .oci { width: 13px; height: 13px; vertical-align: -2px; }
+.adfoot { font: 700 12px/1.3 var(--font, sans-serif); color: #8e5530; }
+
+/* ---- Cat Street: doorstep cats of a shop that took orders ---- */
+.sh .ordstep { position: absolute; left: 36%; bottom: 22px; z-index: 4; display: flex; align-items: flex-end; pointer-events: none; }
+.sh .ordstep img { width: 22px; height: auto; margin-right: -4px; filter: drop-shadow(-1px 2px 1px rgba(40,20,5,.35)); }
+.sh .ordstep b { margin-left: 5px; padding: 0 4px; border-radius: 999px; border: 1.5px solid var(--navy, #1d2b53); background: rgba(255,255,255,.92); font: 700 10px var(--font, sans-serif); color: var(--navy, #1d2b53); }
+
+@media (prefers-reduced-motion: reduce) {
+  .ordstrip .osdoor, .ordstrip .osmood, .ordstrip .osplus, .ordintro, .ordintro.fly, .ordcer, .occard, .ocscene .ocbub, .ocad .ocnew, .ocrew { animation: none !important; }
+  .ocscene .occat { animation: none !important; transform: translateX(calc(var(--i) * -30px - 34px)); }
+}

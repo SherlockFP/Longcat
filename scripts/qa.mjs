@@ -1713,6 +1713,72 @@ try {
     await shot('30h-667-fail-more');
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
   }
+  // ---- R10 adoption orders: intro card + keeper strip, the count ticking as carriers reach the shop, the worried keeper,
+  // the delivery ceremony before the win card, the Urgent bonus line, the album's Adopted cats tab (EN + TR), doorstep
+  // cats on Cat Street, the 1600x900 column. L15 is the first hard level (an Urgent order from the Library). ----
+  if (!process.env.QA_SKIP_ORDERS) {
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    await qa('lang("en")');
+    await ev('localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 15, coins: 500, meta: { sessions: 3 }, cafe: { stars: 4, built: { counter_counter: 1 } } }))');
+    await boot();
+    await qa('level(15)'); await sleep(700);
+    const oIntro = await ev('document.querySelector(".ordintro")?.textContent || ""');
+    if (!/Librarian Page's library needs \d+ cats!/.test(oIntro) || !/URGENT/.test(oIntro)) throw new Error('orders intro: ' + oIntro);
+    if (!(await ev('!!document.querySelector("#ordstrip:not([hidden]) .osface")'))) throw new Error('orders: the keeper strip is missing');
+    await shot('r10-orders-intro');
+    await sleep(2700);
+    if (await ev('!!document.querySelector(".ordintro")')) throw new Error('orders: the intro card should fly into the strip');
+    const oCount = 'document.querySelector("#ordstrip .oscount span")?.textContent || ""';
+    for (let i = 0; i < 40 && !/^[1-9]/.test(await ev(oCount)); i++) { await qa('solveStep()'); await sleep(450); }
+    if (!/^[1-9]\d*\/\d+$/.test(await ev(oCount))) throw new Error('orders: the strip count should tick when a carrier reaches the shop: ' + (await ev(oCount)));
+    await shot('r10-orders-strip');
+    // one seat from a full bench: the keeper worries
+    await qa('level(16)'); await sleep(700);
+    const oSeats = (await qa('state()')).bench[1];
+    await qa(`benchTo(${oSeats - 1})`);
+    await waitFor('document.querySelector("#ordstrip")?.dataset.mood === "worried"', 12000).catch(() => console.log('  note: orders worried mood not reached'));
+    await shot('r10-orders-worried');
+    // the first clear: cats hop into the Library, Page says thanks, one named cat joins the Library set; tap skips
+    await qa('level(15)'); await sleep(600); await qa('winNow()');
+    await waitFor('!!document.querySelector("#ordcer")', 30000); await sleep(1500);
+    const oCer = await ev('document.querySelector("#ordcer").textContent');
+    if (!/now lives at the Library/.test(oCer) || !/Just in time!/.test(oCer) || !/Set 1 · 1\/5/.test(oCer)) throw new Error('orders ceremony: ' + oCer);
+    await shot('r10-orders-ceremony');
+    await tap(187, 600);
+    await waitFor('window.__qa.state().screen === "win"', 5000); await sleep(1000);
+    if (!/Urgent order \+15/.test(await ev('document.querySelector("#modal")?.textContent || ""'))) throw new Error('orders: the win card should list the Urgent order bonus');
+    if ((await ev('JSON.parse(localStorage.getItem("lco_save")).orders.shops.library.named')) !== 1) throw new Error('orders: the adopted cat should be saved');
+    await shot('r10-orders-win');
+    // the album: Postcards | Adopted cats
+    await qa('home()'); await sleep(700);
+    await qa('act("album", {})'); await sleep(700);
+    if (!(await ev('!!document.querySelector("#sheet .album .ordtabs [data-ord=adopt]")'))) throw new Error('orders: the album should have the Adopted cats tab');
+    await ev('document.querySelector("#sheet [data-ord=adopt]").click()'); await sleep(700);
+    const oAlb = await ev('document.querySelector("#sheet .adopt")?.textContent || ""');
+    if (!/Library/.test(oAlb) || !/Set 1 · 1\/5/.test(oAlb)) throw new Error('orders album: ' + oAlb);
+    await shot('r10-orders-album');
+    await qa('lang("tr")'); await qa('home()'); await sleep(500);
+    await qa('act("album", {})'); await sleep(500);
+    await ev('document.querySelector("#sheet [data-ord=adopt]").click()'); await sleep(700);
+    if (!/Sahiplenilenler/.test(await ev('document.querySelector("#sheet .adopt")?.textContent || ""'))) throw new Error('orders: TR album tab');
+    await shot('r10-orders-album-tr');
+    await qa('level(17)'); await sleep(700);
+    const oTr = await ev('document.querySelector(".ordintro")?.textContent || ""');
+    if (!/Kütüphaneci Page'in kütüphanesine \d+ kedi lazım!/.test(oTr)) throw new Error('orders TR intro: ' + oTr);
+    await shot('r10-orders-intro-tr');
+    await qa('lang("en")');
+    // Cat Street: a shop that took orders gets cats on its doorstep
+    const oBuilt = ['counter_counter', 'counter_pastry', 'counter_lamps', 'counter_chalkboard', 'counter_tables', 'counter_plant', 'window_seat', 'window_plants', 'window_bookshelf', 'window_cattree', 'window_rug', 'window_lights', 'cushion_rug', 'cushion_lamp', 'cushion_shelf', 'cushion_hammock', 'cushion_bench', 'cushion_pile', 'patio_planters', 'patio_pergola', 'patio_fountain', 'patio_lights', 'patio_lounger', 'patio_tables', 'roof_canopy', 'roof_telescope', 'roof_lemon', 'roof_tower', 'roof_beanbags', 'roof_grill'];
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 30, coins: 400, meta: { sessions: 4 }, cafe: { stars: 2, street: 16, built: ${JSON.stringify(Object.fromEntries(oBuilt.map((k) => [k, 1])))} }, orders: { last: 29, shops: { library: { cats: 120, named: 10, sets: 2, cur: [], done: [[16, 3, 1], [17, 8, 2], [18, 12, 4], [19, 20, 5], [20, 30, 6]] } } } }))`);
+    await boot(); await qa('home()'); await sleep(900);
+    if (!(await ev('!!document.querySelector(".street .ordstep")'))) console.log('  note: orders: no doorstep cats on the street view');
+    await shot('r10-orders-street');
+    // wide screens: the strip follows the centred phone column
+    await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+    await qa('level(31)'); await sleep(900);
+    await shot('r10-orders-desktop');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 
