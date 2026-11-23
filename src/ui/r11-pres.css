@@ -1,0 +1,21 @@
+/* R11 pres lane (sol-r11-3 fix 1): one Play per hub screen, the resident line never clipped, one card language */
+:root { --pr-r-card: 24px; --pr-r-row: 16px; --pr-sh-row: 0 3px 0 rgba(90, 52, 24, .5); --pr-sh-btn: 0 4px 0 var(--oak-d, #8e5530); }
+
+/* the hub's featured goal: when its route would only say PLAY, the big PLAY next to it already does (the strip still
+   starts the level on a tap); Build, Claim and the Daily keep their button */
+#cafe .goal.feat[data-act="play"] .gcta, .hubside .goal.feat[data-act="play"] .gcta { display: none; }
+
+/* the build card names the next resident's exact work: it wraps to a second line instead of losing its end */
+.nbcard .tname small.thread { white-space: normal; overflow: visible; text-overflow: clip; font-size: 11.5px; line-height: 1.12; }
+.nbcard .tname:has(small.thread) b { font-size: 17px; }
+
+/* ---- one card language: big cards 24px, rows and strips 16px with the same oak drop ---- */
+.nbcard { border-radius: var(--pr-r-card); }
+.goals.feat .goal.feat { border-radius: var(--pr-r-row); border-width: 2.5px; box-shadow: var(--pr-sh-row); }
+.card.win .cafebar, .card.win .mainrew .ordwin { border-radius: var(--pr-r-row); }
+/* shop header: the balance pill and the close button share one height, centre line and oak drop */
+.s4bal { top: 10px; height: 40px; box-shadow: var(--pr-sh-row); }
+.phead .round.x { box-shadow: var(--pr-sh-btn); }
+/* wide screens: both side panels start at the same height instead of each centring on its own length */
+html.hubwide .hubside { top: max(20px, calc(50% - 270px)); transform: none; }
+html.hubwide .hscard { max-height: calc(100vh - max(20px, calc(50vh - 270px)) - 20px); }

@@ -47,6 +47,7 @@ import './i18n-hub.js';
 import * as hub from './ui/hub.js';
 import './i18n-r11.js';
 import './ui/r11.css'; // R11 fix round 1: plaque pack line, on-demand clip, featured goal, one Play
+import './ui/r11-pres.css'; // R11 pres: one Play per hub screen, the resident line in full, shared card spacing
 import './ui/r11b.css'; // R11 fix round 2: win card rows, thread bar, video progress
 
 const HINT_COST = 60;
