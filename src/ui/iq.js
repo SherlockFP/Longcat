@@ -14,6 +14,7 @@ import { levelKind } from '../core/generate.js';
 import { isWon } from '../core/rules.js';
 import { dayOf, weekOf } from '../game/econ.js';
 import * as iq from '../game/iq.js';
+import { layoutResidents, mapShown } from './hub.js';
 import './iq.css';
 
 const r7 = (name, cls = '') => `<img class="${cls}" src="${assetUrl('r7/' + name + '.webp')}" alt="" draggable="false">`;
@@ -100,7 +101,7 @@ export function init(ctx) {
       if (clk.t0 && isWon(game.state)) { stopC(clk); clk.done = true; }
       let el = document.getElementById('iqclk');
       if (!el && C.ui.screen === 'play') el = hudClock();
-      if (el) el.querySelector('b').textContent = iq.fmt(elapsed(clk));
+      if (el) { el.querySelector('b').textContent = iq.fmt(elapsed(clk)); dock(el); }
     }
   }, 100);
   if (import.meta.env.DEV) {
@@ -137,7 +138,22 @@ function hudClock() {
   if (!hud || !clk) return null;
   hud.querySelector('.iqclk')?.remove();
   hud.insertAdjacentHTML('beforeend', `<div class="iqclk" id="iqclk" aria-hidden="true">${medalImg(iq.medalAt(save.data, clk.n, clk.kind), 'iqci')}<b>${iq.fmt(elapsed(clk))}</b></div>`);
-  return document.getElementById('iqclk');
+  const el = document.getElementById('iqclk');
+  dock(el);
+  return el;
+}
+// the adoption order's keeper (orders lane) sits under the Home button too: the clock docks under its n/N pill
+function dock(el) {
+  if (!el || !el.offsetParent) return;
+  const pill = document.querySelector('#ordstrip:not([hidden]) .oscount');
+  if (!pill) { if (el.classList.contains('dock')) { el.classList.remove('dock'); el.style.left = el.style.top = ''; } return; }
+  const p = pill.getBoundingClientRect();
+  const h = el.offsetParent.getBoundingClientRect();
+  const left = Math.max(4, Math.round(p.left + p.width / 2 - el.offsetWidth / 2 - h.left)) + 'px';
+  const top = Math.round(p.bottom + 3 - h.top) + 'px';
+  el.classList.add('dock');
+  if (el.style.left !== left) el.style.left = left;
+  if (el.style.top !== top) el.style.top = top;
 }
 function hudRun() {
   const hud = document.getElementById('hud');
@@ -332,4 +348,5 @@ function addRail() {
   const rail = document.querySelector('#cafe .rrail');
   if (!rail || rail.querySelector('.iqrr')) return;
   rail.insertAdjacentHTML('beforeend', `<button class="rr iqrr" data-act="iqopen" aria-label="${t('iqRecords')}">${r7('iq_watch')}<span>${t('iqRecords')}</span></button>`);
+  if (!mapShown()) layoutResidents(); // the hub laid the cats and request bubbles out before this button existed
 }
