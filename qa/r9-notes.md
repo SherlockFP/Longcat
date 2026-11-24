@@ -416,3 +416,46 @@ Weak spots:
 - Golden fur is subtle for a premium item.
 - Themed shaped boards and quilts were not checked in the browser, and neither was the IAP buy-to-re-render flow.
 - Not checked on a real phone.
+
+### R13 lanes 2: onboard + mech
+
+Merged r13/onboard (d2471f2), then r13/mech (d35f1ec), into main with --no-ff. The onboard merge was clean. The mech merge had 4 conflicts:
+- `src/core/curated.js` and `src/kit/dare.js`: both lanes made token digit 7 mean "new". The opening lane uses it for the curated L1-3, L5-7 and L10; the mech lane uses it for schedule 3 from L16. Their levels do not overlap, so digit 7 now means both. `boardOf` already took both (auto-merged). `linkRev` is now: L16+ gives 7, L15 gives 5, an R13 opening level gives 7, and every other level is as before. Digits 2 to 6 still open exactly the old boards.
+- `scripts/check-core.mjs`: one linkRev assert now pins L9 = 6, L10 = 7, L15 = 5 and L34 = 7.
+- `scripts/qa-fast.mjs`: all steps kept (timers f21-f23, looks, then mech f21-lock, f22-gate, f23-twin). The step names do not clash.
+
+check-dare now pins:
+- Old 3 and 6 tokens on L1, L3, L5, L6, L7 and L10 open the old boards.
+- Old 5 and 6 tokens on L16, L50, L101 and L141 open their schedule-2 boards (sha256).
+- New 7 tokens round-trip on both lanes.
+
+Integration bugs fixed:
+- qa-fast f19-l9-pair (en and tr) waited for the R12 L9 rule text. The onboard lane shortened it to "A parked mom + kitten takes 2 seats." Updated in qa-fast and in qa.mjs.
+- qa-fast f19-l9-pair-en then played L10 and expected the old L9. L10 is the mini boss on rev 7 now, so that tail was removed (r13-l10-* covers L10). The f19-l10-big-pair frame is gone.
+
+Checks:
+- Build ok. npm run check passed on the first run (gen worst 54.1 ms).
+- qa:fast: 184.5 s (186 s wall), 0 failures, 0 console errors.
+- Frames read: r13-l10-board, r13-l10-chest, f19-l9-rule-en, f21-lock-board, f21-lock-after, f22-gate-board, f23-twin-after, f22-win-drop.
+
+Perf (`PERF_NOGPU=1 PERF_RATES=4`, label r13-final, x4; a second run r13-final-b in brackets):
+
+| Scene | Frames | p95 (ms) | Game ms p95 |
+|---|---|---|---|
+| hub | 180 (180) | 16.7 (16.7) | 0 (0) |
+| L1 | 152 (147) | 50 (50) | 4.4 (3.4) |
+| L60 | 179 (180) | 16.8 (16.8) | 2.1 (1.3) |
+| L60run | 72 (107) | 50 (33.4) | 12.2 (7.8) |
+| rapid6 | 67 (93) | 50 (33.4) | 11 (8.4) |
+| chain | 84 (103) | 33.4 (16.8) | 5 (4.5) |
+| win | 180 (180) | 16.7 (16.8) | 0.7 (0.6) |
+
+- L60run and rapid6 swing widely between runs (machine noise, as in r13-merged).
+- L1 is slower on both runs: 147 to 152 frames and p95 50, against 178 and 16.8 in r13-merged. L1 is the new nine-orange burst board, so many cats run at once.
+
+Weak spots:
+- L1 frame rate dropped on the new burst board. This was not profiled.
+- qa.mjs (the full QA, not run) still plays L10 as the old L9 pair board in its r11-fun step. That step will fail until it plays the old board some other way.
+- On the L101 padlock lesson, the solver's line fills 4 of 5 seats before the lock opens (f21-lock-after). That is a tight lesson.
+- On L121, the café request bubble covers the carrier colour column (f22-gate-board).
+- Not checked on a real phone.
