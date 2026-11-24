@@ -51,6 +51,12 @@ let cur = null;
 const stats = { renderer: 'canvas', drawn: 0, skipped: 0, covered: false, layers: 0, sprites: 0, split: 0, boardDraws: 0 };
 if (typeof window !== 'undefined') window.__perf = stats;
 
+if (typeof document !== 'undefined') {
+  const st = document.createElement('style');
+  st.textContent = 'html.pf-cov #game, html.pf-cov canvas[id^="pf-"] { visibility: hidden; }';
+  document.head.appendChild(st);
+}
+
 const mkCanvas = (id) => {
   const c = document.createElement('canvas');
   c.id = id;
@@ -99,10 +105,19 @@ class Perf {
     const host = game.canvas;
     this.far = mkCanvas('pf-far');
     this.near = mkCanvas('pf-near');
+    // R16: buildFar paints every pixel, so the room is an opaque layer: the phone compositor skips blending it and
+    // culls the page background under it
+    try { this.far.getContext('2d', { alpha: false }); } catch { /* old engine: a plain layer */ }
+    // R16: the room is built here; #pf-far shows it with the rug layer baked in while the camera rests (one opaque
+    // layer instead of two full-screen ones), and splits back into room + #pf-near while it moves (the parallax stays)
+    this.farRoom = document.createElement('canvas');
+    this.merged = null;
     host.parentNode.insertBefore(this.far, host);
     host.parentNode.insertBefore(this.near, host);
     // R11 juice: the split-frame layers, the still board under #game and the low-res moving layer over it
     this.beltCv = mkCanvas('pf-belt'); // R11: the belt, baked; its stop-click kick is a CSS translate
+    this.beltCv.style.inset = 'auto'; // R16: a strip around the belt, not a full-screen layer (each one is a blend per frame)
+    this.beltCv.style.left = '0';
     host.parentNode.insertBefore(this.beltCv, host);
     this.beltKey = '';
     this.kick = 0;
@@ -193,8 +208,12 @@ class Perf {
     if (this.coverDirty || now - this.coverAt > 500) {
       this.coverDirty = false;
       this.coverAt = now;
+      const was = this.covered;
       this.covered = opaqueCover();
       stats.covered = this.covered;
+      // R16: under an opaque screen (the café hub) the board canvases leave the compositor: phones blended them every
+      // frame though nothing showed. Toggled here, in rAF before paint, so the frame that uncovers shows them again
+      if (was !== this.covered) document.documentElement.classList.toggle('pf-cov', this.covered);
     }
     if (this.covered) { stats.skipped++; return g.demo || !g.board ? 1 : 2; }
     const busy = this.busy();
@@ -246,14 +265,16 @@ class Perf {
   rebuild(art) {
     const g = this.g;
     stats.layers++;
-    for (const c of [this.far, this.near]) {
+    for (const c of [this.far, this.near, this.farRoom]) {
       c.width = Math.round(g.W * g.dpr);
       c.height = Math.round(g.H * g.dpr);
     }
-    buildFar(g, this.far.getContext('2d'), art);
+    buildFar(g, this.farRoom.getContext('2d'), art);
     buildNear(g, this.near.getContext('2d'), art.look);
     this.cam = [1, 0, 0, 1, 0, 0];
-    if (this.pixi) { this.pixi.layers(this.far, this.near); this.pixi.camera(this.cam); }
+    if (this.pixi) { this.pixi.layers(this.farRoom, this.near); this.pixi.camera(this.cam); }
+    this.merged = null;
+    this.mergeFar(true);
     this.far.style.transform = this.near.style.transform = this.boardCv.style.transform = '';
     this.beltKey = ''; this.beltTf();
     this.bsig = ''; // the split board layer redraws at the new size
@@ -266,6 +287,7 @@ class Perf {
     const d = this.g.dpr;
     const a = m.a / d, b = m.b / d, c = m.c / d, dd = m.d / d, e = m.e / d, f = m.f / d;
     const o = this.cam;
+    this.mergeFar(Math.abs(a - 1) + Math.abs(b) + Math.abs(c) + Math.abs(dd - 1) + Math.abs(e) + Math.abs(f) < 0.002);
     if (Math.abs(a - o[0]) + Math.abs(b - o[1]) + Math.abs(c - o[2]) + Math.abs(dd - o[3]) + Math.abs(e - o[4]) + Math.abs(f - o[5]) < 0.002) return;
     this.cam = [a, b, c, dd, e, f];
     const id = Math.abs(a - 1) + Math.abs(b) + Math.abs(c) + Math.abs(dd - 1) + Math.abs(e) + Math.abs(f) < 0.002;
@@ -274,6 +296,16 @@ class Perf {
     this.near.style.transform = this.boardCv.style.transform = id ? '' : `matrix(${a},${b},${c},${dd},${e},${f})`; // R11: the split board layer moves with the rug
     this.beltTf();
     this.far.style.transform = id ? '' : `matrix(${1 + (a - 1) * p},${b * p},${c * p},${1 + (dd - 1) * p},${e * p},${f * p})`;
+  }
+
+  mergeFar(on) {
+    if (this.pixi || on === this.merged) return;
+    this.merged = on;
+    const k = this.far.getContext('2d');
+    k.setTransform(1, 0, 0, 1, 0, 0);
+    k.drawImage(this.farRoom, 0, 0);
+    if (on) k.drawImage(this.near, 0, 0);
+    this.near.style.visibility = on ? 'hidden' : '';
   }
 
   // underlay owns these: the board canvas skips them
@@ -339,10 +371,14 @@ class Perf {
     if (key !== this.beltKey) {
       this.beltKey = key;
       const c = this.beltCv;
+      const y0 = Math.floor(y - 16), y1 = Math.ceil(y + h + 20); // the baked shadow's blur and offset fit inside
       c.width = Math.round(g.W * g.dpr);
-      c.height = Math.round(g.H * g.dpr);
+      c.height = Math.round((y1 - y0) * g.dpr);
+      c.style.top = y0 + 'px';
+      c.style.height = (y1 - y0) + 'px';
+      c.style.transformOrigin = `0 ${-y0}px`; // the camera matrix stays in page coordinates
       const k = c.getContext('2d');
-      k.setTransform(g.dpr, 0, 0, g.dpr, 0, 0);
+      k.setTransform(g.dpr, 0, 0, g.dpr, 0, -y0 * g.dpr);
       this.shadowImage(g.ctx, img, x, y, w, h, sh, k);
     }
     if (kick !== this.kick) { this.kick = kick; this.beltTf(); }
@@ -802,6 +838,8 @@ class Perf {
       tc.clearRect(0, 0, tw, th);
       this.fxClean = !move;
     }
+    // R16: an idle hold leaves the moving layer and the counter strip empty: out of the compositor until something moves
+    if (this.fxShown !== move) { this.fxShown = move; this.fxCv.style.visibility = this.topCv.style.visibility = move ? '' : 'hidden'; }
     f.setTransform(k, 0, 0, k, 0, 0);
     tc.setTransform(d, 0, 0, d, 0, -y0 * d);
     // a tap's look-around (1.3 s) and a freed cat's pulsing exit arrow (1.4 s) keep the board alive at up to 20 fps,
