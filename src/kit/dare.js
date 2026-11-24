@@ -125,6 +125,9 @@ function decodeV2(code, baseBench) {
   return out;
 }
 
+// R12 (sol-r12-3 fix 6): what a player pastes or types into Friend Results -> the code alone: a whole link, the clip's
+// printed address (no scheme) or the bare code, spaces and the share text around it dropped; decode() then judges it
+export const codeOf = (s) => String(s || '').replace(/\s+/g, '').replace(/^.*[?&]c=/i, '').replace(/[&#].*$/, '');
 // baseBench(n, rev): the board's own seat count; a link may add at most two seats (the sender's perk seats), never remove any
 export function decode(code, baseBench) {
   if (typeof code !== 'string' || !code || code.length > MAX_LEN || !/^[A-Za-z0-9_.-]+$/.test(code)) return null;

@@ -237,6 +237,46 @@ try {
     await shot('f17-dare-landing');
   });
 
+  // ---- R12 (sol-r12-3 fix 5): pin an album page with no postcard yet: every slot names its board, the map follows it ----
+  for (const lg of ['en', 'tr']) {
+    await step('f19-album-pin-' + lg, async () => {
+      await put(30, { lg }); await boot(); await home();
+      const pp = (Math.floor((((await qa('week()')) % 24) + 24) % 24 / 4) + 2) % 6; // two pages past this week's
+      await qa(`act('album', { p: ${pp} })`); await sleep(500);
+      must(await ev('!!document.querySelector("#sheet .albprint [data-act=albpin]")'), 'an unfinished page offers Set as goal');
+      await qa(`act('albpin', { p: '${pp}' })`); await sleep(600);
+      must(!(await ev('!!document.querySelector("#sheet .albprint [data-act=albpin]")')) && (await ev('document.querySelector("#sheet .albprint small").textContent')).length > 10, 'pinned: the button turns into the goal line');
+      must(await ev('document.querySelectorAll("#sheet .album .pc.empty.step .pcgo").length') === 4, 'all four released postcards name their board');
+      must(await inView('#sheet .albprint'), 'the print row fits');
+      await shot('f19-album-pin-' + lg);
+      await qa(`act('closesheet')`); await sleep(400);
+      const pg = await ev(`JSON.parse(localStorage.getItem('lco_save')).album.pin`);
+      must(pg === pp, 'the pin is saved ' + pg);
+      must(await ev('(() => { const b = document.querySelector("#cafe .room .rtalb .rtcard"); return !!b && b.dataset.act === "showplay" && +b.dataset.w < window.__qa.week(); })()'), 'the map strip is a past week board of the pinned page');
+      await shot('f19-map-pinned-' + lg);
+    });
+  }
+
+  // ---- R12 (sol-r12-3 fix 6): the code printed on a clip, typed into Friend Results, imports the reply like the QR ----
+  for (const lg of ['en', 'tr']) {
+    await step('f20-friend-code-' + lg, async () => {
+      await put(30, { lg, extra: "fr: { sent: ['ab12cd'], list: [] }" }); await boot(); await home();
+      await qa(`act('events', { tab: 'friends' })`); await sleep(500);
+      must(await inView('#sheet #frcode') && await inView('#sheet [data-act=frcode]'), 'the code box fits');
+      await shot('f20-friend-code-' + lg);
+      await ev(`document.getElementById('frcode').value = 'not a code'; document.querySelector('[data-act=frcode]').click()`); await sleep(400);
+      must(!(await ev('!!document.querySelector("#modal .card.dare")')) && await ev('!!document.querySelector("#sheet #frcode")'), 'a bad code stays on the tab');
+      await ev(`document.getElementById('frcode').value = ' Example.github.io/long-cat-out/?c=3L13-5-C2-ZZ9K01-R3-AB12CD '; document.querySelector('[data-act=frcode]').click()`);
+      await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(500);
+      must(await inView('#modal [data-act=dareplay]'), 'the landing plays the counter-dare');
+      await shot('f20-friend-code-landing-' + lg);
+      await ev('document.querySelector("#modal [data-act=dareskip]")?.click()'); await sleep(600);
+      await qa(`act('events', { tab: 'friends' })`); await sleep(500);
+      must(await ev('document.querySelectorAll("#sheet .frrow").length') === 1, 'the reply is in Friend Results');
+      await shot('f20-friend-code-list-' + lg);
+    });
+  }
+
   // ---- desktop 1920x1080: the map in the column, side panels, the painted backdrop ----
   await step('f18-desk-1920', async () => {
     await size(1920, 1080, 1, false);

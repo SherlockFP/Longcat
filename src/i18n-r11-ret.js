@@ -24,7 +24,7 @@ addStrings({
     rtLastCard: '{page} tablosunu tamamlar!',
     rtStamp1: '1 damga: {task}', rtStamps: '{n} damga: {task}',
     rtBoard1: '1 tahta: {task}', rtBoards: '{n} tahta: {task}',
-    rtDoDaily: 'bugünün bulmacasını çöz', rtDoBoard: 'Şov {k} tahtasını geç', rtDoArch: '{ev}: {k} tahtasını geç',
+    rtDoDaily: 'bugünün bulmacasını çöz', rtDoBoard: 'Şov {k} tahtasını geç', rtDoArch: '{k} tahtasını geç · {ev}',
     rtClaimLine: '3/3 damga: hemen al', rtCatchLine: 'İki tahta da bitti: hemen ekle',
     rtGoBoard: '{k} tahtası', rtGoDaily: 'Günlük', rtGoHang: 'As',
     rtHangSmall: '{page} sayfası tamam!', rtHangTitle: 'Tabloyu as', rtHangWhere: 'Asılacak oda: {room}',

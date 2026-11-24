@@ -1,6 +1,6 @@
 // Friend challenge links: round trip, and every hostile payload is refused or clamped.
 import { createHash } from 'node:crypto';
-import { encode, encodeV1, decode, judge, cleanName, trGenitive, shortCode, qrCode } from '../src/kit/dare.js';
+import { encode, encodeV1, decode, judge, cleanName, trGenitive, shortCode, qrCode, codeOf } from '../src/kit/dare.js';
 import { qrMatrix } from '../src/kit/qr.js';
 import { boardOf, linkRev } from '../src/core/curated.js';
 import { generate, levelKind } from '../src/core/generate.js';
@@ -99,6 +99,16 @@ must(decode('2r9-5-t123', base)?.g === 123, 'time core');
     const v = qrMatrix('https://longcat-746.pages.dev/?c=' + qrCode({ ...rp, n })).version;
     must(v <= 4, `reply QR version on the production address, level ${n}: ${v}`);
   }
+  // R12: the printed code (the clip / card show the QR's code without the scheme) typed or pasted into Friend Results
+  // decodes to the same reply as the link; codeOf finds the code in a link, the printed address or the share text
+  const printed = 'longcat-746.pages.dev/?c=' + q;
+  for (const s of [printed, 'https://' + printed + '#x', ' ' + q.toUpperCase() + ' ', 'Ana dared you: https://' + printed, 'https://longcat-746.pages.dev/?c=' + encode(rp), q.slice(0, 13) + ' ' + q.slice(13)]) {
+    const dt = decode(codeOf(s), base);
+    must(dt && dt.r === dl.r && dt.pg === dl.pg && dt.i === 'zz9k01' && dt.n === 13 && dt.g === 4, 'typed code imports the reply: ' + s + ' ' + JSON.stringify(dt));
+  }
+  for (const s of ['', null, 'hello', '<script>alert(1)</script>', 'https://evil.example/?c=3l13-5-c4-zz9k01-r3-<x>', 'x'.repeat(500)]) must(decode(codeOf(s), base) === null, 'typed junk refused ' + String(s).slice(0, 30));
+  const tc = decode(codeOf('?c=3L13-9-C99-zz9k01-R99-ab12cd'), base);
+  must(tc && tc.b === 7 && tc.g === 8 && tc.pg === 8, 'typed code clamped like the link ' + JSON.stringify(tc));
 }
 must(decode('2l2-5-c2m', base)?.x === 1, 'match flag on the core');
 const full = encode({ n: 13, b: 5, k: 'l', m: 'chain', g: 4, nm: 'Deniz', i: 'qq11', r: 'ab12cd', pg: 3, th: [{ nm: 'Ana', v: 3 }], rd: 2 });

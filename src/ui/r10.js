@@ -45,7 +45,7 @@ export function album(info) {
   };
   const prn = P.done
     ? `<div class="albprint done">${r7('print_' + P.print, 'prt')}<span><b>${t('printReady')}</b><small>${P.hung ? t('printHungIn', { room: P.hung }) : t('printHow')}</small></span><button class="btn green xs" data-act="hang" data-p="${P.p}">${P.hung ? t('hangAgain') : t('hangCafe')}</button></div>`
-    : `<div class="albprint">${r7('print_' + P.print, 'prt sil')}<span><b>${t('printLocked', { n: 4 - P.have })}</b><small>${t('printWhat')}</small></span></div>`;
+    : `<div class="albprint">${r7('print_' + P.print, 'prt sil')}<span><b>${t('printLocked', { n: 4 - P.have })}</b><small>${t(P.pin ? 'albPinned' : 'printWhat')}</small></span>${P.pin ? '' : `<button class="btn teal xs" data-act="albpin" data-p="${P.p}">${t('albPin')}</button>`}</div>`;
   const arrow = (d) => `<button class="arr ${P.p + d < 0 || P.p + d >= info.pages ? 'dis' : ''}" data-act="albpage" data-p="${P.p + d}" aria-label="${d < 0 ? t('back') : t('next')}">${arrowSvg(d)}</button>`;
   const dots = info.prints.map((done, i) => `<i class="${i === P.p ? 'on' : ''} ${done ? 'full' : ''}"></i>`).join('');
   openSheet('album', 'quests lsheet album', t('album'), `<div class="albhead">${arrow(-1)}<span><b>${esc(P.name)}</b><small>${t('albPage', { a: P.have, b: 4 })} · ${t('albTotal', { a: info.total, b: info.all })}</small></span>${arrow(1)}</div>
@@ -84,12 +84,14 @@ export function popCard(p) {
 // ---- Events: Friend Results ----
 // f: { list: [{ id, nm, n, b, k, m, g, pg, res, board }], n }
 export function friendsTab(f) {
-  if (!f.list.length) return `<div class="frempty">${r7('fr_letter', 'frl')}<b>${t('frEmpty')}</b><small>${t('frEmptySub')}</small></div>`;
+  // R12: a link or the code off a clip / card, pasted or typed: opens like the link (main.js frcode)
+  const box = `<div class="frcode"><input id="frcode" maxlength="400" autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="go" placeholder="${t('frCodeHint')}" aria-label="${t('frCodeHint')}"><button class="btn green xs" data-act="frcode">${t('frCodeGo')}</button></div>`;
+  if (!f.list.length) return `<div class="frempty">${r7('fr_letter', 'frl')}<b>${t('frEmpty')}</b><small>${t('frEmptySub')}</small></div>${box}`;
   const val = (m, v) => (m === 'chain' ? '×' + v : m === 'time' ? (v / 10).toFixed(1) + t('secShort') : t('frSeats', { n: v }));
   const row = (e, i) => {
     const who = e.nm || t('dareFriend');
     const line = e.pg == null ? t('frSent', { name: who, v: val(e.m, e.g) }) : t('fr_' + (e.res || 'tie'), { name: who, v: val(e.m, e.pg) });
     return `<div class="frrow ${i === 0 ? 'latest' : ''}">${r7('fr_letter', 'frl')}<div class="frt"><b>${esc(line)}</b><small>${esc(e.board)} · ${t('frCushions', { n: e.b })}</small>${e.pg != null ? `<span class="frvs">${t('frYou')} ${val(e.m, e.pg)} · ${esc(who)} ${val(e.m, e.g)}</span>` : ''}</div><button class="btn ${i === 0 ? 'pink' : 'teal'} xs" data-act="rematch" data-id="${e.id}">${t('rematch')}</button></div>`;
   };
-  return `<div class="lnote small">${t('frSub', { n: f.n })}</div>${f.list.map(row).join('')}`;
+  return `<div class="lnote small">${t('frSub', { n: f.n })}</div>${f.list.map(row).join('')}${box}`;
 }

@@ -334,3 +334,10 @@ Merged in that order from main d204fce. The only textual conflicts were the appe
 - The quilt unfold still plays `audio.clear()`, not a UI-pack sound.
 - The flame chip on the win card hangs over the empty board's rug corner.
 - Not done: perf.mjs after the merge (shaped and boss boards on the 6x software raster), a real phone, and a fresh-player session.
+
+## R12 keep lane (sol-r12-3 fixes 5 + 6, code-only parts)
+- Album pin (fix 5): an unfinished album page shows **Set as goal** (TR "Hedef yap") under its print. A pinned page leads the catch-up list (`r10.catchWeeks`), even before it holds a postcard. Each missing postcard that is already released then shows its own board in its slot, so the player picks which one the weekly catch-up goes to. The map strip ranks the pinned page's step right after a ready claim (`r11-ret albumNext`). A pinned archive step is never "old", so it also becomes the day goal. The album opens on the pinned page. Stored in `album.pin` (save.js default -1, clamped to 0-5).
+- The catch-up rule is unchanged: one a week, and both boards of that past week must be cleared first.
+- Map strip: the task line is now one line with an ellipsis. A two-board archive step was 4 lines in the 44 px card and clipped the page line. TR `rtDoArch` now puts the action first ("A tahtasını geç · {ev}").
+- Printed code (fix 6): the clip band and the card picture now print the QR's code (`dare.qrCode`), which carries `-r<target>-<id>` on a counter-dare. Typed off the video, it imports the reply like the scan. Friend Results has a paste-or-type box. `dare.codeOf` takes the code from a link, the printed address or the share text. `main.js openCode` (shared with the `?c=` path) decodes and clamps it, imports the reply and opens the dare landing. A bad code shows a toast.
+- Tests: check-dare covers the typed / pasted / capitalised / spaced code and junk. check-econ covers pin ordering and the slot steps. The qa-fast steps are f19-album-pin-{en,tr} and f20-friend-code-{en,tr}: 18 s, 0 failures.

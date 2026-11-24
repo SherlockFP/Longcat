@@ -30,6 +30,9 @@ addStrings({
     friends: 'Friends', frSub: 'Replies to your dares on this phone ({n})', frEmpty: "Open a friend's result link to start", frEmptySub: 'Dare a friend from a win card. When they send their result back, it lands here.',
     frSeats: '{n} cushions', frSent: '{name} scored {v}', fr_beat: '{name} beat your {v}', fr_tie: '{name} matched your {v}', fr_miss: '{name} tried your {v}',
     frCushions: '{n} cushions', frYou: 'You', rematch: 'Rematch', frAdded: "{name}'s result is in your Friend Results",
+    // R12: a code pasted or typed into Friend Results; an album page pinned as the goal
+    frCodeHint: 'Paste a link or type a code', frCodeGo: 'Open', frCodeBad: "That code doesn't open a board",
+    albPin: 'Set as goal', albPinned: 'Your goal: the map shows its next step.',
   },
   tr: {
     streetUpName: '{house} süslemesi', streetMixName: '{house} · {theme}',
@@ -52,5 +55,7 @@ addStrings({
     friends: 'Arkadaşlar', frSub: 'Bu telefondaki meydan okuma cevapları ({n})', frEmpty: 'Başlamak için bir arkadaşının sonuç linkini aç', frEmptySub: 'Kazanınca bir arkadaşına meydan oku. Sonucunu geri gönderince burada görünür.',
     frSeats: '{n} minder', frSent: '{name}: {v}', fr_beat: '{name} senin {v} sonucunu geçti', fr_tie: '{name} senin {v} sonucunu yakaladı', fr_miss: '{name} senin {v} sonucunu denedi',
     frCushions: '{n} minder', frYou: 'Sen', rematch: 'Rövanş', frAdded: '{name} sonucunu gönderdi: Arkadaşlar sekmesinde',
+    frCodeHint: 'Linki yapıştır ya da kodu yaz', frCodeGo: 'Aç', frCodeBad: 'Bu kod bir tahta açmıyor',
+    albPin: 'Hedef yap', albPinned: 'Hedefin bu: harita sıradaki adımı gösterir.',
   },
 });
