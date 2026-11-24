@@ -723,7 +723,7 @@ DRANGES.forEach(([lo, hi], i) => {
     ok(!e.length, `curated L${n} invalid: ${e.join('; ')}`);
     const rp = replay(b, b.meta.order);
     ok(rp.won, `curated L${n} line does not win`);
-    ok(JSON.stringify(boardOf(n, 2)) === JSON.stringify(generate(n)), `curated L${n}: rev 2 must keep the generated board`);
+    ok(JSON.stringify(boardOf(n, 2)) === JSON.stringify(generate(n, 1)), `curated L${n}: rev 2 must keep the generated board`);
     ok(JSON.stringify(boardOf(n, BOARD_REV)) === JSON.stringify(b), `curated L${n}: rev ${BOARD_REV} plays the curated board`);
   }
   const b6 = CURATED[6]();
@@ -744,7 +744,7 @@ DRANGES.forEach(([lo, hi], i) => {
   // rev-4 link plays it: a rev-3 link made before it was curated keeps the generated L7
   const b7 = CURATED[7]();
   ok(winsWith(b7, 3) && maxChain(new Sim(compile(b7), 5), 400000).best >= 4, 'curated L7: three seats win and a chain of 4+ is there');
-  ok(JSON.stringify(boardOf(7, 3)) === JSON.stringify(generate(7)) && linkRev(7) === 4 && linkRev(6) === 3 && linkRev(13) === 3, 'curated L7: rev 3 keeps the generated board, new L7 links say 4');
+  ok(JSON.stringify(boardOf(7, 3)) === JSON.stringify(generate(7, 1)) && linkRev(7) === 4 && linkRev(6) === 3 && linkRev(13) === 3, 'curated L7: rev 3 keeps the generated board, new L7 links say 4');
 }
 // shape lane: shaped boards (void cells are open air) and folded flaps (a wall until `need` cats left). Over L1-600:
 // shapes and flaps show up on schedule, nothing sits on a void cell, every folded board's line wins and the solver finds
