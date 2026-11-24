@@ -97,8 +97,9 @@ export function initOrders(game, c) {
   });
 }
 
-// after every level load: an order on a normal level, nothing on the Daily / Cat Show / Rush / dare boards
-export function startOrder(n, board, special) {
+// after every level load: an order on a normal level, nothing on the Daily / Cat Show / Rush / dare boards. lesson: a
+// teaching board (R16, sol-r15 fix 3: one message per lesson) keeps the strip but never shows the order bubble
+export function startOrder(n, board, special, lesson = false) {
   dismissIntro(true);
   pendIntro = false;
   if (special || !board || !strip) { cur = null; if (strip) strip.hidden = true; return; }
@@ -117,7 +118,7 @@ export function startOrder(n, board, special) {
   place();
   // a pack / new-piece card (content lane, #cmodal) goes first: the order card waits for it to close
   const boss = board.meta && board.meta.kind === 'boss'; // boss lane: the boss card (src/ui/boss.js) is this level's intro
-  if (!seen.has(n)) { seen.add(n); if (boss) { /* no order card */ } else if (document.getElementById('cmodal')) pendIntro = true; else showIntro(); }
+  if (!seen.has(n)) { seen.add(n); if (boss || lesson) { /* no order card */ } else if (document.getElementById('cmodal')) pendIntro = true; else showIntro(); }
 }
 
 function onPlay() {
@@ -197,15 +198,6 @@ function showIntro() {
   const o = cur.o;
   const c = O.CUSTOMERS[o.shop];
   const tuck = o.kind === 'normal';
-  // R12 (sol-r12-3 pres): on a pair lesson (L9 / L10) the order borrows the teaching card instead of a bubble beside the
-  // pair's tag and route, then hands the card back to the seat rule (unless a tap or a cue took it meanwhile)
-  const tut = document.getElementById('tut');
-  if (tuck && cur.board.meta.cur === 'pair' && tut && !tut.hidden) {
-    const rule = tut.textContent, title = orderTitle(o, cur.total);
-    tut.textContent = title;
-    setTimeout(() => { if (tut.textContent === title) tut.textContent = rule; }, 2600);
-    return;
-  }
   intro = document.createElement('div');
   intro.className = 'ordintro' + (tuck ? ' tuck' : '') + (calm() ? ' calm' : '');
   const line = o.kind === 'normal' ? loc(c.why[o.why]) : t(o.kind === 'vip' ? 'ordVipLine' : 'ordUrgentLine', { c: o.bonus });

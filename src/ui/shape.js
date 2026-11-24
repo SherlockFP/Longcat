@@ -78,14 +78,15 @@ ${k === 'shape' ? HEART_SVG : FOLD_SVG}
 }
 
 let timer = 0;
-// the first shaped board and the first folded board each bring a card once, after any card the level opened with
+// the first shaped board and the first folded board each bring a card once, after any card the level opened with.
+// Returns true when this level will show one (R16: the keeper's order bubble then stays away)
 export function levelStart(n, special, board) {
   clearTimeout(timer);
   document.getElementById('smodal')?.remove();
   const s = seen();
   const k = board.shape && !s.shape ? 'shape' : board.folds && board.folds.length && !s.fold ? 'fold' : null;
-  if (!k) return;
-  if (n <= 10) { mark(k); return; } // R13: the opening's heart (L3) and quilt (L7) get one line on the hint card, no modal
+  if (!k) return false;
+  if (n <= 10) { mark(k); return false; } // R13: the opening's heart (L3) and quilt (L7) get one line on the hint card, no modal
   const b0 = board;
   let tries = 0;
   const show = () => {
@@ -95,4 +96,5 @@ export function levelStart(n, special, board) {
     card(k);
   };
   timer = setTimeout(show, 350);
+  return true;
 }

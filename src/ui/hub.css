@@ -1,6 +1,10 @@
 /* ---- hub lane: the home level map (src/ui/hub.js) ---- */
 #cafe.hm-on .frail, #cafe.hm-on .fname { display: none; }
 #cafe.hm-on .room .stage, #cafe.hm-on .room .tower, #cafe.hm-on .room .hbg { visibility: hidden; }
+/* R16 (sol-r15 fix 6): on the map only Play pulses; badges, claim tags, the spotlight and chest markers hold still, and
+   hub.js keeps one red badge (.r16q hides the others while the map is up) */
+#cafe.hm-on .dot, #cafe.hm-on .sptag, #cafe.hm-on .spot, #cafe.hm-on .rr.ring.full, #cafe.hm-on .bmchest img, #cafe.hm-on .bmopen { animation: none !important; }
+#cafe.hm-on .r16q { display: none !important; }
 .hubmap { position: absolute; inset: 0; z-index: 98; background: #86b463; }
 .hmscroll { position: absolute; inset: 0; overflow-x: hidden; overflow-y: auto; touch-action: pan-y; overscroll-behavior: contain; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 .hmscroll::-webkit-scrollbar { display: none; }

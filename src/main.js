@@ -77,6 +77,7 @@ const HINT_COST = 60;
 const UNDO_COST = 90;
 const SCOOP_COST = 150;
 const seatCost = () => econ.SEAT_COSTS[Math.min(S.seatBuys || 0, econ.SEAT_COSTS.length - 1)]; // 120 / 200 / 300 within one level
+const EARLY = 15; // R16: the opening levels (about 30 minutes): one track on the win card, no Shop badge on the hub
 const CAFE_FROM = 4; // the café hub is home from this level; levels 1-3 go straight to play
 const S = { mode: 'home', n: 1, daily: false, show: false, area: 0, tries: {}, freeBack: {} }; // show: false | { kind: 'show', w, k, goal } | { kind: 'rush', w }
 let game;
@@ -530,7 +531,7 @@ function tryStart(n, daily = false, show = false) {
 // ---- flow ----
 // the Cat Show rosettes the player has won hang on the café wall (one per theme, in its colour)
 const rosettes = () => econ.earnedDecor(save.data).map((id) => econ.THEMES.find((x) => x.id === id)).filter(Boolean).map((x) => ({ id: x.id, color: x.color, name: cafe.loc(x.name) }));
-const cafeInfo = (justBuilt, L = liveHub()) => ({ wall: wallInfo(), street: streetInfo(), reno: renoInfo(), live: L, stars: cafe.stars(), level: save.data.level, area: S.area, justBuilt, coins: save.data.coins, lives: livesInfo(), dots: L.dots, day: dayNum(), offer: starterOpen() && save.data.shop.offerDay !== dayNum(), rosettes: rosettes(), party: cafe.partyOpen() ? { n: cafe.parties(), cost: cafe.PARTY_COST, ok: cafe.stars() >= cafe.PARTY_COST, coins: cafe.PARTY_REWARD.coins } : null });
+const cafeInfo = (justBuilt, L = liveHub()) => ({ wall: wallInfo(), street: streetInfo(), reno: renoInfo(), live: L, stars: cafe.stars(), level: save.data.level, area: S.area, justBuilt, coins: save.data.coins, lives: livesInfo(), dots: L.dots, day: dayNum(), offer: starterOpen() && save.data.level > EARLY && save.data.shop.offerDay !== dayNum(), rosettes: rosettes(), party: cafe.partyOpen() ? { n: cafe.parties(), cost: cafe.PARTY_COST, ok: cafe.stars() >= cafe.PARTY_COST, coins: cafe.PARTY_REWARD.coins } : null });
 
 // R10 café keepsakes: framed album prints hung per room, the Daily record's pennant and clock (ground floor)
 function wallInfo() {
@@ -642,7 +643,7 @@ function startLevel(n, daily = false, show = false) {
   const bs = board.meta.benchSize;
   if (!special && n > 3 && S.lastBench && S.lastBench !== bs) perks.push(t('benchSeats', { n: bs }));
   S.lastBench = bs;
-  if (!special && board.meta.flavour && tries === 1) perks.unshift(t('flav_' + board.meta.flavour)); // the board's flavour, named once
+  if (!special && board.meta.flavour && tries === 1 && !TUT_KEY[n] && !board.meta.cur) perks.unshift(t('flav_' + board.meta.flavour)); // the board's flavour, named once
   setTexts();
   const friend = !!show && show.kind === 'friend';
   // a friend's challenge: the one rule a recipient needs, with the front carrier and a cushion ringed until the first tap
@@ -674,8 +675,8 @@ function startLevel(n, daily = false, show = false) {
   ui.none();
   ui.play({ ...hudInfo(), level: n, daily, show: show ? (show.kind === 'friend' ? t('dareTitle') : show.kind === 'rush' ? t('rush') : t('showBoardN', { k: show.k.toUpperCase() })) : false, rush: !!show && (show.kind === 'rush' || (show.kind === 'friend' && show.m === 'time')), tut });
   cui.levelStart(n, !!special, board); // pack room + chip, pack / new-piece cards
-  sui.levelStart(n, !!special, board); // shape lane: one-time card for the first shaped / folded board
-  ordUi.startOrder(n, board, special); // adoption order: intro card + the keeper strip (normal levels only)
+  const shapeCard = sui.levelStart(n, !!special, board); // shape lane: one-time card for the first shaped / folded board
+  ordUi.startOrder(n, board, special, S.teach || shapeCard); // adoption order: intro card + the keeper strip (normal levels only); R16: a lesson board keeps to its one message
   bossUi.levelStart(n, !!special, board); // boss lane: intro card, HP nameplate, board frame (boss levels)
   track('level_start', { n, daily });
   if (!special && n === 4) funnel('l4_start');
@@ -819,6 +820,11 @@ function onWin(stars) {
   audio.clear();
   haptics.success();
   const canBuild = !S.daily && d.level >= CAFE_FROM && cafe.anyAffordable();
+  // R16 (sol-r15 fix 1): the first ~30 minutes stay on one track: Next plus one café line on the win card, and the first
+  // affordable build leads one win card only (after that the café line stays a quiet Build button)
+  const early = !S.daily && S.n <= EARLY;
+  const buildMain = canBuild && !d.meta.buildNudge;
+  if (buildMain) d.meta.buildNudge = 1;
   // the title follows how cleanly it went, not the star payout
   const peak = game.state ? game.state.benchPeak : 0;
   const title = !S.undid && !S.continued && peak <= 1 ? 'winTitle' : !S.continued && peak <= 2 ? 'winTitle2' : 'winTitle1';
@@ -836,8 +842,8 @@ function onWin(stars) {
   const pay = parts.length > 1 || (parts[0] && parts[0].k === 'payReplay') ? parts.map((p) => `${t(p.k, { n: p.v })} +${p.n}`).join(' · ') : '';
   // R11 fix 2: the replay card keeps only the order bonus in words (the rest of the breakdown is the coin chip's title)
   const payHi = parts.filter((p) => p.k === 'payUrgent' || p.k === 'payVip').map((p) => `${t(p.k, { n: p.v })} +${p.n}`).join(' · ');
-  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, payHi, peek: peekColor(), cafeStars, canBuild, cafeNext, purr: chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, drec: drecNew ? drecInfo(drecNew) : null, ach, adopt: S.quickAdopt || '', ...shareOn() });
-  rret.winCard(rtg.winDay(d, dayNum()), rtg.tomorrow(d, { day: dayNum(), res: resOwned(), dailyDone: d.daily.doneDay === todayKey(), streak: streak() })); // R11 ret
+  ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, payHi, peek: peekColor(), cafeStars, canBuild, buildMain, cafeNext, purr: early ? '' : chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, drec: drecNew ? drecInfo(drecNew) : null, ach, adopt: S.quickAdopt || '', ...shareOn() });
+  if (!early) rret.winCard(rtg.winDay(d, dayNum()), rtg.tomorrow(d, { day: dayNum(), res: resOwned(), dailyDone: d.daily.doneDay === todayKey(), streak: streak() })); // R11 ret
   save.commit();
   for (let i = 0; i < stars; i++) setTimeout(() => audio.star(i), 300 + i * 300);
   cui.onWin(S.n, first); // a pack's last level: its reward and host
@@ -2100,8 +2106,8 @@ async function boot() {
       pos: (id) => game.cellPos(id),
       layout: () => ({ beltY: game.beltY, benchY: game.benchY, bw: game.bw, oy: game.oy, cs: game.cs, W: game.W, cellsB: game.board ? game.oy + game.board.h * game.cell : 0, queue: game.queueBox() }), // cellsB: the bottom of the bottom row (R11 fix round 1)
       cue: () => (game.cue ? { ...game.cue, now: game.clock } : null),
-      fun: () => ({ pairCost: game.pairCost || '', pairWait: fun.pairWaitText(game), ghost: !!game.funGhost, park: game.funPark ? game.funPark.seats.length : 0, culprit: game.funCulprit ? game.funCulprit.id : null, press: game.press ? game.press.dest.length : 0 }), // R11 fun lane
-      // R12: the alive cats (cells inset 10%, exit chevrons) under the pair's tag or its dashed route (5 px wide)
+      fun: () => ({ pairCost: game.pairCost || '', pairWait: fun.pairWaitText(game), ghost: !!game.funGhost, park: game.funPark ? game.funPark.seats.length : 0, culprit: game.funCulprit ? game.funCulprit.id : null, press: game.press ? game.press.dest.length : 0, seats: game.pairSeats || null }), // R11 fun lane (R16: L9's lit seats / bracket)
+      // R12: the alive cats (cells inset 10%, exit chevrons) under the pair's tag (R16: the dashed route is gone)
       pairClash() {
         const g = game.pairTag, c = game.cell;
         if (!g) return null;

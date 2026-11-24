@@ -403,8 +403,8 @@ try {
   if ((await lsave()).boosters.hint !== h0 + 1) throw new Error('streak bonus hint missing');
   if ((await qa('state()')).bench[1] < 6) throw new Error('streak bonus seat missing, bench ' + (await qa('state()')).bench);
   // starter offer after level 10 (fresh offer state, not owned, not the first session): no pop-up on the hub, a tag
-  // on Shop, never on a win card (the payoff moment), and one offer row on a lost bench
-  await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:11,coins:50,meta:{sessions:3},cafe:{stars:0,built:{counter_counter:1,counter_pastry:1,counter_lamps:1,counter_chalkboard:1,counter_tables:1,counter_plant:1,window_seat:1}}}))');
+  // on Shop (R16: from level 16 on), never on a win card (the payoff moment), and one offer row on a lost bench
+  await ev('localStorage.setItem("lco_save", JSON.stringify({v:6,level:16,coins:50,meta:{sessions:3},cafe:{stars:0,built:{counter_counter:1,counter_pastry:1,counter_lamps:1,counter_chalkboard:1,counter_tables:1,counter_plant:1,window_seat:1}}}))');
   await boot();
   await sleep(1200);
   if ((await qa('state()')).sheet === 'starter') throw new Error('the starter offer must never pop up on café entry');
@@ -2033,7 +2033,7 @@ try {
     const saveImg = (name, url) => writeFileSync(join(OUT, name), Buffer.from(url.split(',')[1], 'base64'));
     const lib = (named) => ({ last: 14 + named, shops: { library: { cats: 15 * named, named, sets: 0, cur: Array.from({ length: named }, (_, i) => [15 + i, 3 + i, i % 8]), done: [] } } });
     // presentation: one order row (door, then count + clock as one capsule) and an ordinary intro as a bubble beside it
-    for (const [lg, n] of [['en', 7], ['tr', 8]]) {
+    for (const [lg, n] of [['en', 13], ['tr', 14]]) { // R16: L1-12 are lessons (no order bubble)
       await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: ${n}, coins: 300, meta: { sessions: 3 }, cafe: { stars: 1, built: { counter_counter: 1 } }, settings: { lang: '${lg}', sound: false, music: false, haptics: false } }))`);
       await boot(); await qa(`level(${n})`); await sleep(900);
       const L = await qa('layout()');
