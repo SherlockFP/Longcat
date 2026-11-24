@@ -324,9 +324,9 @@ try {
   if (sv.boosters.hint !== 3 || !sv.cafe.hintDay) throw new Error('free hint should not spend a booster');
   if (sv.boosters.scoop !== 3) throw new Error('level 20 should grant the Pudding scoop');
   await shot('20-perks-level20');
-  await qa('level(42)'); await sleep(500);
+  await qa('level(52)'); await sleep(500);
   if ((await qa('state()')).bench[1] !== 6) throw new Error('Luna should add a seat on a hard first try, got ' + (await qa('state()')).bench);
-  await qa('level(42)'); await sleep(500);
+  await qa('level(52)'); await sleep(500);
   if ((await qa('state()')).bench[1] !== 5) throw new Error('the retry of a hard level gets no extra seat');
   const c0 = (await ev('JSON.parse(localStorage.getItem("lco_save")).coins'));
   await qa('level(2)'); await sleep(400);
@@ -442,7 +442,7 @@ try {
   await shot('23e-no-lives-tr');
   await qa('lang("en")');
 
-  // 24 mechanics: sleeping dog (L8), yarn (L12), mystery (L40), frozen (L55); teaching level each, then the reaction
+  // 24 mechanics: sleeping dog (L8), yarn (L12), mystery (L41, L40 is a boss), frozen (L55); teaching level each, then the reaction
   const mech = () => qa('mechState()');
   const stepUntil = async (pred, { slow = 1, wait = 1400, max = 14 } = {}) => {
     for (let i = 0; i < max; i++) {
@@ -473,13 +473,13 @@ try {
   await stepUntil((b, a) => a.yarn < b.yarn, { slow: 0.3, wait: 2000 });
   await shot('25b-yarn-rolls-off');
   await qa('slow(1)'); await sleep(1500);
-  await qa('level(40)'); await sleep(900);
-  if ((await mech()).hidden < 1) throw new Error('level 40 should have a mystery cat');
+  await qa('level(41)'); await sleep(900);
+  if ((await mech()).hidden < 1) throw new Error('level 41 should have a mystery cat');
   await shot('26a-mystery-teach');
   await stepUntil((b, a) => a.hidden < b.hidden, { slow: 0.3, wait: 1300 });
   await shot('26b-mystery-revealed');
   await qa('slow(1)'); await sleep(1500);
-  await qa('lang("tr")'); await qa('level(40)'); await sleep(900);
+  await qa('lang("tr")'); await qa('level(41)'); await sleep(900);
   await shot('26c-mystery-teach-tr');
   await qa('lang("en")');
   await qa('level(55)'); await sleep(900);
@@ -2888,6 +2888,10 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save"); localStorage.removeItem("lco_shape")');
   }
+  // ---- R11 boss lane: L19 -> L20 boss intro + nameplate + frame, HP mid-level, the defeat ceremony and the boss chest
+  // (rare reveal), the L5 milestone chest, the streak chest, the flame going out, the map's castle / chest nodes and pill
+  // (EN + TR, 1600x900), a waiting chest, reduced motion. Body: scripts/qa-boss.mjs. QA_SKIP_BOSS=1 skips it. ----
+  if (!process.env.QA_SKIP_BOSS) await (await import('./qa-boss.mjs')).bossQA({ send, ev, qa, shot, boot, sleep, waitFor });
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

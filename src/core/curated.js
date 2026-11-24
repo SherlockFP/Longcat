@@ -6,11 +6,14 @@
 import { makeCat, makeBoard } from './board.js';
 import { generate } from './generate.js';
 
-export const BOARD_REV = 4; // the newest board revision (kit/dare.js token digit)
+export const BOARD_REV = 5; // the newest board revision (kit/dare.js token digit): 5 = the R11x schedule (generate.js SCHED 2:
+// bosses, shaped boards, folded quilts); 2, 3 and 4 (made before it) keep the schedule-1 board
 // R11 fix round 1: the revision each curated board arrived in. A link names the oldest revision that plays the board it
-// was made on (linkRev), so every link made before L7 was curated keeps opening the board it names
+// was made on (linkRev), so every link made before L7 was curated keeps opening the board it names. Below L15 both
+// schedules deal the same boards (scripts/check-dare.mjs), so only a link from L15 on needs the schedule-2 digit
 const SINCE = { 6: 3, 9: 3, 11: 3, 7: 4 };
-export const linkRev = (n) => Math.max(3, CURATED[n] ? SINCE[n] : 3);
+export const SCHED_FROM = 15;
+export const linkRev = (n) => (n >= SCHED_FROM ? BOARD_REV : Math.max(3, CURATED[n] ? SINCE[n] : 3));
 
 const mk = (list) => list.map((c, i) => makeCat(i, c[1], c[0]));
 const O = 'tabby', B = 'tuxedo', P = 'calico', G = 'gray';
@@ -104,8 +107,8 @@ export const CURATED = {
   },
 };
 
-// the board a level plays: a curated one from the revision it arrived in on, else the generated one
+// the board a level plays: a curated one from the revision it arrived in on, else the generated one on the link's schedule
 export function boardOf(n, rev = BOARD_REV) {
   const f = CURATED[n] && rev >= SINCE[n] && CURATED[n];
-  return f ? f() : generate(n);
+  return f ? f() : generate(n, rev >= 5 ? 2 : 1);
 }

@@ -64,14 +64,14 @@ let maxMs = 0;
 let maxMsN = 0;
 let searchMiss = 0;
 let searchNodes = 0;
-const kinds = { normal: 0, hard: 0, super: 0 };
+const kinds = { normal: 0, hard: 0, boss: 0 };
 const hardAt = [];
-const superAt = [];
+const superAt = []; // boss levels (R11 boss lane: every 20th)
 // mechanics per level range: levels that carry each mechanic, and total pieces
 const RANGES = [[1, 7], [8, 11], [12, 39], [40, 54], [55, 69], [70, 600]];
-const MECH_FROM = { dog: 8, yarn: 12, mystery: 40, frozen: 55, spring: 61, swivel: 81 };
+const MECH_FROM = { dog: 8, yarn: 12, mystery: 41, frozen: 55, spring: 61, swivel: 81 };
 const mechStat = RANGES.map(() => ({ dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0, pieces: 0, mixed: 0 }));
-// decision ramp per level range (normal levels and hard/super separately)
+// decision ramp per level range (normal levels and hard/boss separately)
 const DRANGES = [[5, 14], [15, 39], [40, 99], [100, 249], [250, 600]];
 const dStat = DRANGES.map(() => ({ normal: [], hard: [] }));
 let bandMiss = 0;
@@ -115,11 +115,13 @@ for (let n = 1; n <= MAXN; n++) {
   eq(b.meta.kind, kind, `level ${n} kind`);
   kinds[kind]++;
   if (kind === 'hard') hardAt.push(n);
-  if (kind === 'super') superAt.push(n);
+  if (kind === 'boss') superAt.push(n);
+  ok((kind === 'boss') === (n >= 20 && n % 20 === 0), `level ${n}: a boss every 20th level and only there (${kind})`);
+  if (kind === 'boss') ok(!TEACH[n] && rp.won, `boss level ${n}: never a teaching level, and its line wins`);
   if (kind !== 'normal') ok(n >= 15, `level ${n} hard before L15`);
   const rs = createState(b);
   for (const id of b.meta.order) tap(rs, id);
-  eq(stars(rs), kind === 'super' ? 3 : kind === 'hard' ? 2 : 1, `level ${n} stars`);
+  eq(stars(rs), kind === 'boss' ? 3 : kind === 'hard' ? 2 : 1, `level ${n} stars`);
   if (n >= 5) ok(a.fill >= 0.55, `level ${n} fill ${a.fill.toFixed(2)} < 0.55`);
   // decisions on the winning line, measured again here by the solver under the real rules
   if (n >= 5) {
@@ -132,7 +134,7 @@ for (let n = 1; n <= MAXN; n++) {
       if (P.after) ok(d.traps <= 2, `breather level ${n} has ${d.traps} traps`);
       else ok(d.traps >= 1, `level ${n} has no trap`);
       if (kind === 'hard') ok(d.traps >= 3 && d.chain3 >= 1, `hard level ${n}: traps ${d.traps}, 3-chains ${d.chain3}`);
-      if (kind === 'super') ok(d.traps >= 4 && d.chain3 >= 1, `super level ${n}: traps ${d.traps}, 3-chains ${d.chain3}`);
+      if (kind === 'boss') ok(d.traps >= 4 && d.chain3 >= 1, `boss level ${n}: traps ${d.traps}, 3-chains ${d.chain3}`);
       ok(d.traps === b.meta.traps && d.chains === b.meta.chains, `level ${n} meta traps/chains differ from the solver`);
       if (!b.meta.band) bandMiss++;
       // every dog, yarn ball, ice coat and mystery that ships changes what is safe to tap (else it was stripped)
@@ -195,7 +197,7 @@ for (let n = 1; n <= MAXN; n++) {
     }
   }
   if (kind === 'hard' && !TEACH[n]) ok(rp.peak >= bs - 2, `hard level ${n} bench peak ${rp.peak} too tame`);
-  if (kind === 'super' && !TEACH[n]) ok(rp.peak === bs - 1, `super level ${n} bench peak ${rp.peak} too tame`);
+  if (kind === 'boss' && !TEACH[n]) ok(rp.peak === bs - 1, `boss level ${n} bench peak ${rp.peak} too tame`);
   // independent search on the real rules (bounded); most levels must be found
   if (n <= 3 || n % 3 === 0) {
     const s = solve(b, 6000);
@@ -212,12 +214,13 @@ ok(maxMs < 60, `worst gen time ${maxMs.toFixed(1)}ms (level ${maxMsN}) >= 60ms`)
 ok(bandMiss <= 0.2 * (MAXN - 4), `${bandMiss} levels miss their full difficulty band`);
 ok(lateOk >= 0.88 * lateN, `only ${lateOk}/${lateN} normal levels from L10 hold a delayed trap`);
 ok(searchMiss <= 3, `search missed ${searchMiss} levels within budget`);
-// hard every 7-10 from L15, super about every 30
+// hard every 7-10 from L15 (a hard slot within 3 levels of a boss is dropped), a boss on every 20th level
 ok(hardAt[0] === 15, `first hard level ${hardAt[0]} != 15`);
 const all = [...hardAt, ...superAt].sort((x, y) => x - y);
-for (let i = 1; i < all.length; i++) ok(all[i] - all[i - 1] >= 7 && all[i] - all[i - 1] <= 10, `hard gap ${all[i - 1]}->${all[i]}`);
-ok(superAt.length >= 15 && superAt.length <= 25, `super hard count ${superAt.length}`);
-for (let i = 1; i < superAt.length; i++) ok(superAt[i] - superAt[i - 1] >= 26 && superAt[i] - superAt[i - 1] <= 45, `super gap ${superAt[i - 1]}->${superAt[i]}`);
+for (let i = 1; i < all.length; i++) ok(all[i] - all[i - 1] >= 4 && all[i] - all[i - 1] <= 13, `hard gap ${all[i - 1]}->${all[i]}`);
+ok(hardAt.every((n) => n % 20 > 3 && n % 20 < 17), 'no hard level right next to a boss');
+eq(superAt, Array.from({ length: MAXN / 20 }, (_, i) => 20 * (i + 1)), 'boss levels: every 20th');
+ok(hardAt.length >= MAXN / 20, `at least one hard level between two bosses (${hardAt.length})`);
 
 // mechanic counts per range: each chapter's mechanic shows up, later ranges mix them
 RANGES.forEach(([lo, hi], i) => {
@@ -437,7 +440,7 @@ const car = (color, cap = 3) => ({ color, cap });
     for (let n = 15; n < 200; n++) if (levelKind(n) === k) return n;
     return 0;
   };
-  for (const [k, s] of [['normal', 1], ['hard', 2], ['super', 3]]) {
+  for (const [k, s] of [['normal', 1], ['hard', 2], ['boss', 3]]) {
     const n = k === 'normal' ? 5 : find(k);
     const b = generate(n);
     const st = createState(b);
@@ -700,7 +703,7 @@ RANGES.forEach(([lo, hi], i) => {
   const m = mechStat[i];
   console.log(`  L${lo}-${hi}: dog ${m.dog}, yarn ${m.yarn}, mystery ${m.mystery}, frozen ${m.frozen}, spring ${m.spring}, swivel ${m.swivel}, mixed ${m.mixed}, pieces ${m.pieces}`);
 });
-console.log(`\nkinds ${JSON.stringify(kinds)}; hard at ${hardAt.slice(0, 8).join(',')}...; super at ${superAt.slice(0, 6).join(',')}...`);
+console.log(`\nkinds ${JSON.stringify(kinds)}; hard at ${hardAt.slice(0, 8).join(',')}...; boss at ${superAt.slice(0, 6).join(',')}...`);
 console.log('\ndecisions per range (averages; dead = losing taps / legal taps, long = share of cats 4+ cells)');
 const avg = (arr, k) => (arr.length ? arr.reduce((t, x) => t + x[k], 0) / arr.length : 0);
 DRANGES.forEach(([lo, hi], i) => {

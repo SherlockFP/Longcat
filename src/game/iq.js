@@ -39,7 +39,7 @@ export function restore(d, raw) {
 // par: the number of taps on the generator's winning line. A brisk player frees about a cat a second; the cuts leave
 // room for reading the board and grow on hard (x1.15) and super hard (x1.3) boards, whose lines hide traps.
 export function cuts(par, kind = 'normal') {
-  const k = kind === 'super' ? 1.3 : kind === 'hard' ? 1.15 : 1;
+  const k = kind === 'boss' ? 1.3 : kind === 'hard' ? 1.15 : 1;
   const p = Math.max(1, par | 0);
   const r = (s) => Math.round(s * k) * 1000;
   return { g: r(p * 1.2 + 3), s: r(p * 2 + 6), b: r(p * 3.2 + 10) };

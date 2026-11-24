@@ -2,6 +2,8 @@
 import { createHash } from 'node:crypto';
 import { encode, encodeV1, decode, judge, cleanName, trGenitive, shortCode, qrCode } from '../src/kit/dare.js';
 import { qrMatrix } from '../src/kit/qr.js';
+import { boardOf, linkRev } from '../src/core/curated.js';
+import { generate, levelKind } from '../src/core/generate.js';
 
 const bad = [];
 const must = (ok, msg) => { if (!ok) bad.push(msg); };
@@ -27,6 +29,7 @@ must(hx && !('x' in hx) && !('i' in hx), 'match flag only on chain, hostile id d
 const s2 = shortCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, i: 'ab12cd' });
 must(s2 === '3l13-5-c3-ab12cd', 'short code ' + s2);
 must(JSON.stringify(decode(s2, base)) === JSON.stringify({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, nm: '', i: 'ab12cd', rev: 3 }), 'core alone plays the board ' + JSON.stringify(decode(s2, base)));
+must(shortCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, rev: 3 }) === '3l13-5-c3', 'a reply on a token-3 board keeps its 3');
 // R11 fix 2: a link of the older token (2) still decodes, without rev: it opens the generated board it was made on
 must(JSON.stringify(decode('2l6-5-c3-ab12cd', base)) === JSON.stringify({ n: 6, b: 5, k: 'l', m: 'chain', g: 3, nm: '', i: 'ab12cd' }), 'a token-2 link keeps its board');
 let seenRev = null;
@@ -35,6 +38,45 @@ must(seenRev === 3, 'baseBench sees the link revision');
 // R11 fix round 1: the curated L7 arrived in revision 4; its links say 4 and decode with it, every other link still says 3
 must(shortCode({ n: 7, b: 5, k: 'l', m: 'seats', g: 2, rev: 4 }) === '4l7-5-s2' && decode('4l7-5-s2', base)?.rev === 4, 'a rev-4 link round trips');
 must(shortCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, rev: 3 }).startsWith('3l13-'), 'a rev-3 link still says 3');
+// R11x: the leading digit is also the level-schedule version (5 = schedule 2; 2, 3, 4 and v1 = schedule 1). L34 was
+// a 'super' hard level (4 seats) before the
+// boss schedule and is a plain hard one (5 seats) on it: a token made before (4, 3, 2 or v1: no schedule) still opens
+// the old board, byte for byte (sha256 of the pre-boss generator's L34, commit fdbfbfd), a new token (5) the new one
+const bb = (n, rev) => boardOf(n, rev).meta.benchSize;
+const sha = (b) => createHash('sha256').update(JSON.stringify(b)).digest('hex');
+const OLD34 = '7cc1f6115c7fbbec043e748b483e66cb47d607018ea6d877d54652ab46bf16f5';
+must(levelKind(34, 1) === 'super' && levelKind(34) === 'hard', 'L34 changed kind ' + levelKind(34, 1) + ' > ' + levelKind(34));
+const o34 = decode('3l34-4-c3-ab12cd', bb);
+must(o34 && o34.rev === 3 && o34.b === 4 && sha(boardOf(o34.n, o34.rev)) === OLD34, 'an old token-3 L34 link opens the old board ' + JSON.stringify(o34));
+must(sha(generate(34, 1)) === OLD34 && sha(generate(34)) !== OLD34, 'the legacy schedule path is the pre-boss generator');
+const v34 = decode(encodeV1({ n: 34, b: 4, k: 'l', m: 'chain', g: 3 }), bb);
+must(v34 && !v34.rev && sha(boardOf(v34.n, v34.rev || 2)) === OLD34, 'a v1 L34 link (no rev: main.js reads it as 2) opens the old board');
+must(decode('2l34-4-c3', bb)?.b === 4, 'an old link keeps the old seat count');
+const n34 = encode({ n: 34, b: 5, k: 'l', m: 'chain', g: 3, i: 'qq11', nm: 'Ana', rev: linkRev(34) });
+const d34 = decode(n34, bb);
+must(n34.startsWith('5l34-5-c3-qq11.') && d34 && d34.rev === 5 && d34.n === 34 && d34.b === 5 && d34.nm === 'Ana', 'a new token round-trips ' + n34 + ' ' + JSON.stringify(d34));
+must(d34 && JSON.stringify(boardOf(d34.n, d34.rev)) === JSON.stringify(generate(34)), 'a new token opens the current board');
+must(decode('5l20-5-c3', bb)?.rev === 5 && boardOf(20, 5).meta.kind === 'boss' && boardOf(20, 4).meta.kind === 'normal' && boardOf(20, 3).meta.kind === 'normal', 'L20: boss on a new token, the old normal board on an old one');
+must(decode('4l34-4-c3', bb)?.b === 4 && sha(boardOf(34, 4)) === OLD34, 'a token-4 link (R11 fix round 1, the curated L7) is still schedule 1');
+// R11x shape lane: schedule 1 has no shaped boards and no folded quilts. An old token for L16 (now the heart) or L22 (now
+// the first quilt) opens the old plain board byte for byte (sha256 of the pre-R11x generator, commit fdbfbfd); a new one
+// the shaped / folded board
+{
+  const OLD = { 16: '965ed2a8b8f4fa40906f8cee57339ee17760f7cb210f499a47244138c54ea673', 22: '2f90aeabebd2549c44f21d56aefcc7f81cbbe2f448940207c2d60eaecded04db' };
+  for (const tok of ['3l16-5-c2', '4l16-5-c2', '2l16-5-c2', '3l22-5-c2', '4l22-5-c2']) {
+    const d = decode(tok, bb);
+    const b = d && boardOf(d.n, d.rev || 2);
+    must(b && !b.shape && !b.folds && sha(b) === OLD[d.n], `old token ${tok} opens the old plain board`);
+  }
+  const h = boardOf(16, linkRev(16));
+  must(linkRev(16) === 5 && h.shape && h.shape.name === 'heart', 'a new L16 link opens the heart');
+  const q = boardOf(22, decode(shortCode({ n: 22, b: 5, k: 'l', m: 'chain', g: 2, rev: linkRev(22) }), bb).rev);
+  must(q.folds && q.folds.length >= 1, 'a new L22 link opens the quilt');
+  // below L15 both schedules deal the same boards, so linkRev keeps those links on their old digit
+  const strip = (b) => { const m = { ...b.meta }; delete m.shape; delete m.folds; return JSON.stringify({ ...b, meta: m }); };
+  for (let n = 1; n < 15; n++) must(strip(generate(n, 1)) === strip(generate(n, 2)), `L${n} is the same board on both schedules`);
+  for (let n = 1; n < 15; n++) must(linkRev(n) === (n === 7 ? 4 : 3), `L${n} link digit ${linkRev(n)}`);
+}
 must(decode(s2.toUpperCase(), base)?.i === 'ab12cd', 'a typed (capitalised) core still decodes');
 must(decode('2d4-5-s0', base)?.m === 'seats' && decode('2d4-5-s0', base).g === 0 && decode('2d4-5-s0', base).k === 'd', 'daily no-park core');
 must(decode('2r9-5-t123', base)?.g === 123, 'time core');

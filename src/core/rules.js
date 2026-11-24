@@ -139,11 +139,11 @@ export const front = (state) => state.carriers[0] || null;
 export const previews = (state, n = 2) => state.carriers.slice(1, 1 + n);
 export const benchFree = (state) => state.benchSize - state.benchUsed;
 
-// Stars per level type: normal 1, hard 2, super hard 3. Zero until won.
+// Stars per level type: normal 1, hard 2, boss 3 (a schedule-1 'super' board from an old dare link: 3). Zero until won.
 export function stars(state) {
   if (!isWon(state)) return 0;
   const k = state.board.meta && state.board.meta.kind;
-  return k === 'super' ? 3 : k === 'hard' ? 2 : 1;
+  return k === 'boss' || k === 'super' ? 3 : k === 'hard' ? 2 : 1;
 }
 
 // Take a cat off the grid; trailing kittens follow. Pushes ids (parent first) to `freed`.

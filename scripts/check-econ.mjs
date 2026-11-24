@@ -291,7 +291,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   const tasks = C.areas.flatMap((a) => a.tasks);
   // café pacing (as above): the level after which each task is built
   const builtAt = [];
-  { let st = 0, i = 0; for (let n = 1; n < 400 && i < tasks.length; n++) { const k = levelKind(n); st += k === 'super' ? 3 : k === 'hard' ? 2 : 1; if (n + 1 < 4) continue; while (i < tasks.length && st >= tasks[i].cost) { st -= tasks[i].cost; builtAt[i++] = n; } } }
+  { let st = 0, i = 0; for (let n = 1; n < 400 && i < tasks.length; n++) { const k = levelKind(n); st += k === 'boss' ? 3 : k === 'hard' ? 2 : 1; if (n + 1 < 4) continue; while (i < tasks.length && st >= tasks[i].cost) { st -= tasks[i].cost; builtAt[i++] = n; } } }
   const houseDone = Math.max(...builtAt);
   const resAt = (lv) => tasks.map((t, i) => (t.resident && builtAt[i] < lv ? t.resident.id : null)).filter(Boolean);
   const d = fresh();
@@ -334,7 +334,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
       // play this visit's half of the day's levels
       for (let k = 0; k < levels / 2; k++) {
         d.level++;
-        { const k = levelKind(d.level - 1); stars += k === 'super' ? 3 : k === 'hard' ? 2 : 1; }
+        { const k = levelKind(d.level - 1); stars += k === 'boss' ? 3 : k === 'hard' ? 2 : 1; }
         L.reqEvent(d, 'win');
         L.reqEvent(d, 'carrier', 4);
         R.jobsEvent(d, day, res, 'win'); R.jobsEvent(d, day, res, 'carrier', 4); R.jobsEvent(d, day, res, 'cat', 15);
@@ -616,7 +616,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
 }
 
 // ---------------- café star pacing (sim of a player who wins every level first try) ----------------
-// A first clear pays its stars (normal 1, hard 2, super 3) into the café; the hub opens at L4 with the L1-3 stars banked
+// A first clear pays its stars (normal 1, hard 2, boss 3) into the café; the hub opens at L4 with the L1-3 stars banked
 // (CAFE_FROM in main.js) and the player builds the next task as soon as it is affordable.
 {
   const { readFileSync } = await import('node:fs');
@@ -629,7 +629,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   const builtAt = [];
   for (let n = 1; n < 400 && i < tasks.length; n++) {
     const k = levelKind(n);
-    st += k === 'super' ? 3 : k === 'hard' ? 2 : 1;
+    st += k === 'boss' ? 3 : k === 'hard' ? 2 : 1;
     if (n + 1 < 4) continue; // the café opens once level 4 is reached
     while (i < tasks.length && st >= tasks[i].cost) { st -= tasks[i].cost; builtAt[i++] = n; }
   }
@@ -647,7 +647,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
 
 // ---------------- adoption orders (src/game/orders.js, data/orders.js) ----------------
 // every level is an order from a Cat Street keeper, seeded by the level number; a first clear adopts one named cat into
-// the shop's set (SET_SIZE), a full set pays SET_REWARDS; Urgent (hard) / VIP (super) orders add a first-clear bonus
+// the shop's set (SET_SIZE), a full set pays SET_REWARDS; Urgent (hard) / VIP (boss) orders add a first-clear bonus
 {
   const OR = await import('../src/game/orders.js');
   const { levelKind } = await import('../src/core/generate.js');
@@ -659,7 +659,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
     const k = levelKind(n);
     const o = OR.orderOf(n, k);
     if (k === 'hard') { hardN++; ok(o.kind === 'urgent' && o.bonus === OR.BONUS.hard, `L${n} hard = Urgent order`); }
-    if (k === 'super') { superN++; ok(o.kind === 'vip' && o.bonus === OR.BONUS.super, `L${n} super = VIP order`); }
+    if (k === 'boss') { superN++; ok(o.kind === 'vip' && o.bonus === OR.BONUS.boss, `L${n} boss = VIP order`); }
     if (k === 'normal') ok(o.kind === 'normal' && o.bonus === 0, `L${n} normal order has no bonus`);
     bonus += OR.payParts(n, k).reduce((t, p) => t + p.n, 0);
     ok(o.name >= 0 && o.name < OR.CAT_NAMES.length, `L${n} names a cat`);
@@ -787,7 +787,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
       const c0 = d.coins;
       for (let k = 0; k < (dd === 0 ? 10 : dd < 7 ? 6 : 4); k++) {
         const kind = levelKind(d.level);
-        d.coins += 20 + Math.floor(d.level / 5) + 5 + (kind === 'super' ? 20 : kind === 'hard' ? 10 : 0) + Math.min(15, Math.floor(dd / 6)); // base, tidy, hard bonus, café perks / love
+        d.coins += 20 + Math.floor(d.level / 5) + 5 + (kind === 'boss' ? 20 : kind === 'hard' ? 10 : 0) + Math.min(15, Math.floor(dd / 6)); // base, tidy, hard bonus, café perks / love
         d.level++;
       }
       d.coins += 15 + 15 + 20 + E.CHEST.coins + (E.LOGIN_REWARDS[dd % 7].coins || 0); // three daily tasks, the chest, the login day
@@ -893,6 +893,106 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   d.req.list = d.req.list.filter((x) => x !== br);
   L.reqTick(d, t0 + 2000, ['mochi', 'biscuit']);
   ok(!d.req.list.some((x) => x.k === 'win' && x.need === 3), 'the bridge ask comes once');
+}
+
+// ---------------- R11 boss lane: boss chests, milestone chests, the flame streak; 120 days with chests on ----------------
+{
+  const BS = await import('../src/game/boss.js');
+  const SH = await import('../src/game/shop.js');
+  const { levelKind } = await import('../src/core/generate.js');
+  // rules: what each first clear queues, replays queue nothing, a continue keeps the flame, a given-up loss puts it out
+  {
+    const d = fresh();
+    const got = {};
+    for (let n = 1; n <= 40; n++) got[n] = BS.onClear(d, n).map((e) => e.t).join('+');
+    eq([got[5], got[10], got[15], got[20], got[40]], ['wood', 'wood', 'wood+streak', 'boss', 'boss'], 'chests on 5 / 10 / 15 / 20 / 40');
+    eq(BS.onClear(d, 12), [], 'a replayed level queues nothing');
+    ok(BS.state(d).beat === 2, 'two bosses beaten');
+    const f = fresh();
+    BS.onClear(f, 1); BS.onClear(f, 2);
+    BS.markFail(f, 3);
+    const g = BS.onClear(f, 3); // lost, continued, won
+    ok(g.some((e) => e.t === 'streak'), 'a continue keeps the flame: the 3rd win pays the streak chest');
+    BS.onClear(f, 4);
+    BS.markFail(f, 5);
+    ok(BS.startAttempt(f) && BS.flame(f) === 0, 'a loss given up (a new attempt) puts the flame out');
+    ok(!BS.startAttempt(f), 'only once');
+  }
+  // boss chests: tier fixed per boss index, the first boss always rare (a cosmetic), loot deterministic
+  {
+    eq(BS.tierOf(0), 'rare', 'the first boss chest is rare');
+    const tiers = Array.from({ length: 60 }, (_, i) => BS.tierOf(i));
+    ok(tiers.every((x, i) => !i || !(x === 'common' && tiers[i - 1] === 'common')), 'never two common boss chests in a row');
+    ok(tiers.filter((x) => x === 'epic').length >= 8, 'an epic every 6 bosses');
+    const a = BS.lootOf(fresh(), { t: 'boss', n: 20, i: 0 });
+    const b = BS.lootOf(fresh(), { t: 'boss', n: 20, i: 0 });
+    eq(a, b, 'the same boss chest holds the same loot');
+    ok(a.tier === 'rare' && !!a.cos && SH.item(a.cos).kind !== 'room', `the first boss gives an outfit or carrier skin (${a.cos})`);
+    const e = BS.lootOf(fresh(), { t: 'boss', n: 100, i: 4 });
+    ok(e.tier === 'epic' && SH.item(e.cos).kind === 'room', `an epic boss chest gives a play room (${e.cos})`);
+    const d = fresh();
+    SH.ensure(d);
+    for (const x of SH.COSMETICS) if (x.cost) d.shop.own[x.id] = 1;
+    const c = BS.lootOf(d, { t: 'boss', n: 20, i: 0 });
+    ok(!c.cos && c.coins > a.coins, 'everything owned: a rare chest pays coins instead');
+    // the queue pays on open and survives a reload
+    const q = fresh();
+    q.level = 21;
+    BS.onClear(q, 20);
+    save.commit();
+    const mod = await import('../src/kit/save.js?boss=' + Math.random());
+    ok(mod.save.data.boss && mod.save.data.boss.q.length === 1 && mod.save.data.boss.q[0].t === 'boss', 'an unopened chest survives a reload');
+    const c0 = q.coins;
+    const r = BS.openNext(q);
+    ok(r && q.coins === c0 + r.loot.coins && SH.owns(q, r.loot.cos) && BS.pending(q) === 0, 'opening pays coins, boosters and the look');
+  }
+  // 120 days (the shop sim's steady player: 10 levels on day 1, 6 a day in week 1, then 4) with every chest opened. One
+  // level in 6 is lost and retried (the flame goes out). Chest coins stay a side income, the cosmetics stay a real sink,
+  // and the boosters the chests hand out are used up by a player who spends one every 3 levels plus one per hard / boss
+  // (the shop deals' boosters are left out: the chests alone must not pile up).
+  {
+    const d = fresh();
+    d.level = 1;
+    const order = SH.COSMETICS.filter((x) => x.cost).sort((x, y) => x.cost - y.cost);
+    let play = 0, chestCoins = 0, chestBoost = 0, allAt = -1, peak = 0, used = 0, gifts = 0, cs = 0; // cs: boosters from chests still unused
+    for (let dd = 0; dd < 120; dd++) {
+      const c0 = d.coins;
+      for (let k = 0; k < (dd === 0 ? 10 : dd < 7 ? 6 : 4); k++) {
+        const n = d.level;
+        const kind = levelKind(n);
+        if (n % 6 === 4) BS.markFail(d, n); // lost once, then retried
+        BS.startAttempt(d);
+        d.coins += 20 + Math.floor(n / 5) + 5 + (kind === 'boss' ? 20 : kind === 'hard' ? 10 : 0) + Math.min(15, Math.floor(dd / 6));
+        BS.onClear(d, n);
+        d.level++;
+        const use = (n % 3 === 0 ? 1 : 0) + (kind !== 'normal' ? 1 : 0);
+        for (let u = 0; u < use && cs > 0; u++) { cs--; used++; } // a chest booster is spent first
+      }
+      d.coins += 15 + 15 + 20 + E.CHEST.coins + (E.LOGIN_REWARDS[dd % 7].coins || 0);
+      play += d.coins - c0;
+      const c1 = d.coins;
+      const b1 = d.boosters.hint + d.boosters.undo + d.boosters.scoop;
+      while (BS.pending(d)) { const r = BS.openNext(d); if (r.loot.cos) gifts++; }
+      chestCoins += d.coins - c1;
+      const gotB = d.boosters.hint + d.boosters.undo + d.boosters.scoop - b1;
+      chestBoost += gotB;
+      cs += gotB;
+      const lv = Math.round((d.coins - c0) * 0.25); d.coins -= lv; // boosters and seats bought in levels
+      for (const it of order) if (!SH.owns(d, it.id) && d.coins - it.cost >= 300) SH.cosBuy(d, it.id);
+      const x = SH.dealOf(E.dayOf(T0) + dd);
+      if (d.coins - x.price >= 300) SH.dealBuy(d, E.dayOf(T0) + dd); // the deal of the day, as in the shop sim
+      if (allAt < 0 && order.every((it) => SH.owns(d, it.id))) allAt = dd;
+      peak = Math.max(peak, cs);
+      ok(d.coins >= 0, `boss sim day ${dd + 1}: coins never go negative`);
+    }
+    const cpd = chestCoins / 120, ppd = play / 120, bpd = chestBoost / 120;
+    ok(cpd >= 20 && cpd <= ppd * 0.18, `chest coins a day ${cpd.toFixed(1)} within 20 coins..18% of play (${ppd.toFixed(0)})`);
+    ok(bpd <= 2, `chest boosters a day ${bpd.toFixed(2)} <= 2`);
+    ok(peak <= 12, `the chests' boosters never pile up (peak unused ${peak})`);
+    ok(allAt > 30 && allAt < 120, `with chests: the cosmetics are still a sink (all owned on day ${allAt + 1})`);
+    ok(gifts >= 3 && gifts <= order.length - 2, `chests give some looks, the shop sells the rest (${gifts} of ${order.length})`);
+    console.log(`  boss chests 120 days: ${cpd.toFixed(1)} coins/day from chests vs ${ppd.toFixed(0)} from play (${((cpd / ppd) * 100).toFixed(0)}%), ${bpd.toFixed(2)} boosters/day (used ${used}, peak unused ${peak}), ${gifts} looks from chests, all cosmetics on day ${allAt + 1}, ${BS.state(d).beat} bosses`);
+  }
 }
 
 if (failures) {
