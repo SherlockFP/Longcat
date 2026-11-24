@@ -55,7 +55,8 @@ const FALLBACK = url('cat_head_orange_happy');
 export const portrait = (b, cls = '') => `<span class="bsp ${cls}"><img src="${url('boss_' + b.art)}" style="filter:${b.tint || 'none'}" alt="" draggable="false" onerror="this.onerror=null;this.src='${FALLBACK}'">${ACC[b.acc] || ''}</span>`;
 const bossName = (b) => loc(b.name);
 
-// ---------------- sounds (synth only: the same tone() voice as the fallbacks in kit/audio.js) ----------------
+// ---------------- sounds: the boss stings are synth (the same tone() voice as the fallbacks in kit/audio.js); the chest
+// opening uses the cozy UI pack (audio.ui: a click per wobble, the lid burst, the rare / epic reveal, the coins landing)
 const hz = (s) => 220 * Math.pow(2, s / 12);
 const SFX = {
   intro: () => synth([
@@ -69,12 +70,9 @@ const SFX = {
   grunt: () => synth([{ type: 'sawtooth', f0: 230, f1: 130, dur: 0.28, vol: 0.14, vib: 13, lp: 800 }]),
   fanfare: () => synth([0, 4, 7, 12].map((s, i) => ({ type: 'triangle', f0: hz(s + 12), t: i * 0.11, dur: 0.22, vol: 0.26 }))
     .concat([7, 12, 16].map((s) => ({ type: 'triangle', f0: hz(s + 12), t: 0.5, dur: 0.9, vol: 0.18 })))),
-  wobble: (k) => synth([{ type: 'triangle', f0: 380 + k * 140, f1: 300 + k * 140, dur: 0.07, vol: 0.2 }]),
-  burst: () => synth([
-    { type: 'sine', f0: 260, f1: 1900, dur: 0.38, vol: 0.22 },
-    ...[0, 4, 7, 12, 16, 19].map((s, i) => ({ type: 'triangle', f0: hz(s + 24), t: 0.2 + i * 0.05, dur: 0.24, vol: 0.12 })),
-  ]),
-  reveal: () => synth([0, 7, 12, 16, 19, 24].map((s, i) => ({ type: 'sine', f0: hz(s + 24), t: i * 0.07, dur: 0.35, vol: 0.1 }))),
+  wobble: () => audio.ui('click'),
+  burst: () => audio.ui('chest'),
+  reveal: () => audio.ui('rare'),
 };
 
 // ---------------- boot ----------------
@@ -295,6 +293,7 @@ function defeat(chest, go) {
   document.body.appendChild(el);
   if (!calm()) confetti(el, 46);
   SFX.fanfare();
+  audio.ui('claim');
   haptics.success();
   const done = () => { if (!cer) return; const c = cer; cer = null; clearTimeout(c.timer); c.el.classList.add('out'); setTimeout(() => c.el.remove(), 260); c.go(); };
   cer = { el, go, timer: setTimeout(done, calm() ? 1600 : 3300) };
@@ -340,7 +339,7 @@ function afterWin(got) {
     const S = ctx.cur();
     card.classList.add('bxhas');
     const streak = got.some((e) => e.t === 'streak');
-    if (!S.daily && !S.show) card.insertAdjacentHTML('beforeend', flameChip(streak));
+    if (!S.daily && !S.show) { card.insertAdjacentHTML('beforeend', flameChip(streak)); if (streak) audio.ui('sparkle'); } // the flame fills: three wins in a row
     chestButton(card);
   }, 120);
 }
@@ -580,7 +579,7 @@ function shower(src, pill, pb, from, add) {
       pill.classList.remove('bump');
       void pill.offsetWidth;
       pill.classList.add('bump');
-      if (i % 3 === 0) audio.tick();
+      if (i % 3 === 0) audio.ui('coin');
     };
   }
 }

@@ -116,6 +116,10 @@ export function shapeKeeps(board, d, P, kit, depth) {
   if (!d || d.startSafe < 2 || d.chains < 1 || (P.after ? d.traps > 2 : d.traps < 1)) return false;
   if (P.kind === 'hard' && !(d.traps >= 3 && d.chain3 >= 1)) return false;
   if (P.kind === 'super' && !(d.traps >= 4 && d.chain3 >= 1)) return false;
+  // R11x: a boss showpiece shape ships only when it keeps the boss floor (scripts/check-core.mjs: 4 traps, a whole carrier
+  // from the bench, the bench run to its last spare seat) and most of the giant order (22+ of the ~24 cats); else the
+  // plain big boss board. Its box is at most 9 x 10, so its cells are never smaller than the plain 9 x 11 boss board's
+  if (P.kind === 'boss' && !(d.traps >= 4 && d.chain3 >= 1 && d.peak >= P.benchSize - 1 && board.cats.length >= 22)) return false;
   let filled = 0;
   for (const c of board.cats) filled += c.cells.length;
   if (!(depth >= 2 && filled / P.area >= 0.55 && (P.n < 6 || (kit.pairs >= 1 && kit.matter >= 1)))) return false;
