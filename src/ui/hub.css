@@ -52,7 +52,7 @@
 @keyframes hmHop { 50% { transform: translateY(-40px) rotate(-8deg); } }
 
 .hmsign { position: absolute; width: 136px; transform: translateY(-62%); z-index: 2; pointer-events: none; }
-.hmsign.l { left: 4px; }
+.hmsign.l { left: 68px; width: 124px; } /* clear of the basket rail (basket.css) */
 .hmsign.r { right: 60px; }
 .hmsign img { display: block; width: 100%; height: auto; filter: drop-shadow(-3px 5px 3px rgba(30, 50, 10, .4)); }
 .hmsign span { position: absolute; left: 12%; right: 12%; top: 25%; height: 44%; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: #fff6e5; text-shadow: 0 1px 0 #5a300f, 0 0 3px rgba(90, 48, 15, .8); }

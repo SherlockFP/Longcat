@@ -271,20 +271,36 @@ function seam(ctx, path, a, b, w, c, al, shp) {
   ctx.restore();
 }
 
-// A few small accents along the body spline, under the breed's markings.
+// A few small accents along the body spline, under the breed's markings. Still cats are baked (perf.js), so the
+// golden sheen and the sparkles cost nothing per frame.
 function drawFur(ctx, path, a, b, c, w, skin) {
   const span = b - a - c * 0.32;
   if (span <= 0) return;
   const swirl = skin === 'skin_candy';
   const gold = skin === 'skin_golden';
+  if (gold) { // a gold-leaf sheen stripe along the back
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255,206,64,0.85)';
+    ctx.lineWidth = w * 0.11;
+    ctx.beginPath();
+    for (let i = 0; i <= 12; i++) {
+      const p = sample(path, a + span * i / 12), off = -w * 0.16;
+      if (i) ctx.lineTo(p.x - p.ty * off, p.y + p.tx * off); else ctx.moveTo(p.x - p.ty * off, p.y + p.tx * off);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
   const count = Math.min(9, Math.ceil(span / (c * (swirl ? 0.52 : 0.29))));
-  ctx.fillStyle = gold ? '#ffd23f' : swirl ? 'rgba(255,249,248,0.8)' : '#f4f2ff';
+  const stars = []; // four-point sparkles: every other one on gold, every third on galaxy
+  ctx.fillStyle = gold ? '#ffd23f' : swirl ? 'rgba(255,249,248,0.95)' : '#f4f2ff';
   ctx.beginPath();
   for (let i = 0; i < count; i++) {
     const p = sample(path, a + span * (i + 0.5) / count);
-    const off = w * (gold ? -0.31 : (i % 2 ? 0.24 : -0.22));
+    const sp = !swirl && i % (gold ? 2 : 3) === 1;
+    const off = w * (gold ? (sp ? 0.2 : -0.31) : (i % 2 ? 0.24 : -0.22));
     const x = p.x - p.ty * off, y = p.y + p.tx * off;
-    if (swirl) {
+    if (sp) stars.push(x, y);
+    else if (swirl) {
       const dx = p.tx * w * 0.17, dy = p.ty * w * 0.17;
       ctx.moveTo(x - dx, y - dy);
       ctx.quadraticCurveTo(x + dy, y - dx, x + dx, y + dy);
@@ -294,6 +310,19 @@ function drawFur(ctx, path, a, b, c, w, skin) {
       ctx.moveTo(x + r, y);
       ctx.arc(x, y, r, 0, Math.PI * 2);
     }
+  }
+  ctx.fill();
+  if (!stars.length) return;
+  const r = w * (gold ? 0.17 : 0.14);
+  ctx.fillStyle = gold ? '#fffbe8' : '#ffe45c';
+  ctx.beginPath();
+  for (let i = 0; i < stars.length; i += 2) {
+    const x = stars[i], y = stars[i + 1];
+    ctx.moveTo(x, y - r);
+    ctx.quadraticCurveTo(x, y, x + r * 0.8, y);
+    ctx.quadraticCurveTo(x, y, x, y + r);
+    ctx.quadraticCurveTo(x, y, x - r * 0.8, y);
+    ctx.quadraticCurveTo(x, y, x, y - r);
   }
   ctx.fill();
 }

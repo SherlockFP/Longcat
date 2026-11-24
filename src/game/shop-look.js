@@ -31,18 +31,21 @@ export function roomImage(art, onLoad) {
 const skins = {
   skin_candy: { shift: 0.28, pals: new Map() },
   skin_galaxy: { shift: -0.3, pals: new Map() },
-  skin_golden: { shift: 0.04, pals: new Map() },
+  skin_golden: { gold: [0.12, 0.1, 0.5], pals: new Map() }, // gold wash (base, mark, back light): the back turns gold, the colour stays
 };
+const GOLD = [255, 191, 46];
+const goldMix = (hex, k) => { const n = parseInt(hex.slice(1), 16); return '#' + [16, 8, 0].map((s, i) => Math.round(((n >> s) & 255) * (1 - k) + GOLD[i] * k).toString(16).padStart(2, '0')).join(''); };
 export function skinPal(pal, id = eq('skin')) {
   const skin = skins[id];
   if (!skin?.pals || pal === MYSTERY_PAL) return pal;
   let styled = skin.pals.get(pal.name);
   if (!styled) {
+    const g = skin.gold;
     styled = {
       ...pal, name: `${pal.name}~${id}`, skin: id,
-      base: shade(pal.base, skin.shift, true),
-      mark: shade(pal.mark, skin.shift * 0.5, true),
-      light: shade(pal.light, skin.shift, true),
+      base: g ? goldMix(pal.base, g[0]) : shade(pal.base, skin.shift, true),
+      mark: g ? goldMix(pal.mark, g[1]) : shade(pal.mark, skin.shift * 0.5, true),
+      light: g ? goldMix(pal.light, g[2]) : shade(pal.light, skin.shift, true),
     };
     skin.pals.set(pal.name, styled);
   }

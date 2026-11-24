@@ -6,7 +6,7 @@ addStrings({
   en: {
     bkName: 'Sleepy basket', bkGift: 'A gift for you!', bkWelcome: 'Welcome gift!',
     bkT_common: 'Sleepy basket', bkT_rare: 'Rare basket', bkT_epic: 'Epic basket', bkG_rare: 'Rare', bkG_epic: 'Epic',
-    bkRail: 'Sleepy baskets', bkOpen: 'Open!', bkTap: 'Wake', bkZzz: 'Zzz',
+    bkRail: 'Sleepy baskets', bkOpen: 'Open!', bkTapWake: 'Tap to wake the cat!', bkTap: 'Wake', bkZzz: 'Zzz',
     bkReadyA: 'awake, tap to open', bkLeftA: 'wakes in {t}', bkSleepA: 'asleep, sleeps {t}, tap to wake',
     bkDrop: '{tier} dropped! It waits on the map.', bkFull: 'Basket slots full: open one on the map', bkFirst: 'Your first basket is awake on the map!',
     bkWakesIn: 'Wakes up in {t}', bkSleeps: 'Sleeps for {t} once you wake it', bkOther: 'Another basket is waking up first.',
@@ -18,7 +18,7 @@ addStrings({
   tr: {
     bkName: 'Uykucu sepet', bkGift: 'Sana bir hediye!', bkWelcome: 'Hoş geldin hediyesi!',
     bkT_common: 'Uykucu sepet', bkT_rare: 'Nadir sepet', bkT_epic: 'Efsane sepet', bkG_rare: 'Nadir', bkG_epic: 'Efsane',
-    bkRail: 'Uykucu sepetler', bkOpen: 'Aç!', bkTap: 'Uyandır', bkZzz: 'Zzz',
+    bkRail: 'Uykucu sepetler', bkOpen: 'Aç!', bkTapWake: 'Kediyi uyandırmak için dokun!', bkTap: 'Uyandır', bkZzz: 'Zzz',
     bkReadyA: 'uyandı, açmak için dokun', bkLeftA: '{t} sonra uyanır', bkSleepA: 'uyuyor, {t} uyur, uyandırmak için dokun',
     bkDrop: '{tier} düştü! Haritada seni bekliyor.', bkFull: 'Sepet yerleri dolu: haritada birini aç', bkFirst: 'İlk sepetin haritada uyandı!',
     bkWakesIn: '{t} sonra uyanır', bkSleeps: 'Uyandırınca {t} uyur', bkOther: 'Önce başka bir sepet uyanıyor.',

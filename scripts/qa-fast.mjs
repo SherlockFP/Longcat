@@ -469,6 +469,25 @@ try {
     must(await inView('.s4cat[data-k="room"]'), 'all four categories fit on screen');
     await shot('looks-shop');
   });
+  // R14: Fast paws is offered only while a basket waits
+  await step('r14-paws', async () => {
+    for (const [s, want] of [['[]', false], [`[{ r: 'common', end: 1 }]`, false], [`[{ r: 'rare', end: 0 }]`, true]]) {
+      await put(30, { extra: `bask: { s: ${s}, k: 0, g: 5, w: 1 }` }); await boot();
+      await qa('screen("shop")'); await sleep(500);
+      must((await ev('!!document.querySelector("#sheet .s4paws")')) === want, `Fast paws ${want ? 'shown' : 'hidden'} with baskets ${s}`);
+    }
+  });
+  // R14: one board per chapter theme (room_sunny follows the chapter) and the two premium rooms, each with a fur skin
+  for (const [th, lv, skin, room] of [['garden', 7, 'skin_golden'], ['autumn', 15, ''], ['snow', 25, 'skin_golden'], ['lantern', 35, 'skin_golden'],
+    ['beach', 45, 'skin_candy'], ['bakery', 55, 'skin_galaxy'], ['galaxy', 25, 'skin_galaxy', 'room_galaxy'], ['candy', 25, 'skin_candy', 'room_candy']]) {
+    await step('r14-theme-' + th, async () => {
+      await put(lv, { extra: `shop: { eq: { room: '${room || 'room_sunny'}', skin: '${skin}' }, own: { ${skin ? skin + ': 1, ' : ''}${room ? room + ': 1' : ''} } }, boss: { last: ${lv - 1}, fl: { n: 0, fail: 0, k: 0 }, q: [] }` }); await boot();
+      await qa(`level(${lv})`); await sleep(400); await closeCards();
+      await ev('document.getElementById("bossintro")?.click()'); await waitFor('!document.querySelector(".ordintro:not(.tuck)")', 5000); await sleep(500);
+      must((await qa('state()')).level === lv && await inView('#pf-near'), `L${lv} renders the ${th} board`);
+      await shot('r14-theme-' + th);
+    });
+  }
   // ---- R13 (schedule 3): the three new pieces, each on its lesson board: the one-time card, the board, then the solver's
   // line until the piece's moment (the padlock opens, the gate drops, the twins run) ----
   for (const [name, lv, k, moment] of [
