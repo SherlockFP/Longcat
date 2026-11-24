@@ -499,7 +499,7 @@ export const ui = {
       return `<${tag} class="cafebar${slim ? ' slim' : ''}${go ? ' go' : ''}${th ? ' thr' : ''}"><span class="ticon">${icon}</span><div class="cbtxt"><small>${th ? threadLine(th) : t('cafeNext', { name: cn.name })}</small><div class="bar"><i style="width:${Math.min(100, Math.round((have / Math.max(1, need)) * 100))}%"></i><em>${img('ui_star.webp')}${have}/${need}</em></div>${!slim && !th ? resChip : ''}</div>${go ? `<i class="cbgo">${t('build')}</i>` : ''}</${go ? 'button' : 'div'}>`;
     };
     // R11 fix 2: ONE main reward row under the header: the cat adopted on this clear, else a build that is ready
-    const barMain = !info.adopt && !!info.canBuild && !!cn;
+    const barMain = !info.adopt && !!info.buildMain && !!cn; // R16: only the first affordable build leads the card
     const rrow = `<div class="rrow${info.adopt || barMain ? ' mini' : ''}"${info.pay ? ` title="${escHtml(info.pay)}"` : ''}>${info.coins ? `<div class="reward cn">${img('ui_coin.webp')}<b>+${info.coins}</b></div>` : ''}${info.cafeStars ? `<div class="reward st">${img('ui_star.webp')}<b>+${info.cafeStars}</b></div>` : ''}${info.ribbons ? `<div class="reward st rb">${ribbonSvg}<b>+${info.ribbons}</b></div>` : ''}</div>`;
     const ach = (info.ach || []).map((a) => `<li class="a-${a.k}">${a.text}</li>`).join('');
     // where the coins came from (base, tidy bench, hard level, café perks): a low payout explains itself

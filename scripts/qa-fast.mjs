@@ -371,7 +371,7 @@ try {
       const card = () => ev('(() => { const t = document.getElementById("tut"); return t && !t.hidden ? { txt: t.textContent, clip: t.scrollWidth > t.clientWidth + 1 || t.scrollHeight > t.clientHeight + 1, gap: Math.round(t.getBoundingClientRect().top - 10 - window.__qa.layout().cellsB) } : null; })()');
       let c = await card();
       must(!(await ev('!!document.querySelector(".ordintro")')), 'no order bubble on L9');
-      must(c && /12/.test(c.txt) && !c.clip && c.gap >= 0, 'the order sits whole on the teaching card first: ' + JSON.stringify(c));
+      must(c && !/12/.test(c.txt) && !c.clip && c.gap >= 0, 'R16: one message per lesson, the order never takes the card: ' + JSON.stringify(c));
       await shot('f19-l9-order-' + lg);
       await waitFor(`document.getElementById("tut")?.textContent === ${JSON.stringify(rule)}`, 5000);
       c = await card();
@@ -379,7 +379,7 @@ try {
       const fn = await qa('fun()');
       must(fn.pairCost === (lg === 'en' ? '2 seats' : '2 minder') && fn.pairWait === (lg === 'en' ? 'Green in 3 carriers' : 'Yeşil 3 taşıyıcı sonra gelir'), 'the pair tag: ' + JSON.stringify(fn));
       const clash = await qa('pairClash()');
-      must(Array.isArray(clash) && !clash.length, 'the pair tag and its route clear of cats and exit arrows: ' + JSON.stringify(clash));
+      must(Array.isArray(clash) && !clash.length, 'the pair tag clear of cats and exit arrows: ' + JSON.stringify(clash));
       await shot('f19-l9-rule-' + lg);
       if (lg === 'en') {
         await qa('slow(6)');
@@ -546,6 +546,77 @@ try {
       await shot(name + '-after');
     });
   }
+
+  // ---- R16 fix lane (sol-r15-1): one track on the early win card, L9 taught on the bench, one message per lesson, a
+  // calm map (QA_ONLY=r16-fix) ----
+  const nextInfo = () => ev(`(() => { const b = document.querySelector('#modal .card.win [data-act=next]'); if (!b) return null; const r = b.getBoundingClientRect();
+    const side = [...document.querySelectorAll('#modal .card.win .r7row > :not([data-act=next])')].map((e) => e.getBoundingClientRect().height);
+    return { h: Math.round(r.height), w: Math.round(r.width), cw: document.querySelector('#modal .card.win').clientWidth, side: Math.round(Math.max(0, ...side)), compact: !!document.querySelector('#modal .card.win.compact') }; })()`);
+  for (const lg of ['en', 'tr']) {
+    await step('r16-fix-win-' + lg, async () => {
+      // L6, no café star yet: this first clear makes the Wooden counter (1 star) affordable
+      await put(6, { lg }); await boot(); await qa('level(6)'); await sleep(600); await qa('slow(5)'); await qa('winNow()');
+      await winCard(); await qa('slow(1)'); await sleep(400);
+      must(await ev('!!document.querySelector("#modal .mainrew .cafebar.go")'), 'the first affordable build leads the card');
+      must(await ev('JSON.parse(localStorage.getItem("lco_save")).meta.buildNudge === 1'), 'the build nudge is spent once shown');
+      must(await ev('!document.querySelector("#modal .purr, #modal .rttm")'), 'early: one café line, no streak or tomorrow line');
+      const nx = await nextInfo();
+      must(nx && nx.h >= 54 && nx.h > nx.side && (!nx.compact || nx.w >= nx.cw * 0.8), 'Next is the one big action: ' + JSON.stringify(nx));
+      must(await ev('[...document.querySelectorAll("#modal .sharebtn")].every((e) => e.scrollWidth <= e.clientWidth + 1)'), 'the share label fits its button');
+      if (await ev('!!document.querySelector("#modal .sharebtn")')) must(new RegExp(lg === 'en' ? 'Dare a friend' : 'Arkadaşına meydan oku').test(await ev('document.querySelector("#modal .sharebtn").textContent')), 'the share action reads Dare a friend');
+      must(await inView('#modal [data-act=next]') && await inView('#modal .card.win .r7row'), 'Next and the share row fit');
+      await shot('r16-fix-win-' + lg);
+      // the next clear: the build waits as the quiet café line, never the lead again
+      await qa('level(7)'); await sleep(600); await closeCards(); await qa('slow(5)'); await qa('winNow()');
+      await winCard(); await qa('slow(1)'); await sleep(400);
+      must(await ev('!document.querySelector("#modal .mainrew .cafebar") && !!document.querySelector("#modal .cafebar")'), 'second win: the build is the café line, not the lead');
+      await shot('r16-fix-win2-' + lg);
+    });
+  }
+  await step('r16-fix-l9-bench', async () => {
+    await size(360, 640);
+    await put(9); await boot(); await qa('level(9)'); await sleep(900); await closeCards();
+    must((await qa('meta()')).cur === 'pair', 'L9 is still the curated pair board');
+    must(!(await ev('!!document.querySelector(".ordintro")')), 'no order bubble on the L9 lesson');
+    let fn = await qa('fun()');
+    must(fn.seats && !fn.seats.parked && fn.seats.seats[1] - fn.seats.seats[0] === 1, 'two adjacent cushions lit before the pair parks: ' + JSON.stringify(fn.seats));
+    must(Array.isArray(await qa('pairClash()')) && !(await qa('pairClash()')).length, 'the pair tag clear of cats');
+    await shot('r16-fix-l9-lit');
+    await qa('slow(6)');
+    for (const id of [9, 5, 6, 11, 4]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(60); }
+    await waitFor('!window.__qa.state().busy', 8000); await qa('slow(1)'); await sleep(400);
+    fn = await qa('fun()');
+    must(fn.seats && fn.seats.parked, 'the parked pair keeps one bracket over its two seats: ' + JSON.stringify(fn.seats));
+    await shot('r16-fix-l9-bracket');
+    await size(375, 667);
+  });
+  await step('r16-fix-lesson', async () => {
+    // L7 (the quilt lesson): the rule card alone, no keeper bubble; L13 (no lesson) still gets the bubble
+    await put(7, { shape: false }); await boot(); await qa('level(7)'); await sleep(400);
+    let seen = false;
+    for (let i = 0; i < 30 && !seen; i++) { seen = await ev('!!document.querySelector(".ordintro")'); await sleep(100); }
+    must(!seen, 'L7: no order bubble while the lesson shows');
+    must((await qa('tut()')).length > 4 && await ev('!document.getElementById("ordstrip").hidden'), 'L7: the lesson card and the keeper strip');
+    await shot('r16-fix-lesson-l7');
+    await put(13); await boot(); await qa('level(13)');
+    seen = false;
+    for (let i = 0; i < 30 && !seen; i++) { seen = await ev('!!document.querySelector(".ordintro")'); await sleep(100); }
+    must(seen, 'L13 (no lesson): the order bubble still shows');
+  });
+  await step('r16-fix-map', async () => {
+    await put(12); await boot(); await home();
+    must(!(await ev('!!document.querySelector("#cafe .tab .otag")')), 'L12: no Shop badge in the opening');
+    await put(30); await boot(); await home(); await sleep(400);
+    const m = await ev(`(() => { const vis = (e) => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden';
+      const badges = [...document.querySelectorAll('#cafe .dot:not([hidden]), #cafe .tab .otag')].filter(vis).length;
+      const loops = document.getAnimations().filter((a) => a.playState === 'running' && a.effect && a.effect.getTiming().iterations === Infinity && a.effect.target && vis(a.effect.target))
+        .map((a) => a.effect.target).filter((t) => !t.closest('.cafe-play, .hmcat, .bmface')).map((t) => (t.className.baseVal ?? t.className).slice(0, 30));
+      return { badges, loops }; })()`);
+    must(m.badges <= 1, 'the map shows one red badge at most: ' + m.badges);
+    must(!m.loops.length, 'only Play pulses on the map: ' + JSON.stringify(m.loops));
+    must(await uncovered('#cafe .cafe-play'), 'Play is on top');
+    await shot('r16-fix-map');
+  });
 
   const secs = ((Date.now() - T0) / 1000).toFixed(1);
   console.log(`\nqa-fast: ${secs}s, ${fails.length} failure(s), ${errs.length} console error(s)`);

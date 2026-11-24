@@ -444,6 +444,15 @@ button.pill { color: var(--ink); }
 .card.win.compact.haschain .cwtop { grid-template-columns: auto 1fr auto; }
 .card.win.compact .chainclip.mini { border-width: 2.5px; border-radius: 10px; }
 .card.win.compact .chainclip.mini canvas { height: 92px; width: auto; }
+/* R16 (sol-r15 fix 1): an ordinary clear has one big Next; Home, Dare a friend and the QR card sit smaller in a row over it */
+#modal .card.win.compact .nextrow { flex-wrap: wrap; justify-content: center; gap: 6px; }
+#modal .card.win.compact .nextrow .btn[data-act=next] { order: 2; flex: 1 0 100%; min-height: 58px; font-size: 30px; }
+#modal .card.win.compact .nextrow .round { width: 40px; height: 40px; }
+#modal .card.win.compact .nextrow .round svg { width: 21px; height: 21px; }
+#modal .card.win.compact .nextrow .btn.sharebtn { min-height: 40px; font-size: 15px; padding: 0 10px; }
+/* R16 (sol-r15 fix 4): "Arkadaşına meydan oku" breaks onto two lines before it pushes the row wider than the card */
+#modal .card.win .r7row .btn.sharebtn { white-space: normal; min-width: 0; line-height: 1.05; text-align: center; }
+#modal .card.win.compact .nextrow .btn.sharebtn .shi { width: 17px; height: 17px; }
 /* Cat Show: the gold goal's live progress, low and centred where the booster row would be */
 .goalpill { position: fixed; left: 50%; bottom: calc(26px + var(--safe-b)); transform: translateX(-50%); z-index: 5; display: flex; align-items: center; gap: 6px; padding: 6px 16px 6px 8px; border-radius: 999px; background: #fffaf0; border: 3px solid var(--oak-d); box-shadow: 0 3px 0 rgba(142,85,48,.45); color: var(--ink); font: 700 18px/1 var(--font); white-space: nowrap; pointer-events: none; font-variant-numeric: tabular-nums; }
 .goalpill[hidden] { display: none; }

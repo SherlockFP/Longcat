@@ -118,9 +118,64 @@ function ghost(game, ctx, seat, color, alpha, tone) {
   ctx.restore();
 }
 
+// R16 (sol-r15 fix 2): L9 teaches with the bench itself. Before the mother + kitten park, the two cushions they would
+// take are lit in their colour; once both sit, one bracket holds the two seats until a cat of the pair leaves. Drawn
+// still (no pulse), so an idle board stays idle. game.pairSeats: what is drawn, for QA.
+function drawPairSeats(game, ctx) {
+  game.pairSeats = null;
+  if (!game.pairCost || game.over) return;
+  const st = game.state;
+  const kit = game.board.cats.find((k) => k.kittenOf != null);
+  if (!kit) return;
+  const mom = game.board.cats[kit.kittenOf];
+  const base = (COLOR_PAL[mom.color] || COLOR_PAL[0]).base;
+  const onBoard = st.alive[kit.id] && st.alive[mom.id];
+  let seats;
+  if (onBoard) {
+    if (game.press) return; // a finger is down: the press preview shows the real seats
+    seats = [];
+    for (let i = 0; i < st.bench.length && seats.length < 2; i++) if (st.bench[i] < 0) seats.push(i); // rules.js place(): the first free seats
+    if (seats.length < 2) return;
+  } else {
+    const a = game.vis.bench.indexOf(mom.id), b = game.vis.bench.indexOf(kit.id);
+    if (a < 0 || b < 0) return; // still hopping in, or one already left for its carrier
+    seats = [Math.min(a, b), Math.max(a, b)];
+  }
+  game.pairSeats = { seats, parked: !onBoard };
+  const p0 = game.benchPos(seats[0]), p1 = game.benchPos(seats[1]);
+  const bw = p0.bw;
+  ctx.save();
+  ctx.lineCap = ctx.lineJoin = 'round';
+  if (onBoard) {
+    for (const p of [p0, p1]) {
+      ctx.fillStyle = 'rgba(255,250,240,0.4)';
+      ctx.strokeStyle = base;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.ellipse(p.x, p.y, bw * 0.5, bw * 0.4, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+    }
+  }
+  // the shared bracket under both seats: white under-stroke, then the pair's colour
+  const x0 = p0.x - bw * 0.42, x1 = p1.x + bw * 0.42, y = p0.y + bw * 0.46, up = bw * 0.2;
+  for (const [lw, col] of [[6, '#fffaf0'], [3.5, base]]) {
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(x0, y - up);
+    ctx.lineTo(x0, y);
+    ctx.lineTo(x1, y);
+    ctx.lineTo(x1, y - up);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+
 // drawn with the belt and bench (under the board)
 export function drawUnder(game, ctx) {
   if (game.demo || !game.board || !game.state) return;
+  drawPairSeats(game, ctx);
   // the press preview: the rings are drawn by the board; add the line to the carrier each parked cat waits for
   const p = game.press;
   if (p && p.dest && game.funGhost) for (const d of p.dest) if (d.kind === 'seat') link(game, ctx, d.seat, d.color, 0.95);
@@ -151,7 +206,7 @@ export function drawUnder(game, ctx) {
 // ring with the number of carriers before it (L4's wait number). Drawn still (no pulse, so an idle board stays idle)
 // until the pair leaves the board; the press preview takes over while a finger is down.
 // R11 fix round 2 (sol-r12-2 fun): the queue relationship is in words on the tag's second line ("Green in 3 carriers",
-// game.pairWait from main.js), and a dashed line runs from the tag's two cushions along the rug's edge to that ring
+// game.pairWait from main.js), and a dashed line runs from the tag's two cushions along the rug's edge to that ring (R16: the line is gone, the bench's lit cushions replace it)
 // the tag's second line for the pair still on the board ('' when there is none, or green is the front carrier)
 export function pairWaitText(game) {
   if (!game.pairCost || !game.board || !game.state || !game.pairWait) return '';
@@ -241,24 +296,8 @@ function drawPairCost(game, ctx) {
   // where green waits: a ring around its carrier (or its dot in the queue) with the same number
   const br = fs * 0.62;
   const rr = to.k <= 2 ? game.cs * 0.42 : clamp(game.cs * 0.1, 6, 9) * 1.9;
-  // the link: from the cushions out to the rug's right edge, up it, then to the ring (never across a cat)
-  const sx = L + w, sy = cy + 1;
-  const xr = Math.min(game.W - 5, game.ox + game.board.w * c + 8);
-  const pts = Math.abs(xr - to.x) <= rr ? [[sx, sy], [xr, sy], [xr, to.y + rr + 1]]
-    : [[sx, sy], [xr, sy], [xr, to.y], [to.x + (xr > to.x ? rr + 1 : -rr - 1), to.y]];
-  game.pairTag.route = pts;
+  // R16 (sol-r15 fix 2): no dashed line across the board any more: the bench's own two lit cushions carry the lesson
   ctx.save();
-  ctx.lineCap = ctx.lineJoin = 'round';
-  ctx.setLineDash([6, 5]);
-  for (const [lw, col] of [[5, '#fffaf0'], [2.5, pal.base]]) {
-    ctx.lineWidth = lw;
-    ctx.strokeStyle = col;
-    ctx.beginPath();
-    ctx.moveTo(pts[0][0], pts[0][1]);
-    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
-    ctx.stroke();
-  }
-  ctx.setLineDash([]);
   ctx.strokeStyle = pal.base;
   ctx.lineWidth = 3;
   ctx.setLineDash([5, 4]);

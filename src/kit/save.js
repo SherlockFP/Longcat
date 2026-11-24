@@ -37,7 +37,7 @@ const defaults = () => ({
   drec: { n: 0, last: -1, got: 0 },
   jobs: { day: -1, p: [0, 0], paid: 0 },
   fr: { list: [], sent: [] },
-  meta: { firstOpen: 0, sessions: 0, funnel: {}, ret: {}, shareNudge: 0, dares: 0, bestChain: 0, nick: '' }, // shareNudge: the first "show a friend" prompt was shown; dares: friend challenges played; bestChain: the best bench chain ever (a new best is a share moment); nick: the optional name on this player's dares
+  meta: { firstOpen: 0, sessions: 0, funnel: {}, ret: {}, shareNudge: 0, buildNudge: 0, dares: 0, bestChain: 0, nick: '' }, // shareNudge: the first "show a friend" prompt was shown; buildNudge: the first affordable café build led a win card (R16); dares: friend challenges played; bestChain: the best bench chain ever (a new best is a share moment); nick: the optional name on this player's dares
 });
 
 function guessLang() {
@@ -183,6 +183,7 @@ function validate(d) {
   m.firstOpen = num(m.firstOpen, 0, 0);
   m.sessions = num(m.sessions, 0, 0);
   m.shareNudge = m.shareNudge ? 1 : 0;
+  m.buildNudge = m.buildNudge ? 1 : 0;
   m.dares = num(m.dares, 0, 0);
   m.bestChain = Math.min(8, num(m.bestChain, 0, 0));
   m.nick = typeof m.nick === 'string' ? m.nick.slice(0, 12) : '';

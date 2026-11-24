@@ -39,7 +39,7 @@ addStrings({
   tr: {
     clipChain: 'ZİNCİR', clipBench: 'Dolu minder: {u}/{n}!', clipOneSeat: 'Tek minder kaldı!', clipCan: 'Sen geçebilir misin?', clipLink: 'Aynı tahtayı oyna:',
     clipClear: 'Tahta temizlendi!', clipNoBench: 'Tek kedi bile beklemedi!',
-    shareClipBtn: 'Klibi paylaş', shareDareBtn: 'Meydan oku', shareNudge: 'Arkadaşına göster!', clipSavedLink: 'Klip kaydedildi, link kopyalandı: linki klibin yanına yapıştır',
+    shareClipBtn: 'Klibi paylaş', shareDareBtn: 'Arkadaşına meydan oku', shareNudge: 'Arkadaşına göster!', clipSavedLink: 'Klip kaydedildi, link kopyalandı: linki klibin yanına yapıştır',
     shareDareChain: '{board}: x{c} zincirimi geçebilir misin?', shareDareChainMatch: '{board}: x{c} zincirimi yakalayabilir misin? Bu tahtada daha iyisi yok.', shareDareSeats: '{board} tahtasını sadece {c} minderle bitirdim. Sen yapabilir misin?',
     shareDareNoBench: '{board} tahtasını hiç kedi bekletmeden bitirdim. Sen yapabilir misin?', shareDareTime: '{board}: {t} sn rekorumu geçebilir misin?',
     dareTitle: 'Meydan okuma', dareFrom: '{name} sana meydan okuyor!', dareFriend: 'Arkadaşın', dareWho: 'Arkadaşının',

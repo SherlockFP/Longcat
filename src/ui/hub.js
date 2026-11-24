@@ -198,6 +198,9 @@ function showMap(info) {
   dockPill(m, mapScroll && mapScroll.lv === cur ? mapScroll.top : target(cur)); // R11x: a pill the goals strip would cover goes beside the node
   sc.addEventListener('scroll', () => { mapScroll = { lv: cur, top: sc.scrollTop }; }, { passive: true });
   if (st.seen !== cur) { st.seen = cur; save.commit(); }
+  // R16 (sol-r15 fix 6): on the map Play is the one thing that pulses (hub.css) and at most one red badge shows: the first
+  // in the page (the right rail's claim / daily / jar, then House, Shop, Events); the rest wait for the rooms
+  document.querySelectorAll('#cafe .dot:not([hidden]), #cafe .tab .otag').forEach((el, i) => el.classList.toggle('r16q', i > 0));
   // the level ceremony: the cat hops from the level just cleared onto the new one, and the new node pops open
   if (from && !reduced()) {
     const cat = m.querySelector('.hmcat');
