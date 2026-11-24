@@ -4,7 +4,9 @@
 // color = index into COLORS (== index into BREEDS: color i is shown as breed BREEDS[i]).
 // board.carriers = [{color, cap}] queue order (front first); cap is 3 except hand-made tutorials.
 // board.objs = [{kind:'dog'|'yarn', cells}] non-cat blockers (dog = 2 cells, yarn = 1). They sit on the grid as -2-index.
-// cat.mech = 'mystery' | 'frozen' | 'spring' | 'swivel' (optional, never on a kitten or its mother).
+// cat.mech = 'mystery' | 'frozen' | 'spring' | 'swivel' | 'lock' | 'key' | 'twin' (optional, never on a kitten or its
+// mother). A twin names its twin: cat.twin = id (both ways). R13 pieces: src/core/mech3.js
+// board.objs may also hold {kind:'gate', cells:[[x,y]], color}: a wall until the first carrier of that colour leaves.
 // id === index in board.cats.
 // A kitten (kittenOf = parent id) has its head directly behind the parent's tail,
 // continuing the parent's line: kittenHead = parentTail - (parent.cells[1] - parent.cells[0]).
@@ -38,8 +40,8 @@ export function makeCat(id, cells, breed, kittenOf) {
   return cat;
 }
 
-export const MECH_CATS = ['mystery', 'frozen', 'spring', 'swivel']; // spring / swivel: src/core/content-mech.js
-export const OBJ_KINDS = ['dog', 'yarn'];
+export const MECH_CATS = ['mystery', 'frozen', 'spring', 'swivel', 'lock', 'key', 'twin']; // spring / swivel: src/core/content-mech.js; lock / key / twin: mech3.js
+export const OBJ_KINDS = ['dog', 'yarn', 'gate'];
 
 export function makeBoard(w, h, cats, meta = {}, carriers = []) {
   return { w, h, cats, meta, carriers, objs: [] };
@@ -87,6 +89,7 @@ export function validateBoard(board) {
   (board.objs || []).forEach((o, i) => {
     if (!OBJ_KINDS.includes(o.kind)) errs.push(`obj ${i} bad kind ${o.kind}`);
     if (o.cells.length !== (o.kind === 'dog' ? 2 : 1)) errs.push(`obj ${i} (${o.kind}) has ${o.cells.length} cells`);
+    if (o.kind === 'gate' && !(board.carriers || []).some((c) => c.color === o.color)) errs.push(`gate ${i} colour ${o.color} has no carrier`);
     o.cells.forEach(([x, y], k) => {
       if (x < 0 || y < 0 || x >= w || y >= h) errs.push(`obj ${i} cell ${x},${y} outside board`);
       const key = x + ',' + y;
@@ -94,6 +97,16 @@ export function validateBoard(board) {
       seen.set(key, 'obj' + i);
       if (k > 0 && Math.abs(o.cells[0][0] - x) + Math.abs(o.cells[0][1] - y) !== 1) errs.push(`obj ${i} cells not adjacent`);
     });
+  });
+  // R13: one key opens every lock; twins come in mutual, side-by-side, same-colour pairs
+  const keys = cats.filter((c) => c.mech === 'key').length;
+  if (keys > 1 || (keys === 1) !== cats.some((c) => c.mech === 'lock')) errs.push(`${keys} key cat(s) for the locks`);
+  cats.forEach((c) => {
+    if ((c.mech === 'twin') !== (c.twin != null)) { errs.push(`cat ${c.id} twin mark`); return; }
+    if (c.mech !== 'twin') return;
+    const m = cats[c.twin];
+    if (!m || m.twin !== c.id || m.mech !== 'twin' || m.color !== c.color) errs.push(`cat ${c.id} twin ${c.twin} not a same-colour pair`);
+    else if (!c.cells.some(([x, y]) => m.cells.some(([p, q]) => Math.abs(x - p) + Math.abs(y - q) === 1))) errs.push(`twins ${c.id}/${m.id} not side by side`);
   });
   const kidCount = new Map();
   for (const cat of cats) {

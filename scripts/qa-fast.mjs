@@ -339,6 +339,39 @@ try {
     await size(375, 667);
   });
 
+  // ---- R13 (schedule 3): the three new pieces, each on its lesson board: the one-time card, the board, then the solver's
+  // line until the piece's moment (the padlock opens, the gate drops, the twins run) ----
+  for (const [name, lv, k, moment] of [
+    ['f21-lock', 101, 'lock', `(() => { const id = window.__qa.mechCat('lock'); return id != null && !window.__qa.mechState().locked.includes(id); })()`],
+    ['f22-gate', 121, 'gate', `window.__qa.mechState().gates === 0`],
+    ['f23-twin', 141, 'twin', `window.__qa.mechState().twins === 0`],
+  ]) {
+    await step(name, async () => {
+      await put(lv); await boot(); await qa(`level(${lv})`); await sleep(900);
+      const cards = [];
+      for (let i = 0; i < 3; i++) { // the pack intro may come first, then the piece's card
+        const c = await ev(`document.querySelector('#cmodal .card')?.dataset.k || ''`);
+        if (!c) break;
+        const t = await ev(`document.querySelector('#cmodal .card .cpt')?.textContent || ''`);
+        cards.push(c + ':' + t);
+        if (c === 'mech') await shot(name + '-card');
+        await ev(`document.querySelector('#cmodal [data-cgo]')?.click()`); await sleep(450);
+      }
+      must(cards.some((c) => c.startsWith('mech:')), `L${lv}: the one-time card for the ${k} ` + JSON.stringify(cards));
+      must((await qa('tut()')).length > 10, `L${lv}: the lesson line`);
+      must((k === 'gate' ? (await qa('objs()')).includes('gate') : (await qa(`mechCat('${k}')`)) != null), `L${lv} carries a ${k}`);
+      const inf = await ev("window.__qaShape.info()");
+      must(inf.cell >= 30, `L${lv} cells ${inf.cell}px (${inf.w}x${inf.h})`);
+      await sleep(300);
+      await shot(name + '-board');
+      await qa('slow(6)');
+      for (let i = 0; i < 30 && !(await ev(moment)); i++) { await waitFor('!window.__qa.state().busy', 8000); await qa('solveStep()'); await sleep(60); }
+      must(await ev(moment), `L${lv}: the ${k} moment happened on the solver's line`);
+      await waitFor('!window.__qa.state().busy', 8000); await qa('slow(1)'); await sleep(500);
+      await shot(name + '-after');
+    });
+  }
+
   const secs = ((Date.now() - T0) / 1000).toFixed(1);
   console.log(`\nqa-fast: ${secs}s, ${fails.length} failure(s), ${errs.length} console error(s)`);
   for (const f of fails) console.log('  FAIL ' + f);

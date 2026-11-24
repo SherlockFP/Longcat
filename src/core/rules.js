@@ -5,6 +5,7 @@
 import { DIRS } from './board.js';
 import { mechBlocker, swivelNewest } from './content-mech.js';
 import { foldState, foldTick, isFolded, foldWall } from './shape.js'; // shape lane: folded flaps (the board grows)
+import { state3, isLocked, twinBlocker, unlockTick, gateTick } from './mech3.js'; // R13: padlocks, colour gates, twins
 
 export const BENCH_DEFAULT = 5;
 export const CARRIER_CAP = 3;
@@ -87,6 +88,7 @@ export function createState(board) {
     scoops: 0,
     undo: [],
     ...foldState(board), // shape lane: foldOf / foldCell / foldNeed / foldOpen / gone
+    ...state3(board), // R13: keyId (the key cat or -1), gateAt (per obj: the carrier index that opens a gate)
   };
 }
 
@@ -108,6 +110,7 @@ export function exitRay(cat, w, h) {
 // First occupied ray cell: { cell:[x,y], id (cat id or -1), obj (dog/yarn index or -1) } or null when the way out is clear.
 export function findBlocker(state, id) {
   const cat = state.board.cats[id];
+  if (cat.mech === 'twin') return twinBlocker(state, id); // both twins' lanes (mech3.js)
   if (cat.mech === 'spring' || cat.mech === 'swivel') return (state.foldCell && foldWall(state, cat)) || mechBlocker(state, id); // content-mech.js (a closed flap first: shape.js)
   const { w, h, grid } = state;
   const fc = state.foldCell; // a closed flap is a wall (shape.js)
@@ -128,8 +131,8 @@ export function findBlocker(state, id) {
 export const isFrozen = (state, id) => state.frozen[id] === 1;
 // a mystery cat shows "?" until a neighbour leaves
 export const isHidden = (state, id) => state.board.cats[id].mech === 'mystery' && !state.revealed[id] && !!state.alive[id];
-export const canExit = (state, id) => !state.failed && !!state.alive[id] && !state.frozen[id] && !isFolded(state, id) && findBlocker(state, id) === null;
-export { isFolded };
+export const canExit = (state, id) => !state.failed && !!state.alive[id] && !state.frozen[id] && !isFolded(state, id) && !isLocked(state, id) && findBlocker(state, id) === null;
+export { isFolded, isLocked };
 // zzz counter of a sleeping dog (exits still needed), 0 once awake
 export const dogLeft = (state, k) => (state.objAlive[k] && state.near[k] ? Math.max(0, state.wake[k] - state.dogCount[k]) : 0);
 export const isFailed = (state) => state.failed;
@@ -154,6 +157,7 @@ export function liftCat(state, id, freed, trail = true) {
   state.aliveCount--;
   freed.push(id);
   if (trail) for (const k of state.kittens[id]) if (state.alive[k]) liftCat(state, k, freed, true);
+  if (trail && cat.twin != null && state.alive[cat.twin]) liftCat(state, cat.twin, freed, true); // twins leave together
 }
 
 // ---- mechanics: reactions to cats leaving ----
@@ -200,6 +204,7 @@ function exitEffects(state, freed, events, knock) {
     });
   }
   if (state.foldOf) foldTick(state, freed.length, events); // shape lane: enough cats left -> a flap opens
+  if (state.keyId >= 0) unlockTick(state, freed, events); // R13: the key cat left, every padlock opens
 }
 
 // ---- carriers and bench ----
@@ -210,6 +215,7 @@ function resolve(state, events) {
     const done = state.carriers.shift();
     state.departed++;
     events.push({ type: 'depart', color: done.color, cap: done.cap, n: state.departed, carrier: done.uid });
+    if (state.gateAt) gateTick(state, events); // R13: its colour's gates open
     const f = state.carriers[0];
     if (!f) break;
     events.push({ type: 'arrive', color: f.color, carrier: f.uid });
@@ -327,10 +333,14 @@ export function tap(state, id) {
     state.bonks++;
     return { ok: false, bonk: true, frozen: true, id };
   }
+  if (isLocked(state, id)) { // R13: padlocked until the key cat leaves (a shiver, like ice)
+    state.bonks++;
+    return { ok: false, bonk: true, locked: true, id };
+  }
   const b = findBlocker(state, id);
   if (b) {
     state.bonks++;
-    return { ok: false, bonk: true, id, blockerCell: b.cell, blockerId: b.id, blockerObj: b.obj };
+    return { ok: false, bonk: true, id, blockerCell: b.cell, blockerId: b.id, blockerObj: b.obj, ...(b.who != null ? { who: b.who } : {}) }; // who: the twin whose lane is taken
   }
   snapshot(state);
   const freed = [];

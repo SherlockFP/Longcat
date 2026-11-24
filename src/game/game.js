@@ -1,7 +1,8 @@
 // Board controller: layout, input, animation, juice. Rules live in core/.
 // The rules state moves instantly on a tap. A separate "vis" model (carrier queue, bench seats) trails it:
 // every rules event gets a time and is applied to vis when the sprinting cat lands (see scheduleEvents).
-import { createState, tap, scoop as rulesScoop, undo as rulesUndo, canUndo, addSeat, isWon, stars as starsOf, isHidden, dogLeft, findBlocker, THAW_NEED, DOG_NEAR, canExit } from '../core/rules.js';
+import { createState, tap, scoop as rulesScoop, undo as rulesUndo, canUndo, addSeat, isWon, stars as starsOf, isHidden, dogLeft, findBlocker, THAW_NEED, DOG_NEAR, canExit, isLocked } from '../core/rules.js';
+import * as m3 from './mech3.js'; // R13: padlock / key badges, colour gates, twin ribbons
 import { hint as solverHint } from '../core/solver.js';
 import { DIRS } from '../core/board.js';
 import { IMG } from './assets.js';
@@ -266,9 +267,10 @@ export class Game {
   // dogs, yarn, mystery and frozen cats as the player sees them (trails the rules state by the sprint time)
   syncMech() {
     const s = this.state;
-    const mv = { obj: Array.from(s.objAlive, (a) => !!a), hidden: {}, frozen: {}, chip: {}, zzz: s.objs.map((_, k) => dogLeft(s, k)), t: {} };
+    const mv = { obj: Array.from(s.objAlive, (a) => !!a), hidden: {}, frozen: {}, chip: {}, locked: {}, zzz: s.objs.map((_, k) => dogLeft(s, k)), t: {} };
     for (const cat of s.board.cats) {
       if (!cat.mech) continue;
+      if (cat.mech === 'lock') mv.locked[cat.id] = isLocked(s, cat.id);
       mv.hidden[cat.id] = isHidden(s, cat.id);
       mv.frozen[cat.id] = s.frozen[cat.id] === 1;
       mv.chip[cat.id] = s.thaw[cat.id];
@@ -323,6 +325,8 @@ export class Game {
         } });
       } else if (e.type === 'spin') {
         this.pending.push({ at: at0, vis: true, fn: () => content.spin(this, e) });
+      } else if (e.type === 'unlock' || e.type === 'gate') {
+        m3.schedule(this, e, at0);
       } else if (e.type === 'thaw') {
         this.pending.push({ at: at0 + 0.05, vis: true, fn: () => {
           this.mv.frozen[e.id] = false;
@@ -753,16 +757,17 @@ export class Game {
   }
 
   addBonk(r) {
-    const cat = this.board.cats[r.id];
+    const bid = r.who != null ? r.who : r.id; // R13 twins: the twin whose lane is taken shows the bonk
+    const cat = this.board.cats[bid];
     const c = this.cell;
     const head = cat.cells.at(-1);
-    const bdir = content.dirOf(this, r.id);
+    const bdir = content.dirOf(this, bid);
     const [dx, dy] = DIRS[bdir];
-    if (r.frozen) {
-      // frozen: a stiff little shiver, ice chips, no lane
+    if (r.frozen || r.locked) {
+      // frozen (or padlocked): a stiff little shiver, ice chips (gold sparks), no lane
       this.anims.push({ type: 'bonk', id: r.id, t0: this.clock, emax: 0.22 * c, headCell: head, blockerCell: null });
       const p = this.cellPos(r.id);
-      this.sparks(p.x, p.y, '#bfeaff', 9);
+      this.sparks(p.x, p.y, r.locked ? '#ffc93c' : '#bfeaff', 9);
       this.mv.t['c' + r.id] = this.clock;
       this.mv.t['k' + r.id] = this.clock; // the ice flashes a crack
       if (!this.calm) this.shake = { t0: this.clock + 0.02, dx: dx * 0.6, dy: dy * 0.6 };
@@ -771,7 +776,7 @@ export class Game {
     }
     const k = Math.abs(r.blockerCell[0] - head[0]) + Math.abs(r.blockerCell[1] - head[1]);
     const emax = Math.min((k - 1) * c + 0.2 * c, 2.6 * c);
-    this.anims.push({ type: 'bonk', id: r.id, t0: this.clock, emax, headCell: head, blockerCell: r.blockerCell, dir: bdir });
+    this.anims.push({ type: 'bonk', id: bid, t0: this.clock, emax, headCell: head, blockerCell: r.blockerCell, dir: bdir });
     if (r.blockerObj >= 0) this.wiggleObj[r.blockerObj] = { t: this.clock + 0.12, dx, dy };
     else this.wiggle[r.blockerId] = { t: this.clock + 0.12, dx, dy };
     if (!this.calm) this.shake = { t0: this.clock + 0.09, dx, dy };
@@ -821,18 +826,20 @@ export class Game {
     const lead = cats[freed[0]];
     const events = r.events || [];
     const ex = content.exitOf(this, lead); // a swivel cat leaves the way its bed faces
+    const mate = lead.twin != null ? lead.twin : -1; // R13: the other twin runs out its own lane
     const dirKey = ex.dir;
     const t0 = this.clock;
     const members = [];
     let stuckK = this.vis.stuck.length;
     for (const id of freed) {
       const cat = cats[id];
-      const trailing = id !== freed[0];
+      const trailing = id !== freed[0] && id !== mate;
       const cells = trailing ? [...cat.cells, ...lead.cells] : cat.cells;
+      const own = id === mate ? { dir: cat.dir, ray: cat.ray } : { dir: dirKey, ray: ex.ray };
       const tg = this.targetOf(id, events);
       if (tg.kind === 'stuck') tg.pos = this.stuckPos(stuckK++);
-      const path = this.buildPath(cells, dirKey, ray ? ex.ray : -1, tg.pos);
-      members.push({ id, path, headBase: path.marks[cat.cells.length - 1], len: path.len, tg, edgeS: ray ? path.marks[cells.length - 1] + (ex.ray + 0.5) * c : -1, puffed: false, arrived: false, arrAt: 0 });
+      const path = this.buildPath(cells, own.dir, ray ? own.ray : -1, tg.pos);
+      members.push({ id, path, headBase: path.marks[cat.cells.length - 1], len: path.len, tg, edgeS: ray ? path.marks[cells.length - 1] + (own.ray + 0.5) * c : -1, puffed: false, arrived: false, arrAt: 0 });
     }
     const Dmax = Math.max(...members.map((m) => m.len));
     const speed = 1500 * (this.W / 375);
@@ -1291,6 +1298,7 @@ export class Game {
       this.drawStatic(ctx, id);
     }
     for (const cat of this.board.cats) if (cat.kittenOf != null) this.drawTether(ctx, cat, animIds);
+    m3.ribbons(this, ctx, animIds); // R13: twins hold paws
     shp.drawFlaps(this, ctx); // closed flaps over their folded cats (one baked sprite each)
     if (L && L.clip) { ctx.restore(); L.clip = false; } // the dirty-rectangle clip (perf.js split)
     }
@@ -2196,6 +2204,7 @@ export class Game {
     this.paintCat(ctx, cat, path, 0, hb, { glow, chevron: !frozen && cat.mech !== 'swivel', idle: !frozen, frozen, wScale: breath, still: true });
     this.mechOver(ctx, cat, path, hb);
     if (cat.mech) content.over(this, ctx, cat, path, hb); // spring coil badge, swivel facing arrow
+    if (cat.mech) m3.over(this, ctx, cat); // R13: padlock / key badge
     ctx.restore();
     const fr = this.freedT[id] != null ? this.clock - this.freedT[id] : -1;
     if (hinted || (fr >= 0 && fr < 1.4)) {
@@ -2286,7 +2295,8 @@ export class Game {
         const since = this.clock - (this.mv.t['z' + k] ?? -9);
         const pulse = since < 0.3 ? 1 + 0.3 * Math.sin((since / 0.3) * Math.PI) : 1;
         drawBadge(ctx, b[0] + c * 0.18, b[1] - c * 0.42, c * 0.23 * pulse, this.mv.zzz[k], '#7c5cff');
-      } else {
+      } else if (o.kind === 'gate') m3.drawGate(this, ctx, o); // R13: a colour gate
+      else {
         const [x, y] = this.center(o.cells[0][0], o.cells[0][1]);
         const rot = this.calm ? 0 : Math.sin(this.clock * 1.6 + k * 2) * 0.12;
         drawYarn(ctx, x, y, c * 0.36, rot);

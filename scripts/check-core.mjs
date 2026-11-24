@@ -11,6 +11,7 @@ import { edgeNeighbours } from '../src/core/rules.js';
 import { springHop, swivelSeq, swivelOpen, packOf, packPlan } from '../src/core/content-mech.js';
 import { CURATED, boardOf, BOARD_REV, linkRev } from '../src/core/curated.js';
 import { searchWin, maxChain } from '../src/core/search.js';
+import { isLocked } from '../src/core/rules.js';
 
 // Independent check that every mechanic piece MATTERS on the winning line, on the real rules state: a dog or yarn is,
 // at some step while it is there, the only thing in an unfrozen cat's lane; a frozen cat's lane is clear while the
@@ -40,6 +41,13 @@ function mechMatter(b) {
     // a spring that ships hops something on the line; a swivel leaves while its starting side is still blocked
     if (c.mech === 'spring') catOk.set(id, canExit(st, id) && !!springHop(st, id));
     if (c.mech === 'swivel') catOk.set(id, canExit(st, id) && exitRay(c, b.w, b.h).some(([x, y]) => st.grid[y * b.w + x] !== -1));
+    // R13: a padlock holds a clear lane while the key is home (the key matters with it); twins wait, one lane clear and one not
+    for (const l of b.cats) {
+      if (!st.alive[l.id]) continue;
+      const clear = (k) => exitRay(k, b.w, b.h).every(([x, y]) => [-1, k.id, k.twin].includes(st.grid[y * b.w + x]));
+      if (l.mech === 'lock' && isLocked(st, l.id) && clear(l)) { catOk.set(l.id, true); catOk.set(st.keyId, true); }
+      if (l.mech === 'twin' && clear(l) !== clear(b.cats[l.twin])) { catOk.set(l.id, true); catOk.set(l.twin, true); }
+    }
     if (!tap(st, id).ok) return { ok: false, why: 'line breaks' };
   }
   const bad = [...objOk.map((v, k) => (v ? null : b.objs[k].kind)), ...[...catOk].map(([id, v]) => (v ? null : b.cats[id].mech))].filter(Boolean);
@@ -54,6 +62,8 @@ const fail = (msg) => {
 const ok = (cond, msg) => {
   if (!cond) fail(msg);
 };
+// free cats as fast-model units (a twin is free with its twin: both name the pair's root)
+const units = (C, ids) => [...new Set(ids.map((id) => C.units[C.unitOf[id]]))].sort((x, y) => x - y);
 const eq = (a, b, msg) => ok(JSON.stringify(a) === JSON.stringify(b), `${msg}: got ${JSON.stringify(a)} want ${JSON.stringify(b)}`);
 
 // ---------------- level checks 1..600 ----------------
@@ -69,14 +79,17 @@ const hardAt = [];
 const superAt = []; // boss levels (R11 boss lane: every 20th)
 // mechanics per level range: levels that carry each mechanic, and total pieces
 const RANGES = [[1, 7], [8, 11], [12, 39], [40, 54], [55, 69], [70, 600]];
-const MECH_FROM = { dog: 8, yarn: 12, mystery: 41, frozen: 55, spring: 61, swivel: 81 };
-const mechStat = RANGES.map(() => ({ dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0, pieces: 0, mixed: 0 }));
+const MECH_FROM = { dog: 8, yarn: 12, mystery: 41, frozen: 55, spring: 61, swivel: 81, lock: 101, gate: 121, twin: 141 };
+const mechStat = RANGES.map(() => ({ dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0, lock: 0, gate: 0, twin: 0, pieces: 0, mixed: 0 }));
 // decision ramp per level range (normal levels and hard/boss separately)
 const DRANGES = [[5, 14], [15, 39], [40, 99], [100, 249], [250, 600]];
 const dStat = DRANGES.map(() => ({ normal: [], hard: [] }));
 let bandMiss = 0;
 let lateN = 0; // normal levels from L10 (breathers aside), and how many hold a delayed trap (a legal tap that loses later)
 let lateOk = 0;
+// schedule 3: how often the board is not the tier's plain rectangle (a shape, a quilt or a box of another aspect)
+const VR = [[1, 15], [16, 39], [40, 79], [80, 600]];
+const vStat = VR.map(() => ({ boards: 0, shaped: 0, folded: 0, alt: 0, varied: 0 }));
 for (let n = 1; n <= MAXN; n++) {
   const t0 = performance.now();
   const b = generate(n);
@@ -87,6 +100,15 @@ for (let n = 1; n <= MAXN; n++) {
     maxMsN = n;
   }
   ok(JSON.stringify(generate(n)) === JSON.stringify(b), `level ${n} not deterministic`);
+  if (b.meta.kind !== 'boss') {
+    const v = vStat[VR.findIndex(([lo, hi]) => n >= lo && n <= hi)];
+    v.boards++;
+    if (b.shape) v.shaped++;
+    if (b.folds) v.folded++;
+    if (b.meta.alt) v.alt++;
+    if (b.shape || b.folds || b.meta.alt) v.varied++;
+    if (b.meta.alt) ok(b.w <= 9 && b.h <= 10 && !b.shape, `level ${n} other-aspect box ${b.w}x${b.h} (cells under 30px on 375x667)`);
+  }
   const errs = validateBoard(b);
   ok(errs.length === 0, `level ${n} invalid: ${errs.slice(0, 3).join('; ')}`);
   const a = analyze(b);
@@ -171,7 +193,11 @@ for (let n = 1; n <= MAXN; n++) {
       spring: b.cats.filter((c) => c.mech === 'spring').length,
       swivel: b.cats.filter((c) => c.mech === 'swivel').length,
     };
+    // R13 pieces are named in meta only when on the board (a schedule-2 board's meta stays as it was)
+    const r13 = { lock: b.cats.filter((c) => c.mech === 'lock').length, gate: b.objs.filter((o) => o.kind === 'gate').length, twin: b.cats.filter((c) => c.mech === 'twin').length / 2 };
+    for (const k of Object.keys(r13)) if (r13[k]) real[k] = r13[k];
     eq(real, m, `level ${n} meta.mechs`);
+    for (const k of Object.keys(r13)) real[k] = r13[k];
     let kindsHere = 0;
     for (const k of Object.keys(MECH_FROM)) {
       if (real[k] > 0) {
@@ -187,7 +213,7 @@ for (let n = 1; n <= MAXN; n++) {
     if (n < 8) ok(kindsHere === 0 && b.objs.length === 0, `level ${n} has mechanics too early`);
     const ri = RANGES.findIndex(([lo, hi]) => n >= lo && n <= hi);
     for (const k of Object.keys(real)) if (real[k] > 0) mechStat[ri][k]++;
-    mechStat[ri].pieces += real.dog + real.yarn + real.mystery + real.frozen + real.spring + real.swivel;
+    mechStat[ri].pieces += real.dog + real.yarn + real.mystery + real.frozen + real.spring + real.swivel + real.lock + real.gate + real.twin;
     if (real.swivel) ok(!real.yarn && b.cats.every((c) => c.mech !== 'swivel' || c.cells.length <= 3), `level ${n} swivel with yarn or on a long cat`);
     if (kindsHere >= 2) mechStat[ri].mixed++;
     // every dog / yarn blocks at least one lane
@@ -209,6 +235,11 @@ for (let n = 1; n <= MAXN; n++) {
   }
 }
 const avgMs = totalMs / MAXN;
+// schedule 3: L1-15 always the tier's plain box; then one board in 3 varies from L16, two in 3 from L40, nearly all from L80
+eq(vStat[0].varied, 0, 'L1-15 stay plain');
+ok(vStat[1].varied * 3 >= vStat[1].boards, `L16-39: only ${vStat[1].varied}/${vStat[1].boards} boards vary`);
+ok(vStat[2].varied * 3 >= 2 * vStat[2].boards, `L40-79: only ${vStat[2].varied}/${vStat[2].boards} boards vary`);
+ok(vStat[3].varied >= 0.95 * vStat[3].boards, `L80-600: only ${vStat[3].varied}/${vStat[3].boards} boards vary`);
 ok(avgMs < 40, `avg gen time ${avgMs.toFixed(1)}ms >= 40ms`);
 ok(maxMs < 60, `worst gen time ${maxMs.toFixed(1)}ms (level ${maxMsN}) >= 60ms`);
 ok(bandMiss <= 0.2 * (MAXN - 4), `${bandMiss} levels miss their full difficulty band`);
@@ -229,12 +260,12 @@ RANGES.forEach(([lo, hi], i) => {
   if (lo === 8) ok(m.dog >= 1 && m.yarn === 0 && m.mystery === 0 && m.frozen === 0, `L8-11 should only have dogs: ${JSON.stringify(m)}`);
   if (lo === 12) ok(m.yarn >= 3 && m.dog >= 1 && m.mystery === 0 && m.frozen === 0, `L12-39: ${JSON.stringify(m)}`);
   if (lo === 40) ok(m.mystery >= 3 && m.yarn >= 1 && m.frozen === 0, `L40-54: ${JSON.stringify(m)}`);
-  if (lo === 55) ok(m.frozen >= 3 && m.mystery >= 1 && m.dog >= 1, `L55-69: ${JSON.stringify(m)}`);
+  if (lo === 55) ok(m.frozen >= 3 && m.mystery + m.dog + m.yarn >= 2, `L55-69: ${JSON.stringify(m)}`); // schedule 3's shapes reshuffle which older piece shows here
   if (lo === 70) ok(m.dog > 20 && m.yarn > 20 && m.mystery > 20 && m.frozen > 20 && m.mixed > 20, `L70+ should mix everything: ${JSON.stringify(m)}`);
 });
 
 // hint playthrough: following hint() from the start wins
-for (const n of [1, 2, 3, 4, 7, 12, 15, 21, 25, 30, 40, 45, 55, 60, 90, 150]) {
+for (const n of [1, 2, 3, 4, 7, 12, 15, 21, 25, 30, 40, 45, 55, 60, 90, 101, 121, 141, 150]) {
   const b = generate(n);
   const st = createState(b);
   let guard = 0;
@@ -538,7 +569,7 @@ const car = (color, cap = 3) => ({ color, cap });
       while (!st.failed && !isWon(st)) {
         const fr = freeCats(st);
         const sf = sim.free().map((u) => C.units[u]).sort((x, y) => x - y);
-        if (JSON.stringify(fr) !== JSON.stringify(sf)) { diff++; break; }
+        if (JSON.stringify(units(C, fr)) !== JSON.stringify(sf)) { diff++; break; }
         if (!fr.length) break;
         const id = fr[Math.floor(rnd() * fr.length)];
         tap(st, id);
@@ -693,6 +724,111 @@ const car = (color, cap = 3) => ({ color, cap });
   console.log(`content packs: spring on ${springLv}/20 Rainy Day boards, swivel on ${swivelLv}/20 Bakery Rush boards, ${late}/40 later boards mix them`);
 }
 
+// ---------------- R13 (schedule 3): padlocks, colour gates, twins ----------------
+{
+  // padlock: the key cat (stuck behind a free cat) has to leave first; then the padlocked cat goes
+  const b = makeBoard(5, 6, [
+    cat(0, [[0, 5], [0, 4]], 'tabby'), // padlocked, lane clear
+    cat(1, [[2, 5], [2, 4]], 'tuxedo'), // the key, facing up into cat 2
+    cat(2, [[1, 2], [2, 2]], 'calico'), // across the key's lane, facing right (free)
+  ], {}, [car(0, 1), car(1, 1), car(2, 1)]);
+  b.cats[0].mech = 'lock';
+  ok(validateBoard(b).length === 1, 'a lock with no key is refused');
+  b.cats[1].mech = 'key';
+  ok(validateBoard(b).length === 0, 'lock board valid: ' + validateBoard(b).join(';'));
+  const st = createState(b);
+  const C = compile(b);
+  const sim = new Sim(C, 5);
+  const r0 = tap(st, 0);
+  ok(!canExit(st, 0) && !r0.ok && r0.locked && !sim.canExit(C.unitOf[0]), 'padlocked while the key is home (rules and fast model)');
+  tap(st, 2); sim.apply(C.unitOf[2]);
+  const r1 = tap(st, 1); sim.apply(C.unitOf[1]);
+  ok(r1.ok && r1.events.some((e) => e.type === 'unlock' && e.ids.includes(0)), 'the key leaves: the padlock opens');
+  ok(canExit(st, 0) && sim.canExit(C.unitOf[0]) && Sim.fromState(C, st).canExit(C.unitOf[0]), 'padlock open (rules, fast model, fromState)');
+  ok(undo(st).ok && !canExit(st, 0), 'undo locks it again');
+}
+{
+  // colour gate: a wall until the first carrier of its colour drives off; undo puts it back
+  const b = makeBoard(5, 6, [
+    cat(0, [[1, 5], [1, 4]], 'tabby'), // facing up into the gate at (1,1)
+    cat(1, [[3, 5], [3, 4]], 'tuxedo'), // free
+  ], {}, [car(1, 1), car(0, 1)]);
+  b.objs = [{ kind: 'gate', cells: [[1, 1]], color: 1 }];
+  ok(validateBoard(b).length === 0, 'gate board valid: ' + validateBoard(b).join(';'));
+  ok(validateBoard({ ...b, objs: [{ kind: 'gate', cells: [[1, 1]], color: 4 }] }).length === 1, 'a gate with no carrier of its colour is refused');
+  const st = createState(b);
+  const C = compile(b);
+  const sim = new Sim(C, 5);
+  ok(!canExit(st, 0) && findBlocker(st, 0).obj === 0 && !sim.canExit(C.unitOf[0]), 'the gate holds its lane');
+  const r = tap(st, 1); sim.apply(C.unitOf[1]);
+  ok(r.events.some((e) => e.type === 'gate' && e.obj === 0) && canExit(st, 0) && sim.canExit(C.unitOf[0]), 'blue drives off: the blue gate opens');
+  ok(Sim.fromState(C, st).canExit(C.unitOf[0]), 'fromState reads the open gate');
+  sim.undo();
+  ok(undo(st).ok && !canExit(st, 0) && !sim.canExit(C.unitOf[0]), 'undo closes the gate (rules and fast model)');
+  ok(tap(st, 1).ok && tap(st, 0).won, 'gate board wins');
+}
+{
+  // twins: one tap sends both, each needs its own clear lane, the twin never blocks the other
+  const b = makeBoard(5, 6, [
+    cat(0, [[0, 4], [0, 3]], 'tabby'), // twin, lane clear
+    cat(1, [[1, 4], [1, 3]], 'tabby'), // twin, lane held by cat 2
+    cat(2, [[1, 1], [2, 1]], 'tuxedo'), // free, facing right
+  ], {}, [car(0, 2), car(1, 1)]);
+  b.cats[0].mech = b.cats[1].mech = 'twin';
+  b.cats[0].twin = 1;
+  b.cats[1].twin = 0;
+  ok(validateBoard(b).length === 0, 'twin board valid: ' + validateBoard(b).join(';'));
+  const st = createState(b);
+  const C = compile(b);
+  const sim = new Sim(C, 5);
+  ok(C.N === 2 && C.ucats[C.unitOf[0]].length === 2 && C.unitOf[1] === C.unitOf[0], 'twins are one unit in the fast model');
+  const r0 = tap(st, 0);
+  ok(!r0.ok && r0.bonk && r0.blockerId === 2 && r0.who === 1 && !sim.canExit(C.unitOf[0]), 'a tap bonks on the twin whose lane is taken');
+  tap(st, 2); sim.apply(C.unitOf[2]);
+  ok(canExit(st, 1) && sim.canExit(C.unitOf[0]), 'both lanes clear: the twins can go');
+  const r1 = tap(st, 1);
+  ok(r1.ok && r1.freed.length === 2 && r1.won, 'a tap on either twin sends both');
+  const s2 = createState(b);
+  const sc = scoop(s2, 0);
+  ok(sc.ok && sc.freed.length === 2 && !s2.alive[1], 'a scoop lifts both twins');
+}
+{
+  // the lessons, the remix after them, and rules vs fast model on boards that carry an R13 piece
+  ok(TEACH[101] === 'lock' && TEACH[121] === 'gate' && TEACH[141] === 'twin', 'R13 teaching levels');
+  for (const n of [101, 121, 141]) ok(levelKind(n) === 'normal', `R13 lesson L${n} is not a boss or hard level`);
+  const lv = { lock: 0, gate: 0, twin: 0 };
+  let diff = 0;
+  let boards = 0;
+  for (let n = 101; n <= 600; n++) {
+    const b = generate(n);
+    const has = { lock: b.cats.some((c) => c.mech === 'lock'), gate: b.objs.some((o) => o.kind === 'gate'), twin: b.cats.some((c) => c.mech === 'twin') };
+    for (const k of Object.keys(has)) if (has[k]) lv[k]++;
+    if (!has.lock && !has.gate && !has.twin) continue;
+    if (boards++ % 3) continue; // every third such board is played at random on both models
+    const C = compile(b);
+    for (let k = 0; k < 2; k++) {
+      let seed = n * 13 + k * 101;
+      const rnd = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+      const st = createState(b);
+      const sim = new Sim(C, b.meta.benchSize);
+      while (!st.failed && !isWon(st)) {
+        const fr = freeCats(st);
+        const sf = sim.free().map((u) => C.units[u]).sort((x, y) => x - y);
+        if (JSON.stringify(units(C, fr)) !== JSON.stringify(sf)) { diff++; fail(`R13 level ${n}: rules ${fr} vs fast model ${sf}`); break; }
+        if (!fr.length) { diff++; fail(`R13 level ${n}: no free cat with ${st.aliveCount} home and seats free`); break; }
+        const id = fr[Math.floor(rnd() * fr.length)];
+        tap(st, id);
+        const okSim = sim.apply(C.unitOf[id]);
+        const fc = st.carriers[0];
+        if (okSim === st.failed || (!st.failed && (sim.used !== st.benchUsed || sim.ci !== (fc ? fc.uid : C.cc.length)))) { diff++; fail(`R13 level ${n}: bench / carrier differ`); break; }
+      }
+    }
+  }
+  ok(diff === 0, `R13: ${diff} disagreements between rules and the fast model`);
+  ok(lv.lock >= 60 && lv.gate >= 30 && lv.twin >= 40, `R13 pieces past L100 too rare: ${JSON.stringify(lv)}`);
+  console.log(`R13 pieces L101-600: padlock on ${lv.lock} boards, colour gate on ${lv.gate}, twins on ${lv.twin}; ${boards} boards carry one`);
+}
+
 // ---------------- report ----------------
 console.log('\nlevel  size   kind    cats  carriers  colors  bench  peak  detours  gen_ms');
 for (const [n, s] of stats) {
@@ -701,7 +837,7 @@ for (const [n, s] of stats) {
 console.log('\nmechanics per range (levels carrying each, total pieces)');
 RANGES.forEach(([lo, hi], i) => {
   const m = mechStat[i];
-  console.log(`  L${lo}-${hi}: dog ${m.dog}, yarn ${m.yarn}, mystery ${m.mystery}, frozen ${m.frozen}, spring ${m.spring}, swivel ${m.swivel}, mixed ${m.mixed}, pieces ${m.pieces}`);
+  console.log(`  L${lo}-${hi}: dog ${m.dog}, yarn ${m.yarn}, mystery ${m.mystery}, frozen ${m.frozen}, spring ${m.spring}, swivel ${m.swivel}, lock ${m.lock}, gate ${m.gate}, twin ${m.twin}, mixed ${m.mixed}, pieces ${m.pieces}`);
 });
 console.log(`\nkinds ${JSON.stringify(kinds)}; hard at ${hardAt.slice(0, 8).join(',')}...; boss at ${superAt.slice(0, 6).join(',')}...`);
 console.log('\ndecisions per range (averages; dead = losing taps / legal taps, long = share of cats 4+ cells)');
@@ -744,7 +880,7 @@ DRANGES.forEach(([lo, hi], i) => {
   const b10 = CURATED[10]();
   ok(after(b10, 9) === 0 && after(b10, 0) === 1, `curated L10: the pair park must lose (${after(b10, 9)}) and orange win (${after(b10, 0)})`);
   ok([3, 4, 5].every((r) => JSON.stringify({ ...boardOf(9, r), meta: { ...boardOf(9, r).meta, n: 10 } }) === JSON.stringify(b10) && JSON.stringify(boardOf(10, r)) === JSON.stringify(generate(10, r >= 5 ? 2 : 1))), 'curated L9 / L10: an old link opens the board it was made on');
-  ok(linkRev(9) === 6 && linkRev(10) === 6 && linkRev(34) === 5, 'curated L9 / L10: new links say 6, L15+ still 5');
+  ok(linkRev(9) === 6 && linkRev(10) === 6 && linkRev(15) === 5 && linkRev(34) === 7, 'curated L9 / L10: new links say 6, L15 5, L16+ 7 (schedule 3)');
   const b11 = CURATED[11]();
   ok(winsWith(b11, 4) && !winsWith(b11, 3), 'curated L11: four seats win, three do not');
   // R11 fix round 1: L7 is a short consolidation board (three seats are enough, a chain of 5 is there), and only a
@@ -823,6 +959,7 @@ DRANGES.forEach(([lo, hi], i) => {
   ok(shaped >= 100 && folded >= 40, `shaped ${shaped}, folded ${folded} of 600`);
   console.log(`shape lane: ${shaped} shaped boards (${[...names].join(', ')}), ${folded} folded (${twoFolds} with two flaps)`);
 }
+console.log('schedule 3 board variety (non-boss): ' + VR.map(([lo, hi], i) => `L${lo}-${hi} ${vStat[i].varied}/${vStat[i].boards} (shaped ${vStat[i].shaped}, quilt ${vStat[i].folded}, other box ${vStat[i].alt})`).join('; '));
 console.log(`levels missing the full band (floor still held): ${bandMiss}; normal levels from L10 with a delayed trap: ${lateOk}/${lateN}`);
 console.log(`search misses ${searchMiss} (avg ${(searchNodes / 200).toFixed(0)} nodes)`);
 console.log(`gen avg ${avgMs.toFixed(2)}ms, worst ${maxMs.toFixed(1)}ms (level ${maxMsN}), total ${totalMs.toFixed(0)}ms for ${MAXN} levels`);

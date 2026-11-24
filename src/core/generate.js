@@ -13,7 +13,8 @@ import { exitRay, edgeNeighbours, catsNear, DOG_NEAR } from './rules.js';
 import { dependencyDepth, replay, kittenStats } from './solver.js';
 import { compile, Sim, decisions, mechChanges, searchWin } from './search.js';
 import { packPlan, pickMech, mechCandidates, mechUsed, springTune, thinPlan } from './content-mech.js';
-import { shapeParams, shapeFinish, shapeKeeps, shapeOff } from './shape.js'; // shape lane: shaped boards, folded flaps, wide / tall boxes past L50
+import { remix3, place3, placeGates, mark3 } from './mech3.js'; // R13 (schedule 3): padlocks L101, colour gates L121, twins L141
+import { shapeParams, shapeFinish, shapeKeeps, shapeOff, altRetry } from './shape.js'; // shape lane: shaped boards, folded flaps, wide / tall boxes past L50
 
 const SIZES = [[5, 6], [6, 7], [6, 8], [7, 9], [7, 10], [8, 10], [8, 11]];
 const SIZE_FROM = [1, 4, 5, 12, 20, 34, 50]; // 6x8 from L5 so four colours of chunky cats fit
@@ -30,7 +31,9 @@ export const isBossLevel = (n) => n >= BOSS_EVERY && n % BOSS_EVERY === 0;
 // Schedule versions: SCHED (2) is the boss schedule above; 1 is the one before it (hard every 7-10 from L15, 'super'
 // hard about every 30, mystery taught on L40). A dare link made before the boss lane names no schedule and keeps
 // opening the board it was made on: generate(n, 1) (curated.js boardOf, kit/dare.js token 2 / 3).
-export const SCHED = 2;
+// Schedule 3 (R13, token 7) keeps schedule 2's kinds and adds the R13 pieces past L100 and a board that changes shape
+// far more often from L16 (shape.js); a token 5 / 6 link keeps opening its schedule-2 board: generate(n, 2).
+export const SCHED = 3;
 export function levelKind(n, sv = SCHED) {
   if (sv === 1) return levelKindV1(n);
   if (isBossLevel(n)) return 'boss';
@@ -60,12 +63,13 @@ function levelKindV1(n) {
 }
 
 // ---- mechanics ramp: one new thing per chapter, taught on a gentle level, then mixed ----
-export const TEACH = { 8: 'dog', 12: 'yarn', 41: 'mystery', 55: 'frozen', 61: 'spring', 81: 'swivel' }; // 61 / 81: content packs (content-mech.js); mystery moved off L40 (a boss) onto its breather
+const TEACH_V2 = { 8: 'dog', 12: 'yarn', 41: 'mystery', 55: 'frozen', 61: 'spring', 81: 'swivel' }; // 61 / 81: content packs (content-mech.js); mystery moved off L40 (a boss) onto its breather
 const MECH_FROM = { dog: 8, yarn: 12, mystery: 41, frozen: 55, spring: 61, swivel: 81 };
+export const TEACH = { ...TEACH_V2, 101: 'lock', 121: 'gate', 141: 'twin' }; // R13 pieces on the breathers after the L100 / L120 / L140 bosses (mech3.js)
 const TEACH_V1 = { 8: 'dog', 12: 'yarn', 40: 'mystery', 55: 'frozen', 61: 'spring', 81: 'swivel' }; // schedule 1
 const MECH_FROM_V1 = { dog: 8, yarn: 12, mystery: 40, frozen: 55, spring: 61, swivel: 81 };
-const teachAt = (n, sv = SCHED) => (sv === 1 ? TEACH_V1 : TEACH)[n];
-const TEACH_COUNT = { dog: 1, yarn: 2, mystery: 2, frozen: 1, spring: 2, swivel: 1 };
+const teachAt = (n, sv = SCHED) => (sv === 1 ? TEACH_V1 : sv === 2 ? TEACH_V2 : TEACH)[n];
+const TEACH_COUNT = { dog: 1, yarn: 2, mystery: 2, frozen: 1, spring: 2, swivel: 1, lock: 1, gate: 1, twin: 1 };
 
 // ---- mid-game flavours (normal L5-30): neighbouring boards lean on different decisions so the run never repeats.
 // chain = a bench chain is the showpiece (two 2-chains on the line), tight = more deliberate parks held longer,
@@ -82,7 +86,7 @@ export function mechPlan(n, sv = SCHED) {
   const tk = teachAt(n, sv);
   if (tk) return { [tk]: TEACH_COUNT[tk] };
   const pack = packPlan(n); // the first lap of the themed packs ramps the new pieces in by hand
-  if (pack) return pack;
+  if (pack) return sv >= 3 ? remix3(pack, n) : pack;
   const rng = makeRng(hashSeed('mechplan', n));
   const from = sv === 1 ? MECH_FROM_V1 : MECH_FROM;
   const names = Object.keys(from).filter((k) => n > from[k]);
@@ -93,7 +97,7 @@ export function mechPlan(n, sv = SCHED) {
     if (!rng.chance(fresh ? 0.8 : n >= 70 ? 0.55 : 0.45)) return; // asked for often: a piece that never matters on the line is dropped
     plan[k] = k === 'dog' ? 1 + (n >= 70 && rng.chance(0.35) ? 1 : 0) : k === 'frozen' ? 1 + (n >= 80 && rng.chance(0.4) ? 1 : 0) : rng.int(1, n < 40 ? 2 : 3);
   });
-  return thinPlan(plan, n); // springs / swivels past the packs: every other board at most (content-mech.js)
+  return sv >= 3 ? remix3(thinPlan(plan, n), n) : thinPlan(plan, n); // springs / swivels past the packs: every other board at most (content-mech.js); schedule 3 mixes the R13 pieces in
 }
 
 export function params(n, sv = SCHED) {
@@ -586,6 +590,7 @@ function placeObstacles(temp, n, rng, sv) {
       else delete temp.cats[id].mech;
     }
   }
+  if (plan.lock || plan.twin) place3(temp, plan, placed, plain, n, clearable); // R13 padlock + key, twins (mech3.js)
   return placed;
 }
 
@@ -770,6 +775,7 @@ function lineCheck(board, order) {
   for (const id of order) {
     const lu = C.unitOf[id];
     if (C.mk[lu] && mechUsed(sim, lu)) used.add(C.units[lu]);
+    mark3(sim, used); // R13: a padlock holding a free lane (and its key), twins with one lane clear
     for (let u = 0; u < C.N; u++) {
       if (!sim.alive[u] || C.mk[u]) continue;
       let catIn = false;
@@ -781,6 +787,7 @@ function lineCheck(board, order) {
         if (!live.length) frzM.set(u, true);
         continue;
       }
+      if (C.nLock && C.lockKey[u] >= 0 && sim.alive[C.lockKey[u]]) continue; // padlocked: a gate or dog is not what holds it
       if (live.length === 1) objM[live[0]] = 1;
     }
     for (const m of mysU) {
@@ -805,9 +812,13 @@ function finishMechanics(board, tk) {
   if (!r.won) return false;
   board.objs = board.objs.filter((o, k) => r.objM[k]);
   for (const c of board.cats) if (c.mech && !r.keepCat.has(c.id)) delete c.mech;
+  for (const c of board.cats) if (c.twin != null && !c.mech) delete c.twin;
+  if (!board.cats.some((c) => c.mech === 'lock')) for (const c of board.cats) if (c.mech === 'key') delete c.mech; // a key opens nothing
   const placed = { dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0 };
-  for (const o of board.objs) placed[o.kind]++;
-  for (const c of board.cats) if (c.mech) placed[c.mech]++;
+  const r13 = { lock: 0, gate: 0, twin: 0 }; // R13 kinds only when on the board (schedule-2 meta stays as it was)
+  for (const o of board.objs) (o.kind === 'gate' ? r13 : placed)[o.kind]++;
+  for (const c of board.cats) if (c.mech && c.mech !== 'key' && !(c.mech === 'twin' && c.twin < c.id)) (c.mech in r13 ? r13 : placed)[c.mech]++; // a twin pair counts once
+  for (const k of Object.keys(r13)) if (r13[k]) placed[k] = r13[k];
   board.meta.mechs = placed;
   board.meta.teach = tk || null;
   if (tk && Object.keys(placed).some((k) => k !== tk && placed[k] > 0)) return false;
@@ -817,7 +828,7 @@ function finishMechanics(board, tk) {
 const hasMech = (board) => board.objs.length > 0 || board.cats.some((c) => c.mech);
 // the same board with every dog, yarn ball, ice coat and mystery taken away
 function stripMechs(board) {
-  const cats = board.cats.map((c) => { const k = { ...c }; delete k.mech; return k; });
+  const cats = board.cats.map((c) => { const k = { ...c }; delete k.mech; delete k.twin; return k; });
   return { ...board, objs: [], cats, meta: { ...board.meta, mechs: { dog: 0, yarn: 0, mystery: 0, frozen: 0, spring: 0, swivel: 0 }, teach: null } };
 }
 
@@ -828,6 +839,7 @@ function mechGain(board) {
   if (!hasMech(board)) return false;
   if (board.cats.some((c) => c.mech === 'spring' || c.mech === 'swivel')) return true; // kept only when the line hops / waits for the turn: without it the line is not even legal
   if (board.cats.some((c) => c.mech === 'mystery')) return true; // lineCheck kept it only when it is free while hidden and the line waits for its colour
+  if (board.objs.some((o) => o.kind === 'gate') || board.cats.some((c) => c.mech === 'lock' || c.mech === 'twin')) return true; // R13: lineCheck kept each only while it holds a cat the line needs
   return mechChanges(board, stripMechs(board), board.meta.order);
 }
 
@@ -850,6 +862,7 @@ function build(P, units, ord, asg, aIdx) {
   const cats = ord.entries.map((e) => {
     const c = makeCat(e.id, e.cells, BREEDS[color[e.id]], e.role === 'k' ? ord.pid.get(e.unit) : null);
     if (ord.temp.cats[e.id].mech) c.mech = ord.temp.cats[e.id].mech;
+    if (ord.temp.cats[e.id].twin != null) c.twin = ord.temp.cats[e.id].twin; // R13 twins (same unit: same colour)
     return c;
   });
   const order = ord.groups.map((g) => g[0]);
@@ -917,7 +930,8 @@ export function generate(n, sv = SCHED) {
   const P = params(n, sv);
   const boss = P.kind === 'boss';
   const needCats = boss ? 24 : 3 * Math.min(P.colors, 5); // a boss board only ships a layout with its giant order (24+ cats)
-  const workCap = boss ? BOSS_WORK : WORK_CAP; // bigger boards cost more per measurement: a boss stops measuring sooner
+  const workCap = boss ? BOSS_WORK : WORK_CAP;
+  const gates = sv >= 3 && n >= 8 ? mechPlan(n, sv).gate || 0 : 0; // bigger boards cost more per measurement: a boss stops measuring sooner
   // keep measuring: under the cap, or (a boss) up to 3x the cap while the best board still lacks the boss floor
   const more = () => !best || work < workCap || (boss && work < 2 * workCap && !(best.d.traps >= 4 && best.d.chain3 >= 1));
   // a layout (fill, depth, kitten pairs, long cats); ok = good enough to colour and measure
@@ -957,6 +971,7 @@ export function generate(n, sv = SCHED) {
         const asg = assignColors(ord.groups, P, makeRng(levelSeed(n, 'assign', L.a, o, v)), ord.holdAt);
         if (!asg || (!relax && (!spreadOk(ord.groups, asg, n) || asg.detours < P.minDetours || asg.peak < P.minPeak || (P.hold && asg.peakPre < P.benchSize - 1 && v < 20) || (boss && !asg.chains && v < 20)))) continue; // a boss line fills a whole carrier from the bench: checked here, before the costly measurement
         const board = build(P, L.units, ord, asg, L.a);
+        if (gates) placeGates(board, gates, makeRng(levelSeed(n, 'gate', L.a, o, v)), { compile, Sim, mask: P.mask }); // R13: after colours (a gate's colour is a carrier's)
         const rp = replay(board, board.meta.order);
         if (!rp.won || rp.peak > P.benchSize - 1) continue;
         if (n >= 8 && !finishMechanics(board, P.tk)) {
@@ -1012,7 +1027,8 @@ export function generate(n, sv = SCHED) {
   }
   if (!best) throw new Error('generate failed for level ' + n);
   const { board, d, L } = best;
-  if (P.shape && ((best.base < 1000 && P.kind === 'normal' && n !== 16) || !shapeKeeps(board, d, P, kittenStats(board), dependencyDepth(board)))) { shapeOff.add(n); return generate(n, sv); } // shape lane: this shape missed the level's band: it ships plain
+  if (P.shape && ((best.base < 1000 && P.kind === 'normal' && n !== 16) || !shapeKeeps(board, d, P, kittenStats(board), dependencyDepth(board)))) { shapeOff.add(sv * 1e4 + n); return generate(n, sv); } // shape lane: this shape missed the level's band: it ships plain
+  if (P.alt && best.base < 1000 && P.kind === 'normal' && !P.after && !shapeOff.has(sv * 1e4 + n) && !altRetry.has(sv * 1e4 + n)) { altRetry.set(sv * 1e4 + n, 1); return generate(n, sv); } // schedule 3: one more box of another aspect
   const inBand = best.base >= 1000;
   let filled = 0;
   for (const c of board.cats) filled += c.cells.length;

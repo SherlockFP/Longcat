@@ -11,7 +11,7 @@
 // enough cats left it opens for good and the board is one cell grid again. The rule is the same in rules.js (state
 // gone / foldOpen) and in the search model (search.js Sim.gone), so the solver and the generator see what the player sees.
 import { hashSeed, makeRng } from './rng.js';
-import { SHAPES, GENTLE, BOLD, BOSS, SHAPE_FROM, FOLD_FROM } from '../../data/shape.js';
+import { SHAPES, GENTLE, BOLD, BOLD3, BOSS, SHAPE_FROM, FOLD_FROM } from '../../data/shape.js';
 import { createState, tap, exitRay } from './rules.js'; // used at run time only (rules.js imports this module too)
 
 const DIRV = { U: [0, -1], R: [1, 0], D: [0, 1], L: [-1, 0] };
@@ -29,6 +29,47 @@ export function shapeFor(n, kind = 'normal', teach = false) {
   if ((n - SHAPE_FROM) % every) return null;
   const list = n < 50 ? GENTLE : BOLD;
   return list[(Math.floor((n - SHAPE_FROM) / every) * 3) % list.length]; // steps of 3 walk the whole list before a repeat
+}
+
+// schedule 3 (R13, the owner: "the board must not stay the same rectangle"): one board in 3 shaped from L16, two in 3
+// from L40, three in 4 from L80 (the boards between get a box of another aspect: altBox). Bosses as before.
+export function shapeFor3(n, kind = 'normal', teach = false) {
+  if (kind === 'boss' || n <= SHAPE_FROM) return shapeFor(n, kind, teach);
+  if (teach || (n < 60 && foldFor(n, kind, teach, false))) return null; // a quilt board stays a quilt (one new idea at a time)
+  const k = n - SHAPE_FROM;
+  if (!(n < 40 ? k % 3 === 0 : n < 80 ? k % 3 !== 2 : k % 4 !== 3)) return null;
+  const list = n < 40 ? GENTLE : BOLD3;
+  return list[(n * 5) % list.length]; // neighbouring shaped boards never repeat a shape
+}
+
+// schedule 3: a plain board of another aspect, about the same floor (90-108% of the tier's box), 5-9 wide, 6-10 tall
+// (cells stay >= 30 px on 375 x 667), never the box itself; which one walks with n so neighbours differ
+export function altBox(P) {
+  const a = P.w * P.h;
+  const alt = [];
+  for (let w = 5; w <= MAX_W; w++) for (let h = 6; h <= MAX_H; h++) {
+    if ((w === P.w && h === P.h) || w * h < 0.9 * a || w * h > 1.08 * a || h / w > 1.7 || w / h > 1.3) continue;
+    alt.push([w, h]);
+  }
+  if (!alt.length) return;
+  [P.w, P.h] = alt[(P.n * 7 + (P.n >> 2) + (altRetry.get(P.sv * 1e4 + P.n) || 0)) % alt.length];
+  P.alt = true;
+  const key = P.sv * 1e4 + P.n;
+  P.evalBonus = P.after || shapeOff.has(key) || altRetry.has(key) ? 0 : -26; // a short first look, a miss takes a second box (generate.js); a breather or a missed shape: one full look
+}
+
+function applyShape(P, name) {
+  const c = cropMask(buildMask(name, Math.min(MAX_W, P.w + 1), Math.min(MAX_H, P.h + 1)), Math.min(MAX_W, P.w + 1), Math.min(MAX_H, P.h + 1));
+  P.w = c.w;
+  P.h = c.h;
+  const mask = c.mask;
+  const floor = [];
+  mask.forEach((v, i) => { if (v) floor.push(i); });
+  P.shape = { name, mask };
+  P.mask = Uint8Array.from(mask);
+  P.floor = floor;
+  P.area = floor.length;
+  P.evalBonus = -16; // a shaped board that misses its band ships plain (generate.js): its own search stays short
 }
 
 // folded flaps: L22 first, then every fifth board (normal boards only: hard ones keep their measured band), two flaps
@@ -87,25 +128,22 @@ function cropMask(m, w, h) {
 // the void it carves out does not shrink the puzzle.
 // levels whose shaped board missed the floor every level keeps: they ship as a plain board (generate.js)
 export const shapeOff = new Set();
+// schedule 3: levels whose first other-aspect box missed the band take the next one (generate.js, one retry)
+export const altRetry = new Map();
 
 export function shapeParams(P) {
   // a breather and a 'medium' board keep the plain box: their decision band is the one open-air gaps loosen most
   const calm = (P.after || P.medium) && P.kind !== 'boss' && P.n !== SHAPE_FROM;
-  const name = shapeOff.has(P.n) || calm ? null : shapeFor(P.n, P.kind, P.teach);
-  if (!name && P.kind === 'normal' && P.n >= 50 && P.w === 8 && P.h === 11 && P.n % 2) { P.w = 9; P.h = 10; }
-  if (name) {
-    const c = cropMask(buildMask(name, Math.min(MAX_W, P.w + 1), Math.min(MAX_H, P.h + 1)), Math.min(MAX_W, P.w + 1), Math.min(MAX_H, P.h + 1));
-    P.w = c.w;
-    P.h = c.h;
-    const mask = c.mask;
-    const floor = [];
-    mask.forEach((v, i) => { if (v) floor.push(i); });
-    P.shape = { name, mask };
-    P.mask = Uint8Array.from(mask);
-    P.floor = floor;
-    P.area = floor.length;
-    P.evalBonus = -16; // a shaped board that misses its band ships plain (generate.js): its own search stays short
-  } else P.area = P.w * P.h;
+  const s3 = P.sv >= 3;
+  const slot = (s3 ? shapeFor3 : shapeFor)(P.n, P.kind, P.teach);
+  const name = shapeOff.has(P.sv * 1e4 + P.n) || calm ? null : slot;
+  if (!name && !s3 && P.kind === 'normal' && P.n >= 50 && P.w === 8 && P.h === 11 && P.n % 2) { P.w = 9; P.h = 10; }
+  // schedule 3: a calm board, a shape that missed its band, every other plain board from L40 and all of them from L80
+  // take another aspect
+  if (s3 && P.teach && P.n > 100 && P.h > 9) P.h = 9; // an R13 lesson: its hint line takes a row's height, cells stay >= 30 px
+  if (!name && s3 && P.n > SHAPE_FROM && !P.teach && P.kind !== 'boss' && (slot || P.n >= 80 || (P.n >= 40 && P.n % 2 === 0))) altBox(P);
+  if (name) applyShape(P, name);
+  else P.area = P.w * P.h;
   P.folds = foldFor(P.n, P.kind, P.teach, !!name);
   return P;
 }
@@ -256,7 +294,7 @@ function foldCandidate(board, band, taken, line, rng, canSearch) {
   for (const o of board.objs || []) if (o.cells.some(([x, y]) => cell[y * w + x])) return null; // no dog or yarn under a flap
   // a swivel bed turns its lane: it never sits under a flap and none of its four lanes crosses one
   for (const c of cats) {
-    if (c.mech !== 'swivel') continue;
+    if (c.mech !== 'swivel' && c.mech !== 'twin') continue; // R13 twins: two lanes, the flap model follows one
     if (c.cells.some(([x, y]) => cell[y * w + x])) return null;
     for (const dk of ['U', 'R', 'D', 'L']) if (rayOf({ cells: c.cells, dir: dk }, w, h).some(([x, y]) => cell[y * w + x])) return null;
   }
@@ -354,6 +392,7 @@ export function shapeFinish(board, P, tools) {
     board.meta.work = (board.meta.work || 0) + d.nodes;
   }
   board.meta.shape = P.shape ? P.shape.name : null;
+  if (P.alt) board.meta.alt = true; // schedule 3: a box of another aspect
   board.meta.folds = board.folds ? board.folds.length : 0;
   return board;
 }

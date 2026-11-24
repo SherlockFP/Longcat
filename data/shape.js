@@ -35,12 +35,17 @@ export const SHAPES = {
     const tri = Math.abs(k - 0.5) * 2; // 1 at a point, 0 in the notch
     return r <= 0.74 + 0.56 * tri;
   },
+  // R13 (schedule 3): three more rooms
+  house: (X, Y) => (Y >= -0.15 && Math.abs(X) <= 0.86) || (Y < -0.15 && Math.abs(X) <= (Y + 1.12) * 0.95), // a roof over a box
+  cloud: (X, Y) => inEll(X, Y, -0.48, 0.22, 0.56, 0.62) || inEll(X, Y, 0.48, 0.22, 0.56, 0.62) || inEll(X, Y, 0, -0.24, 0.62, 0.74) || (Math.abs(X) <= 0.8 && Y >= 0.1 && Y <= 0.78),
+  mushroom: (X, Y) => (Y <= 0.12 && inEll(X, Y, 0, 0.12, 1.05, 1.1)) || (Y > 0.12 && Math.abs(X) <= 0.5),
 };
 
 // gentle shapes keep most of the box (first meetings), the bold ones carve more out, boss boards get the showpieces
 export const GENTLE = ['heart', 'cathead', 'diamond', 'donut'];
 export const BOLD = ['heart', 'cathead', 'paw', 'fish', 'plus', 'hourglass', 'stairs', 'donut', 'diamond', 'star'];
 export const BOSS = ['star', 'cathead', 'paw', 'heart', 'fish'];
+export const BOLD3 = [...BOLD, 'house', 'cloud', 'mushroom']; // schedule 3 (src/core/shape.js shapeFor3)
 
 export const SHAPE_FROM = 16; // the first shaped board (a heart)
 export const FOLD_FROM = 22; // the first board with a folded flap

@@ -54,7 +54,7 @@ must(v34 && !v34.rev && sha(boardOf(v34.n, v34.rev || 2)) === OLD34, 'a v1 L34 l
 must(decode('2l34-4-c3', bb)?.b === 4, 'an old link keeps the old seat count');
 const n34 = encode({ n: 34, b: 5, k: 'l', m: 'chain', g: 3, i: 'qq11', nm: 'Ana', rev: linkRev(34) });
 const d34 = decode(n34, bb);
-must(n34.startsWith('5l34-5-c3-qq11.') && d34 && d34.rev === 5 && d34.n === 34 && d34.b === 5 && d34.nm === 'Ana', 'a new token round-trips ' + n34 + ' ' + JSON.stringify(d34));
+must(n34.startsWith('7l34-5-c3-qq11.') && d34 && d34.rev === 7 && d34.n === 34 && d34.b === 5 && d34.nm === 'Ana', 'a new token round-trips ' + n34 + ' ' + JSON.stringify(d34));
 must(d34 && JSON.stringify(boardOf(d34.n, d34.rev)) === JSON.stringify(generate(34)), 'a new token opens the current board');
 must(decode('5l20-5-c3', bb)?.rev === 5 && boardOf(20, 5).meta.kind === 'boss' && boardOf(20, 4).meta.kind === 'normal' && boardOf(20, 3).meta.kind === 'normal', 'L20: boss on a new token, the old normal board on an old one');
 must(decode('4l34-4-c3', bb)?.b === 4 && sha(boardOf(34, 4)) === OLD34, 'a token-4 link (R11 fix round 1, the curated L7) is still schedule 1');
@@ -69,7 +69,7 @@ must(decode('4l34-4-c3', bb)?.b === 4 && sha(boardOf(34, 4)) === OLD34, 'a token
     must(b && !b.shape && !b.folds && sha(b) === OLD[d.n], `old token ${tok} opens the old plain board`);
   }
   const h = boardOf(16, linkRev(16));
-  must(linkRev(16) === 5 && h.shape && h.shape.name === 'heart', 'a new L16 link opens the heart');
+  must(linkRev(16) === 7 && h.shape && h.shape.name === 'heart', 'a new L16 link opens the heart');
   const q = boardOf(22, decode(shortCode({ n: 22, b: 5, k: 'l', m: 'chain', g: 2, rev: linkRev(22) }), bb).rev);
   must(q.folds && q.folds.length >= 1, 'a new L22 link opens the quilt');
   // below L15 both schedules deal the same boards, so linkRev keeps those links on their old digit
@@ -83,6 +83,24 @@ must(decode('4l34-4-c3', bb)?.b === 4 && sha(boardOf(34, 4)) === OLD34, 'a token
   for (const tok of ['3l10-5-c3', '5l10-5-c3']) { const d = decode(tok, bb); must(JSON.stringify(boardOf(10, d.rev)) === JSON.stringify(generate(10, d.rev >= 5 ? 2 : 1)), `old token ${tok} opens the generated L10`); }
   const n9 = shortCode({ n: 9, b: 5, k: 'l', m: 'chain', g: 3, rev: linkRev(9) });
   must(n9 === '6l9-5-c3' && decode(n9, bb)?.rev === 6 && JSON.stringify(boardOf(9, 6)) !== OL9 && boardOf(9, 6).meta.cur === 'pair' && boardOf(10, decode('6l10-5-c3', bb).rev).meta.cur === 'pair', 'a new L9 / L10 link (token 6) opens the new boards ' + n9);
+}
+// R13: schedule 3 (token 7) deals new boards from L16 (far more shapes, padlocks / gates / twins past L100). A token 5 or
+// 6 link made before keeps opening its schedule-2 board byte for byte (sha256 of the R12 generator, commit 06cbe02);
+// L15 is the same board on both, so its links keep the 5
+{
+  const OLD2 = { 16: 'e70bcbc2c70bb7eec4f2783a337de973e16c4044fa10fa11bac8047056a91607', 50: 'ce4362e4cc3bd287187b082b807f2e84daef5e74119bd20971842494957fc61f', 101: '94d59a57f16031e1738bc80c8e7083543fc5c345f6e89b0af57e3201d685309e', 141: '2de2a3efcaaf5a28185d4ef28c99db714f0228bb2b3396d7793ce34ae642ec2f' };
+  for (const n of Object.keys(OLD2).map(Number)) for (const r of [5, 6]) {
+    const d = decode(`${r}l${n}-5-c3`, bb);
+    must(d && d.rev === r && sha(boardOf(n, d.rev)) === OLD2[n], `old token ${r} L${n} opens its schedule-2 board`);
+  }
+  must(sha(generate(15, 2)) === 'c2f601c4fd179f0519a9a73a2f8428312c89704b9ad032f443d0280a12460d89' && JSON.stringify(generate(15, 2)) === JSON.stringify(generate(15)) && linkRev(15) === 5, 'L15: one board on schedules 2 and 3, links keep 5');
+  for (const n of [16, 50, 101, 141]) {
+    const code = shortCode({ n, b: 5, k: 'l', m: 'chain', g: 3, rev: linkRev(n) });
+    const d = decode(code, bb);
+    must(code.startsWith('7l') && d && d.rev === 7 && JSON.stringify(boardOf(n, d.rev)) === JSON.stringify(generate(n)), `a new L${n} link (token 7) opens the schedule-3 board`);
+  }
+  must(sha(boardOf(101, 7)) !== OLD2[101] && boardOf(101, 7).cats.some((c) => c.mech === 'lock') && !boardOf(101, 6).cats.some((c) => c.mech === 'lock'), 'L101: the padlock lesson on a new link only');
+  must(decode('8l16-5-c3', bb) === null, 'an unknown token digit is refused');
 }
 must(decode(s2.toUpperCase(), base)?.i === 'ab12cd', 'a typed (capitalised) core still decodes');
 must(decode('2d4-5-s0', base)?.m === 'seats' && decode('2d4-5-s0', base).g === 0 && decode('2d4-5-s0', base).k === 'd', 'daily no-park core');

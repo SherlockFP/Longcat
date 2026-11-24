@@ -6,16 +6,19 @@
 import { createState, exitRay, catsNear, edgeNeighbours, DOG_WAKE, DOG_NEAR, THAW_NEED } from './rules.js';
 import { compileMech, mechCanExit, spinFromState } from './content-mech.js';
 import { compileFold, foldBlocked } from './shape.js'; // shape lane: folded flaps
+import { compile3, gateSync } from './mech3.js'; // R13: padlocks, colour gates, twins
 
 const rootOf = (board, id) => {
   let c = board.cats[id];
   while (c.kittenOf != null) c = board.cats[c.kittenOf];
-  return c.id;
+  return c.twin != null && c.twin < c.id ? c.twin : c.id; // twins are one unit, rooted at the lower id
 };
 
 function liftOrder(st, id, out) {
   out.push(id);
   for (const k of st.kittens[id]) liftOrder(st, k, out);
+  const t = st.board.cats[id].twin;
+  if (t != null && t > id) liftOrder(st, t, out);
 }
 
 export function compile(board) {
@@ -24,19 +27,19 @@ export function compile(board) {
   const st = createState(board);
   const unitOf = new Int16Array(cats.length).fill(-1);
   const units = [];
-  for (const c of cats) if (c.kittenOf == null) { unitOf[c.id] = units.length; units.push(c.id); }
-  for (const c of cats) if (c.kittenOf != null) unitOf[c.id] = unitOf[rootOf(board, c.id)];
+  for (const c of cats) if (rootOf(board, c.id) === c.id) { unitOf[c.id] = units.length; units.push(c.id); }
+  for (const c of cats) if (rootOf(board, c.id) !== c.id) unitOf[c.id] = unitOf[rootOf(board, c.id)];
   const N = units.length;
   const ucats = units.map((p) => { const out = []; liftOrder(st, p, out); return out; });
   const len = ucats.map((ids) => ids.reduce((t, id) => t + cats[id].cells.length, 0));
   const rayU = [];
   const rayO = [];
-  units.forEach((p) => {
+  units.forEach((p, u) => {
     const su = new Set();
     const so = new Set();
-    for (const [x, y] of exitRay(cats[p], w, h)) {
+    for (const [x, y] of cats[p].twin != null ? exitRay(cats[p], w, h).concat(exitRay(cats[cats[p].twin], w, h)) : exitRay(cats[p], w, h)) { // twins: both lanes
       const o = st.grid[y * w + x];
-      if (o >= 0) su.add(unitOf[o]);
+      if (o >= 0) { if (cats[p].twin == null || unitOf[o] !== u) su.add(unitOf[o]); } // a twin never blocks its twin
       else if (o <= -2) so.add(-2 - o);
     }
     rayU.push(Int16Array.from(su));
@@ -50,7 +53,8 @@ export function compile(board) {
       const near = catsNear(board, o.cells, DOG_NEAR);
       need[k] = near.length ? Math.min(DOG_WAKE, near.length) : 9999;
       for (const id of near) hitsO[id].push(k);
-    } else {
+    } else if (o.kind === 'gate') need[k] = 1; // R13: open once its carrier left (gateSync)
+    else {
       need[k] = 1;
       const [yx, yy] = o.cells[0];
       for (const c of cats) {
@@ -79,6 +83,7 @@ export function compile(board) {
     memo: new Map(),
     ...compileMech(board, st, unitOf, units), // spring cats + swivel beds (content-mech.js)
     ...compileFold(board, unitOf, units), // folded flaps: nFold, foldU, rayF, foldNeed (shape.js)
+    ...compile3(board, st, unitOf, units), // padlocks, gates, twins: lockKey, nLock, gates, twinRay (mech3.js)
   };
 }
 
@@ -132,6 +137,7 @@ export class Sim {
     const C = this.C;
     if (!this.alive[u] || this.frozen(u)) return false;
     if (C.nFold && foldBlocked(this, u)) return false;
+    if (C.nLock && C.lockKey[u] >= 0 && this.alive[C.lockKey[u]]) return false; // padlocked while the key cat is home
     if (C.mk[u]) return mechCanExit(this, u);
     const ru = C.rayU[u];
     for (let i = 0; i < ru.length; i++) if (this.alive[ru[i]]) return false;
@@ -185,6 +191,7 @@ export class Sim {
         }
       }
     }
+    if (C.gates.length) gateSync(this);
     return true;
   }
 
@@ -198,6 +205,7 @@ export class Sim {
     this.used = t[o + 3];
     for (let i = 0; i < 8; i++) this.bench[i] = t[o + 4 + i];
     t.length = o;
+    if (C.gates.length) gateSync(this);
     this.alive[u] = 1;
     this.left++;
     this.gone -= C.ucats[u].length;
