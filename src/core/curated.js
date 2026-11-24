@@ -8,13 +8,16 @@ import { generate } from './generate.js';
 
 export const BOARD_REV = 7; // the newest board revision (kit/dare.js token digit): 5 = the R11x schedule (generate.js SCHED 2:
 // bosses, shaped boards, folded quilts); 2, 3 and 4 (made before it) keep the schedule-1 board; 6 = 5 + the R12 L9 / L10
-// (the teaching pair on L9, the old L9 moved to L10); 7 = 6 + the R13 opening (R13 below: L1-3, L5-7, L10)
+// (the teaching pair on L9, the old L9 moved to L10); 7 = 6 + both R13 lanes, whose levels do not overlap: the R13 opening
+// (R13 below: L1-3, L5-7, L10) and schedule 3 (padlocks, colour gates and twins past L100, a board that changes shape far
+// more often from L16). A 2-6 link keeps its old board
+export const SHAPE3_FROM = 16; // schedule 3 deals new boards from here on (L15 is the same board on 2 and 3)
 // R11 fix round 1: the revision each curated board arrived in. A link names the oldest revision that plays the board it
 // was made on (linkRev), so every link made before L7 was curated keeps opening the board it names. Below L15 both
 // schedules deal the same boards (scripts/check-dare.mjs), so only a link from L15 on needs the schedule-2 digit
 const SINCE = { 6: 3, 9: 6, 11: 3, 7: 4, 10: 6 };
 export const SCHED_FROM = 15;
-export const linkRev = (n) => (n >= SCHED_FROM ? 5 : R13[n] ? 7 : Math.max(3, CURATED[n] ? SINCE[n] : 3)); // L15+: schedule 2 since 5
+export const linkRev = (n) => (n >= SHAPE3_FROM ? 7 : n >= SCHED_FROM ? 5 : R13[n] ? 7 : Math.max(3, CURATED[n] ? SINCE[n] : 3)); // L15: schedule 2 since 5, L16+: schedule 3 since 7, R13 opening 7
 
 const mk = (list) => list.map((c, i) => makeCat(i, c[1], c[0]));
 const O = 'tabby', B = 'tuxedo', P = 'calico', G = 'gray';
@@ -249,5 +252,5 @@ export function boardOf(n, rev = BOARD_REV) {
   if (rev >= 7 && R13[n]) return R13[n]();
   if (n === 9 && rev >= 3 && rev < SINCE[9]) return bigPair(9); // a rev 3-5 L9 link: the old L9 (L10's board since R12)
   const f = CURATED[n] && rev >= SINCE[n] && CURATED[n];
-  return f ? f() : generate(n, rev >= 5 ? 2 : 1);
+  return f ? f() : generate(n, rev >= 7 ? 3 : rev >= 5 ? 2 : 1);
 }

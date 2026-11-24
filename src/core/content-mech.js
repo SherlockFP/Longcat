@@ -20,7 +20,7 @@ export const SWIVEL_MAX = 3; // longest cat that sleeps on a swivel bed (a short
 const rootOf = (board, id) => {
   let c = board.cats[id];
   while (c.kittenOf != null) c = board.cats[c.kittenOf];
-  return c.id;
+  return c.twin != null && c.twin < c.id ? c.twin : c.id; // twins (mech3.js) are one unit: a spring hops them once
 };
 
 // the three sides of a swivel cat, clockwise from its starting facing, skipping the side its neck is on

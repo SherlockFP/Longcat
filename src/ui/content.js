@@ -12,7 +12,7 @@ import { preload } from '../game/content.js';
 import './content.css';
 
 // teaching levels' one-line hint (main.js TUT_KEY)
-export const TUT = { 61: 'tutSpring', 81: 'tutSwivel' };
+export const TUT = { 61: 'tutSpring', 81: 'tutSwivel', 101: 'tutLock', 121: 'tutGate', 141: 'tutTwin' }; // R13 lessons (schedule 3)
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
 const loc = (o) => (o && typeof o === 'object' ? o[lang()] || o.en || '' : o || '');
@@ -57,8 +57,8 @@ export function init(o) {
   game.on.mech = (e) => {
     if (prev) prev(e);
     if (game.demo || !o.audio) return;
-    if (e.type === 'spring') o.audio.pop();
-    else if (e.type === 'spin') o.audio.tick();
+    if (e.type === 'spring' || e.type === 'unlock') o.audio.pop();
+    else if (e.type === 'spin' || e.type === 'gate') o.audio.tick();
   };
   if (import.meta.env && import.meta.env.DEV) {
     window.__qaContent = {
@@ -92,8 +92,8 @@ export function levelStart(n, special, board) {
     c.intro[p.idx] = 1;
     queue.push({ k: 'intro', p });
   }
-  for (const m of ['spring', 'swivel']) {
-    if (!c.seen[m] && board.cats.some((x) => x.mech === m)) {
+  for (const m of ['spring', 'swivel', 'lock', 'gate', 'twin']) {
+    if (!c.seen[m] && (board.cats.some((x) => x.mech === m) || (board.objs || []).some((o) => o.kind === m))) {
       c.seen[m] = 1;
       queue.push({ k: 'mech', m });
     }
@@ -155,10 +155,35 @@ const SWIVEL_SVG = `<svg viewBox="0 0 220 96" class="cpill" aria-hidden="true">
   <rect x="22" y="34" width="44" height="28" rx="14" fill="#6bd36b" stroke="#1d2b53" stroke-width="3" class="leave"/><path d="M28 80 H60" stroke="#1d2b53" stroke-width="3" stroke-linecap="round" stroke-dasharray="2 7" opacity=".5"/>
 </svg>`;
 
+// R13 cards: the padlock + the gold key, a colour gate before its carrier, two twins holding paws
+const LOCK_SVG = `<svg viewBox="0 0 220 96" class="cpill" aria-hidden="true">
+  <rect x="4" y="4" width="212" height="88" rx="10" fill="#fff0d3" stroke="#e8d5b0" stroke-width="2"/>
+  <rect x="20" y="36" width="64" height="32" rx="16" fill="#9b7bea" stroke="#1d2b53" stroke-width="3"/><circle cx="74" cy="52" r="15" fill="#9b7bea" stroke="#1d2b53" stroke-width="3"/>
+  <circle cx="86" cy="30" r="13" fill="#fff" stroke="#1d2b53" stroke-width="2.5"/><path d="M81 29a5 5 0 0 1 10 0" fill="none" stroke="#1d2b53" stroke-width="2.5"/><rect x="79" y="29" width="14" height="10" fill="#ffc93c" stroke="#1d2b53" stroke-width="2"/>
+  <rect x="128" y="36" width="64" height="32" rx="16" fill="#ff8a3d" stroke="#1d2b53" stroke-width="3"/><circle cx="182" cy="52" r="15" fill="#ff8a3d" stroke="#1d2b53" stroke-width="3"/>
+  <circle cx="194" cy="30" r="13" fill="#fff" stroke="#1d2b53" stroke-width="2.5"/><circle cx="189" cy="30" r="4.5" fill="#ffc93c" stroke="#1d2b53" stroke-width="2"/><path d="M193 30h8M198 30v4M201 30v3" stroke="#c98a00" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M120 52H100" stroke="#e8590c" stroke-width="4" stroke-dasharray="6 6" stroke-linecap="round"/><path d="M106 45 98 52 106 59" fill="none" stroke="#e8590c" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+const GATE_SVG = `<svg viewBox="0 0 220 96" class="cpill" aria-hidden="true">
+  <rect x="4" y="4" width="212" height="88" rx="10" fill="#fff0d3" stroke="#e8d5b0" stroke-width="2"/>
+  <rect x="14" y="40" width="58" height="30" rx="15" fill="#ff8a3d" stroke="#1d2b53" stroke-width="3"/><circle cx="64" cy="55" r="14" fill="#ff8a3d" stroke="#1d2b53" stroke-width="3"/>
+  <g fill="#5aa9e6" stroke="#1d2b53" stroke-width="2.5" stroke-linejoin="round"><path d="M92 74V44l5-7 5 7v30z"/><path d="M108 74V46l4-6 4 6v28z"/><path d="M122 74V46l4-6 4 6v28z"/><path d="M136 74V44l5-7 5 7v30z"/><rect x="90" y="54" width="58" height="7"/></g>
+  <rect x="166" y="34" width="40" height="34" rx="6" fill="#5aa9e6" stroke="#1d2b53" stroke-width="3"/><path d="M172 34v-8h28v8" fill="none" stroke="#1d2b53" stroke-width="3"/><path d="M178 80h16" stroke="#1d2b53" stroke-width="3" stroke-linecap="round" stroke-dasharray="3 6"/>
+</svg>`;
+const TWIN_SVG = `<svg viewBox="0 0 220 96" class="cpill" aria-hidden="true">
+  <rect x="4" y="4" width="212" height="88" rx="10" fill="#fff0d3" stroke="#e8d5b0" stroke-width="2"/>
+  <rect x="70" y="16" width="30" height="64" rx="15" fill="#6bd36b" stroke="#1d2b53" stroke-width="3"/><circle cx="85" cy="24" r="14" fill="#6bd36b" stroke="#1d2b53" stroke-width="3"/>
+  <rect x="120" y="16" width="30" height="64" rx="15" fill="#6bd36b" stroke="#1d2b53" stroke-width="3"/><circle cx="135" cy="24" r="14" fill="#6bd36b" stroke="#1d2b53" stroke-width="3"/>
+  <path d="M98 40h24" stroke="#1d2b53" stroke-width="9" stroke-linecap="round"/><path d="M98 40h24" stroke="#ffe14d" stroke-width="5" stroke-linecap="round"/>
+  <path d="M110 40l-7-11h14zM110 40l-7 11h14z" fill="#ffe14d" stroke="#1d2b53" stroke-width="2" stroke-linejoin="round"/>
+  <path d="M85 8V2M135 8V2" stroke="#2f9e44" stroke-width="4" stroke-linecap="round"/><path d="M79 6l6-6 6 6M129 6l6-6 6 6" fill="none" stroke="#2f9e44" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+const CARD_SVG = { spring: SPRING_SVG, swivel: SWIVEL_SVG, lock: LOCK_SVG, gate: GATE_SVG, twin: TWIN_SVG };
+
 function mechCard(m) {
   modal('mech', `<div class="cpbadge">${esc(t('mechNew'))}</div>
 <h2 class="cpt">${esc(t(m + 'Title'))}</h2>
-${m === 'spring' ? SPRING_SVG : SWIVEL_SVG}
+${CARD_SVG[m]}
 <p class="cpb">${esc(t(m + 'Body'))}</p>
 <p class="cptip">${esc(t(m + 'Tip'))}</p>
 <button class="btn green sm" type="button" data-cgo>${esc(t('gotIt'))}</button>`, 'mech');

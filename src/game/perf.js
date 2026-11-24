@@ -646,7 +646,7 @@ class Perf {
     if (pa[3] !== pb[3]) {
       const ma = a.mv, mb = b.mv;
       if (!ma || !mb) return full('mv');
-      for (const key of ['hidden', 'frozen', 'chip']) {
+      for (const key of ['hidden', 'frozen', 'chip', 'locked']) {
         const A = ma[key] || {}, B = mb[key] || {};
         for (const k of new Set([...Object.keys(A), ...Object.keys(B)])) if (A[k] !== B[k]) ids.add(+k);
       }

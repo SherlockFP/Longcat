@@ -2458,7 +2458,7 @@ try {
       await waitFor('/two|iki/.test(document.getElementById("tut")?.textContent || "")', 5000); // R12: the order sits on the card first
       // R12: the pair tag (seat cost + queue line) is L9's only now; qa-fast f19 checks it there. L10's whole rule on the card
       const tutL9 = await ev('(() => { const t = document.getElementById("tut"); return t && !t.hidden ? { txt: t.textContent, clip: t.scrollWidth > t.clientWidth + 1 || t.scrollHeight > t.clientHeight + 1 } : null; })()');
-      if (!tutL9 || tutL9.clip || tutL9.txt !== (lg === 'en' ? 'A mother and kitten take two seats when they park.' : 'Anne ve yavrusu park edince iki minder kaplar.')) throw new Error(`r11 fun ${lg}: L9's rule should sit whole on the teaching card: ${JSON.stringify(tutL9)}`);
+      if (!tutL9 || tutL9.clip || tutL9.txt !== (lg === 'en' ? 'A parked mom + kitten takes 2 seats.' : 'Park eden anne + yavru 2 minder kaplar.')) throw new Error(`r11 fun ${lg}: L9's rule should sit whole on the teaching card: ${JSON.stringify(tutL9)}`);
       await shot(`r11-f1-pair-cost-${lg}`);
       if (!(await qa('fun()')).ghost) throw new Error('r11 fun: L9 should preview its parks');
       for (const id of [5, 6]) { await idleF(); await qa(`tap(${id})`); }

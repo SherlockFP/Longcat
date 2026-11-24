@@ -4,7 +4,7 @@ import { boardOf, BOARD_REV, linkRev } from './core/curated.js';
 import { COLORS, DIRS, makeCat, makeBoard } from './core/board.js';
 import { freeCats, hint as solverHint, solveFrom } from './core/solver.js';
 import { compile, Sim, searchWin, maxChain } from './core/search.js';
-import { findBlocker, isFailed, canUndo, dogLeft, isHidden, tap as rulesTap, createState, undo as rulesUndo } from './core/rules.js';
+import { findBlocker, isFailed, canUndo, dogLeft, isHidden, tap as rulesTap, createState, undo as rulesUndo, isLocked } from './core/rules.js';
 import { loadAssets } from './game/assets.js';
 import { Game } from './game/game.js';
 import { ui } from './ui/ui.js';
@@ -2126,6 +2126,9 @@ async function boot() {
           frozen: cats.filter((c) => c.mech === 'frozen' && st.frozen[c.id] && st.alive[c.id]).length,
           chipped: cats.filter((c) => c.mech === 'frozen' && st.alive[c.id] && st.thaw[c.id] > 0).length,
           hidden: cats.filter((c) => st.alive[c.id] && isHidden(st, c.id)).length,
+          locked: cats.filter((c) => c.mech === 'lock' && st.alive[c.id] && isLocked(st, c.id)).map((c) => c.id), // R13
+          gates: st.objs.filter((o, k) => o.kind === 'gate' && st.objAlive[k]).length,
+          twins: cats.filter((c) => c.mech === 'twin' && st.alive[c.id]).length,
         };
       },
       pos: (id) => game.cellPos(id),

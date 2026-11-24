@@ -5,7 +5,9 @@
 //   the leading digit is the token version and pins the board revision (bump it when a campaign board changes):
 //   2 = the generated boards, 3 = the curated L6 / L9 / L11 (src/core/curated.js), 4 = also the curated L7, 5 (current)
 //   = 4 + the R11x schedule (generate.js SCHED 2: bosses every 20, hard levels moved, shaped boards and folded quilts),
-//   6 = 5 + the R12 L9 (the teaching pair) and L10 (the old L9), 7 = 6 + the R13 opening (L1-3, L5-7, L10).
+//   6 = 5 + the R12 L9 (the teaching pair) and L10 (the old L9), 7 = 6 + both R13 lanes (their levels do not overlap):
+//   the R13 opening (L1-3, L5-7, L10) and schedule 3 (new pieces past L100, far more shaped boards from L16; a 5 / 6 link
+//   keeps its schedule-2 board).
 //   It doubles as the schedule version: a token without it (v1, 2, 3, 4) is schedule 1, the plain pre-R11x boards.
 //   decode() returns rev: 3 / 4 / 5 for those tokens and no rev for older links, which keep opening the board they were
 //   made on. A new link carries the oldest revision that plays its board (curated.js linkRev): below L15 both schedules
