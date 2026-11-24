@@ -76,7 +76,10 @@ export function init(o) {
 // ---- level start: the pack room, the HUD chip, and any card owed (pack done, pack intro, a new piece) ----
 export function levelStart(n, special, board) {
   const p = special ? null : packOf(n);
-  if (game) game.theme = p ? p.pack.theme : null;
+  if (game) {
+    game.lv = special ? save.data.level : n;
+    game.theme = p ? p.pack.theme : null;
+  }
   document.getElementById('cmodal')?.remove();
   queue.length = 0;
   if (p) chip(p);

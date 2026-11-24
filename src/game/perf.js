@@ -225,7 +225,7 @@ class Perf {
   }
 
   // start of draw: clear the transparent board canvas; rebuild the underlay when the layout moved
-  bg(ctx) {
+  bg(ctx, art) {
     if (ctx !== this.g.ctx) return false;
     const g = this.g;
     ctx.save();
@@ -234,24 +234,24 @@ class Perf {
     ctx.restore();
     this.frame++;
     const n = g.vis ? g.vis.bench.length : 0;
-    const sig = `${g.W}x${g.H}@${g.dpr}|${g.board ? g.board.w + 'x' + g.board.h : '-'}|${g.ox},${g.oy},${g.cell}|${n}|${g.benchY}|${g.beltY}|${!!IMG['r7/bg_play_room']}${!!IMG['r7/table_top']}|${g.demo}|${g.roomArt ? g.roomArt().key : ''}`;
+    const sig = `${g.W}x${g.H}@${g.dpr}|${g.board ? g.board.w + 'x' + g.board.h : '-'}|${g.ox},${g.oy},${g.cell}|${n}|${g.benchY}|${g.beltY}|${!!IMG['r7/bg_play_room']}${!!IMG['r7/table_top']}|${g.demo}|${art.key}`;
     if (sig !== this.sig || this.boardRef !== g.board) {
       this.sig = sig;
       this.boardRef = g.board;
-      this.rebuild();
+      this.rebuild(art);
     }
     return true;
   }
 
-  rebuild() {
+  rebuild(art) {
     const g = this.g;
     stats.layers++;
     for (const c of [this.far, this.near]) {
       c.width = Math.round(g.W * g.dpr);
       c.height = Math.round(g.H * g.dpr);
     }
-    buildFar(g, this.far.getContext('2d'));
-    buildNear(g, this.near.getContext('2d'));
+    buildFar(g, this.far.getContext('2d'), art);
+    buildNear(g, this.near.getContext('2d'), art.look);
     this.cam = [1, 0, 0, 1, 0, 0];
     if (this.pixi) { this.pixi.layers(this.far, this.near); this.pixi.camera(this.cam); }
     this.far.style.transform = this.near.style.transform = this.boardCv.style.transform = '';
@@ -584,7 +584,7 @@ class Perf {
   // the scheduled blink moved on) and redraw only their corner of the layer
   boardState() {
     const g = this.g, st = g.state, t = g.clock;
-    const parts = [this.sig, g.hintId, g.cueOn && g.cueOn('cat') ? g.cue.cat : '', JSON.stringify(g.mv), g.idleHeld ? 1 : 0];
+    const parts = [this.sig, g.hintId, g.cueOn && g.cueOn('cat') ? g.cue.cat : '', JSON.stringify(g.mv), g.idleHeld ? 1 : 0, save.data.shop.eq?.skin];
     const head = parts.join('|');
     let alive = '';
     for (const id of g.order) alive += st.alive[id] ? '1' : '0';
@@ -638,7 +638,7 @@ class Perf {
     const full = (k) => { stats.why = stats.why || {}; stats.why[k] = (stats.why[k] || 0) + 1; return null; };
     if (!a) return full('new');
     const pa = a.parts, pb = b.parts;
-    if (pa[0] !== pb[0] || pa[1] !== pb[1] || pa[2] !== pb[2] || pa[4] !== pb[4]) return full('head');
+    if (pa[0] !== pb[0] || pa[1] !== pb[1] || pa[2] !== pb[2] || pa[4] !== pb[4] || pa[5] !== pb[5]) return full('head');
     if (a.alive.length !== b.alive.length) return full('cats');
     const ids = new Set();
     const rects = [];

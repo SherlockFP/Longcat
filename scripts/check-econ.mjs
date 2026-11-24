@@ -550,7 +550,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   ok(!applyPurchase(d, 'nope', 't'), 'unknown product refused');
   const n = fresh();
   ok(applyPurchase(n, 'noads', 'a') && n.ads.removeAds && !applyPurchase(n, 'noads', 'b'), 'No Ads flag, once');
-  eq(Object.keys(PRODUCTS).length, 7, 'seven products');
+  eq(Object.keys(PRODUCTS).length, 10, 'ten products');
   const many = fresh();
   for (let i = 0; i < 40; i++) applyPurchase(many, 'coins500', 'x' + i);
   ok(many.iap.tx.length <= 30, 'receipt list stays bounded');
@@ -761,6 +761,13 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
     d.shop.eq.room = 'room_night'; d.shop.own.bogus = 1; d.shop.cush = -3;
     SH.ensure(d);
     ok(d.shop.eq.room === 'room_sunny' && !d.shop.own.bogus && d.shop.cush === 0, 'ensure() repairs a broken shop save');
+  }
+  {
+    const d = fresh();
+    ok(SH.equipped(d, 'room') === 'room_sunny' && SH.owns(d, 'room_sunny'), 'Chapter look stays the free default theme');
+    ok(!SH.owns(d, 'room_galaxy') && SH.cosBuy(d, 'room_galaxy') === 0 && !SH.owns(d, 'room_galaxy'), 'premium looks require a purchase receipt');
+    ok(applyPurchase(d, 'look_galaxy', 'tx1') && SH.owns(d, 'room_galaxy') && SH.equipped(d, 'room') === 'room_galaxy'
+      && SH.equip(d, 'room_sunny') && !applyPurchase(d, 'look_galaxy', 'tx1') && SH.equipped(d, 'room') === 'room_sunny', 'a cosmetic receipt owns and equips once');
   }
   // the shop keys survive a reload (save.js keeps d.shop's extra keys)
   {

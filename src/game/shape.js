@@ -93,7 +93,7 @@ export function rugShadowPath(g, k, R) {
 // game.js drawBoard7 on a shaped board: felt rug + stitches along the outline, ivory tiles on the floor cells only.
 // Drawn into the baked underlay (perf.js rebuild), so the shadowBlur and the gradient here cost nothing per frame.
 let feltPat = null;
-export function drawShapedRug(g, ctx) {
+export function drawShapedRug(g, ctx, look) {
   const loops = loopsOf(g);
   if (!loops) return false;
   const { w, h } = g.board;
@@ -107,7 +107,7 @@ export function drawShapedRug(g, ctx) {
   ctx.shadowOffsetY = 8;
   ctx.beginPath();
   loopPath(ctx, loops, gx, gy, c, R + 3, R + 2);
-  ctx.fillStyle = '#C24312'; // the r7 table_top felt (sampled on screen: ~#AA2F0A after the texture and the room light)
+  ctx.fillStyle = look.rug;
   ctx.fill('nonzero');
   ctx.restore();
   ctx.save();
@@ -142,7 +142,7 @@ export function drawShapedRug(g, ctx) {
   ctx.strokeStyle = 'rgba(90,30,8,0.35)';
   ctx.stroke();
   ctx.translate(-0.6, -1);
-  ctx.strokeStyle = '#FBE3BE';
+  ctx.strokeStyle = look.stitch;
   ctx.stroke();
   ctx.restore();
   // grout and tiles, floor cells only
@@ -160,6 +160,7 @@ export function drawShapedRug(g, ctx) {
   ctx.beginPath();
   loopPath(ctx, loops, gx, gy, c, 0, 2);
   ctx.clip('nonzero');
+  if (look.tile) { ctx.fillStyle = look.tile; ctx.fillRect(gx, gy, w * c, h * c); }
   const gr = ctx.createLinearGradient(gx + w * c, gy, gx, gy + h * c);
   gr.addColorStop(0, 'rgba(255,236,190,0.18)');
   gr.addColorStop(1, 'rgba(120,70,30,0.06)');

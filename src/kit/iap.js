@@ -1,6 +1,7 @@
 // IAP stub. Test mode: purchase() resolves after a short fake sheet. Real store plugin plugs in behind the same interface (setBackend).
 import { save } from './save.js';
 import { grant } from '../game/econ.js';
+import { ensure, equip } from '../game/shop.js';
 
 export const PRODUCTS = {
   starter: { price: '$4.99', coins: 1200, scoop: 3, noAds: true, once: true },
@@ -10,6 +11,9 @@ export const PRODUCTS = {
   coins4000: { price: '$6.99', coins: 4000 },
   scoop3: { price: '$1.99', scoop: 3 },
   scoop10: { price: '$4.99', scoop: 10 },
+  look_galaxy: { price: '$1.99', cos: 'room_galaxy', once: true },
+  look_candy: { price: '$1.99', cos: 'room_candy', once: true },
+  skin_golden: { price: '$2.99', cos: 'skin_golden', once: true },
 };
 // Dev/test builds only: a production build with no real store backend registered buys nothing (fail closed).
 export const TEST_MODE = !!(import.meta.env && import.meta.env.DEV);
@@ -27,6 +31,7 @@ export function applyPurchase(d, id, tx) {
   grant(d, p);
   if (p.once) d.iap.owned[id] = 1;
   if (p.noAds) d.ads.removeAds = true;
+  if (p.cos) { ensure(d).own[p.cos] = 1; equip(d, p.cos); }
   return true;
 }
 
@@ -58,8 +63,10 @@ export async function restore() {
   const ids = (await (backend || offBackend).restore()).filter((id) => PRODUCTS[id] && PRODUCTS[id].once);
   const d = save.data;
   for (const id of ids) {
+    const p = PRODUCTS[id];
     d.iap.owned[id] = 1;
-    if (PRODUCTS[id].noAds) d.ads.removeAds = true;
+    if (p.noAds) d.ads.removeAds = true;
+    if (p.cos) ensure(d).own[p.cos] = 1;
   }
   save.commit();
   return ids;

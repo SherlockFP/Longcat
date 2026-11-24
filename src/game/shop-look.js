@@ -1,20 +1,60 @@
-// R10 shop cosmetics on the board: the cats' outfit (drawn on every head), the carrier skin (dressed over the carrier
-// art) and the play-room theme (a painted background). game.js calls these three hooks; the shop previews reuse them.
+// Board cosmetics shared by the game and shop previews.
+import { CHAPTER_LEN } from '../../data/hub.js';
+import { mapTheme } from '../ui/look-world.js';
 import { save } from '../kit/save.js';
-import { assetUrl } from './breeds.js';
+import { IMG } from './assets.js';
+import { assetUrl, COLOR_PAL, MYSTERY_PAL } from './breeds.js';
+import { heart, shade, drawBody, drawHead, makePath } from './render.js';
 import { item } from './shop.js';
 
 const INK = '#26334A';
 const eq = (kind) => { const s = save.data.shop; return (s && s.eq && s.eq[kind]) || ''; };
 
-// ---- play-room theme: null keeps the sunny room ----
+export const roomId = () => eq('room') || 'room_sunny';
+export function lookOf(game, id = roomId()) {
+  if (id !== 'room_sunny') return item(id)?.look || 'garden';
+  const lv = (!game?.demo && game?.lv) || save.data.level;
+  return mapTheme(Math.ceil(lv / CHAPTER_LEN));
+}
+
+// Unloaded or missing art uses the sunny room and the look's wash.
 const rooms = {};
-export function roomImage(id = eq('room')) {
-  const it = item(id);
-  if (!it || !it.cost || !it.art) return null;
-  let im = rooms[id];
-  if (!im) { im = rooms[id] = new Image(); im.src = assetUrl('r7/' + it.art + '.webp'); }
+export function roomImage(art, onLoad) {
+  const key = 'r7/' + art;
+  if (IMG[key]) return IMG[key];
+  let im = rooms[art];
+  if (!im) { im = rooms[art] = new Image(); im.src = assetUrl(key + '.webp'); }
+  if (!im.complete && onLoad) im.addEventListener('load', onLoad, { once: true });
   return im.complete && im.naturalWidth ? im : null;
+}
+
+const skins = {
+  skin_candy: { shift: 0.28, pals: new Map() },
+  skin_galaxy: { shift: -0.3, pals: new Map() },
+  skin_golden: { shift: 0.04, pals: new Map() },
+};
+export function skinPal(pal, id = eq('skin')) {
+  const skin = skins[id];
+  if (!skin?.pals || pal === MYSTERY_PAL) return pal;
+  let styled = skin.pals.get(pal.name);
+  if (!styled) {
+    styled = {
+      ...pal, name: `${pal.name}~${id}`, skin: id,
+      base: shade(pal.base, skin.shift, true),
+      mark: shade(pal.mark, skin.shift * 0.5, true),
+      light: shade(pal.light, skin.shift, true),
+    };
+    skin.pals.set(pal.name, styled);
+  }
+  return styled;
+}
+
+// a short orange cat in a fur skin (shop tiles, shop stage, chest reveal), head at x, y
+export function drawSkinCat(ctx, x, y, size, skin, hat = 'hat_none') {
+  const path = makePath([[x - size * 1.5, y], [x, y]]); // long enough that the fur shows past the head
+  drawBody(ctx, path, 0, path.len, { pal: skinPal(COLOR_PAL[0], skin), c: size * 0.9, w: size * 0.6, seed: 1 });
+  drawHead(ctx, 0, x, y, 0, size * 0.8, 1, { v: 0 });
+  drawHat(ctx, x, y, 0, size * 0.8, 1, hat);
 }
 
 function line(ctx, w) { ctx.lineWidth = w; ctx.strokeStyle = INK; ctx.lineJoin = 'round'; ctx.lineCap = 'round'; }
@@ -124,5 +164,19 @@ export function drawCarrierSkin(ctx, cw, ch, id = eq('car')) {
       star5(ctx, X(fx), Y(fy), cw * r, a);
       ctx.fillStyle = '#ffd43b'; ctx.fill(); line(ctx, Math.max(1, cw * 0.012)); ctx.stroke();
     }
+  } else if (id === 'car_hearts') {
+    ctx.fillStyle = '#ff8fb8';
+    line(ctx, Math.max(1, cw * 0.012));
+    for (const [fx, fy, r] of [[0.2, 0.35, 0.068], [0.82, 0.31, 0.062], [0.76, 0.77, 0.048]]) {
+      heart(ctx, X(fx), Y(fy), cw * r);
+      ctx.stroke();
+    }
+  } else if (id === 'car_gold') {
+    ctx.beginPath();
+    ctx.moveTo(X(0.17), Y(0.76));
+    ctx.quadraticCurveTo(X(0.5), Y(0.89), X(0.83), Y(0.76));
+    line(ctx, cw * 0.047); ctx.stroke();
+    ctx.strokeStyle = '#e9ad36'; ctx.lineWidth = cw * 0.032; ctx.stroke();
+    ctx.strokeStyle = '#ffe9a7'; ctx.lineWidth = cw * 0.013; ctx.stroke();
   }
 }
