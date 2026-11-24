@@ -459,3 +459,48 @@ Weak spots:
 - On the L101 padlock lesson, the solver's line fills 4 of 5 seats before the lock opens (f21-lock-after). That is a tight lesson.
 - On L121, the café request bubble covers the carrier colour column (f22-gate-board).
 - Not checked on a real phone.
+
+## R14
+
+Merged r14/play (1441ee4), then r14/ui (796d536), into main with --no-ff. Both merges were clean, with no conflicts.
+
+- **Play:**
+  - L9 is board revision 8 (token digit 8). The last blue faces the little green, and a pink faces out as a decoy. Random-play wins went from 9.0% to 36.2%.
+  - L101 rev 8 swaps the purple and blue carriers. The hint's line now uses 3 of 5 seats when the key leaves (was 4).
+  - L121: the gate opens when its carrier drives off. The order bubble stops short of the carrier queue. The padlock, gate and key badges are bigger.
+  - L1 hint: on a slow phone the board stays baked under the hint, and only the arrow moves each frame.
+  - The dare decoder now accepts digit 8. Tokens 2 to 7 still open the old L9 and L101 (check-dare pins both by sha256).
+  - qa.mjs r11-fun plays `level(10, 6)`, the old pair trap.
+- **UI:**
+  - Baskets open with their own art (`basket.webp`, `basket_open.webp`): a "breathe" squash on tap, then a stretch and a tip.
+  - The map road runs between the basket rail and the right-side buttons, so signposts no longer sit under the slots.
+  - Fast paws shows only while a basket is asleep or waking.
+  - Golden fur has a gold wash, a back stripe and sparkles, all baked into the cat sprites. Galaxy fur gets gold stars.
+  - Little Chef Muffin has its own portrait (`boss_muffin.webp`).
+  - The board themes were checked in 8 r14-theme-* frames. Nothing needed fixing.
+- **Checks after the merge:**
+  - Build ok. npm run check passed on the first run (gen worst 38.5 ms). R14 line: L9 36.2%, L101 seats 3.
+  - qa:fast (full): 216.2 s (218 s wall), 0 failures, 0 console errors.
+  - Frames read: f21-baskets-open, f21-baskets-map, f22-gate-board, f21-lock-board, r13-l1-hint, r13-l10-intro, f19-l9-pair-parked. No integration bugs found.
+- **Perf** (`PERF_NOGPU=1 PERF_RATES=4`, label r14, x4):
+
+  | Scene | Frames | p95 (ms) | Game ms p95 |
+  |---|---|---|---|
+  | hub | 180 | 16.7 | 0 |
+  | L1 | 177 | 16.8 | 1 |
+  | L60 | 180 | 16.7 | 1.2 |
+  | L60run | 119 | 33.4 | 7 |
+  | rapid6 | 79 | 50 | 11.1 |
+  | chain | 104 | 16.8 | 4.8 |
+  | win | 180 | 16.7 | 0.4 |
+
+  - L1 is back to 177 frames and p95 16.8 (r13-final had 152 and 50).
+  - L60run, rapid6 and chain are in the same noisy band as R13.
+
+Weak spots:
+- L9 is gentler now: of the pair parks in a still-winnable spot, only 8 in 77 lose (the old board was 12 in 39).
+- In f19-l9-pair-parked, three identical green cushions sit in the rail while the card says "That pair took 2 seats". The pair and the little green do not look different there.
+- The L101 lesson is still hard for random play (about 6%).
+- On a narrow phone the L121 order bubble can wrap to two lines.
+- rapid6 p95 is still 50 ms at x4.
+- The full qa.mjs was not run. Not checked on a real phone.
