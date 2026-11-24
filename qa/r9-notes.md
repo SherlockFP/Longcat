@@ -367,3 +367,52 @@ Weak spots:
 - The keep lane's TR map strip truncates the task line ("Tezgah Kahves..."). The step is still readable, but the board name is lost.
 - qa-fast now takes about 105 s, past its ~1 min target. scripts/qa.mjs (full) was not run, and its L10 pair-loss walk has never been run.
 - Not checked on a real phone. The full perf.mjs was not run.
+
+## R13
+
+Merged r13/timers, then r13/looks, into main with --no-ff. The timers merge was clean. The looks merge had 3 conflicts, and each kept both sides:
+- `src/kit/iap.js`: the `basket.js` and `shop.js` imports, plus the `fastpaws` product next to `look_galaxy`, `look_candy` and `skin_golden`.
+- `scripts/check-econ.mjs`: the product count is now 11.
+- `scripts/qa-fast.mjs`: steps f21 to f23, then looks-board and looks-shop.
+
+`boss.js`, `ui/boss.js`, the shop data and tabs, and the i18n files auto-merged.
+
+- **Timers:**
+  - Timed baskets (common 15 min, rare 1 h, epic 3 h) sit on a 3-slot rail on the map.
+  - A sleeping basket can be woken with coins (1.5 per minute), with a rewarded ad (30 min off), or with the Fast paws IAP stub.
+  - Start gifts on L1 to L5, plus a welcome gift.
+  - Accessibility: a focus ring, 44 px tap areas, and a Bigger text setting.
+- **Looks:**
+  - Chapter board themes: `room_sunny` follows `mapTheme(chapter)`, baked once into the underlay.
+  - A Fur tab with 3 skins.
+  - A Themes tab with 6 coin themes and 2 premium themes.
+  - 2 new carrier skins.
+  - 6 new room backgrounds (`brd_*.webp`).
+- **Integration:**
+  - Basket epic loot and the L4 gift use `nextLook`, which can now give a fur skin.
+  - Premium items (`cost: 0`) stay out of chest and basket loot.
+  - The chest reveal draws fur skins with the shared `drawSkinCat`.
+- **Checks after the merge:**
+  - Build ok. npm run check passed on the first run; check-core's worst gen time was 56.3 ms.
+  - qa:fast took 134.6 s with 0 failures and 0 console errors.
+  - Frames read: f21-baskets-map, f21-baskets-open, f23-a11y-shop-big (TR, Bigger text) and looks-board (snow theme with galaxy fur). No integration bugs found.
+- **Perf** (`PERF_NOGPU=1 PERF_RATES=4`, label r13-merged, x4):
+
+  | Scene | Frames | p95 (ms) | Game ms p95 |
+  |---|---|---|---|
+  | L1 | 178 | 16.8 | 2.4 |
+  | L60run | 109 | 33.4 | 8.2 |
+  | rapid6 | 87 | 49.9 | 8.9 |
+  | win | 180 | 16.7 | 0.6 |
+
+  - Against r13-after: L1 and win are better. L60run and rapid6 frames are lower (136 and 99 in r13-after).
+  - Pre-merge main (06cbe02), run in the same session, gave L60run 117 frames and rapid6 90. That is the same band as the merged build.
+  - Merged reruns: L60run 101 to 116 frames, rapid6 65 to 87. These runs are noisy.
+  - An A/B of rapid6 on base, timers and looks gave 81, 82 and 81 frames. The merge adds no regression; the gap to r13-after is the machine.
+
+Weak spots:
+- The basket rail sits over the chapter signpost on the left of the map (see f21-baskets-map).
+- Baskets open as the chest art, not as a basket.
+- Golden fur is subtle for a premium item.
+- Themed shaped boards and quilts were not checked in the browser, and neither was the IAP buy-to-re-render flow.
+- Not checked on a real phone.
