@@ -406,7 +406,7 @@ Merged r13/timers, then r13/looks, into main with --no-ff. The timers merge was 
   | win | 180 | 16.7 | 0.6 |
 
   - Against r13-after: L1 and win are better. L60run and rapid6 frames are lower (136 and 99 in r13-after).
-  - Pre-merge main (06cbe02), run in the same session, gave L60run 117 frames and rapid6 90. That is the same band as the merged build.
+  - The r13/mech worktree (06cbe02 plus uncommitted mech edits), run in the same session, gave L60run 117 frames and rapid6 90. That is the same band as the merged build.
   - Merged reruns: L60run 101 to 116 frames, rapid6 65 to 87. These runs are noisy.
   - An A/B of rapid6 on base, timers and looks gave 81, 82 and 81 frames. The merge adds no regression; the gap to r13-after is the machine.
 
