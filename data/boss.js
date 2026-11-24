@@ -56,9 +56,6 @@ export const CH_PLACE = [
 
 // ---- chests ----
 // milestone (every 5th level, not a boss level): a small wooden chest
-export const WOOD = { coins: 20, step: 5, cap: 40, boosters: ['hint', 'undo', 'hint', 'scoop'] };
-// win streak: 3 first clears in a row without a lost bench that was given up on (a continue keeps the flame)
-export const STREAK_LEN = 3;
-export const STREAK = { coins: 15, hintEvery: 3 };
+export const WOOD = { coins: 30, step: 5, cap: 50, boosters: ['hint', 'undo', 'hint', 'scoop'] };
 // boss chest: coins grow with the boss index; the tier (common / rare / epic) is fixed per boss index
 export const BOSS_CHEST = { coins: 80, step: 5, cap: 150, rareCoins: 100, epicCoins: 250 };

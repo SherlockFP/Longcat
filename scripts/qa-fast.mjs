@@ -98,12 +98,13 @@ try {
     await shot('f01-map-l1');
   });
   await step('f02-map-l37', async () => {
-    await put(37, { extra: 'boss: { last: 36, fl: { n: 1, fail: 0, k: 3 }, q: [] }' }); await boot(); await home();
+    await put(37, { extra: 'boss: { last: 36, q: [] }' }); await boot(); await home();
     must(await ev('!!document.querySelector(".hmn.boss[data-lv=\'40\'] .bmcastle")'), 'L40 castle node');
     must(await inView('.hmn.boss[data-lv="40"]'), 'the L40 boss castle is in view from L37');
     must(await ev(`(() => { const p = document.querySelector('.bmpill').getBoundingClientRect(); const node = document.querySelector('#cafe .hmn.cur').getBoundingClientRect(); const ov = (a, b) => a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom;
-      return ![...document.querySelectorAll('#cafe .goals')].some((g) => g.getBoundingClientRect().height && ov(p, g.getBoundingClientRect())) && !ov(p, node); })()`), 'the flame / chest pill clear of the goals strip and the current node'); // the pill takes no pointer events: rectangles, not elementFromPoint
+      return ![...document.querySelectorAll('#cafe .goals')].some((g) => g.getBoundingClientRect().height && ov(p, g.getBoundingClientRect())) && !ov(p, node); })()`), 'the chest pill clear of the goals strip and the current node'); // the pill takes no pointer events: rectangles, not elementFromPoint
     must(await uncovered('#cafe .hmn.cur b'), 'the current node is not under another layer');
+    must(await ev('!document.querySelector("[data-tab=season], .bmflame")'), 'no Season badge, no flame meter on the map');
     await shot('f02-map-l37');
   });
   await step('f03-map-chapter-edge', async () => {
@@ -204,7 +205,7 @@ try {
     await shot('r13-l7-quilt');
   });
   await step('r13-l10-mini', async () => {
-    await put(10, { extra: 'boss: { last: 9, fl: { n: 0, fail: 0, k: 0 }, q: [] }' }); await boot(); await qa('level(10)');
+    await put(10, { extra: 'boss: { last: 9, q: [] }' }); await boot(); await qa('level(10)');
     await waitFor('!!document.getElementById("bossintro")', 8000); await sleep(800);
     must(await inView('#bossintro') && await inView('#bossbar'), 'mini boss intro + nameplate on screen');
     const st = await qa('state()');
@@ -227,7 +228,7 @@ try {
 
   // ---- the boss: intro + HP, defeat, the gold chest, the reveal ----
   await step('f09-boss', async () => {
-    await put(20, { extra: 'boss: { last: 19, fl: { n: 0, fail: 0, k: 0 }, q: [] }' }); await boot(); await qa('level(20)');
+    await put(20, { extra: 'boss: { last: 19, q: [] }' }); await boot(); await qa('level(20)');
     await waitFor('!!document.getElementById("bossintro")', 8000); await sleep(800);
     must(await inView('#bossintro') && await inView('#bossbar'), 'boss intro + nameplate on screen');
     const st = await qa('state()');
@@ -337,6 +338,16 @@ try {
       must(await ev('document.querySelectorAll("#sheet .frrow").length') === 1, 'the reply is in Friend Results');
       await shot('f20-friend-code-list-' + lg);
     });
+    // the Events sheet: Daily, this week's one event, Friends
+    await step('f24-events-' + lg, async () => {
+      await put(30, { lg }); await boot(); await home();
+      await qa(`act('events')`); await sleep(500);
+      must(await ev('document.querySelectorAll("#sheet .stabs .stab").length') === 3, 'three tabs: Daily, the event, Friends');
+      await shot('f24-events-' + lg);
+      await qa(`act('evtab', { tab: 'daily' })`); await sleep(400);
+      must(await inView('#sheet .sdays'), 'the Daily tab shows the streak days');
+      await shot('f24-events-daily-' + lg);
+    });
   }
 
   // ---- desktop 1920x1080: the map in the column, side panels, the painted backdrop ----
@@ -437,7 +448,7 @@ try {
     await qa('level(6)'); await sleep(500); await qa('slow(5)'); await qa('winNow()');
     await winCard(); await qa('slow(1)');
     must(await inView('#modal .bknote') && /Rare basket/.test(await ev('document.querySelector("#modal .bknote").textContent')), 'the win card says a rare basket dropped');
-    must(await ev(`(() => { const a = document.querySelector('#modal .bknote').getBoundingClientRect(); return [...document.querySelectorAll('#modal .bxflame, #modal .bxchest')].every((e) => { const b = e.getBoundingClientRect(); return !(a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom); }); })()`), 'the note clears the flame chip and the chest');
+    must(await ev(`(() => { const a = document.querySelector('#modal .bknote').getBoundingClientRect(); return [...document.querySelectorAll('#modal .bxchest')].every((e) => { const b = e.getBoundingClientRect(); return !(a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom); }); })()`), 'the note clears the chest');
     await shot('f22-win-drop');
   });
   await step('f23-a11y', async () => {
@@ -481,7 +492,7 @@ try {
   for (const [th, lv, skin, room] of [['garden', 7, 'skin_golden'], ['autumn', 15, ''], ['snow', 25, 'skin_golden'], ['lantern', 35, 'skin_golden'],
     ['beach', 45, 'skin_candy'], ['bakery', 55, 'skin_galaxy'], ['galaxy', 25, 'skin_galaxy', 'room_galaxy'], ['candy', 25, 'skin_candy', 'room_candy']]) {
     await step('r14-theme-' + th, async () => {
-      await put(lv, { extra: `shop: { eq: { room: '${room || 'room_sunny'}', skin: '${skin}' }, own: { ${skin ? skin + ': 1, ' : ''}${room ? room + ': 1' : ''} } }, boss: { last: ${lv - 1}, fl: { n: 0, fail: 0, k: 0 }, q: [] }` }); await boot();
+      await put(lv, { extra: `shop: { eq: { room: '${room || 'room_sunny'}', skin: '${skin}' }, own: { ${skin ? skin + ': 1, ' : ''}${room ? room + ': 1' : ''} } }, boss: { last: ${lv - 1}, q: [] }` }); await boot();
       await qa(`level(${lv})`); await sleep(400); await closeCards();
       await ev('document.getElementById("bossintro")?.click()'); await waitFor('!document.querySelector(".ordintro:not(.tuck)")', 5000); await sleep(500);
       must((await qa('state()')).level === lv && await inView('#pf-near'), `L${lv} renders the ${th} board`);

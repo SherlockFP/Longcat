@@ -1,5 +1,5 @@
 /* Boss lane (src/ui/boss.js): the boss nameplate + HP bar, the board frame, the intro card, the defeat ceremony, the
-   chest opening, the win-card chest + flame chip and the map's castle nodes, chest markers and pill. */
+   chest opening, the win-card chest and the map's castle nodes, chest markers and pill. */
 :root { --bx-gold: #ffcf3b; --bx-gold-d: #a8701c; --bx-red: #c8352c; --bx-red-d: #6e1a14; --bx-cream: #fff6e5; --bx-ink: #3b1d0c; }
 
 /* ---- the nameplate (over the LEVEL plaque) ---- */
@@ -81,16 +81,8 @@ body.bosslv #hud .lvl-pill { visibility: hidden; }
 @keyframes bdDrop { 0% { opacity: 0; transform: translateY(-320px) scale(.7); } 100% { opacity: 1; transform: none; } }
 @keyframes biStampC { 0% { opacity: 0; transform: scale(2.4) rotate(-14deg); } 100% { opacity: 1; transform: rotate(-3deg); } }
 
-/* ---- win card: the flame chip and a chest to open ---- */
+/* ---- win card: a chest to open ---- */
 #modal .card.win.bxhas { position: relative; }
-.bxflame { position: absolute; left: 8px; top: -34px; z-index: 6; display: flex; align-items: center; gap: 4px; height: 26px; padding: 0 8px 0 3px; border-radius: 13px; background: rgba(60, 25, 8, .72); border: 2px solid #ffb347; font: 700 11px/1 var(--font); color: #ffe7c2; pointer-events: auto; }
-.bxflame img { width: 22px; height: 22px; }
-.bxpips { display: flex; gap: 3px; }
-.bxpips i { width: 8px; height: 8px; border-radius: 50%; background: rgba(255, 240, 220, .25); box-shadow: inset 0 0 0 1.5px rgba(255, 200, 120, .6); }
-.bxpips i.on { background: radial-gradient(circle at 40% 35%, #fff3b0, #ff9a2e 55%, #e2521f); box-shadow: 0 0 5px #ffa53c; }
-.bxflame.full { border-color: var(--bx-gold); animation: bxHot .7s ease-in-out 6 alternate; }
-.bxflame b { margin-left: 2px; }
-@keyframes bxHot { to { box-shadow: 0 0 12px 3px rgba(255, 150, 40, .8); } }
 .bxchest { position: absolute; right: 0; top: -84px; z-index: 7; width: 84px; display: flex; flex-direction: column; align-items: center; pointer-events: auto; background: none; animation: bxDrop .7s .35s cubic-bezier(.3, 1.6, .5, 1) both; }
 .bxchest img { width: 78px; height: 78px; object-fit: contain; filter: drop-shadow(0 4px 4px rgba(40, 15, 5, .5)); animation: bxIdle 1.8s 1.1s ease-in-out infinite; transform-origin: 50% 90%; }
 .bxchest.gold img { width: 84px; height: 84px; }
@@ -178,14 +170,10 @@ body.bosslv #hud .lvl-pill { visibility: hidden; }
 .bmchest:not(.open) img { animation: bxIdle 2.4s ease-in-out infinite; transform-origin: 50% 90%; }
 .bmchest.open { opacity: .75; }
 .bmpill { position: absolute; z-index: 8; transform: translateX(-50%); display: flex; align-items: center; gap: 5px; height: 28px; padding: 0 4px; border-radius: 14px; background: rgba(255, 250, 240, .95); border: 2.5px solid #8e5530; box-shadow: 0 3px 0 rgba(90, 52, 24, .45); white-space: nowrap; pointer-events: none; }
-.bmflame { display: flex; align-items: center; gap: 2px; padding-right: 5px; border-right: 2px solid #e8cfa6; }
-.bmflame img { width: 20px; height: 20px; }
 .bmnext { display: flex; align-items: center; gap: 3px; padding-right: 4px; }
 .bmnext img, .bmopen img { width: 24px; height: 24px; object-fit: contain; }
 .bmnext b { font: 700 12px/1 var(--font); color: #8e5530; }
 .bmnext.boss b { color: var(--bx-red); }
-.bmpill .bxpips i { background: rgba(142, 85, 48, .18); box-shadow: inset 0 0 0 1.5px rgba(142, 85, 48, .45); }
-.bmpill .bxpips i.on { background: radial-gradient(circle at 40% 35%, #fff3b0, #ff9a2e 55%, #e2521f); box-shadow: 0 0 5px #ffa53c; }
 .bmpill .bmleft { display: none; }
 .bmpill.side .bmnext b { display: none; }
 .bmpill.side .bmleft { display: inline; font-style: normal; font-weight: 800; color: #8e5530; padding-right: 4px; }
@@ -193,7 +181,7 @@ body.bosslv #hud .lvl-pill { visibility: hidden; }
 @keyframes bmBob { 50% { translate: 0 -4px; } }
 
 @media (prefers-reduced-motion: reduce) {
-  #bossintro, #bossintro *, #bossdefeat, #bossdefeat *, #chestfx, #chestfx *, #cxreveal, #cxreveal *, .bxchest, .bxchest img, .bxflame, .bmchest img, .bmopen, #bossframe, #bossbar *, .hmn.boss .bmface { animation: none !important; transition: none !important; }
+  #bossintro, #bossintro *, #bossdefeat, #bossdefeat *, #chestfx, #chestfx *, #cxreveal, #cxreveal *, .bxchest, .bxchest img, .bmchest img, .bmopen, #bossframe, #bossbar *, .hmn.boss .bmface { animation: none !important; transition: none !important; }
   #chestfx .cxrays, #cxreveal .cxrays { transform: none; }
 }
 #bossintro.calm, #bossintro.calm *, #bossdefeat.calm, #bossdefeat.calm *, #chestfx.calm, #chestfx.calm *, .bxchest.calm, .bxchest.calm img { animation: none !important; transition: none !important; }

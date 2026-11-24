@@ -63,7 +63,7 @@ import './i18n-r11-vir.js';
 const UI_BACK = /^(close|closesheet|cafeback|arriveclose|arrivalclose|pcclose|home|rtlater|dareskip)$/;
 const UI_TAB = /^(cafeview|cafearea|evtab|iqtab|shoptab|stab4|rpage|albpage|archpage|iqpage|lang|toggle|shopsel|reno)$/;
 const UI_OK = /^(play|next|retry|dailyplay|dareplay|rushplay|showplay|iqplay|iqrun|arriveplay|rematch)$/;
-const UI_SILENT = /^(build|streetbuild|treat|party|hang|rthang|rthangroom|wear|qclaim|chest|loginclaim|popclaim|catchup|jobclaim|rushclaim|seasonclaim|jarcollect|reqclaim|buy|shoppack|shopcos|shopcat|starter|restore|liferefill|shopad|adlife)$/;
+const UI_SILENT = /^(build|streetbuild|treat|party|hang|rthang|rthangroom|wear|qclaim|chest|loginclaim|popclaim|catchup|jobclaim|rushclaim|jarcollect|reqclaim|buy|shoppack|shopcos|shopcat|starter|restore|liferefill|shopad|adlife)$/;
 const uiKind = (el) => {
   const a = (el && el.dataset && el.dataset.act) || '';
   return UI_BACK.test(a) ? 'back' : UI_TAB.test(a) ? 'tab' : UI_OK.test(a) ? 'ok' : UI_SILENT.test(a) ? '' : 'click';
@@ -71,7 +71,7 @@ const uiKind = (el) => {
 import './ui/r11-vir.css';
 import './i18n-boss.js';
 import { bigText } from './kit/a11y.js';
-import * as bossUi from './ui/boss.js'; // R11 boss lane: boss every 20 levels, chests, the flame streak (src/game/boss.js)
+import * as bossUi from './ui/boss.js'; // R11 boss lane: boss every 20 levels, chests (src/game/boss.js)
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -382,27 +382,17 @@ function eventsInfo() {
   const rows = all.slice(0, 3);
   if (!mine) rows.push({ me: true, ms: 0, rank: '-' });
   else if (rank > 3) rows.push(mine);
-  const s = live.seasonOf(w);
-  const sd = live.seasonDef(s);
-  const stamps = live.stampsOf(d, s);
-  const steps = live.seasonSteps(s, stamps).slice(0, 3);
-  const done = d.season.claim[s] || 0;
-  const ready = live.seasonsReady(d);
-  let claim = null;
-  if (ready.length) { const st = live.seasonSteps(ready[0], live.stampsOf(d, ready[0]))[d.season.claim[ready[0]] || 0]; claim = st && { visitor: st.visitor || '', name: st.visitor ? visName(st.visitor) : '' }; }
-  const showDot = boards.some((b) => !b.medal) && econ.showEndsMs(dayNum(), now()) < econ.DAY_MS;
-  // what inviting the next visitor changes: its portrait, the room its nook goes in, the daily gift
-  const pv = live.seasonSteps(s, stamps).find((x, i) => i >= done && x.visitor && !d.vis[x.visitor]);
-  const floors = cafe.AREAS.filter((_, i) => i === 0 || cafe.areaDone(i - 1)).length;
-  const preview = pv && { id: pv.visitor, name: visName(pv.visitor), at: pv.at, set: live.SEASONS.indexOf(sd), room: cafe.loc(cafe.AREAS[live.visitorsOwned(d).length % Math.max(1, floors)].name), gift: 15 };
+  const ev = live.eventOf(w);
+  const showDot = ev !== 'rush' && boards.some((b) => !b.medal) && econ.showEndsMs(dayNum(), now()) < econ.DAY_MS;
   return {
     open,
+    ev,
+    daily: dailyInfo(),
     show: { name: cafe.loc(th.name), color: th.color, endsMs: econ.showEndsMs(dayNum(), now()), boards, bronze: live.SHOW_BRONZE_COINS, gold: live.SHOW_GOLD_COINS, rosette: !!d.show.decor[th.id], archN: arch.length, dot: showDot },
     arch: { weeks: arch, catchOpen: r10.catchOpen(d, w) },
-    pop: popInfo(w),
+    pop: ev === 'pop' ? popInfo(w) : null,
     friends: { list: friendsInfo(), n: d.fr.list.length },
     rush: { endsMs: econ.showEndsMs(dayNum(), now()), best: d.rush.best, rank, rows, pend: d.rush.pend && { rank: d.rush.pend.rank, prize: live.rushPrize(d.rush.pend.rank) }, dot: !!d.rush.pend },
-    season: { name: cafe.loc(sd.name), color: sd.color, endsMs: live.seasonEndsMs(s, now()), stamps, max: steps[steps.length - 1].at, steps: steps.map((x, i) => ({ ...x, state: i < done ? 'done' : stamps >= x.at ? 'ready' : '' })), claim, preview, dot: ready.length > 0, owned: live.visitorsOwned(d).length, all: Object.keys(live.VISITORS).map((id) => ({ id, name: visName(id), own: !!d.vis[id], cur: sd.visitors.includes(id) })) },
   };
 }
 function cafeSheetInfo() {
@@ -416,7 +406,7 @@ function cafeSheetInfo() {
   };
 }
 const msToMidnight = () => Math.max(0, econ.dayStart(dayNum() + 1) - now());
-const dailyInfo = () => ({ shield: shieldFree(), streak: streak(), done: save.data.daily.doneDay === todayKey(), ms: msToMidnight(), chests: Array.from({ length: 7 }, (_, i) => live.streakChest(i + 1)), stamp: live.eventsOpen(save.data), drec: drecInfo() });
+const dailyInfo = () => ({ shield: shieldFree(), streak: streak(), done: save.data.daily.doneDay === todayKey(), ms: msToMidnight(), chests: Array.from({ length: 7 }, (_, i) => live.streakChest(i + 1)), drec: drecInfo() });
 // the hub's retention layer: rail badges, the goals strip, pets due, outfits, today's visitor, Rush cups (max 3 dots)
 function liveHub() {
   const d = save.data;
@@ -428,20 +418,20 @@ function liveHub() {
   const dailyDone = d.daily.doneDay === todayKey();
   const nr = cafe.nextResident();
   const need = nr ? cafe.starsToResident(nr) : 0;
-  const showW = open ? { have: ['a', 'b'].filter((k) => live.medalOf(d, w, k)).length, need: 2 } : null; // this week's Cat Show medals
+  const showWeek = open && live.eventOf(w) !== 'rush';
+  const showW = showWeek ? { have: ['a', 'b'].filter((k) => live.medalOf(d, w, k)).length, need: 2 } : null; // this week's Cat Show medals
   // today's resident job (R10): the slot with the most progress; after the claim the slot names tomorrow's cat
   const jobs = r10.jobsToday(d, day, res);
   const jb = d.jobs.paid ? null : jobs.slice().sort((x, y) => y.p / y.need - x.p / x.need)[0];
   const thread = threadInfo();
   threadStep('map', thread);
-  const goals = live.goals(d, now(), { thread, stars: cafe.stars(), res, week: w, streak: streak(), dailyDone, party: cafe.partyOpen() ? cafe.PARTY_COST : 0, show: showW, job: jb ? { ...jb, name: resName(jb.who) } : null })
-    .map((g) => ({ ...g, name: g.k === 'outfit' ? resName(g.who) : g.name, vname: g.visitor ? visName(g.visitor) : '', rw: goalReward(g) }));
+  const goals = live.goals(d, now(), { thread, stars: cafe.stars(), res, streak: streak(), dailyDone, party: cafe.partyOpen() ? cafe.PARTY_COST : 0, show: showW, job: jb ? { ...jb, name: resName(jb.who) } : null })
+    .map((g) => ({ ...g, name: g.k === 'outfit' ? resName(g.who) : g.name, rw: goalReward(g) }));
   // badge budget: at most 3 red dots, claimable rewards first, then an event ending within a day, then the daily puzzle
   const want = [
     ['quests', econ.dots(d, now()).quests],
     ['jar', jar.pct >= 0.5 || live.reqReady(d)],
-    ['season', open && live.seasonsReady(d).length > 0],
-    ['show', open && (!!d.rush.pend || (['a', 'b'].some((k) => !live.medalOf(d, w, k)) && econ.showEndsMs(day, now()) < econ.DAY_MS))],
+    ['show', open && (!!d.rush.pend || (showWeek && ['a', 'b'].some((k) => !live.medalOf(d, w, k)) && econ.showEndsMs(day, now()) < econ.DAY_MS))],
     ['daily', !dailyDone],
   ];
   const on = {};
@@ -450,7 +440,7 @@ function liveHub() {
   const vid = live.visitorToday(d, day);
   // the one spotlight (priority: claimable > finished request > full jar > next build)
   const reqI = d.req.list.findIndex((x) => x.p >= x.need);
-  const claim = econ.dots(d, now()).quests ? 'quests' : open && live.seasonsReady(d).length ? 'season' : open && d.rush.pend ? 'rush' : '';
+  const claim = econ.dots(d, now()).quests ? 'quests' : open && d.rush.pend ? 'rush' : '';
   const buildOk = cafe.partyOpen() ? cafe.stars() >= street.nextTask(d).cost : cafe.anyAffordable();
   let spot = live.spotlight({ claim, req: reqI, jarFull: jar.on && jar.pct >= 1, build: buildOk });
   if (spot && spot.k === 'req') {
@@ -474,7 +464,6 @@ function liveHub() {
     after: S.afterClaim && S.afterClaim.who && res.includes(S.afterClaim.who) ? S.afterClaim : null,
     jar,
     daily: { streak: streak(), done: dailyDone, ms: msToMidnight() },
-    season: open ? { stamps: live.stampsOf(d, live.seasonOf(w)) } : null,
     dots: on,
     goals: shown.slice(0, 4),
     thread,
@@ -687,7 +676,7 @@ function startLevel(n, daily = false, show = false) {
   cui.levelStart(n, !!special, board); // pack room + chip, pack / new-piece cards
   sui.levelStart(n, !!special, board); // shape lane: one-time card for the first shaped / folded board
   ordUi.startOrder(n, board, special); // adoption order: intro card + the keeper strip (normal levels only)
-  bossUi.levelStart(n, !!special, board); // boss lane: intro card, HP nameplate, board frame (boss levels); the flame goes out on a given-up loss
+  bossUi.levelStart(n, !!special, board); // boss lane: intro card, HP nameplate, board frame (boss levels)
   track('level_start', { n, daily });
   if (!special && n === 4) funnel('l4_start');
   if (!special && n === 10) funnel('l10_reach');
@@ -719,7 +708,7 @@ function onBonk(r) {
 }
 
 // Cat Show board won: bronze for the clear, gold when the published goal was met (seats peak or bench chain). Each new
-// medal is a season stamp and pays coins; gold on both boards of a week hangs that theme's rosette in the café.
+// medal pays coins; gold on both boards of a week hangs that theme's rosette in the café.
 // Café Rush won: the time from the first cat out to the clear; the best of the week is ranked against practice bots.
 function onShowWin() {
   const d = save.data;
@@ -747,14 +736,15 @@ function onShowWin() {
   const gold = goal.kind === 'chain' ? S.chainBest >= goal.n : peak <= goal.n;
   const r = live.showMedal(d, sh.w, sh.k, gold);
   if (r.bronze || r.gold) { live.reqEvent(d, 'win'); jobEv('win'); } // a new Show medal counts for requests, a replay does not
-  const popNow = sh.w === weekNum() && r.bronze && r10.popReady(d, sh.w, popMedals(sh.w)); // the pop-up's 3rd stamp
+  const popWk = sh.w === weekNum() && live.eventOf(sh.w) === 'pop';
+  const popNow = popWk && r.bronze && r10.popReady(d, sh.w, popMedals(sh.w)); // the pop-up's 3rd stamp
   let rosette = false;
   if (r.gold && live.bothGold(d, sh.w) && !d.show.decor[econ.themeOf(sh.w).id]) { d.show.decor[econ.themeOf(sh.w).id] = 1; rosette = true; }
   save.commit();
   track('show_board_win', { w: sh.w, k: sh.k, gold, peak, chain: S.chainBest, stamps: r.stamps });
   const line = gold ? t('medalGoldWon') : t('medalBronzeWon', { goal: goalText(goal) });
-  const pop = sh.w === weekNum() && r.bronze ? ' · ' + t(popNow ? 'popReadyLine' : 'popStampLine', { n: r10.popStamps(d, sh.w, popMedals(sh.w)).n, m: r10.POP_STAMPS }) : '';
-  ui.win({ stars: 1, title: gold ? 'winTitle' : 'winTitle2', coins: r.coins, coinsBefore: d.coins - r.coins, peek, ribbons: r.stamps, purr: line + (rosette ? ' · ' + t('rosetteWon') : '') + pop, ach: [], show: true, showTag: t('showBoardN', { k: sh.k.toUpperCase() }), ...shareOn(gold ? 'gold' : null) });
+  const pop = popWk && r.bronze ? ' · ' + t(popNow ? 'popReadyLine' : 'popStampLine', { n: r10.popStamps(d, sh.w, popMedals(sh.w)).n, m: r10.POP_STAMPS }) : '';
+  ui.win({ stars: 1, title: gold ? 'winTitle' : 'winTitle2', coins: r.coins, coinsBefore: d.coins - r.coins, peek, purr: line + (rosette ? ' · ' + t('rosetteWon') : '') + pop, ach: [], show: true, showTag: t('showBoardN', { k: sh.k.toUpperCase() }), ...shareOn(gold ? 'gold' : null) });
 }
 
 function onWin(stars) {
@@ -803,10 +793,9 @@ function onWin(stars) {
     d.daily.streak = streak(+dayKey) + 1; // one day snapshot (taken at level start) for the whole daily bookkeeping
     chest = live.streakChest(d.daily.streak);
     econ.grant(d, { ...chest, coins: 0 }); // the chest's coins are in the pay breakdown
-    if (live.eventsOpen(d)) live.addDailyStamp(d, econ.weekOf(+dayKey));
     live.reqEvent(d, 'daily');
     drecNew = r10.drecClear(d, +dayKey); // the permanent Daily record: this date counts once
-    if (live.eventsOpen(d)) r10.popDaily(d, econ.weekOf(+dayKey)); // the week's first Daily clear stamps the pop-up
+    if (live.eventsOpen(d)) r10.popDaily(d, econ.weekOf(+dayKey)); // a pop-up week's first Daily clear stamps the pop-up
     d.daily.last = dayKey;
     d.daily.doneDay = dayKey;
   }
@@ -1183,7 +1172,7 @@ function onFail(silent = false) {
   if (!S.show && !S.daily) { // Cat Show practice and the daily puzzle are free to retry: no life, no streak
     econ.purrLoss(save.data);
     save.data.purr.lost = S.n;
-    bossUi.onFail(S.n); // boss lane: the win-streak flame goes out unless this attempt is continued
+    bossUi.onFail(S.n); // boss lane: the boss gloats over a lost boss board
     S.lifeLost = lifeGate() && !fun.freeLoss(S.n) && econ.loseLife(save.data, now()); // R11 fun: the opening (L1-12) is practice
   }
   save.commit();
@@ -1520,30 +1509,6 @@ const actions = {
     ui.toast(t(r.cup ? 'rushCupToast' : 'rushPrizeToast', { n: r.rank, c: r.coins }));
     lui.eventsSheet(eventsInfo());
     syncCoins();
-  },
-  seasonclaim() {
-    const d = save.data;
-    const s = live.seasonsReady(d)[0];
-    if (s == null) return;
-    const r = live.seasonClaim(d, s, dayNum());
-    if (!r) return;
-    save.commit();
-    audio.ui('rare');
-    haptics.success();
-    track('season_claim', { s, visitor: r.visitor || '', repeat: !!r.repeat });
-    if (r.visitor && !r.repeat && S.mode === 'cafe') { // the arrival scene: walks in, waves, shows its nook
-      ui.hideSheet();
-      const L = liveHub();
-      const nk = L.nooks.find((x) => x.id === r.visitor);
-      if (nk) S.area = nk.area;
-      ui.cafe(cafeInfo(undefined, L));
-      lui.arrival({ kind: 'visitor', id: r.visitor, name: visName(r.visitor), line: live.VISITORS[r.visitor].line, place: nk ? cafe.loc(cafe.AREAS[nk.area].name) : '' });
-      return;
-    }
-    ui.toast(r.visitor && !r.repeat ? t('visitorJoined', { name: visName(r.visitor) }) : t('seasonGiftToast'));
-    if (S.mode === 'cafe') ui.cafe(cafeInfo());
-    lui.eventsTab('season');
-    lui.eventsSheet(eventsInfo());
   },
   cafesheet() { lui.cafeSheet(cafeSheetInfo()); track('cafe_sheet'); },
   jarcollect() {

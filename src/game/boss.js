@@ -2,19 +2,20 @@
 //  - every 20th level is a boss (src/core/generate.js isBossLevel): a named Big Boss Cat (data/boss.js) whose HP is the
 //    cats the board delivers;
 //  - chests: a wooden milestone chest on every 5th first clear (not a boss level), a gold boss chest on a boss's first
-//    clear (tier fixed per boss index: the first boss is always rare), and a streak chest every 3 first clears in a row;
+//    clear (tier fixed per boss index: the first boss is always rare);
 //  - chests wait in a queue (d.boss.q) and pay when they are opened (src/ui/boss.js), so a reload never loses one.
-// State, created lazily here: d.boss = { last, fl: { n, fail, k }, q: [{ t: 'wood'|'boss'|'streak', n, i }], beat, open }
+// State, created lazily here: d.boss = { last, q: [{ t: 'wood'|'boss', n, i }], beat, open } (an old save's flame streak
+// `fl` and its queued 'streak' chests are dropped)
 import { isBossLevel, BOSS_EVERY } from '../core/generate.js';
 import { COSMETICS } from '../../data/shop.js';
 import { owns, ensure as shopEnsure } from './shop.js';
-import { BOSSES, TAUNTS, HURT, DEFEAT, CH_ADJ, CH_PLACE, WOOD, STREAK, STREAK_LEN, BOSS_CHEST, MINI_BOSS } from '../../data/boss.js';
+import { BOSSES, TAUNTS, HURT, DEFEAT, CH_ADJ, CH_PLACE, WOOD, BOSS_CHEST, MINI_BOSS } from '../../data/boss.js';
 
-export { BOSSES, TAUNTS, HURT, DEFEAT, STREAK_LEN, isBossLevel, BOSS_EVERY };
+export { BOSSES, TAUNTS, HURT, DEFEAT, isBossLevel, BOSS_EVERY };
 
 const int = (v, lo = 0) => (Number.isInteger(v) && v >= lo ? v : lo);
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
-const TYPES = ['wood', 'boss', 'streak'];
+const TYPES = ['wood', 'boss'];
 const QMAX = 30; // unopened chests kept; past it the oldest pays out unseen (never lost)
 
 export function state(d) {
@@ -22,10 +23,7 @@ export function state(d) {
   b.last = int(b.last);
   b.beat = int(b.beat);
   b.open = int(b.open); // chests opened in total (the skip-on-tap rule: from the 2nd opening on)
-  if (!isObj(b.fl)) b.fl = {};
-  b.fl.n = Math.min(STREAK_LEN - 1, int(b.fl.n));
-  b.fl.fail = int(b.fl.fail);
-  b.fl.k = int(b.fl.k);
+  delete b.fl;
   b.q = Array.isArray(b.q) ? b.q.filter((e) => isObj(e) && TYPES.includes(e.t) && Number.isInteger(e.n) && e.n >= 0).slice(0, QMAX * 2) : [];
   return b;
 }
@@ -71,10 +69,6 @@ export function lootOf(d, e) {
     const k = Math.floor(e.n / WOOD.step);
     return { t: 'wood', tier: 'common', coins: Math.min(WOOD.cap, WOOD.coins + 5 * Math.floor(e.n / 50)), items: { [WOOD.boosters[k % WOOD.boosters.length]]: 1 }, cos: null };
   }
-  if (e.t === 'streak') {
-    const k = int(e.i, 1);
-    return { t: 'streak', tier: 'common', coins: STREAK.coins, items: k % STREAK.hintEvery === 0 ? { hint: 1 } : {}, cos: null };
-  }
   const i = int(e.i);
   const tier = tierOf(i);
   const L = { t: 'boss', tier, coins: Math.min(BOSS_CHEST.cap, BOSS_CHEST.coins + BOSS_CHEST.step * i), items: { hint: 1, undo: 1 }, cos: null };
@@ -91,42 +85,21 @@ export function lootOf(d, e) {
 }
 
 // ---- earning ----
-// a campaign level was lost (main.js onFail): the flame goes out only if this attempt is given up (startAttempt);
-// a continue that wins the level keeps it
-export function markFail(d, n) { state(d).fl.fail = Math.max(1, n | 0); }
-// a new attempt starts (main.js startLevel): a loss that was never turned into a win puts the flame out
-export function startAttempt(d) {
-  const b = state(d);
-  if (!b.fl.fail) return false;
-  b.fl.fail = 0;
-  const had = b.fl.n > 0;
-  b.fl.n = 0;
-  return had;
-}
 // a first clear of campaign level n -> the chests it queued ([{ t, n, i }]); replays and daily boards never reach here
 export function onClear(d, n) {
   const b = state(d);
   if (n <= b.last) return [];
   b.last = n;
-  b.fl.fail = 0; // won: a lost bench on the way was continued
   const got = [];
   if (n === MINI) got.push({ t: 'boss', n, i: 0 });
   else if (isBossLevel(n)) {
     got.push({ t: 'boss', n, i: bossIndex(n) });
     b.beat = Math.max(b.beat, bossIndex(n) + 1);
   } else if (n % WOOD.step === 0) got.push({ t: 'wood', n });
-  b.fl.n++;
-  if (b.fl.n >= STREAK_LEN) {
-    b.fl.n = 0;
-    b.fl.k++;
-    got.push({ t: 'streak', n, i: b.fl.k });
-  }
   b.q.push(...got);
   while (b.q.length > QMAX) openNext(d);
   return got;
 }
-// the flame meter: 0..STREAK_LEN-1 lit pips (a chest just paid resets it to 0)
-export const flame = (d) => state(d).fl.n;
 export const pending = (d) => state(d).q.length;
 // the next chest on the road from level `cur` (the level about to be played): { n, t: 'wood' | 'boss', left }
 export function nextChest(cur) {

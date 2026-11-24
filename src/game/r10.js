@@ -1,25 +1,28 @@
 // R10 retention: what keeps paying after the cat house is done. Pure functions over the save data `d` (node tests them
 // in scripts/check-econ.mjs); callers pass the day/week numbers and the medals of the week's Cat Show boards.
-//  - pop-up week: one named event a week on the Cat Show's two boards + the week's first Daily clear (3 stamps)
-//  - album: the pop-up's postcard per week (24 over 6 pages), a full page unlocks a framed print to hang in a room
+//  - pop-up week (every 3rd week, live.js eventOf): a named event on the Cat Show's two boards + the week's first Daily
+//    clear (3 stamps)
+//  - album: one postcard per 3-week turn of the event slot (24 over 6 pages), a full page unlocks a framed print
 //  - Daily record: total Daily clears, each date once, milestones at 7/14/30/60/90
 //  - resident jobs: 2 a day from a 14-day rotation, the first one finished pays
 //  - friend results: replies to the player's dares, latest 12, one per result id
 import { grant } from './econ.js';
+import { eventOf } from './live.js';
 import { PAGES, CARDS_PER_PAGE, WEEKS, POP_STAMPS, POP_COINS, DREC, JOB_ROT, JOB_REWARD, FRIENDS_MAX, SENT_MAX } from '../../data/r10.js';
 
 export { PAGES, WEEKS, DREC, POP_STAMPS, POP_COINS, JOB_REWARD, CARDS_PER_PAGE };
 
 // ---- pop-up week ----
-export const popIndex = (w) => ((w % WEEKS.length) + WEEKS.length) % WEEKS.length;
+// the three weeks of a turn (Show, Rush, pop-up) share a postcard: the pop-up week gives it, a catch-up can take it later
+export const popIndex = (w) => ((Math.floor(w / 3) % WEEKS.length) + WEEKS.length) % WEEKS.length;
 export const popOf = (w) => ({ i: popIndex(w), ...WEEKS[popIndex(w)] });
 // medals: { a: bool, b: bool } = the week's Cat Show boards cleared (any medal)
 export function popStamps(d, w, medals) {
   return { a: !!medals.a, b: !!medals.b, daily: !!d.pop.daily[w], n: (medals.a ? 1 : 0) + (medals.b ? 1 : 0) + (d.pop.daily[w] ? 1 : 0) };
 }
-// the first Daily clear of a week stamps that week's card -> true when this clear stamped it
+// the first Daily clear of a pop-up week stamps that week's card -> true when this clear stamped it
 export function popDaily(d, w) {
-  if (d.pop.daily[w]) return false;
+  if (eventOf(w) !== 'pop' || d.pop.daily[w]) return false;
   d.pop.daily[w] = 1;
   const keys = Object.keys(d.pop.daily).map(Number).sort((x, y) => y - x);
   for (const k of keys.slice(8)) delete d.pop.daily[k]; // recent weeks only
@@ -29,7 +32,7 @@ export const hasCard = (d, i) => !!d.album.cards[i];
 // claims this week's postcard + coins (3 stamps, once) -> { card, coins, page } or null
 export function popClaim(d, w, medals) {
   const s = popStamps(d, w, medals);
-  if (s.n < POP_STAMPS || d.pop.paid[w]) return null;
+  if (eventOf(w) !== 'pop' || s.n < POP_STAMPS || d.pop.paid[w]) return null;
   d.pop.paid[w] = 1;
   const i = popIndex(w);
   d.coins += POP_COINS;
@@ -37,12 +40,12 @@ export function popClaim(d, w, medals) {
   d.album.cards[i] = 1;
   return { card: i, coins: POP_COINS, fresh, page: pageDone(d, pageOf(i)) ? pageOf(i) : -1 };
 }
-export const popReady = (d, w, medals) => popStamps(d, w, medals).n >= POP_STAMPS && !d.pop.paid[w];
+export const popReady = (d, w, medals) => eventOf(w) === 'pop' && popStamps(d, w, medals).n >= POP_STAMPS && !d.pop.paid[w];
 // catch-up: an archived week's postcard, once both of its boards are cleared; one catch-up per current week
 export const catchOpen = (d, week) => d.pop.cu !== week;
 export function catchUp(d, week, pastW, medals) { // -> { card, page } or null
   const i = popIndex(pastW);
-  if (pastW >= week || !catchOpen(d, week) || hasCard(d, i) || !(medals.a && medals.b)) return null;
+  if (pastW >= week || i === popIndex(week) || !catchOpen(d, week) || hasCard(d, i) || !(medals.a && medals.b)) return null; // this turn's card comes from its pop-up
   d.pop.cu = week;
   d.album.cards[i] = 1;
   return { card: i, page: pageDone(d, pageOf(i)) ? pageOf(i) : -1 };
@@ -60,11 +63,12 @@ export function catchWeeks(d, week, archive = []) {
   for (const p of pages) {
     for (const i of pageCards(p)) {
       if (hasCard(d, i) || i === cur) continue;
-      const back = (((cur - i) % WEEKS.length) + WEEKS.length) % WEEKS.length || WEEKS.length;
-      if (!first.includes(week - back)) first.push(week - back);
+      const back = (((cur - i) % WEEKS.length) + WEEKS.length) % WEEKS.length || WEEKS.length; // turns ago
+      const pw = 3 * (Math.floor(week / 3) - back) + 2; // that turn's pop-up week: its boards were live
+      if (!first.includes(pw)) first.push(pw);
     }
   }
-  return [...first, ...archive.filter((w) => !first.includes(w))];
+  return [...first, ...archive.filter((w) => !first.includes(w) && popIndex(w) !== cur)];
 }
 
 // ---- album ----
@@ -87,9 +91,9 @@ export function pinPage(d, p) {
   return true;
 }
 export const printsHung = (d) => Object.keys(d.album.hung).length;
-// the next week (from `week` on) whose postcard is still missing -> weeks away (0 = this week) or -1
+// the next pop-up week (from `week` on) that gives postcard i -> weeks away (0 = this week) or -1
 export function nextCardWeek(d, week, i) {
-  for (let k = 0; k < WEEKS.length; k++) if (popIndex(week + k) === i) return k;
+  for (let k = 0; k < 3 * WEEKS.length; k++) if (popIndex(week + k) === i && eventOf(week + k) === 'pop') return k;
   return -1;
 }
 

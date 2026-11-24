@@ -14,7 +14,7 @@ import { cardsOwned, WEEKS } from '../game/r10.js';
 import { CHAPTER_LEN, CHAPTERS, PROPS } from '../../data/hub.js';
 import { goalsHtml, featGoalHtml, featGoal } from './live.js';
 import { retMap, retRoom, retPanel } from './r11-ret.js'; // R11 retention lane: the album card, the hang card
-import { decorateMap, dockPill, chapterName as bossChapter } from './boss.js'; // boss lane: castle nodes, chest markers, the chest / flame pill
+import { decorateMap, dockPill, chapterName as bossChapter } from './boss.js'; // boss lane: castle nodes, chest markers, the next-chest pill
 import { nextChest, MINI } from '../game/boss.js';
 
 const root = document.getElementById('ui');

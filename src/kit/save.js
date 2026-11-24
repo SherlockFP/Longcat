@@ -23,11 +23,12 @@ const defaults = () => ({
   shop: { starterShown: false, offerDay: -1 }, // offerDay: the day the hub's Shop 'Offer' badge was last seen (once a day)
   iap: { owned: {}, tx: [] }, // non-consumables owned + recent transaction ids (no double grants)
   clock: { max: 0 }, // highest time ever seen: the rollback guard
-  // v8 retention (src/game/live.js): tip jar fill start, resident requests, Café Rush, season stamps/claims, visiting cats
+  // v8 retention (src/game/live.js): tip jar fill start, resident requests, Café Rush, visiting cats (an old save's season
+  // stamps / claims are dropped: the season track is gone)
   jar: { t: 0, total: 0 },
   req: { list: [], next: 0, n: 0, done: 0, fresh: '' }, // fresh: the newcomer whose first request leads the hub (kept across reloads)
   rush: { week: 0, best: 0, cats: 0, pend: null, cups: {} },
-  season: { daily: {}, claim: {}, visDay: 0 },
+  season: { visDay: 0 },
   vis: {},
   // v9 (R10, src/game/r10.js): pop-up week stamps (daily: week -> 1, paid: week -> 1, cu: the week a catch-up postcard was
   // taken), the album (cards: postcard index -> 1, hung: room index -> page), the Daily record, resident jobs, friend results
@@ -171,10 +172,7 @@ function validate(d) {
   ru.cats = num(ru.cats, 0, 0);
   ru.pend = isObj(ru.pend) && Number.isInteger(ru.pend.rank) && ru.pend.rank > 0 ? { week: num(ru.pend.week, 0, 0), rank: ru.pend.rank } : null;
   ru.cups = intMap(isObj(ru.cups) ? ru.cups : {}, 1e4);
-  const se = d.season;
-  se.daily = intMap(isObj(se.daily) ? se.daily : {}, 1e4);
-  se.claim = intMap(isObj(se.claim) ? se.claim : {}, 1e3);
-  se.visDay = num(se.visDay, 0, 0);
+  d.season.visDay = num(d.season.visDay, 0, 0);
   if (!isObj(d.vis)) d.vis = {};
   d.shop.starterShown = !!d.shop.starterShown;
   d.shop.offerDay = Number.isInteger(d.shop.offerDay) ? d.shop.offerDay : -1;
@@ -232,12 +230,11 @@ function load() {
       for (const k of ['hearts', 'wear', 'petDay', 'reno', 'style']) if (isObj(m.cafe) && isObj(m.cafe[k])) d.cafe[k] = m.cafe[k];
       if (isObj(m.show) && isObj(m.show.marks)) d.show.marks = m.show.marks;
       if (isObj(m.show) && isObj(m.show.goals)) d.show.goals = m.show.goals;
-      if (isObj(m.season)) for (const k of ['daily', 'claim']) if (isObj(m.season[k])) d.season[k] = m.season[k];
       if (isObj(m.vis)) d.vis = m.vis;
       if (isObj(m.orders)) d.orders = m.orders; // adoption orders: free-form, sanitised in src/game/orders.js
       if (isObj(m.hub)) d.hub = { seen: Number.isInteger(m.hub.seen) && m.hub.seen >= 0 ? m.hub.seen : 0 }; // hub lane (src/ui/hub.js): the last level the map showed
       if (isObj(m.bask)) d.bask = m.bask; // R13 timed baskets + start gifts (sanitised in src/game/basket.js state())
-      if (isObj(m.boss)) d.boss = m.boss; // R11 boss lane: chests + flame streak (sanitised in src/game/boss.js state())
+      if (isObj(m.boss)) d.boss = m.boss; // R11 boss lane: chests (sanitised in src/game/boss.js state())
       if (isObj(m.ret)) d.ret = m.ret; // R11 ret lane: day wins + a print waiting to be hung (sanitised in src/game/r11-ret.js state())
       for (const [o, ks] of [['pop', ['daily', 'paid']], ['album', ['cards', 'hung']]]) if (isObj(m[o])) for (const k of ks) if (isObj(m[o][k])) d[o][k] = m[o][k];
       if (isObj(m.rush) && isObj(m.rush.cups)) d.rush.cups = m.rush.cups;

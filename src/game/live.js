@@ -1,15 +1,17 @@
 // Long-term retention systems: the café tip jar, resident requests, affection hearts + outfits, the daily-puzzle streak
-// chest, Cat Show mastery medals, the weekly Café Rush, 4-week seasons with stamps and visiting cats.
+// chest, the one weekly event slot (Cat Show mastery medals, Café Rush or the pop-up), visiting cats already moved in.
 // Pure functions over the save data `d` and a caller-supplied `now` (the rollback-guarded clock, src/kit/clock.js), so
 // node can test them (scripts/check-econ.mjs). Nothing here reads cafe.js: callers pass the moved-in resident ids.
-import { DAY_MS, dayOf, dayStart, weekOf, grant } from './econ.js';
-import { SEASONS, VISITORS, VISIT_GIFT, VISIT_AT, SEASON_GIFT_EVERY, SEASON_GIFT, REPEAT_GIFT, REQ_KINDS, OUTFITS, RUSH_BOTS, RUSH_PRIZES, RUSH_PRIZE_TOP10, RUSH_PRIZE_REST } from '../../data/live.js';
+import { DAY_MS, dayOf, weekOf } from './econ.js';
+import { SEASONS, VISITORS, VISIT_GIFT, REQ_KINDS, OUTFITS, RUSH_BOTS, RUSH_PRIZES, RUSH_PRIZE_TOP10, RUSH_PRIZE_REST } from '../../data/live.js';
 
-export { SEASONS, VISITORS, VISIT_AT, OUTFITS, REQ_KINDS };
+export { SEASONS, VISITORS, OUTFITS, REQ_KINDS };
 export const H_MS = 3600000;
-export const EVENTS_FROM = 10; // Cat Show, Café Rush, seasons and notifications open after level 10 (d.level > 10)
+export const EVENTS_FROM = 10; // the weekly event and notifications open after level 10 (d.level > 10)
 const rng = (seed) => { let s = seed >>> 0 || 1; return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 4294967296; }; };
 export const eventsOpen = (d) => d.level > EVENTS_FROM;
+// the one live event of a week: Cat Show, Café Rush and the pop-up (the Show boards + a postcard) take turns
+export const eventOf = (week) => ['show', 'rush', 'pop'][((week % 3) + 3) % 3];
 
 // ---- tip jar: the residents tip while you are away. Fills over JAR_CAP_H hours. ----
 export const JAR_CAP_H = 4;
@@ -165,53 +167,12 @@ export function streakChest(streak) {
   return r;
 }
 
-// ---- seasons: 4 weeks each, rotating through data/live.js SEASONS ----
+// ---- seasons: 4 weeks each, rotating through data/live.js SEASONS (the street's featured set, the visitors' nooks) ----
 export const seasonOf = (week) => Math.floor(week / 4);
 export const seasonDef = (s) => SEASONS[((s % SEASONS.length) + SEASONS.length) % SEASONS.length];
-export const seasonEndsMs = (s, now) => Math.max(0, dayStart((s + 1) * 4 * 7 - 3) - now);
 const bits = (b) => (b & 1) + ((b >> 1) & 1);
 export const boardKey = (w, k) => `${w}${k}`;
-const keyWeek = (key) => parseInt(key, 10);
-export function stampsOf(d, s) {
-  let n = d.season.daily[s] || 0;
-  for (const [key, b] of Object.entries(d.show.marks)) if (seasonOf(keyWeek(key)) === s) n += bits(b);
-  return n;
-}
-// what a season pays at a stamp count: its 2 visitors, then a gift every SEASON_GIFT_EVERY stamps
-export function seasonSteps(s, stamps) {
-  const out = VISIT_AT.map((at, i) => ({ at, visitor: seasonDef(s).visitors[i] }));
-  const last = VISIT_AT[VISIT_AT.length - 1];
-  const gifts = Math.max(1, Math.floor((stamps - last) / SEASON_GIFT_EVERY) + 1);
-  for (let g = 1; g <= gifts; g++) out.push({ at: last + g * SEASON_GIFT_EVERY, gift: true });
-  return out;
-}
-export function seasonClaimable(d, s) {
-  const st = stampsOf(d, s);
-  const done = d.season.claim[s] || 0;
-  return seasonSteps(s, st).filter((x, i) => i >= done && st >= x.at).length;
-}
-// claims the next reached step of season s -> { visitor, repeat } | { gift } | null
-export function seasonClaim(d, s, day) {
-  const st = stampsOf(d, s);
-  const done = d.season.claim[s] || 0;
-  const step = seasonSteps(s, st)[done];
-  if (!step || st < step.at) return null;
-  d.season.claim[s] = done + 1;
-  if (step.visitor) {
-    if (d.vis[step.visitor]) { grant(d, REPEAT_GIFT); return { visitor: step.visitor, repeat: true, reward: REPEAT_GIFT }; }
-    d.vis[step.visitor] = day || 1;
-    return { visitor: step.visitor };
-  }
-  grant(d, SEASON_GIFT);
-  return { gift: true, reward: SEASON_GIFT };
-}
-// any season (current or archived) with a reward waiting
-export function seasonsReady(d) {
-  const seen = new Set(Object.keys(d.show.marks).map((k) => seasonOf(keyWeek(k))));
-  for (const s of Object.keys(d.season.daily)) seen.add(+s);
-  return [...seen].filter((s) => seasonClaimable(d, s) > 0).sort((a, b) => b - a);
-}
-export const addDailyStamp = (d, week) => { const s = seasonOf(week); d.season.daily[s] = (d.season.daily[s] || 0) + 1; };
+// visiting cats came with the old season track: the ones already moved in stay, none join any more
 export const visitorsOwned = (d) => Object.keys(d.vis).filter((id) => VISITORS[id]);
 // the visitor who drops by today (rotates), its daily gift once per day
 export const visitorToday = (d, day) => { const v = visitorsOwned(d); return v.length ? v[day % v.length] : null; };
@@ -225,7 +186,7 @@ export function visitorGift(d, id, day) {
 // ---- Cat Show mastery: 2 fixed boards a week, each with one published goal; bronze = clear, gold = goal ----
 export const SHOW_BRONZE_COINS = 30;
 export const SHOW_GOLD_COINS = 60;
-export function showMedal(d, w, k, gold) { // -> { bronze, gold, coins, stamps, rosette } newly earned
+export function showMedal(d, w, k, gold) { // -> { bronze, gold, coins, stamps (new medals), rosette } newly earned
   const key = boardKey(w, k);
   const b = d.show.marks[key] || 0;
   const nb = b | 1 | (gold ? 2 : 0);
@@ -307,7 +268,7 @@ export function clampAheadLive(d, now) {
 }
 
 // ---- the hub's "next goals" strip: at most 2 rows, claimable ones first ----
-// c: { stars, resident, res: [ids], week, streak, dailyDone, party (star cost), show: {have, need} | null, job: today's open resident job | null }
+// c: { stars, resident, res: [ids], streak, dailyDone, party (star cost), show: {have, need} | null, job: today's open resident job | null }
 // The next resident is the thread of the hub and lives on the build card, so it is not repeated here. Pinned after the
 // claimable rows: a newcomer's first request, today's puzzle (until played), this week's Cat Show medals; then the nearest.
 export function goals(d, now, c) {
@@ -320,20 +281,13 @@ export function goals(d, now, c) {
   if (c.show && c.show.have < c.show.need) add({ k: 'show', have: c.show.have, need: c.show.need }, 2);
   const o = nextOutfit(d, c.res);
   if (o) add({ k: 'outfit', have: o.have, need: o.need, who: o.id, outfit: o.outfit });
-  if (eventsOpen(d)) {
-    const s = seasonOf(c.week);
-    const st = stampsOf(d, s);
-    const done = d.season.claim[s] || 0;
-    const step = seasonSteps(s, st)[done];
-    if (step) add({ k: 'season', have: Math.min(st, step.at), need: step.at, visitor: step.visitor || '' });
-  }
   if (c.party) add({ k: 'party', have: Math.min(c.stars, c.party), need: c.party });
   // claimable first, then the pinned rows in order, then the nearest (largest share done); ties keep the order above
   return out.map((g, i) => ({ g, i })).sort((a, b) => (b.g.pct >= 1) - (a.g.pct >= 1) || a.g.pin - b.g.pin || b.g.pct - a.g.pct || a.i - b.i).map((x) => x.g).slice(0, 4); // the hub shows 2 (after dropping a request that already shows over its cat)
 }
 
 // ---- the hub's one spotlight: the single most useful thing to do now (r10 retention) ----
-// c: { claim: 'quests'|'season'|'rush'|'', req: index of a ready request or -1, jarFull, build: affordable next build }
+// c: { claim: 'quests'|'rush'|'', req: index of a ready request or -1, jarFull, build: affordable next build }
 // priority: a reward waiting to be claimed > a finished resident request > a full tip jar > the next build > nothing
 export function spotlight(c) {
   if (c.claim) return { k: 'claim', what: c.claim };

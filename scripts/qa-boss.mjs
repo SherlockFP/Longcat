@@ -1,5 +1,5 @@
 // R11 boss lane QA (run from the end of scripts/qa.mjs): L19 -> L20 boss intro, the HP bar mid-level, the defeat
-// ceremony and the boss chest opening, the L5 milestone chest, the streak chest, the map with castle / chest nodes, TR,
+// ceremony and the boss chest opening, the L5 milestone chest, the map with castle / chest nodes, TR,
 // reduced motion and the 1600x900 column. Frames: qa/r11x-boss-*.png. h = the qa.mjs harness helpers.
 export async function bossQA(h) {
   const { send, ev, qa, shot, boot, sleep, waitFor } = h;
@@ -22,7 +22,6 @@ export async function bossQA(h) {
     await boot();
     await qa('level(19)'); await sleep(600); await qa('winNow()');
     await winCard();
-    if (!(await ev('!!document.querySelector("#modal .bxflame")'))) throw new Error('boss: the win card should carry the flame meter');
     await ev('document.querySelector("#modal [data-act=next]").click()');
     await waitFor('!!document.getElementById("bossintro")', 8000); await sleep(900);
     const bar = await ev('(() => { const b = document.getElementById("bossbar"); return b && !b.hidden ? { txt: b.textContent, vis: getComputedStyle(document.querySelector("#hud .lvl-pill")).visibility } : null; })()');
@@ -70,28 +69,11 @@ export async function bossQA(h) {
     await waitFor('!document.querySelector("#chestfx .cxgo").hidden', 15000); await sleep(500);
     await shot('r11x-boss-wood');
     await ev('document.querySelector("#chestfx .cxgo").click()'); await sleep(500);
-    // 5. the streak chest: two wins banked, the third fills the flame
-    await put(23, 'en', 'boss: { last: 22, fl: { n: 2, fail: 0, k: 0 }, q: [] }');
-    await boot(); await qa('level(23)'); await sleep(600); await qa('winNow()');
-    await winCard();
-    if (!(await ev('!!document.querySelector("#modal .bxflame.full")'))) throw new Error('boss: the 3rd win should fill the flame');
-    await shot('r11x-boss-streak-card');
-    await openChest('streak');
-    await waitFor('!document.querySelector("#chestfx .cxgo").hidden', 15000); await sleep(400);
-    if (!/Streak chest/.test(await ev('document.getElementById("chestfx").textContent'))) throw new Error('boss: a streak chest');
-    await shot('r11x-boss-streak-open');
-    await ev('document.querySelector("#chestfx .cxgo").click()'); await sleep(400);
-    // 6. a lost bench given up puts the flame out (toast on the retry)
-    await put(24, 'en', 'boss: { last: 23, fl: { n: 2, fail: 0, k: 1 }, q: [] }');
-    await boot(); await qa('level(24)'); await sleep(600); await qa('failNow()');
-    await waitFor('window.__qa.state().screen === "fail"', 30000); await sleep(600);
-    await qa('level(24)'); await sleep(600);
-    if ((await ev('window.__boss.st().fl.n')) !== 0) throw new Error('boss: a given-up loss should put the flame out');
   }
   // 7. the map: castle node with the boss, chest markers, the pill (EN + TR), a chest waiting to be opened, 1600x900
   for (const [w, hh, dpr, mobile, lg] of [[375, 667, 2, true, 'en'], [375, 667, 2, true, 'tr'], [1600, 900, 1, false, 'en']]) {
     await send('Emulation.setDeviceMetricsOverride', { width: w, height: hh, deviceScaleFactor: dpr, mobile });
-    await put(38, lg, 'boss: { last: 37, fl: { n: 1, fail: 0, k: 3 }, q: [] }');
+    await put(38, lg, 'boss: { last: 37, q: [] }');
     await boot(); await qa('home()'); await sleep(1000);
     const m = await ev('({ castle: !!document.querySelector(".hmn.boss[data-lv=\'40\'] .bmcastle"), face: !!document.querySelector(".hmn.boss .bmface"), chests: document.querySelectorAll(".bmchest").length, pill: document.querySelector(".bmpill")?.textContent || "" })');
     if (!m.castle || !m.face || m.chests < 1) throw new Error('boss map: castle / chests ' + JSON.stringify(m));
@@ -101,7 +83,7 @@ export async function bossQA(h) {
   }
   await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
   // a chest still in the queue: the pill turns into a button that opens it; past L120 a generated chapter name
-  await put(122, 'en', 'boss: { last: 120, fl: { n: 0, fail: 0, k: 0 }, q: [{ t: "boss", n: 120, i: 5 }] }');
+  await put(122, 'en', 'boss: { last: 120, q: [{ t: "boss", n: 120, i: 5 }] }');
   await boot(); await qa('home()'); await sleep(1000);
   if (!(await ev('!!document.querySelector(".bmpill .bmopen")'))) throw new Error('boss map: a waiting chest should show Open');
   if (!(await ev('[...document.querySelectorAll(".hmsign b")].some((b) => b.textContent === "Misty Meadow")'))) throw new Error('boss map: chapter 13 should have a generated name');

@@ -7,7 +7,7 @@
 //  - winDay: wins counted per day (the win card names tomorrow from the 3rd one on)
 // State lives in d.ret, created lazily: { wd: day of the win count, wn: wins that day, hang: page waiting to be hung }.
 import * as r10 from './r10.js';
-import { archiveWeeks, medalOf, eventsOpen, streakChest, REQ_MAX } from './live.js';
+import { archiveWeeks, medalOf, eventsOpen, eventOf, streakChest, REQ_MAX } from './live.js';
 import { weekOf } from './econ.js';
 
 export function state(d) {
@@ -67,10 +67,10 @@ export function albumNext(d, week, dailyDone) {
 }
 
 // the steps albumNext ranks, one per missing postcard (R11 fix round 2: the album's empty slots show the same step)
-// this week's pop-up card -> { k: claim | board | daily, ... } or null (owned, or bought this week)
+// this week's pop-up card -> { k: claim | board | daily, ... } or null (not a pop-up week, owned, or bought this week)
 function popStep(d, week, dailyDone) {
   const ci = r10.popIndex(week);
-  if (r10.hasCard(d, ci) || d.pop.paid[week]) return null;
+  if (eventOf(week) !== 'pop' || r10.hasCard(d, ci) || d.pop.paid[week]) return null;
   const s = r10.popStamps(d, week, medals(d, week));
   const left = Math.max(0, r10.POP_STAMPS - s.n);
   const step = left === 0 ? { k: 'claim' } : !s.a ? { k: 'board', b: 'a' } : !s.b ? { k: 'board', b: 'b' } : { k: 'daily' };
@@ -135,7 +135,7 @@ export function tomorrow(d, { day, res = [], dailyDone, streak = 0 }) {
   if (dailyDone) out.push({ k: 'chest', n: streak + 1, rw: streakChest(streak + 1) });
   else out.push({ k: 'daily' });
   const w = weekOf(day), w1 = weekOf(day + 1);
-  if (eventsOpen(d) && w1 !== w) {
+  if (eventsOpen(d) && w1 !== w && eventOf(w1) === 'pop') {
     const i = r10.popIndex(w1);
     out.splice(r10.hasCard(d, i) ? out.length : 0, 0, { k: 'week', card: i, fresh: !r10.hasCard(d, i) }); // a missing postcard leads
   }

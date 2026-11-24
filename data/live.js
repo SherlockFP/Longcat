@@ -1,5 +1,5 @@
 // Long-term retention data (src/game/live.js): seasons, visiting cats, resident requests, outfits, Café Rush bots.
-// Seasons rotate every 4 weeks through this list; each season invites two permanent visiting cats with stamps.
+// Seasons rotate every 4 weeks through this list (the street's featured restyle set, the nook each visiting cat sleeps in).
 export const SEASONS = [
   { id: 'lantern', name: { en: 'Lantern Lane', tr: 'Fener Sokağı' }, color: '#d9733a', visitors: ['maple', 'hazel'] },
   { id: 'cocoa', name: { en: 'Cocoa Snow', tr: 'Kakaolu Kar' }, color: '#4f8fc0', visitors: ['pip', 'frost'] },
@@ -16,12 +16,6 @@ export const VISITORS = {
   bean: { name: 'Bean', line: { en: 'Rain or shine, I visit!', tr: 'Yağmur da olsa güneş de olsa gelirim!' } },
 };
 export const VISIT_GIFT = { coins: 15 };
-
-// stamps needed for the season's 1st and 2nd visitor; past the last one, every SEASON_GIFT_EVERY more stamps pays a gift
-export const VISIT_AT = [8, 20];
-export const SEASON_GIFT_EVERY = 6;
-export const SEASON_GIFT = { coins: 60, hint: 1 };
-export const REPEAT_GIFT = { coins: 150, scoop: 1 }; // a visitor already living in the café (a later lap of the list)
 
 // resident requests: one new every REQ_EVERY_H hours, at most REQ_MAX waiting
 export const REQ_KINDS = [

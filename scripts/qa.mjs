@@ -693,8 +693,8 @@ try {
     await shot('29h-show-board-tr');
     await qa('lang("en")');
   }
-  // ---- retention (game/live.js): tip jar + requests, goals strip, daily sheet, Events (Show mastery, Rush, season,
-  // archive), visitor, outfits. QA_FROM=95 runs only these and the round-6/667 frames. ----
+  // ---- retention (game/live.js): tip jar + requests, goals strip, daily sheet, Events (Show mastery, Rush, archive),
+  // visitor, outfits. QA_FROM=95 runs only these and the round-6/667 frames. ----
   if (+(process.env.QA_FROM || 0) <= 95) {
     const center = (sel) => ev(`(() => { const r = document.querySelector(${JSON.stringify(sel)}).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; })()`);
     const tapSel = async (sel) => { const c = await center(sel); await tap(c.x, c.y); };
@@ -706,7 +706,7 @@ try {
     await ev(`(() => { const w = window.__qa.week(); const day = Math.floor((Date.now() - new Date().getTimezoneOffset() * 60000) / 86400000);
       const d = JSON.parse(localStorage.getItem('lco_save'));
       Object.assign(d, { jar: { t: Date.now() - 3 * 3600000, total: 0 }, req: { list: [{ k: 'win', who: 'mochi', need: 2, p: 2, c: 0, s: 1 }, { k: 'color', who: 'luna', need: 9, p: 4, c: 2, s: 2 }], next: Date.now() + 2 * 3600000, n: 2, done: 0 },
-        vis: { maple: 1 }, season: { daily: { [Math.floor(w / 4)]: 5 }, claim: {}, visDay: 0 }, rush: { week: w, best: 0, cats: 0, pend: null, cups: { gold: 1, bronze: 1 } },
+        vis: { maple: 1 }, season: { visDay: 0 }, rush: { week: w, best: 0, cats: 0, pend: null, cups: { gold: 1, bronze: 1 } },
         daily: { last: String(day - 1), streak: 2, doneDay: '' } });
       Object.assign(d.cafe, { hearts: { mochi: 9, luna: 21, biscuit: 5 }, wear: { mochi: 'hat', luna: 'scarf' }, petDay: {} });
       Object.assign(d.show, { marks: { [(w - 1) + 'a']: 3, [(w - 1) + 'b']: 1, [(w - 2) + 'a']: 1 }, from: w - 3 });
@@ -741,12 +741,10 @@ try {
     await shot('40f-events-show');
     await qa('act("evtab", { tab: "rush" })'); await sleep(600);
     await shot('40g-events-rush');
-    if (!(await ev('[...document.querySelectorAll(".lrow em.bot")].length >= 3'))) throw new Error('Rush rivals must be labelled as bots');
-    await qa('act("evtab", { tab: "season" })'); await sleep(600);
-    await shot('40h-events-season');
+    if ((await qa('week()')) % 3 === 1 && !(await ev('[...document.querySelectorAll(".lrow em.bot")].length >= 3'))) throw new Error('Rush rivals must be labelled as bots'); // the Rush tab shows in Rush weeks only
     await qa('act("evtab", { tab: "arch" })'); await sleep(600);
     await shot('40i-events-archive');
-    // an archived board: playable, its medal stamps its own season
+    // an archived board: playable
     await tapSel('.abtn[data-k=b]'); await sleep(900);
     if ((await qa('state()')).mode !== 'play') throw new Error('archived Show board did not start');
     if (await ev('!!document.querySelector("#hud .boosters")')) throw new Error('no boosters on Show boards');
@@ -770,8 +768,6 @@ try {
     await ev('document.querySelector(".wo[data-id=luna]")?.click()'); await sleep(500);
     await qa('lang("tr")'); await qa('home()'); await sleep(800);
     await shot('40o-hub-live-tr');
-    await qa('act("events", { tab: "season" })'); await sleep(700);
-    await shot('40p-season-tr');
     await qa('act("cafesheet")'); await sleep(600);
     await shot('40q-tips-tr');
     await qa('act("evtab", { tab: "show" })'); await qa('act("events", { tab: "show" })'); await sleep(700);
@@ -781,14 +777,14 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
     await qa('home()'); await sleep(800);
     await shot('40s-667-hub-live');
-    for (const [name, js] of [['tips', 'act("cafesheet")'], ['daily', 'act("dailysheet")'], ['show', 'act("events", { tab: "show" })'], ['rush', 'act("events", { tab: "rush" })'], ['season', 'act("events", { tab: "season" })'], ['arch', 'act("events", { tab: "arch" })']]) {
+    for (const [name, js] of [['tips', 'act("cafesheet")'], ['daily', 'act("dailysheet")'], ['show', 'act("events", { tab: "show" })'], ['rush', 'act("events", { tab: "rush" })'], ['arch', 'act("events", { tab: "arch" })']]) {
       await qa('home()'); await sleep(400); await qa(js); await sleep(700); await shot('40t-667-' + name);
     }
     await qa('home()'); await sleep(400); await qa('screen("residents")'); await sleep(600); await shot('40u-667-residents');
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
   }
   // ---- round 10 retention: hub spotlight, tip jar on the counter, request bubble, house view with the next floor,
-  // Cat Street with house 2, renovation, visitor arrival + nook, Pip preview. QA_FROM=96 runs these and later. ----
+  // Cat Street with house 2, renovation, visitor nooks. QA_FROM=96 runs these and later. ----
   if (+(process.env.QA_FROM || 0) <= 96) {
     const lsave = () => ev('JSON.parse(localStorage.getItem("lco_save"))');
     const ground = ['counter_counter', 'counter_pastry', 'counter_lamps', 'counter_chalkboard', 'counter_tables', 'counter_plant', 'window_seat', 'window_plants', 'window_bookshelf', 'window_cattree', 'window_rug', 'window_lights'];
@@ -852,22 +848,6 @@ try {
     await shot('70h-reno-nooks');
     if (!(await ev('!!document.querySelector(".reno-g") && !!document.querySelector(".nook7")'))) throw new Error('renovation set or visitor nook missing');
     if (!(await lsave()).cafe.style.counter) throw new Error('renovation style not stored');
-    // the season: what inviting the next visitor changes, then the arrival scene
-    await edit(`const s = Math.floor(window.__qa.week() / 4); d.vis = {}; d.season = { daily: { [s]: 5 }, claim: {}, visDay: 0 }`);
-    await boot();
-    await qa('act("events", { tab: "season" })'); await sleep(800);
-    await shot('70i-season-preview');
-    if (!(await ev('!!document.querySelector(".vprev")'))) throw new Error('visitor preview card missing');
-    await edit(`const s = Math.floor(window.__qa.week() / 4); d.season.daily[s] = 9`);
-    await boot();
-    await qa('act("seasonclaim")'); await sleep(650);
-    await shot('70j-visitor-arrival-walk');
-    await sleep(1700);
-    await shot('70k-visitor-arrival-card');
-    if (!(await ev('!!document.querySelector("#arrival .arcard")'))) throw new Error('visitor arrival scene missing');
-    await ev('document.querySelector("#arrival .arcard [data-act=arrivalclose]").click()'); await sleep(900);
-    await shot('70l-visitor-nook');
-    if (!(await ev('!!document.querySelector(".guest.visitor.idle7")'))) throw new Error('the new visitor should idle on its nook');
     // Turkish: the labels fit
     await qa('lang("tr")'); await qa('home()'); await sleep(800);
     await shot('70m-street-tr');
@@ -875,12 +855,10 @@ try {
     await shot('70n-room-tr');
     if (!(await fits('.goal .gt b, .nbcard .tname b, .rqbub b'))) throw new Error('a Turkish hub label overflows');
     await qa('lang("en")');
-    // 375x667: the street and the season sheet fit (the no-scroll check runs on every shot)
+    // 375x667: the street fits (the no-scroll check runs on every shot)
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
     await qa('home()'); await sleep(800);
     await shot('70o-667-street');
-    await qa('act("events", { tab: "season" })'); await sleep(700);
-    await shot('70p-667-season');
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
   }
   // ---- round 9 juice: send/chain strips, board-clear sweep, compact win card, hearts drop at once on a lost life ----
@@ -2887,7 +2865,7 @@ try {
     await ev('localStorage.removeItem("lco_save"); localStorage.removeItem("lco_shape")');
   }
   // ---- R11 boss lane: L19 -> L20 boss intro + nameplate + frame, HP mid-level, the defeat ceremony and the boss chest
-  // (rare reveal), the L5 milestone chest, the streak chest, the flame going out, the map's castle / chest nodes and pill
+  // (rare reveal), the L5 milestone chest, the map's castle / chest nodes and pill
   // (EN + TR, 1600x900), a waiting chest, reduced motion. Body: scripts/qa-boss.mjs. QA_SKIP_BOSS=1 skips it. ----
   if (!process.env.QA_SKIP_BOSS) await (await import('./qa-boss.mjs')).bossQA({ send, ev, qa, shot, boot, sleep, waitFor });
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }

@@ -208,7 +208,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   eq(E.LOGIN_REWARDS[6].outfit, 1, 'calendar day 7 is an outfit');
 }
 
-// ---------------- retention: daily streak chest, Show medals, seasons, Café Rush ----------------
+// ---------------- retention: daily streak chest, Show medals, the event slot, Café Rush ----------------
 {
   const coins = [1, 2, 3, 4, 5, 6, 7].map((s) => L.streakChest(s).coins);
   ok(coins.every((c, i) => i === 0 || c > coins[i - 1]), 'the streak chest grows every day of the week');
@@ -227,32 +227,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   L.showMedal(d, w, 'b', true);
   ok(L.bothGold(d, w), 'gold on both boards');
   eq(L.medalOf(d, w, 'b'), 'gold', 'gold straight away counts as both medals');
-  const s = L.seasonOf(w);
-  eq(L.stampsOf(d, s), 4, '4 stamps from the week');
-  L.addDailyStamp(d, w + 1);
-  eq(L.stampsOf(d, s), 5, 'daily puzzles add stamps');
-  eq(L.seasonClaimable(d, s), 0, 'not enough for a visitor yet');
-  for (let k = 0; k < 3; k++) L.addDailyStamp(d, w + 2);
-  eq(L.seasonClaimable(d, s), 1, `${L.VISIT_AT[0]} stamps invite the first visitor`);
-  const v1 = L.seasonClaim(d, s, 10);
-  ok(v1 && v1.visitor === L.seasonDef(s).visitors[0] && d.vis[v1.visitor], 'the visitor moves in for good');
-  eq(L.seasonClaim(d, s, 10), null, 'nothing more to claim');
-  // an archived board earns stamps for its own season, not the current one
-  L.showMedal(d, w - 4, 'a', true);
-  eq([L.stampsOf(d, s), L.stampsOf(d, L.seasonOf(w - 4))], [8, 2], 'archive medals stamp their own season');
-  for (let k = 0; k < 12; k++) L.addDailyStamp(d, w);
-  ok(L.seasonClaim(d, s, 11).visitor === L.seasonDef(s).visitors[1], `${L.VISIT_AT[1]} stamps invite the second visitor`);
-  for (let k = 0; k < 6; k++) L.addDailyStamp(d, w);
-  ok(L.seasonClaim(d, s, 12).gift, 'more stamps keep paying season gifts');
-  ok(L.seasonDef(s + 3).id === L.seasonDef(s).id && L.seasonDef(s + 1).id !== L.seasonDef(s).id, 'seasons rotate through the data list');
-  const lap = fresh();
-  lap.vis[L.seasonDef(s).visitors[0]] = 1;
-  for (let k = 0; k < 8; k++) L.addDailyStamp(lap, w);
-  const c0 = lap.coins;
-  const rep = L.seasonClaim(lap, s, 1);
-  ok(rep.repeat && lap.coins > c0, 'a visitor already living there turns into a gift');
-  ok(L.seasonEndsMs(L.seasonOf(E.weekOf(E.dayOf(T0))), T0) <= 28 * 24 * H, 'a season lasts at most 4 weeks');
-
+  ok(new Set([0, 1, 2].map((i) => L.eventOf(w + i))).size === 3 && L.eventOf(w) === L.eventOf(w + 3) && L.eventOf(-1) === L.eventOf(2), 'Cat Show, Café Rush and the pop-up take turns in the one slot');
   // Café Rush
   const bots = L.rushBots(w, 30);
   eq(bots.length, 19, '19 practice bots');
@@ -348,17 +323,18 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
         d.daily.streak = +d.daily.last === day - 1 ? d.daily.streak + 1 : 1;
         d.daily.last = String(day);
         E.grant(d, L.streakChest(d.daily.streak));
-        if (L.eventsOpen(d)) { L.addDailyStamp(d, week); R.popDaily(d, week); }
+        if (L.eventsOpen(d)) R.popDaily(d, week);
         L.reqEvent(d, 'daily');
         const ms = R.drecClear(d, day);
         if (ms.length) earn.add('drec');
         earn.add('daily');
       }
-      if (hour === 20 && L.eventsOpen(d)) { // the week's Show boards and a Rush run
-        if (!L.medalOf(d, week, 'a')) { L.showMedal(d, week, 'a', true); earn.add('show'); }
-        if (!L.medalOf(d, week, 'b')) { L.showMedal(d, week, 'b', week % 2 === 0); earn.add('show'); }
+      if (hour === 20 && L.eventsOpen(d)) { // the week's one event: its Show boards (a Show or pop-up week) or a Rush run
+        const ev = L.eventOf(week);
+        if (ev !== 'rush' && !L.medalOf(d, week, 'a')) { L.showMedal(d, week, 'a', true); earn.add('show'); }
+        if (ev !== 'rush' && !L.medalOf(d, week, 'b')) { L.showMedal(d, week, 'b', week % 2 === 0); earn.add('show'); }
         if (L.bothGold(d, week)) d.show.decor[E.themeOf(week).id] = 1;
-        if (!d.rush.best) L.rushResult(d, 30 * 2400);
+        if (ev === 'rush' && !d.rush.best) L.rushResult(d, 30 * 2400);
         if (L.rushClaim(d)) earn.add('rush');
         const med = { a: !!L.medalOf(d, week, 'a'), b: !!L.medalOf(d, week, 'b') };
         const pc = R.popClaim(d, week, med);
@@ -379,7 +355,6 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
         }
       } else stars = 0; // (the house itself is paced by the cafe sim below)
       for (const x of d.quests.list) if (E.questClaim(d, x.id, day)) earn.add('task');
-      for (const s of L.seasonsReady(d)) while (L.seasonClaim(d, s, day)) earn.add('season');
       const j = L.jarState(d, now, res.length, 0);
       if (j.on && j.fullMs > 0) ticking.add('jar');
       if (d.req.next > now) ticking.add('request');
@@ -397,9 +372,9 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   // street sights, Daily keepsakes) gains something new every week, before and after the house is finished
   days.slice(2).forEach((x) => ok(x.earn.includes('job'), `day ${x.dd + 1}: a resident job to finish and claim (got ${x.earn.join(', ')})`));
   for (let i = 14; i < days.length; i++) ok(days[i].items > days[i - 7].items, `a new collectible every week (day ${days[i].dd + 1}: ${days[i - 7].items} -> ${days[i].items})`);
-  ok(R.cardsOwned(d) >= 16, `postcards by day 120: ${R.cardsOwned(d)}`);
+  ok(R.cardsOwned(d) >= 5, `postcards by day 120 (one per 3-week turn of the event slot): ${R.cardsOwned(d)}`);
   ok(d.drec.n >= 90 && R.drecHas(d, 'clock'), `the Daily record reaches its 90-clear clock by day 120 (${d.drec.n})`);
-  ok(R.printsHung(d) >= 3, `framed prints hung by day 120: ${R.printsHung(d)}`);
+  ok(R.printsHung(d) >= 1, `framed prints hung by day 120: ${R.printsHung(d)}`);
   console.log(`  120-day R10: ${R.cardsOwned(d)} postcards, ${R.printsHung(d)} prints, Daily record ${d.drec.n}, street ${ST.housesDone(d)} units (${ST.curHouse(d).kind} ${ST.curHouse(d).name.en})`);
   days.forEach((x) => ok(x.earn.length >= 3, `day ${x.dd + 1}: at least 3 things to collect or do (got ${x.earn.join(', ') || 'none'})`));
   days.slice(1).forEach((x) => ok(x.ticking.length >= 1, `day ${x.dd + 1}: a timer ticks toward the next reward`));
@@ -411,8 +386,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   ok(ST.housesDone(d) >= 6, `by day 120 the street has a few shops (got ${ST.housesDone(d)})`);
   ok(ST.housesDone(d) <= 40, `the street does not race ahead of the art (got ${ST.housesDone(d)} houses)`);
   console.log(`  120-day street: ${ST.housesDone(d)} units, ${ST.atPiece(d)}/${ST.curHouse(d).tasks.length} of ${ST.curHouse(d).name.en}, ${ST.renoCount(d)} renovation sets`);
-  ok(L.visitorsOwned(d).length >= 2, `visiting cats by day 60: ${L.visitorsOwned(d).length}`);
-  console.log(`  120-day sim: L${last.level} on day 120 (house done after L${houseDone}); collection ${days[13].items} on day 14 -> ${last.items} on day 120 (visitors ${L.visitorsOwned(d).length}, outfits ${L.outfitsOwned(d, resAt(d.level))}, rosettes ${E.earnedDecor(d).length}, cups ${Object.values(d.rush.cups).reduce((a, b) => a + b, 0)}); requests done ${d.req.done}; jar coins ${d.jar.total}`);
+  console.log(`  120-day sim: L${last.level} on day 120 (house done after L${houseDone}); collection ${days[13].items} on day 14 -> ${last.items} on day 120 (visitors ${L.visitorsOwned(d).length}, outfits ${L.outfitsOwned(d, resAt(d.level))}, rosettes ${E.earnedDecor(d).length}, cups ${Object.values(d.rush.cups).reduce((a, b) => a + b, 0)}); requests done ${d.req.done}; jar coins ${d.jar.total}; ${Math.round(d.coins / 120)} coins/day`);
 }
 
 // ---------------- Cat Street, renovation, spotlight, Rush bots (round 10) ----------------
@@ -466,9 +440,11 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   const pc = R.popClaim(d, w, { a: true, b: true });
   ok(pc && d.coins === c0 + R.POP_COINS && R.hasCard(d, R.popIndex(w)), '3 stamps: postcard + coins');
   ok(!R.popClaim(d, w, { a: true, b: true }), 'claimed once');
-  ok(!R.catchUp(d, w + 1, w - 1, { a: true, b: false }), 'catch-up needs both boards of the past week');
-  ok(R.catchUp(d, w + 1, w - 1, { a: true, b: true }) && !R.catchUp(d, w + 1, w - 2, { a: true, b: true }), 'one catch-up postcard a week');
-  // R11: the first framed print within four event weeks, whatever week the player starts on (this week's postcard +
+  ok(!R.popClaim(d, w + 1, { a: true, b: true }) && !R.popDaily(d, w + 1), 'a Show week (no pop-up) stamps and pays no postcard');
+  ok(!R.catchUp(d, w + 1, w - 3, { a: true, b: false }), 'catch-up needs both boards of the past week');
+  ok(!R.catchUp(d, w + 2, w + 1, { a: true, b: true }), "this turn's postcard is not a catch-up");
+  ok(R.catchUp(d, w + 1, w - 3, { a: true, b: true }) && !R.catchUp(d, w + 1, w - 6, { a: true, b: true }), 'one catch-up postcard a week');
+  // R11: the first framed print within five event weeks, whatever week the player starts on (a pop-up week's postcard +
   // one catch-up a week from the cards already released, the started page first)
   for (let start = 2900; start < 2924; start++) {
     const f = fresh();
@@ -481,7 +457,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
       if (pw != null) R.catchUp(f, wk, pw, { a: true, b: true });
       if (R.PAGES.some((_, p) => R.pageDone(f, p))) got = k + 1;
     }
-    ok(got > 0 && got <= 4, `first framed print by event week 4 (start ${start}: week ${got})`);
+    ok(got > 0 && got <= 5, `first framed print by event week 5 (start ${start}: week ${got})`);
   }
   ok(R.catchWeeks(fresh(), 2905, []).every((x) => x < 2905), 'catch-up weeks are already released');
   for (const i of R.pageCards(3)) d.album.cards[i] = 1;
@@ -587,6 +563,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
 
 // ---------------- save migration ----------------
 {
+  const BSv = await import('../src/game/boss.js');
   const load = async (raw) => {
     stored.v = raw === undefined ? null : typeof raw === 'string' ? raw : JSON.stringify(raw);
     const mod = await import('../src/kit/save.js?m=' + Math.random());
@@ -609,6 +586,9 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   eq([d.v, d.show.marks['2900a'], d.show.ch, d.show.decor.beach_day, d.jar.t, d.req.list.length, d.rush.best, d.settings.notify], [9, 3, undefined, 1, 0, 0, 0, false], 'v7 save: this week Show board medal carries over, retention systems at defaults, reminders off');
   d = await load({ v: 8, show: { marks: { '12a': 9, x: 1, '13b': 2 }, goals: { '12a': { kind: 'seats', n: 2 }, '12b': { kind: 'zz', n: 1 } } }, req: { list: [{ k: 'win', who: 'mochi', need: 2, p: 99, c: 77 }, 5] }, cafe: { hearts: { mochi: -3, luna: 4 }, wear: { mochi: 'tiara', luna: 'hat' } }, rush: { pend: { rank: 'x' }, cups: { gold: 2 } }, vis: { maple: 3 } });
   eq([d.show.marks, Object.keys(d.show.goals), d.req.list, d.cafe.hearts, d.cafe.wear, d.rush.pend, d.rush.cups, d.vis], [{ '13b': 2 }, ['12a'], [{ k: 'win', who: 'mochi', need: 2, p: 2, c: 0, s: 0 }], { luna: 4 }, { luna: 'hat' }, null, { gold: 2 }, { maple: 3 }], 'corrupt v8 retention fields are repaired, good ones kept');
+  d = await load({ v: 9, level: 40, season: { daily: { 725: 9 }, claim: { 725: 1 }, visDay: 5 }, vis: { maple: 3 }, boss: { last: 39, fl: { n: 2, fail: 1, k: 4 }, q: [{ t: 'streak', n: 39, i: 4 }] } });
+  eq([d.season, d.vis.maple, d.boss.q.length], [{ visDay: 5 }, 3, 1], 'an old save loads: its season stamps are dropped, its visitor stays');
+  ok(BSv.state(d).q.length === 0 && !('fl' in d.boss), 'an old save: the flame streak and its queued chest are dropped');
   d = await load('{not json');
   ok(d.v === 9 && d.meta.firstOpen > 0 && d.lives.n === 5, 'corrupt JSON gives a fresh save stamped as a new install');
   d = await load(undefined);
@@ -824,8 +804,8 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
 {
   const d = fresh();
   d.level = 30;
-  const wk = 2910;
-  ok(RT.albumNext(fresh(), wk, false) === null, 'no album card before the events open');
+  const wk = 2912; // a pop-up week
+  ok(L.eventOf(wk) === 'pop' && RT.albumNext(fresh(), wk, false) === null, 'no album card before the events open');
   const card = R.popIndex(wk);
   let g = RT.albumNext(d, wk, false);
   eq([g.k, g.b, g.card, g.left, g.unit], ['board', 'a', card, 3, 'stamp'], 'a fresh week: board A of the Show, 3 stamps left');
@@ -892,7 +872,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   ok(RT.hangPending(d) < 0 && RT.albumNext(d, wk, true)?.k !== 'hang', 'a hung print stops waiting');
   // the win day counter and tomorrow
   eq([RT.winDay(d, 5), RT.winDay(d, 5), RT.winDay(d, 5), RT.winDay(d, 6)], [1, 2, 3, 1], 'wins counted per day');
-  const sun = wk * 7 + 3; // the last day of a week: tomorrow is a new postcard week
+  const sun = (wk - 1) * 7 + 3; // the last day of a Rush week: tomorrow is a new postcard (pop-up) week
   ok(E.weekOf(sun) !== E.weekOf(sun + 1), 'test day is a Sunday');
   const tm = RT.tomorrow(d, { day: sun, res: ['mochi'], dailyDone: true, streak: 4 });
   ok(tm.some((x) => x.k === 'week') && tm.some((x) => x.k === 'chest' && x.n === 5) && tm.some((x) => x.k === 'job'), `tomorrow on a Sunday: ${tm.map((x) => x.k).join(', ')}`);
@@ -913,28 +893,19 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   ok(!d.req.list.some((x) => x.k === 'win' && x.need === 3), 'the bridge ask comes once');
 }
 
-// ---------------- R11 boss lane: boss chests, milestone chests, the flame streak; 120 days with chests on ----------------
+// ---------------- R11 boss lane: boss chests, milestone chests; 120 days with chests on ----------------
 {
   const BS = await import('../src/game/boss.js');
   const SH = await import('../src/game/shop.js');
   const { levelKind } = await import('../src/core/generate.js');
-  // rules: what each first clear queues, replays queue nothing, a continue keeps the flame, a given-up loss puts it out
+  // rules: what each first clear queues, replays queue nothing
   {
     const d = fresh();
     const got = {};
     for (let n = 1; n <= 40; n++) got[n] = BS.onClear(d, n).map((e) => e.t).join('+');
-    eq([got[5], got[10], got[15], got[20], got[40]], ['wood', 'boss', 'wood+streak', 'boss', 'boss'], 'chests on 5 / 10 (R13 mini boss: gold, rare) / 15 / 20 / 40');
+    eq([got[3], got[5], got[10], got[15], got[20], got[40]], ['', 'wood', 'boss', 'wood', 'boss', 'boss'], 'chests on 5 / 10 (R13 mini boss: gold, rare) / 15 / 20 / 40 only');
     eq(BS.onClear(d, 12), [], 'a replayed level queues nothing');
     ok(BS.state(d).beat === 2, 'two bosses beaten');
-    const f = fresh();
-    BS.onClear(f, 1); BS.onClear(f, 2);
-    BS.markFail(f, 3);
-    const g = BS.onClear(f, 3); // lost, continued, won
-    ok(g.some((e) => e.t === 'streak'), 'a continue keeps the flame: the 3rd win pays the streak chest');
-    BS.onClear(f, 4);
-    BS.markFail(f, 5);
-    ok(BS.startAttempt(f) && BS.flame(f) === 0, 'a loss given up (a new attempt) puts the flame out');
-    ok(!BS.startAttempt(f), 'only once');
   }
   // boss chests: tier fixed per boss index, the first boss always rare (a cosmetic), loot deterministic
   {
@@ -965,7 +936,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
     ok(r && q.coins === c0 + r.loot.coins && SH.owns(q, r.loot.cos) && BS.pending(q) === 0, 'opening pays coins, boosters and the look');
   }
   // 120 days (the shop sim's steady player: 10 levels on day 1, 6 a day in week 1, then 4) with every chest opened. One
-  // level in 6 is lost and retried (the flame goes out). Chest coins stay a side income, the cosmetics stay a real sink,
+  // level in 6 is lost and retried. Chest coins stay a side income, the cosmetics stay a real sink,
   // and the boosters the chests hand out are used up by a player who spends one every 3 levels plus one per hard / boss
   // (the shop deals' boosters are left out: the chests alone must not pile up).
   {
@@ -978,8 +949,6 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
       for (let k = 0; k < (dd === 0 ? 10 : dd < 7 ? 6 : 4); k++) {
         const n = d.level;
         const kind = levelKind(n);
-        if (n % 6 === 4) BS.markFail(d, n); // lost once, then retried
-        BS.startAttempt(d);
         d.coins += 20 + Math.floor(n / 5) + 5 + (kind === 'boss' ? 20 : kind === 'hard' ? 10 : 0) + Math.min(15, Math.floor(dd / 6));
         BS.onClear(d, n);
         d.level++;
@@ -1085,8 +1054,6 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
       for (let k = 0; k < (dd === 0 ? 10 : dd < 7 ? 6 : 4); k++) {
         const n = d.level;
         const kind = levelKind(n);
-        if (n % 6 === 4) BS.markFail(d, n);
-        BS.startAttempt(d);
         d.coins += 20 + Math.floor(n / 5) + 5 + (kind === 'boss' ? 20 : kind === 'hard' ? 10 : 0) + Math.min(15, Math.floor(dd / 6));
         BS.onClear(d, n);
         const r = K.onClear(d, n);

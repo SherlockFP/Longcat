@@ -3,10 +3,10 @@
 //    the boss nameplate with an HP bar over the LEVEL plaque (HP = cats still to deliver, it drops as each cat lands in
 //    a carrier, with hurt reactions at 75 / 50 / 25%), a red-and-gold frame round the board and a synth sting;
 //  - the board cleared: the defeat ceremony (the boss gives up, confetti, the gold chest drops), then the win card;
-//  - chests (wooden milestone, gold boss, streak) wait in d.boss.q: a pulsing chest on the win card and on the map opens
+//  - chests (wooden milestone, gold boss) wait in d.boss.q: a pulsing chest on the win card and on the map opens
 //    them (drop, three wobbles that each tap speeds up, a lid burst with rays in the rarity colour, items one by one,
 //    a coin shower into the coin counter, a full reveal card for a rare / epic look). Reduced motion: a plain fade.
-//  - the map: castle nodes with the boss portrait, chest markers on every 5th level, the chest / flame pill.
+//  - the map: castle nodes with the boss portrait, chest markers on every 5th level, the next-chest pill.
 // Hooks: main.js init(game, ctx) once after the orders lane, levelStart(n, special, board) per load, onFail(n) on a lost
 // campaign bench; hub.js decorateMap(map, geometry, cur) after each map render.
 import { t, lang } from '../i18n.js';
@@ -127,7 +127,6 @@ export function init(game, c) {
 // ---------------- level start ----------------
 export function levelStart(n, special, board) {
   dismissIntro(true);
-  if (B.startAttempt(save.data)) { save.commit(); if (ctx.toast) setTimeout(() => ctx.toast(t('flameOut')), 300); }
   const b = !special && board && board.meta && board.meta.kind === 'boss' ? B.bossOf(n) : null;
   document.body.classList.toggle('bosslv', !!b);
   if (!b) { cur = null; bar.hidden = true; frame.hidden = true; return; }
@@ -143,7 +142,6 @@ export function levelStart(n, special, board) {
 }
 
 export function onFail(n) {
-  if (n === save.data.level) B.markFail(save.data, n); // a replayed old level never touches the flame
   if (cur && cur.n === n) { bar.classList.add('gloat'); setTimeout(() => bar.classList.remove('gloat'), 1600); }
 }
 
@@ -280,7 +278,7 @@ function cleared(stars, go) {
   const bossNow = !!cur && G.board === cur.board && camp;
   dismissIntro(true);
   if (bossNow) { cur.shown = cur.total; draw(); }
-  const fin = () => { go(stars); afterWin(got, bk); };
+  const fin = () => { go(stars); afterWin(bk); };
   if (flushing || !bossNow) return fin();
   defeat(got.some((e) => e.t === 'boss'), fin);
 }
@@ -332,28 +330,20 @@ function confetti(host, n) {
   }
 }
 
-// ---------------- win card: the flame meter and a chest waiting to be opened ----------------
-function afterWin(got, bk) {
+// ---------------- win card: a chest waiting to be opened ----------------
+function afterWin(bk) {
   let n = 0;
   const poll = setInterval(() => {
     const card = document.querySelector('#modal .card.win');
     if (!card && ++n < 60) return;
     clearInterval(poll);
     if (!card) return;
-    const S = ctx.cur();
     card.classList.add('bxhas');
-    const streak = got.some((e) => e.t === 'streak');
-    if (!S.daily && !S.show) { card.insertAdjacentHTML('beforeend', flameChip(streak)); if (streak) audio.ui('sparkle'); } // the flame fills: three wins in a row
     chestButton(card);
     if (bk && bk.gift && bk.gift.chest && B.pending(save.data)) setTimeout(openQueue, 700); // start gift 5: the milestone chest opens by itself
     else bask.winCard(card, bk);
   }, 120);
 }
-const flameChip = (full) => {
-  const k = full ? B.STREAK_LEN : B.flame(save.data);
-  const pips = Array.from({ length: B.STREAK_LEN }, (_, i) => `<i class="${i < k ? 'on' : ''}"></i>`).join('');
-  return `<div class="bxflame${full ? ' full' : ''}" title="${esc(t('flameTip'))}" aria-label="${esc(t('flameLine', { a: k, b: B.STREAK_LEN }))}">${img('boss_flame', 'bxfi')}<span class="bxpips">${pips}</span>${full ? `<b>${t('flameFull')}</b>` : ''}</div>`;
-};
 function chestButton(card) {
   const q = B.state(save.data).q;
   const old = card.querySelector('.bxchest');
@@ -364,7 +354,7 @@ function chestButton(card) {
 }
 
 // ---------------- chest opening ----------------
-const KIND = { wood: 'chWood', boss: 'chBoss', streak: 'chStreak', bask: 'bkName', gift: 'bkGift', welcome: 'bkWelcome' };
+const KIND = { wood: 'chWood', boss: 'chBoss', bask: 'bkName', gift: 'bkGift', welcome: 'bkWelcome' };
 const TIER = { common: 'tierCommon', rare: 'tierRare', epic: 'tierEpic' };
 function openQueue() {
   if (chestOn) return;
@@ -616,11 +606,9 @@ export function decorateMap(m, geo, curLv) {
     const open = lv < curLv;
     html.push(`<i class="bmchest${gold ? ' gold' : ''}${open ? ' open' : ''}" style="left:${p.x.toFixed(1)}px;top:${p.y.toFixed(1)}px">${img(gold ? (open ? 'chest_gold_open' : 'chest_gold') : open ? 'chest_wood_open' : 'chest_wood')}</i>`);
   }
-  // the pill under the current node: the flame (3 wins in a row = a chest), then the next chest, or one to open
+  // the pill under the current node: the next chest, or one to open
   const pc = geo.pos(curLv);
   const nx = B.nextChest(curLv);
-  const k = B.flame(d);
-  const pips = Array.from({ length: B.STREAK_LEN }, (_, i) => `<i class="${i < k ? 'on' : ''}"></i>`).join('');
   const boss = nx.t === 'boss';
   const label = nx.left <= 1 ? t(boss ? 'chBossOne' : 'chNextOne') : t(boss ? 'chBossIn' : 'chNextIn', { n: nx.left });
   const wait = bst.q.length;
@@ -628,14 +616,14 @@ export function decorateMap(m, geo, curLv) {
     ? `<button class="bmopen" data-bx="open">${img(bst.q[0].t === 'boss' ? 'chest_gold' : 'chest_wood')}<b>${t('chTapOpen')}</b></button>`
     : `<span class="bmnext${boss ? ' boss' : ''}">${img(boss ? 'chest_gold' : 'chest_wood')}<b>${label}</b><i class="bmleft">${nx.left}</i></span>`;
   const W = path.clientWidth || 360;
-  html.push(`<div class="bmpill" data-x="${pc.x.toFixed(1)}" data-y="${pc.y.toFixed(1)}" style="left:${clamp(pc.x, 112, W - 112).toFixed(1)}px;top:${(pc.y + 50).toFixed(1)}px"><span class="bmflame" title="${esc(t('flameTip'))}" aria-label="${esc(t('flameLine', { a: k, b: B.STREAK_LEN }))}">${img('boss_flame')}<span class="bxpips">${pips}</span></span>${right}</div>`);
+  html.push(`<div class="bmpill" data-x="${pc.x.toFixed(1)}" data-y="${pc.y.toFixed(1)}" style="left:${clamp(pc.x, 112, W - 112).toFixed(1)}px;top:${(pc.y + 50).toFixed(1)}px">${right}</div>`);
   path.insertAdjacentHTML('beforeend', html.join(''));
   bask.rail(m);
 }
 
 // hub.js, once the view is placed (scrollTop = top): when the goals strip would cover the pill (the view keeps the current
 // node low to pull the next castle / chest in, e.g. L37 on a 375x667 phone), the pill docks beside the node instead,
-// compact: the flame, the chest and the levels left
+// compact: the chest and the levels left
 export function dockPill(m, top) {
   const pill = m.querySelector('.bmpill');
   const sc = m.querySelector('.hmscroll');

@@ -102,20 +102,6 @@ svg.medal.gold .rb { fill: #e5484d; }
 .lrow b { flex: 1; font-weight: 700; }
 .lrow.me { border-color: var(--honey); background: #fff3c4; }
 .lrow em.bot { font: 700 9px var(--font); font-style: normal; color: #fff; background: #8a94a8; border-radius: 6px; padding: 1px 4px; vertical-align: 2px; }
-.sprog { position: relative; height: 60px; margin: 4px 22px 0; }
-.strack { position: absolute; left: 0; right: 0; top: 40px; height: 12px; border-radius: 999px; background: #ead8b8; border: 1.5px solid var(--oak-d); overflow: hidden; }
-.strack i { position: absolute; left: 0; top: 0; bottom: 0; background: linear-gradient(#ffd27a, var(--honey)); }
-.sstep { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
-.sstep img { width: 36px; height: 36px; object-fit: contain; filter: grayscale(.85) opacity(.75); }
-.sstep b { font: 700 11px var(--font); color: var(--ink); background: #fffaf0; border-radius: 999px; padding: 0 5px; border: 1.5px solid var(--oak-d); margin-top: -4px; }
-.sstep.ready img, .sstep.done img { filter: none; }
-.sstep.ready img { animation: pulse 1.2s ease-in-out infinite; }
-.vgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 3px; }
-.vcard { display: flex; flex-direction: column; align-items: center; padding: 2px 0; border-radius: 10px; background: #f1e3c8; border: 2px solid transparent; }
-.vcard img { width: 100%; aspect-ratio: 1; object-fit: contain; filter: brightness(0) opacity(.3); }
-.vcard.own img { filter: none; }
-.vcard.cur { border-color: var(--honey); }
-.vcard b { font: 700 10px var(--font); color: var(--ink); }
 
 /* ---- residents: affection hearts + wardrobe ---- */
 .love { align-items: center; }
@@ -128,7 +114,7 @@ svg.medal.gold .rb { fill: #e5484d; }
 .wo.wlk b { position: absolute; bottom: 0; left: 0; right: 0; font: 700 7.5px/1 var(--font); color: var(--oak-d); text-align: center; letter-spacing: -.2px; }
 
 @media (prefers-reduced-motion: reduce) {
-  .rr.ring.full, .goal.ready, .r7hub .guest .pheart, .sstep.ready img { animation: none !important; }
+  .rr.ring.full, .goal.ready, .r7hub .guest .pheart { animation: none !important; }
 }
 /* forgiving streak: the weekly shield (one missed day covered) */
 .shieldchip { display: inline-flex; align-items: center; gap: 5px; margin: 3px 0 2px; padding: 3px 10px 3px 6px; border-radius: 999px; font: 700 13px var(--font); white-space: nowrap; }
@@ -216,14 +202,6 @@ svg.medal.gold .rb { fill: #e5484d; }
 @keyframes build7s { 0% { transform: scale(1, .94); } 60% { transform: scale(1.03, 1.02); } }
 .sh .puff { bottom: 10%; }
 .vstreet .fname, .r7hub.vhouse .fname.up { bottom: auto; top: calc(52px + var(--safe-t)); } /* top + bottom both set stretched the label into a tall pill */
-/* season: what inviting the next visitor changes */
-.vprev { display: flex; align-items: center; gap: 8px; padding: 4px 8px 4px 4px; border-radius: 16px; background: #fffaf0; border: 2.5px dashed var(--oak-d); }
-.vpp { position: relative; flex: none; width: 66px; height: 58px; }
-.vpp .vpn { position: absolute; left: 0; bottom: 0; width: 66px; height: auto; }
-.vpp .vpc { position: absolute; left: 13px; bottom: 10px; width: 40px; height: 40px; object-fit: contain; }
-.vpt { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; text-align: left; }
-.vpt b { font: 700 14px/1.1 var(--font); color: var(--ink); }
-.vpt small { font: 600 11.5px/1.15 var(--body, var(--font)); color: var(--oak-d); }
 /* arrival scene: walks in, hops, waves, then the card */
 .arrival { position: fixed; inset: 0; z-index: 300; background: radial-gradient(70% 50% at 50% 45%, rgba(255,226,160,.35), rgba(30,15,5,.62)); }
 .arwalk { position: absolute; left: 50%; bottom: 46%; width: min(46vw, 190px); transform: translateX(-50%); animation: arWalk 1.3s cubic-bezier(.3,.7,.4,1) both; }
@@ -235,7 +213,6 @@ svg.medal.gold .rb { fill: #e5484d; }
 .arcard b { font: 700 22px var(--font); }
 .arcard p { margin: 0; font: 600 14px/1.25 var(--body, var(--font)); }
 .arcard small { font: 600 12.5px var(--font); color: var(--oak-d); display: flex; align-items: center; gap: 4px; }
-.arcard small img.mini { width: 18px; height: 18px; }
 .arcard .btn { margin-top: 6px; min-width: 140px; }
 @keyframes arCard { from { transform: translateY(40px); opacity: 0; } }
 .arrival.calm .arwalk, .arrival.calm .arcat, .arrival.calm .arcard { animation: none; }

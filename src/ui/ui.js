@@ -989,7 +989,7 @@ ${info.ad === false ? '' : `<button class="btn green sm" data-act="adlife">${adS
     if (q) q.hidden = !d.quests;
     const w = document.querySelector('[data-act=show] .dot');
     if (w) w.hidden = !d.show;
-    for (const [k, sel] of [['jar', '[data-act=cafesheet] .dot'], ['season', '[data-act=events][data-tab=season] .dot'], ['daily', '[data-act=dailysheet] .dot']]) {
+    for (const [k, sel] of [['jar', '[data-act=cafesheet] .dot'], ['daily', '[data-act=dailysheet] .dot']]) {
       const el = document.querySelector(sel);
       if (el && k in d) el.hidden = !d[k];
     }
