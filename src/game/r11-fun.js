@@ -194,9 +194,10 @@ function drawPairCost(game, ctx) {
   }
   const h1 = fs * 1.75, h = line2 ? fs * 1.2 + fs2 * 1.2 + 10 : h1;
   const cx = clamp(game.ox + ((x0 + x1 + 1) / 2) * c, bx0 + w / 2, bx1 - w / 2);
-  const bot = game.oy + y0 * c - c * 0.42 + h1 / 2; // the tail stays where the one-line tag had it
+  const bot = game.oy + y0 * c + c * 0.08; // R12: the bottom on the pair's row, so the two-line tag clears the row above
   const cy = bot - h / 2;
   const L = cx - w / 2;
+  game.pairTag = { x: L, y: cy - h / 2, w, h, route: null }; // R12: QA measures it against the cats and their exit arrows
   ctx.fillStyle = '#fffaf0';
   ctx.strokeStyle = pal.base;
   ctx.lineWidth = 2.5;
@@ -245,6 +246,7 @@ function drawPairCost(game, ctx) {
   const xr = Math.min(game.W - 5, game.ox + game.board.w * c + 8);
   const pts = Math.abs(xr - to.x) <= rr ? [[sx, sy], [xr, sy], [xr, to.y + rr + 1]]
     : [[sx, sy], [xr, sy], [xr, to.y], [to.x + (xr > to.x ? rr + 1 : -rr - 1), to.y]];
+  game.pairTag.route = pts;
   ctx.save();
   ctx.lineCap = ctx.lineJoin = 'round';
   ctx.setLineDash([6, 5]);

@@ -728,16 +728,23 @@ DRANGES.forEach(([lo, hi], i) => {
   }
   const b6 = CURATED[6]();
   ok(!winsWith(b6, 4) && winsWith(b6, 5) && maxChain(new Sim(compile(b6), 5), 400000).best >= 5, 'curated L6: needs every seat and pays a chain of 5');
-  const b9 = CURATED[9]();
-  { // parking the green pair first (after the two free blues) is a proven loss; the small orange first still wins
-    const C = compile(b9);
+  // after the two free blues: tap `first`, then `then` (if any); 1 = the solver still finds a win, 0 = a proven loss
+  const after = (b, first, then) => {
+    const C = compile(b);
     const sim = new Sim(C, 5);
-    for (const id of [5, 6]) sim.apply(C.unitOf[id]);
-    const pair = sim.apply(C.unitOf[9]) ? searchWin(sim, 200000, false) : 0;
-    sim.undo();
-    const orange = sim.apply(C.unitOf[0]) ? searchWin(sim, 200000, false) : 0;
-    ok(pair === 0 && orange === 1, `curated L9: the pair park must lose (${pair}) and orange win (${orange})`);
-  }
+    for (const id of [5, 6, first, ...(then == null ? [] : [then])]) if (!sim.apply(C.unitOf[id])) return 0;
+    return searchWin(sim, 200000, false);
+  };
+  // R12 (sol-r12-3 fun): L9 teaches the pair's cost: parked early it still wins, by one way (the little green parked
+  // too is a proven loss); the small orange first wins as well
+  const b9 = CURATED[9]();
+  ok(after(b9, 9) === 1 && after(b9, 1) === 1 && after(b9, 9, 11) === 0, `curated L9: the early pair park and the small orange must both win, pair + little green lose (${after(b9, 9)} ${after(b9, 1)} ${after(b9, 9, 11)})`);
+  // L10 (the old L9, moved in R12): parking the pair first is a proven loss; the small orange first still wins. A rev 3-5
+  // L9 link keeps the old board, a rev 3-5 L10 link the generated one
+  const b10 = CURATED[10]();
+  ok(after(b10, 9) === 0 && after(b10, 0) === 1, `curated L10: the pair park must lose (${after(b10, 9)}) and orange win (${after(b10, 0)})`);
+  ok([3, 4, 5].every((r) => JSON.stringify({ ...boardOf(9, r), meta: { ...boardOf(9, r).meta, n: 10 } }) === JSON.stringify(b10) && JSON.stringify(boardOf(10, r)) === JSON.stringify(generate(10, r >= 5 ? 2 : 1))), 'curated L9 / L10: an old link opens the board it was made on');
+  ok(linkRev(9) === 6 && linkRev(10) === 6 && linkRev(34) === 5, 'curated L9 / L10: new links say 6, L15+ still 5');
   const b11 = CURATED[11]();
   ok(winsWith(b11, 4) && !winsWith(b11, 3), 'curated L11: four seats win, three do not');
   // R11 fix round 1: L7 is a short consolidation board (three seats are enough, a chain of 5 is there), and only a

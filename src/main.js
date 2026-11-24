@@ -1,7 +1,7 @@
 import './ui/ui.css';
 import { generate, levelKind } from './core/generate.js';
 import { boardOf, BOARD_REV, linkRev } from './core/curated.js';
-import { COLORS, makeCat, makeBoard } from './core/board.js';
+import { COLORS, DIRS, makeCat, makeBoard } from './core/board.js';
 import { freeCats, hint as solverHint, solveFrom } from './core/solver.js';
 import { compile, Sim, searchWin, maxChain } from './core/search.js';
 import { findBlocker, isFailed, canUndo, dogLeft, isHidden, tap as rulesTap, createState, undo as rulesUndo } from './core/rules.js';
@@ -675,7 +675,7 @@ function startLevel(n, daily = false, show = false) {
   game.load(board, { extraBottom: tut ? 64 : 0, tipExtra: tb ? tb.extra : 0, tutH: tb ? tb.h : 0 });
   game.rulesTeach = friend;
   game.waitTags = !special && (n === 4 || (!!board.meta.cur && tries >= 3)); // L4's clue: the free cats show how many carriers they would wait on a cushion (R11 fun: a curated lesson's 3rd try brings it back)
-  game.pairCost = !special && board.meta.cur === 'pair' ? t('pairSeats') : ''; // R11 fix round 1: L9's pair wears its seat cost before the first tap (game/r11-fun.js)
+  game.pairCost = !special && board.meta.cur === 'pair' && n === 9 ? t('pairSeats') : ''; // R11 fix round 1: L9's pair wears its seat cost before the first tap (game/r11-fun.js); R12: L10 (the old L9) is the test, no tag over its row-6 cats
   S.teach = !special && (!!TUT_KEY[n] || !!board.meta.cur); // R11 fun: a teaching level's free rewind goes back to the tap that cost the win
   game.funGhost = (!show || friend) && (S.teach || n <= 20); // R11 fun: a park shows its cushions and the carrier it waits for
   clip.clear();
@@ -2123,6 +2123,24 @@ async function boot() {
       layout: () => ({ beltY: game.beltY, benchY: game.benchY, bw: game.bw, oy: game.oy, cs: game.cs, W: game.W, cellsB: game.board ? game.oy + game.board.h * game.cell : 0 }), // cellsB: the bottom of the bottom row (R11 fix round 1)
       cue: () => (game.cue ? { ...game.cue, now: game.clock } : null),
       fun: () => ({ pairCost: game.pairCost || '', pairWait: fun.pairWaitText(game), ghost: !!game.funGhost, park: game.funPark ? game.funPark.seats.length : 0, culprit: game.funCulprit ? game.funCulprit.id : null, press: game.press ? game.press.dest.length : 0 }), // R11 fun lane
+      // R12: the alive cats (cells inset 10%, exit chevrons) under the pair's tag or its dashed route (5 px wide)
+      pairClash() {
+        const g = game.pairTag, c = game.cell;
+        if (!g) return null;
+        const boxes = [[g.x, g.y, g.x + g.w, g.y + g.h]];
+        (g.route || []).slice(1).forEach(([x, y], i) => { const [px, py] = g.route[i]; boxes.push([Math.min(x, px) - 2.5, Math.min(y, py) - 2.5, Math.max(x, px) + 2.5, Math.max(y, py) + 2.5]); });
+        const hit = (a, b) => a[0] < b[2] && b[0] < a[2] && a[1] < b[3] && b[1] < a[3];
+        const out = [];
+        for (const k of game.board.cats) {
+          if (!game.state.alive[k.id]) continue;
+          const rs = k.cells.map(([x, y]) => [game.ox + (x + 0.1) * c, game.oy + (y + 0.1) * c, game.ox + (x + 0.9) * c, game.oy + (y + 0.9) * c]);
+          const [hx, hy] = k.cells[k.cells.length - 1], [dx, dy] = DIRS[k.dir];
+          const ax = game.ox + (hx + 0.5 + dx * 0.62) * c, ay = game.oy + (hy + 0.5 + dy * 0.62) * c;
+          rs.push([ax - c * 0.12, ay - c * 0.12, ax + c * 0.12, ay + c * 0.12]);
+          if (rs.some((r) => boxes.some((b) => hit(r, b)))) out.push(k.id);
+        }
+        return out;
+      },
       benchOut: () => game.vis.benchOut.filter((x) => x != null).length,
       // frame strip of a move (qa/_leap-strip.jpg, _chain-strip.jpg): freeze the clock, tap, then step the game to each
       // time (seconds after the tap; 'end' = when the send finishes) and crop the play area into a 3-column grid
