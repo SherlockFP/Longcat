@@ -3,21 +3,21 @@
 // a row of cats on a 667px phone. generate(n) is untouched: a dare link of the older token
 // (v1, or the leading 2) still opens the generated board it was made on (boardOf(n, rev)), new links carry rev 3.
 // Measured with scripts/curate-probe.mjs (exhaustive: random-play odds, odds per first move, fewest seats, best chain).
-import { makeCat, makeBoard } from './board.js';
+import { makeCat, makeBoard, dirOfCells } from './board.js';
 import { generate } from './generate.js';
 
-export const BOARD_REV = 7; // the newest board revision (kit/dare.js token digit): 5 = the R11x schedule (generate.js SCHED 2:
+export const BOARD_REV = 8; // the newest board revision (kit/dare.js token digit): 5 = the R11x schedule (generate.js SCHED 2:
 // bosses, shaped boards, folded quilts); 2, 3 and 4 (made before it) keep the schedule-1 board; 6 = 5 + the R12 L9 / L10
 // (the teaching pair on L9, the old L9 moved to L10); 7 = 6 + both R13 lanes, whose levels do not overlap: the R13 opening
 // (R13 below: L1-3, L5-7, L10) and schedule 3 (padlocks, colour gates and twins past L100, a board that changes shape far
-// more often from L16). A 2-6 link keeps its old board
+// more often from L16); 8 = 7 + the R14 retunes (R14 below: L9, L101). A 2-7 link keeps its old board
 export const SHAPE3_FROM = 16; // schedule 3 deals new boards from here on (L15 is the same board on 2 and 3)
 // R11 fix round 1: the revision each curated board arrived in. A link names the oldest revision that plays the board it
 // was made on (linkRev), so every link made before L7 was curated keeps opening the board it names. Below L15 both
 // schedules deal the same boards (scripts/check-dare.mjs), so only a link from L15 on needs the schedule-2 digit
 const SINCE = { 6: 3, 9: 6, 11: 3, 7: 4, 10: 6 };
 export const SCHED_FROM = 15;
-export const linkRev = (n) => (n >= SHAPE3_FROM ? 7 : n >= SCHED_FROM ? 5 : R13[n] ? 7 : Math.max(3, CURATED[n] ? SINCE[n] : 3)); // L15: schedule 2 since 5, L16+: schedule 3 since 7, R13 opening 7
+export const linkRev = (n) => (R14[n] ? 8 : n >= SHAPE3_FROM ? 7 : n >= SCHED_FROM ? 5 : R13[n] ? 7 : Math.max(3, CURATED[n] ? SINCE[n] : 3)); // L15: schedule 2 since 5, L16+: schedule 3 since 7, R13 opening 7, R14 retunes 8
 
 const mk = (list) => list.map((c, i) => makeCat(i, c[1], c[0]));
 const O = 'tabby', B = 'tuxedo', P = 'calico', G = 'gray';
@@ -247,8 +247,30 @@ export const R13 = {
   },
 };
 
+// R14 retunes (rev 8), each from an R13 playtest note; a 2-7 link keeps the board it was made on
+export const R14 = {
+  // L9 "the pair", fair before the L10 mini boss (random play 9% -> 36%): the last blue now faces the little green (it
+  // parks for the whole level to free it) and a pink faces out (a free cat to park by mistake). Parked early the pair
+  // still wins; parked on top of three careless cushions it loses later. Same cats, carriers and card
+  9: () => {
+    const b = CURATED[9]();
+    for (const id of [4, 8]) { const c = b.cats[id]; c.cells.reverse(); c.dir = dirOfCells(c.cells); }
+    b.meta.order = [5, 6, 11, 4, 1, 2, 3, 7, 0, 8, 9];
+    return b;
+  },
+  // L101 padlock lesson: the blue carrier now comes before the purple one, so the key's blocker (a blue) boards instead
+  // of parking: the hint's line opens the lock with 3 seats taken, not 4 of 5. Same cats, same lock and key
+  101: () => {
+    const b = generate(101, 3);
+    [b.carriers[2], b.carriers[3]] = [b.carriers[3], b.carriers[2]];
+    b.meta.order = [9, 4, 8, 13, 10, 12, 2, 1, 14, 6, 11, 0];
+    return b;
+  },
+};
+
 // the board a level plays: a curated one from the revision it arrived in on, else the generated one on the link's schedule
 export function boardOf(n, rev = BOARD_REV) {
+  if (rev >= 8 && R14[n]) return R14[n]();
   if (rev >= 7 && R13[n]) return R13[n]();
   if (n === 9 && rev >= 3 && rev < SINCE[9]) return bigPair(9); // a rev 3-5 L9 link: the old L9 (L10's board since R12)
   const f = CURATED[n] && rev >= SINCE[n] && CURATED[n];

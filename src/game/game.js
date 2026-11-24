@@ -326,8 +326,8 @@ export class Game {
         } });
       } else if (e.type === 'spin') {
         this.pending.push({ at: at0, vis: true, fn: () => content.spin(this, e) });
-      } else if (e.type === 'unlock' || e.type === 'gate') {
-        m3.schedule(this, e, at0);
+      } else if (e.type === 'unlock') {
+        m3.schedule(this, e, at0); // R14: a gate opens with its carrier's departure (scheduleEvents)
       } else if (e.type === 'thaw') {
         this.pending.push({ at: at0 + 0.05, vis: true, fn: () => {
           this.mv.frozen[e.id] = false;
@@ -932,6 +932,8 @@ export class Game {
         cur += 0.12;
         hops = 0;
         this.pending.push({ at: cur, vis: true, fn: () => this.visDepart(e) });
+      } else if (e.type === 'gate') { // R14: rules.js emits it right after its carrier's depart: the same moment on screen
+        this.pending.push({ at: cur, vis: true, fn: () => m3.openGate(this, e) });
       } else if (e.type === 'board') {
         const at = cur + (hops ? 0.12 : this.calm ? 0.32 : 0.5); // staggered hops, one every 0.42 s; the first waits a wake beat (parked cats sit up)
         hops++;
@@ -1311,6 +1313,8 @@ export class Game {
     shp.drawFlaps(this, ctx); // closed flaps over their folded cats (one baked sprite each)
     if (L && L.clip) { ctx.restore(); L.clip = false; } // the dirty-rectangle clip (perf.js split)
     }
+    // R14: on a held board the hinted cat's glow sits baked on the board layer; only this small arrow moves each frame
+    if (L && this.idleHeld && this.hintId != null && this.state.alive[this.hintId] && !animIds.has(this.hintId)) this.exitArrow(ctx, this.hintId, !this.calm);
     { const ctx = L ? L.fx : this.ctx; // R11 juice: moving cats and particles (the low-res layer on a split frame)
     for (const a of this.anims) {
       if (a.type === 'bonk') this.drawBonk(ctx, a);
@@ -1974,6 +1978,16 @@ export class Game {
     drawBadge(ctx, x - rx * 0.62, y + ry * 0.62, br, String(k), '#ff5d8f');
   }
 
+  // R14: the queue capsule's box (canvas px, as drawQueueRest draws it) or null: the order bubble keeps off it
+  queueBox() {
+    const n = this.vis.carriers.length - 3;
+    if (n <= 0 || this.demo) return null;
+    const r = clamp(this.cs * 0.1, 6, 9);
+    const x = Math.min(this.W - r * 1.35 - 6, this.slotX(2) + this.cs * 0.62);
+    const h = Math.min(3, n) * r * 2.25 + (n > 3 ? r * 1.9 : 0) + r * 0.6;
+    return { x0: x - r * 1.35, y0: this.beltY - 6 - h, x1: x + r * 1.35, y1: this.beltY - 6 };
+  }
+
   // the queue after the two previews: a capsule of pattern dots in order plus a +N count, so a player can
   // always see when a colour is coming
   drawQueueRest(ctx) {
@@ -2060,6 +2074,25 @@ export class Game {
     }
   }
 
+  // the hinted cat's carrier glows in step with its arrow
+  hintGlows(vc) {
+    const hc = this.hintId != null && this.board && this.board.cats[this.hintId];
+    return !!hc && hc.color === vc.color && !this.demo;
+  }
+
+  hintGlow(ctx, vc) {
+    const art = IMG[`r7/carrier_${COLOR_PAL[vc.color].name}`] || IMG['r7/carrier_orange'];
+    const cw = this.cs * 1.3, ch = cw * (art.height / art.width);
+    const u = this.calm ? 0.7 : 0.5 + 0.5 * Math.sin(this.clock * 8);
+    if (!(this.pf && this.pf.glowImage(ctx, art, -cw / 2, -ch, cw, ch, 0.5 + 0.4 * u))) { // the glow baked once, pulsed by alpha
+      ctx.save();
+      ctx.shadowColor = `rgba(255,214,90,${0.5 + 0.4 * u})`;
+      ctx.shadowBlur = 10 + 10 * u;
+      ctx.drawImage(art, -cw / 2, -ch, cw, ch);
+      ctx.restore();
+    }
+  }
+
   // r7 molded carrier (door hinged left, dark mouth), its fill count on a honey tag on the roof
   drawCarrier7(ctx, vc, x, sc, front, rot = 0, dy = 0) {
     if (this.pf && this.pf.carrier(ctx, vc, x, sc, front, rot, dy)) return; // R11 juice: a carrier at rest is one baked sprite
@@ -2090,17 +2123,7 @@ export class Game {
     ctx.beginPath();
     ctx.ellipse(-cw * 0.04, -ch * 0.03, cw * 0.4, ch * 0.08, 0, 0, Math.PI * 2);
     ctx.fill();
-    const hc = this.hintId != null && this.board && this.board.cats[this.hintId];
-    if (front && !vc.closed && hc && hc.color === vc.color && !this.demo) { // the hinted cat's carrier glows in step with its arrow
-      const u = this.calm ? 0.7 : 0.5 + 0.5 * Math.sin(this.clock * 8);
-      if (!(this.pf && this.pf.glowImage(ctx, art, -cw / 2, -ch, cw, ch, 0.5 + 0.4 * u))) { // the glow baked once, pulsed by alpha
-        ctx.save();
-        ctx.shadowColor = `rgba(255,214,90,${0.5 + 0.4 * u})`;
-        ctx.shadowBlur = 10 + 10 * u;
-        ctx.drawImage(art, -cw / 2, -ch, cw, ch);
-        ctx.restore();
-      }
-    }
+    if (front && !vc.closed && this.hintGlows(vc) && !(this.pf && this.pf.baking)) this.hintGlow(ctx, vc); // R14: a baked carrier sprite never holds it
     const dq = this.clock - (vc.popT ?? -9);
     const swing = !vc.closed && !this.calm && dq >= 0 && dq < 0.7 ? Math.exp(-dq * 6) * Math.sin(dq * 24) : 0;
     if (swing) { // a cat landed: the grate door (left third of the art, hinged at its right edge) swings and settles
@@ -2227,7 +2250,6 @@ export class Game {
   drawStatic(ctx, id) {
     const cat = this.board.cats[id];
     const path = this.paths[id];
-    const c = this.cell;
     ctx.save();
     const wg = this.wiggle[id];
     if (wg && this.clock >= wg.t && this.clock - wg.t < 0.3) {
@@ -2244,7 +2266,7 @@ export class Game {
       ctx.translate(-cx, -cy);
     }
     const hinted = this.hintId === id || (this.cueOn('cat') && this.cue.cat === id); // R11: after Take back, a cat that boards now
-    const glow = hinted ? 0.5 + 0.5 * Math.sin(this.clock * 6) : 0;
+    const glow = hinted ? (this.idleHeld ? 0.75 : 0.5 + 0.5 * Math.sin(this.clock * 6)) : 0; // R14: a held board bakes the glow still
     const frozen = !!this.mv.frozen[id];
     const hb = path.marks[cat.cells.length - 1];
     const breath = this.calm || frozen || this.idleHeld ? 1 : 1 + 0.035 * Math.sin(this.clock * 2.4 + id * 1.3); // idle breathing
@@ -2255,14 +2277,18 @@ export class Game {
     if (cat.mech) m3.over(this, ctx, cat); // R13: padlock / key badge
     ctx.restore();
     const fr = this.freedT[id] != null ? this.clock - this.freedT[id] : -1;
-    if (hinted || (fr >= 0 && fr < 1.4)) {
-      const head = cat.cells.at(-1);
-      const hd = content.dirOf(this, id);
-      const [dx, dy] = DIRS[hd];
-      const [hx, hy] = this.center(head[0], head[1]);
-      const dist = c * 0.98 + (this.idleHeld ? 0 : Math.sin(this.clock * 8) * c * 0.1);
-      drawArrow(ctx, hx + dx * dist, hy + dy * dist, FACE[hd] + Math.PI / 2, c * 0.42);
-    }
+    if ((hinted && !this.idleHeld) || (fr >= 0 && fr < 1.4)) this.exitArrow(ctx, id, !this.idleHeld); // R14: a held board's hint arrow bobs on #game (draw)
+  }
+
+  // the exit arrow past a cat's head (the hint, a freed cat), bobbing unless the board is held still
+  exitArrow(ctx, id, bob) {
+    const c = this.cell;
+    const head = this.board.cats[id].cells.at(-1);
+    const hd = content.dirOf(this, id);
+    const [dx, dy] = DIRS[hd];
+    const [hx, hy] = this.center(head[0], head[1]);
+    const dist = c * 0.98 + (bob ? Math.sin(this.clock * 8) * c * 0.1 : 0);
+    drawArrow(ctx, hx + dx * dist, hy + dy * dist, FACE[hd] + Math.PI / 2, c * 0.42);
   }
 
   // "?" bubble on a hidden mystery cat, ice coat and thaw counter on a frozen one

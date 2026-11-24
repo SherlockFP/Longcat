@@ -9,7 +9,7 @@ import {
 import { analyze, hint, replay, solve, solveFrom, freeCats } from '../src/core/solver.js';
 import { edgeNeighbours } from '../src/core/rules.js';
 import { springHop, swivelSeq, swivelOpen, packOf, packPlan } from '../src/core/content-mech.js';
-import { CURATED, R13, boardOf, BOARD_REV, linkRev } from '../src/core/curated.js';
+import { CURATED, R13, R14, boardOf, BOARD_REV, linkRev } from '../src/core/curated.js';
 import { searchWin, maxChain } from '../src/core/search.js';
 import { isLocked } from '../src/core/rules.js';
 
@@ -860,7 +860,7 @@ DRANGES.forEach(([lo, hi], i) => {
     const rp = replay(b, b.meta.order);
     ok(rp.won, `curated L${n} line does not win`);
     ok(JSON.stringify(boardOf(n, 2)) === JSON.stringify(generate(n, 1)), `curated L${n}: rev 2 must keep the generated board`);
-    const rv = R13[n] ? 6 : BOARD_REV; // R13: L6 / L7 / L10 moved on in rev 7, rev 6 keeps these boards
+    const rv = R13[n] ? 6 : R14[n] ? 7 : BOARD_REV; // R13: L6 / L7 / L10 moved on in rev 7, rev 6 keeps these boards; R14: L9 in rev 8
     ok(JSON.stringify(boardOf(n, rv)) === JSON.stringify(b), `curated L${n}: rev ${rv} plays the curated board`);
   }
   const b6 = CURATED[6]();
@@ -881,7 +881,7 @@ DRANGES.forEach(([lo, hi], i) => {
   const b10 = CURATED[10]();
   ok(after(b10, 9) === 0 && after(b10, 0) === 1, `curated L10: the pair park must lose (${after(b10, 9)}) and orange win (${after(b10, 0)})`);
   ok([3, 4, 5].every((r) => JSON.stringify({ ...boardOf(9, r), meta: { ...boardOf(9, r).meta, n: 10 } }) === JSON.stringify(b10) && JSON.stringify(boardOf(10, r)) === JSON.stringify(generate(10, r >= 5 ? 2 : 1))), 'curated L9 / L10: an old link opens the board it was made on');
-  ok(linkRev(9) === 6 && linkRev(10) === 7 && linkRev(15) === 5 && linkRev(34) === 7, 'curated L9: new links say 6, L10 (R13 mini boss) 7, L15 5, L16+ 7 (schedule 3)');
+  ok(linkRev(9) === 8 && linkRev(10) === 7 && linkRev(15) === 5 && linkRev(34) === 7 && linkRev(101) === 8, 'curated L9: new links say 8 (R14), L10 (R13 mini boss) 7, L15 5, L16+ 7 (schedule 3), L101 8 (R14)');
   const b11 = CURATED[11]();
   ok(winsWith(b11, 4) && !winsWith(b11, 3), 'curated L11: four seats win, three do not');
   // R11 fix round 1: L7 is a short consolidation board (three seats are enough, a chain of 5 is there), and only a
@@ -928,6 +928,49 @@ DRANGES.forEach(([lo, hi], i) => {
   // L5's x3: every blue lies on an orange, so the orange carrier fills only once all three parked (two seats lose)
   const b5 = R13[5]();
   ok(searchWin(new Sim(compile(b5), 2), 200000, false) === 0 && maxChain(new Sim(compile(b5), 5), 200000).best >= 3, 'R13 L5 forces the x3 bench chain');
+}
+// R14 retunes (rev 8): L9 is a fair pair lesson before the L10 mini boss (random play 25%+, the solver wins, an early pair
+// park still wins and a careless one can still lose) and the L101 padlock lesson opens its lock with 3 seats at most on
+// the hint's line. A rev 7 link keeps both old boards
+{
+  const randomWin = (b) => {
+    const sim = new Sim(compile(b), b.meta.benchSize);
+    const memo = new Map();
+    const P = () => {
+      if (sim.left === 0) return 1;
+      const k = sim.key();
+      if (memo.has(k)) return memo.get(k);
+      const f = sim.free();
+      let s = 0;
+      for (const u of f) { s += sim.apply(u) ? P() : 0; sim.undo(); }
+      const v = f.length ? s / f.length : 0;
+      memo.set(k, v);
+      return v;
+    };
+    return P();
+  };
+  const after = (b, seq) => { const C = compile(b); const sim = new Sim(C, 5); for (const id of seq) if (!sim.apply(C.unitOf[id])) return 0; return searchWin(sim, 200000, false); };
+  for (const n of Object.keys(R14).map(Number)) {
+    const b = R14[n]();
+    const e = validateBoard(b);
+    const rp = replay(b, b.meta.order);
+    ok(!e.length && rp.won && rp.peak <= b.meta.benchSize - 1 && searchWin(new Sim(compile(b), b.meta.benchSize), 200000, false) === 1, `R14 L${n}: invalid, or its line / the solver does not win (${e.join('; ')})`);
+    ok(JSON.stringify(boardOf(n)) === JSON.stringify(b) && JSON.stringify(boardOf(n, 7)) !== JSON.stringify(b) && linkRev(n) === 8, `R14 L${n}: rev 8 plays it, rev 7 keeps the old board`);
+  }
+  const b9 = R14[9]();
+  const w9 = randomWin(b9);
+  ok(w9 >= 0.25, `R14 L9: random play wins ${(w9 * 100).toFixed(1)}% < 25%`);
+  // the pair parked first (or after the blues) still wins; parked on top of three careless cushions it is a proven loss
+  ok(after(b9, [9]) === 1 && after(b9, [5, 6, 9]) === 1 && after(b9, [1, 2, 8]) === 1 && after(b9, [1, 2, 8, 9]) === 0, 'R14 L9: the pair park must still matter');
+  ok(b9.meta.cur === 'pair' && b9.cats[10].kittenOf === 9 && b9.cats.every((c) => c.cells.every(([, y]) => y !== 6)), 'R14 L9: the same pair lesson, row 6 free for its tag');
+  // L101: the hint's own line (solver.js hint) opens the lock with at most 3 seats taken
+  const b101 = R14[101]();
+  const st = createState(b101);
+  const key = b101.cats.findIndex((c) => c.mech === 'key');
+  let atKey = -1;
+  for (let i = 0; i < 40 && atKey < 0; i++) { const id = hint(st); if (id == null) break; tap(st, id); if (id === key) atKey = st.benchUsed; }
+  ok(atKey >= 0 && atKey <= 3 && !st.failed && b101.cats.some((c) => c.mech === 'lock'), `R14 L101: the hint's line opens the padlock with ${atKey} seats (3 at most)`);
+  console.log(`R14: L9 random-play win ${(w9 * 100).toFixed(1)}%, L101 seats when the key leaves ${atKey}`);
 }
 // shape lane: shaped boards (void cells are open air) and folded flaps (a wall until `need` cats left). Over L1-600:
 // shapes and flaps show up on schedule, nothing sits on a void cell, every folded board's line wins and the solver finds

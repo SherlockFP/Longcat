@@ -1,0 +1,30 @@
+{
+ "label": "r14-l1-before",
+ "query": "",
+ "dpr": 3,
+ "size": "375x812",
+ "out": {
+  "x4": {
+   "L1": {
+    "frames": 168,
+    "p50": 16.7,
+    "p95": 33.3,
+    "max": 50.1,
+    "cost50": 0.4,
+    "cost95": 2.9,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":201,\"skipped\":87,\"covered\":false,\"layers\":2,\"sprites\":9,\"split\":0,\"boardDraws\":1,\"carSprites\":3,\"hold\":168,\"fxRect\":null,\"why\":{\"new\":1},\"boardParts\":2}"
+   },
+   "chain": {
+    "frames": 108,
+    "p50": 16.7,
+    "p95": 16.7,
+    "max": 33.3,
+    "cost50": 1.5,
+    "cost95": 4.2,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":555,\"skipped\":99,\"covered\":false,\"layers\":4,\"sprites\":21,\"split\":338,\"boardDraws\":5,\"carSprites\":19,\"hold\":183,\"fxRect\":null,\"why\":{\"new\":4,\"area\":1},\"boardParts\":16,\"fxParts\":120}"
+   }
+  }
+ }
+}

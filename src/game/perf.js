@@ -296,8 +296,7 @@ class Perf {
     if (ctx !== g.ctx || this.baking || rot || dy || vc.closed) return false;
     const t = g.clock;
     if (t - (vc.sqT ?? -9) < 0.5 || t - (vc.popT ?? -9) < 0.75) return false;
-    const hc = g.hintId != null && g.board && g.board.cats[g.hintId];
-    if (front && hc && hc.color === vc.color && !g.demo) return false;
+    const glow = front && g.hintGlows(vc); // R14: the hint glow (a baked halo, pulsed by alpha) goes under the sprite
     const d = g.dpr;
     const sh = save.data.shop;
     const key = `${vc.color}|${vc.fill}|${vc.cap}|${front ? 1 : 0}|${Math.round(sc * 1000)}|${Math.round(x * d)}|${g.cs}|${d}|${g.beltY}|${(sh && sh.eq && sh.eq.car) || ''}`;
@@ -319,6 +318,13 @@ class Perf {
       e = { key, cv, x: ox, y: oy };
       this.cars.set(vc, e);
       stats.carSprites = (stats.carSprites || 0) + 1;
+    }
+    if (glow) {
+      ctx.save();
+      ctx.translate(x, g.beltY + 2);
+      ctx.scale(sc, sc);
+      g.hintGlow(ctx, vc);
+      ctx.restore();
     }
     ctx.drawImage(e.cv, e.x, e.y, e.cv.width / d, e.cv.height / d);
     return true;
@@ -607,10 +613,11 @@ class Perf {
   // idle hold: a quiet board on a slow phone (or with reduced motion) keeps its still cats on the board layer too, which
   // redraws only when something on it changes (a blink is one cat), instead of re-rastering every cat 30 times a second.
   // Also between the moving parts of a busy moment (a tap's events waiting to play), so a send never falls back to a
-  // whole-board frame. Not while a hint or a Take back cue glows (those pulse), nor at the end of a level
+  // whole-board frame. Not while a Take back cue glows (it pulses), nor at the end of a level. R14: a hint holds too (its
+  // glow is drawn still on the board layer, only its small arrow moves, on #game)
   wantHold() {
     const g = this.g;
-    if (g.over || g.hintId != null || (g.cueOn && g.cueOn('cat'))) return false;
+    if (g.over || (g.cueOn && g.cueOn('cat'))) return false;
     return this.slowBoard();
   }
 
@@ -830,7 +837,7 @@ class Perf {
       this.bAt = now;
       const b = this.bctx;
       // only when the board is drawn the same way every time: else neighbours could seam at the rectangle's edge
-      const r = !same && g.idleHeld && g.hintId == null && !(g.cueOn && g.cueOn('cat')) ? this.dirtyRect(prev, cur) : null;
+      const r = !same && g.idleHeld && !(g.cueOn && g.cueOn('cat')) ? this.dirtyRect(prev, cur) : null;
       if (r) {
         stats.boardParts = (stats.boardParts || 0) + 1;
         b.setTransform(d, 0, 0, d, 0, 0);

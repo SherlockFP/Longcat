@@ -4,7 +4,6 @@
 import { COLOR_PAL, NAVY } from './breeds.js';
 
 const GOLD = '#ffc93c';
-const GOLD_D = '#c98a00';
 const BOW = '#ffe14d';
 
 // the padlock (closed) or the key, as a badge on the head's upper corner
@@ -14,19 +13,27 @@ export function over(game, ctx, cat) {
   const c = game.cell;
   const [hx, hy] = cat.cells[cat.cells.length - 1];
   const [x0, y0] = game.center(hx, hy);
-  const x = x0 + c * 0.3;
-  const y = y0 - c * 0.34;
-  const r = c * 0.27;
+  const r = Math.max(11, c * 0.3); // R14: readable on a 30 px cell
+  const x = x0 + r * 1.1;
+  const y = y0 - r * 1.25;
   ctx.save();
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
-  ctx.fillStyle = '#fff';
-  ctx.strokeStyle = NAVY;
-  ctx.lineWidth = Math.max(1.5, c * 0.04);
+  ctx.fillStyle = locked ? '#fff' : NAVY; // R14: the gold key on a navy disc (gold on white was faint)
+  ctx.strokeStyle = locked ? NAVY : '#fff';
+  ctx.lineWidth = Math.max(2, r * 0.16);
   ctx.beginPath();
   ctx.arc(x, y, r, 0, Math.PI * 2);
   ctx.fill();
   ctx.stroke();
+  if (!locked) { // a navy rim outside the white one, so the badge stands off a dark cat too
+    ctx.strokeStyle = NAVY;
+    ctx.lineWidth = Math.max(1.5, r * 0.1);
+    ctx.beginPath();
+    ctx.arc(x, y, r + Math.max(2, r * 0.16) * 0.5 + ctx.lineWidth * 0.5, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+  ctx.strokeStyle = NAVY;
   if (locked) {
     // shackle, body, keyhole
     ctx.lineWidth = Math.max(2, r * 0.22);
@@ -46,13 +53,11 @@ export function over(game, ctx, cat) {
   } else {
     // a gold key: round bow, shaft, two teeth
     ctx.fillStyle = GOLD;
-    ctx.lineWidth = Math.max(1.4, r * 0.13);
     ctx.beginPath();
     ctx.arc(x - r * 0.3, y - r * 0.02, r * 0.3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.stroke();
-    ctx.strokeStyle = GOLD_D;
-    ctx.lineWidth = Math.max(2, r * 0.2);
+    ctx.strokeStyle = GOLD;
+    ctx.lineWidth = Math.max(2.5, r * 0.22);
     ctx.beginPath();
     ctx.moveTo(x - r * 0.02, y - r * 0.02);
     ctx.lineTo(x + r * 0.62, y - r * 0.02);
@@ -61,31 +66,32 @@ export function over(game, ctx, cat) {
     ctx.moveTo(x + r * 0.62, y - r * 0.02);
     ctx.lineTo(x + r * 0.62, y + r * 0.22);
     ctx.stroke();
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = NAVY;
     ctx.beginPath();
-    ctx.arc(x - r * 0.3, y - r * 0.02, r * 0.1, 0, Math.PI * 2);
+    ctx.arc(x - r * 0.3, y - r * 0.02, r * 0.11, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.restore();
 }
 
-// a little garden gate in its carrier's colour: two posts, three pickets, a cross bar
+// a little garden gate in its carrier's colour: two posts, a picket, a cross bar
 export function drawGate(game, ctx, o) {
   const c = game.cell;
   const [cx, cy] = game.center(o.cells[0][0], o.cells[0][1]);
   const pal = COLOR_PAL[o.color] || COLOR_PAL[0];
-  const s = c * 0.4;
+  const s = c * 0.42;
   ctx.save();
   ctx.lineJoin = 'round';
   ctx.strokeStyle = NAVY;
-  ctx.lineWidth = Math.max(1.5, c * 0.04);
-  ctx.fillStyle = 'rgba(255,255,255,0.78)';
+  ctx.lineWidth = Math.max(1.5, c * 0.045);
+  ctx.fillStyle = '#fff'; // R14: an opaque tile with a navy rim, three wide pickets: the colour reads on a 30 px cell
   game.rr(ctx, cx - s * 1.12, cy - s * 1.12, s * 2.24, s * 2.24, c * 0.16);
   ctx.fill();
+  ctx.stroke();
   ctx.fillStyle = pal.base;
-  for (const k of [-1, -0.34, 0.34, 1]) { // posts at the ends, pickets between (pointed tops)
-    const px = cx + k * s * 0.78;
-    const w = s * (Math.abs(k) === 1 ? 0.36 : 0.3);
+  for (const k of [-1, 0, 1]) { // posts at the ends, a picket between (pointed tops)
+    const px = cx + k * s * 0.72;
+    const w = s * 0.5;
     ctx.beginPath();
     ctx.moveTo(px - w / 2, cy + s * 0.9);
     ctx.lineTo(px - w / 2, cy - s * 0.62);
@@ -154,7 +160,7 @@ export function ribbons(game, ctx, animIds) {
   }
 }
 
-// rules events -> what the player sees, timed like the other pieces (game.js scheduleMech)
+// rules events -> what the player sees, timed like the other pieces (game.js scheduleMech): the padlock opens
 export function schedule(game, e, at0) {
   if (e.type === 'unlock') {
     game.pending.push({ at: at0, vis: true, fn: () => {
@@ -166,12 +172,13 @@ export function schedule(game, e, at0) {
       }
       if (game.on.mech) game.on.mech(e);
     } });
-  } else if (e.type === 'gate') {
-    game.pending.push({ at: at0 + 0.55, vis: true, fn: () => { // about when its carrier drives off
-      game.mv.obj[e.obj] = false;
-      const [x, y] = game.center(e.cell[0], e.cell[1]);
-      game.sparks(x, y, (COLOR_PAL[e.color] || COLOR_PAL[0]).base, 9);
-      if (game.on.mech) game.on.mech(e);
-    } });
   }
+}
+
+// a gate opens as its carrier drives off (game.js scheduleEvents times it with the departure)
+export function openGate(game, e) {
+  game.mv.obj[e.obj] = false;
+  const [x, y] = game.center(e.cell[0], e.cell[1]);
+  game.sparks(x, y, (COLOR_PAL[e.color] || COLOR_PAL[0]).base, 9);
+  if (game.on.mech) game.on.mech(e);
 }

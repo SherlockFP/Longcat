@@ -1,0 +1,30 @@
+{
+ "label": "r14-l1",
+ "query": "",
+ "dpr": 3,
+ "size": "375x812",
+ "out": {
+  "x4": {
+   "L1": {
+    "frames": 179,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 33.3,
+    "cost50": 0.4,
+    "cost95": 0.8,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":204,\"skipped\":93,\"covered\":false,\"layers\":4,\"sprites\":9,\"split\":0,\"boardDraws\":2,\"carSprites\":3,\"hold\":199,\"fxRect\":null,\"why\":{\"new\":1,\"head\":1},\"boardParts\":4}"
+   },
+   "chain": {
+    "frames": 109,
+    "p50": 16.7,
+    "p95": 16.8,
+    "max": 16.8,
+    "cost50": 1.4,
+    "cost95": 4.2,
+    "renderer": "canvas",
+    "pf": "{\"renderer\":\"canvas\",\"drawn\":546,\"skipped\":104,\"covered\":false,\"layers\":6,\"sprites\":21,\"split\":328,\"boardDraws\":6,\"carSprites\":19,\"hold\":213,\"fxRect\":null,\"why\":{\"new\":3,\"head\":2,\"area\":1},\"boardParts\":18,\"fxParts\":116}"
+   }
+  }
+ }
+}
