@@ -34,7 +34,7 @@ export function init(o) {
   const prev = game.on.mech;
   game.on.mech = (e) => {
     if (prev) prev(e);
-    if (e.type === 'unfold' && !game.demo && o.audio) o.audio.clear();
+    if (e.type === 'unfold' && !game.demo && o.audio) o.audio.ui('sparkle');
   };
   if (import.meta.env && import.meta.env.DEV) {
     window.__qaShape = {
