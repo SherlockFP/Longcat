@@ -351,3 +351,19 @@ Merged in that order from main d204fce. The only textual conflicts were the appe
 - Map strip: the task line is now one line with an ellipsis. A two-board archive step was 4 lines in the 44 px card and clipped the page line. TR `rtDoArch` now puts the action first ("A tahtasını geç · {ev}").
 - Printed code (fix 6): the clip band and the card picture now print the QR's code (`dare.qrCode`), which carries `-r<target>-<id>` on a counter-dare. Typed off the video, it imports the reply like the scan. Friend Results has a paste-or-type box. `dare.codeOf` takes the code from a link, the printed address or the share text. `main.js openCode` (shared with the `?c=` path) decodes and clamps it, imports the reply and opens the dare landing. A bad code shows a toast.
 - Tests: check-dare covers the typed / pasted / capitalised / spaced code and junk. check-econ covers pin ordering and the slot steps. The qa-fast steps are f19-album-pin-{en,tr} and f20-friend-code-{en,tr}: 18 s, 0 failures.
+
+## R12
+
+Merged r12/fun, r12/appeal and r12/keep into main with --no-ff, in that order. Two conflicts, both kept both sides: scripts/qa-fast.mjs (the fun f19-l9-pair steps and the appeal f19-marks step) and qa/r9-notes.md (the fun and keep lane sections above). dare.js and main.js auto-merged. The fun lane's token digit 6 and the keep lane's `codeOf` and `qrCode` sit together, and check-dare passes.
+
+- **Fun (sol-r12-3 fixes 1 + 2):** new L9 has a three-step staircase. An early pair park still wins (2 + 3 = 5 seats), and pair plus the little green loses. The old L9 trap is now L10. `BOARD_REV` 6 keeps old L9 and L10 links on their old boards. The order intro sits on the L9 and L10 teaching card for 2.6 s. The pair tag sits on the pair's row and clears every cat at 360x640.
+- **Appeal (fix 4):** cat markings are fewer and smaller, with wider spacing. Every pattern fades near the head, and a bend drops its side marks. Hearts stay upright. All of it is in `drawBody`, so the sprite cache still applies. See the f19-marks-* frames.
+- **Keep (fixes 5 + 6):** an album page can be set as the goal. It then leads the catch-up list, the map strip and the day goal. The map strip task line is one line with an ellipsis. The printed dare code now equals the QR code, reply context included. Friend Results has a box to paste or type a code.
+- **Checks after the merge:** build ok. npm run check passed on the first run (about 25 s). qa:fast took 105.4 s with 0 failures and 0 console errors. It grew from about 60 s because of the 3 new step groups. Read frames: f19-l9-rule-en, f19-map-pinned-tr and f19-marks-late, with no integration bugs found.
+
+Weak spots:
+- New L9 random-play win is only 9%, because random play often parks both the pair and the little green.
+- On white marks (blue dots, mint clouds), the faded marks near the shoulder have low contrast. Stripes fade in colour but do not shrink. Hearts on cats without a shaped body are still drawn the old way.
+- The keep lane's TR map strip truncates the task line ("Tezgah Kahves..."). The step is still readable, but the board name is lost.
+- qa-fast now takes about 105 s, past its ~1 min target. scripts/qa.mjs (full) was not run, and its L10 pair-loss walk has never been run.
+- Not checked on a real phone. The full perf.mjs was not run.
