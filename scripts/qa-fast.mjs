@@ -248,6 +248,20 @@ try {
     await size(375, 667);
   });
 
+  // ---- R12 appeal (sol-r12-3 fix 4): calmer markings on the crowded showcase board and a crowded late board, 375x812 ----
+  await step('f19-marks', async () => {
+    await size(375, 812, 3);
+    await put(220); await boot();
+    await qa('level(60)'); await sleep(600);
+    must((await qa('appealBoard()')) === 12, 'the showcase board holds 12 cats');
+    await sleep(900);
+    await shot('f19-marks-showcase');
+    await qa('level(218)'); await sleep(1200); // a crowded late board (220 is a boss: its intro covers the board)
+    for (let k = 0; k < 3; k++) { await ev('document.querySelector("[data-cgo]")?.click()'); await sleep(500); }
+    await shot('f19-marks-late');
+    await size(375, 667);
+  });
+
   const secs = ((Date.now() - T0) / 1000).toFixed(1);
   console.log(`\nqa-fast: ${secs}s, ${fails.length} failure(s), ${errs.length} console error(s)`);
   for (const f of fails) console.log('  FAIL ' + f);
