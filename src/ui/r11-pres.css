@@ -26,3 +26,8 @@ html.hubwide .hscard { max-height: calc(100vh - max(20px, calc(50vh - 270px)) - 
   -webkit-mask-image: linear-gradient(to bottom, transparent calc(var(--safe-t, 0px) + 34px), #000 calc(var(--safe-t, 0px) + 72px));
   mask-image: linear-gradient(to bottom, transparent calc(var(--safe-t, 0px) + 34px), #000 calc(var(--safe-t, 0px) + 72px));
 }
+
+/* R11 fix round 2 (sol-r12-2 presentation): with the resident thread in the goal strip, the build card says what the piece
+   itself needs (stars missing, or ready to build) instead of repeating the resident line */
+.nbcard .tname small.thread.tcost { color: #9a5a2a; font-weight: 800; }
+.nbcard .tname small.thread.tcost.ok { color: #2b8a3e; }

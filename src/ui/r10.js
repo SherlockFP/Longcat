@@ -25,6 +25,19 @@ export function album(info) {
   const slot = (c) => {
     if (c.own) return postcardHtml(c);
     // an empty slot names its week and where the postcard comes from, and links there
+    // R11 fix round 2 (sol-r12-2 retention): a slot the player can work on now shows its exact step, the same one the
+    // map's album strip would show (game/r11-ret.js cardStep): "1 clear left" + a button straight to that board
+    const st = c.step;
+    if (st) {
+      const K = (st.b || 'a').toUpperCase();
+      const left = st.k === 'claim' ? t('albAllStamps') : st.k === 'catch' ? t('albBothDone') : st.k === 'wait' ? t('albWait', { t: fmtLong(c.endsMs || 0) })
+        : !st.today ? t('popDailyTomorrow') : t(`albLeft_${st.unit}${st.left === 1 ? '1' : ''}`, { n: st.left });
+      const btn = !st.today ? '' : st.k === 'claim' ? `<button class="pcgo" data-act="popclaim">${t('claim')}</button>`
+        : st.k === 'catch' ? `<button class="pcgo" data-act="catchup" data-w="${st.w}">${t('catchGet')}</button>`
+          : st.k === 'daily' ? `<button class="pcgo" data-act="dailyplay">${t('rtGoDaily')}</button>`
+            : `<button class="pcgo" data-act="showplay" data-w="${st.w}" data-k="${st.b}">${t('rtGoBoard', { k: K })}</button>`;
+      return `<div class="pc empty step"><div class="pcph">${r7(c.fg, 'pcfg sil')}</div><b class="pcn">${esc(c.ev)}</b><span class="pcstep"><small>${esc(left)}</small>${btn}</span></div>`;
+    }
     const how = c.src === 'now' ? `<button class="pcgo" data-act="events" data-tab="show">${t('albNow')}</button>`
       : c.src === 'arch' ? `<button class="pcgo" data-act="events" data-tab="arch">${t('albArch')}</button>`
         : c.src === 'locked' ? `<small>${t('albLocked', { n: P.from + 1 })}</small>` : `<small>${c.weeks === 1 ? t('albNext') : t('albSoon', { n: c.weeks })}</small>`;

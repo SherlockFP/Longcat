@@ -20,6 +20,7 @@ addStrings({
     curIdea_warm: 'Free the oranges first. The bench empties by itself.',
     curTry_warm: 'Park only the cats that sit on an orange.',
     pairSeats: '2 seats',
+    pairWait: '{c} in {k} carriers', pairWait1: '{c} in 1 carrier', // R11 fix round 2: the pair tag's second line
     curTry_now: 'Seats full? A top cat in the front carrier’s colour boards right away.',
     curPairPark: 'That pair took 2 seats until green comes last!',
     curFull: 'Every seat is full! Send a cat the front carrier takes.',
@@ -42,6 +43,7 @@ addStrings({
     curIdea_warm: 'Önce turuncuları kurtar. Minderler kendiliğinden boşalır.',
     curTry_warm: 'Sadece bir turuncunun üstündeki kedileri park et.',
     pairSeats: '2 minder',
+    pairWait: '{c} {k} taşıyıcı sonra gelir', pairWait1: '{c} 1 taşıyıcı sonra gelir',
     curTry_now: 'Minderler dolu mu? Öndeki taşıyıcının renginde en üstteki kedi hemen biner.',
     curPairPark: 'Bu ikili, yeşil sırası gelene kadar 2 minder kaptı!',
     curFull: 'Bütün minderler dolu! Öndeki taşıyıcının alacağı bir kedi gönder.',

@@ -778,7 +778,10 @@ export const ui = {
       // the hub's thread: this piece brings a resident, or the card names the next one and the stars still to go
       const nx = L && L.nextRes;
       const sub = x.resident ? `<small class="thread">${r7c('res7_' + x.resident.id + '_idle', 'mini-res')}${t('movesIn', { name: x.resident.name })}</small>`
-        : nx ? `<small class="thread">${r7c('res7_' + nx.id + '_idle', 'mini-res')}${L.thread && L.thread.who === nx.id ? threadLine(L.thread) : t('resThread', { name: nx.name, n: nx.left })}</small>` : `<small>${floorName(ai)} · ${loc(area.name)}</small>`;
+        // R11 fix round 2 (sol-r12-2 pres): while the resident thread is the map's goal strip ("Mochi moves in after 2 more
+        // wins"), this card says what the piece itself needs: its stars still missing, or that it is ready to build
+        : nx && L.thread && L.thread.who === nx.id ? `<small class="thread tcost ${canAfford(x) ? 'ok' : ''}">${canAfford(x) ? t('readyBuild').replace(/^./, (ch) => ch.toLocaleUpperCase()) : t('starsMissing', { n: Math.max(1, (x.cost || 1) - (info.stars || 0)) })}</small>`
+        : nx ? `<small class="thread">${r7c('res7_' + nx.id + '_idle', 'mini-res')}${t('resThread', { name: nx.name, n: nx.left })}</small>` : `<small>${floorName(ai)} · ${loc(area.name)}</small>`;
       card = `<button class="trow ${canAfford(x) ? 'ok' : 'dim'} ${L && L.spot && L.spot.k === 'build' ? 'spot' : ''}" data-act="build" data-id="${x.id}">
   <span class="ticon">${r7c('decor_' + x.id)}</span>
   <span class="tname"><b>${loc(x.name)}</b>${sub}${segs}</span>

@@ -170,3 +170,6 @@
 .goal .gi { position: relative; }
 .goal .gi .gjrw { position: absolute; left: -4px; bottom: -6px; display: flex; align-items: center; gap: 1px; padding: 0 4px 0 1px; border-radius: 999px; background: #fff3d6; border: 1.5px solid #e2a640; font: 700 9.5px/13px var(--font); font-style: normal; color: #7a4a12; }
 .goal .gi .gjrw img { width: 11px !important; height: 11px !important; position: static !important; }
+/* R11 fix round 2 (sol-r12-2 retention): an empty slot's exact step: what is left, then one button straight there */
+.pc.empty .pcstep { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 2px 5px; max-width: 100%; }
+.pc.empty .pcstep small { color: #9a3d12; font-weight: 800; }

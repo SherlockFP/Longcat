@@ -147,12 +147,23 @@ export function drawUnder(game, ctx) {
 }
 
 // R11 fix round 1 (sol-r12-1 fun): L9's pair shows what parking it costs before any tap, so a quick tap never commits
-// blind. Over the free mother + kitten a tag reads "2 seats" with two cushions and the number of carriers before green
-// (L4's wait number); the green carrier in the queue wears a ring with the same number. Drawn still (no pulse, so an
-// idle board stays idle) until the pair leaves the board; the press preview takes over while a finger is down
+// blind. Over the free mother + kitten a tag reads "2 seats" with two cushions; the green carrier in the queue wears a
+// ring with the number of carriers before it (L4's wait number). Drawn still (no pulse, so an idle board stays idle)
+// until the pair leaves the board; the press preview takes over while a finger is down.
+// R11 fix round 2 (sol-r12-2 fun): the queue relationship is in words on the tag's second line ("Green in 3 carriers",
+// game.pairWait from main.js), and a dashed line runs from the tag's two cushions along the rug's edge to that ring
+// the tag's second line for the pair still on the board ('' when there is none, or green is the front carrier)
+export function pairWaitText(game) {
+  if (!game.pairCost || !game.board || !game.state || !game.pairWait) return '';
+  const kit = game.board.cats.find((k) => k.kittenOf != null && game.state.alive[k.id] && game.state.alive[k.kittenOf]);
+  if (!kit) return '';
+  const color = game.board.cats[kit.kittenOf].color;
+  const to = carrierAt(game, color);
+  return to ? game.pairWait(to.k, color) : '';
+}
 function drawPairCost(game, ctx) {
   const text = game.pairCost;
-  if (!text || game.demo || game.press || !game.board || !game.state) return;
+  if (!text || game.demo || game.press || game.over || !game.board || !game.state) return; // R11 fix round 2: not under the fail sheet
   const st = game.state;
   const kit = game.board.cats.find((k) => k.kittenOf != null && st.alive[k.id] && st.alive[k.kittenOf]);
   if (!kit) return;
@@ -160,39 +171,62 @@ function drawPairCost(game, ctx) {
   const pal = COLOR_PAL[mom.color] || COLOR_PAL[0];
   const c = game.cell;
   const to = carrierAt(game, mom.color);
+  const line2 = to && game.pairWait ? game.pairWait(to.k, mom.color) : '';
+  const tone = to && to.k >= 2 ? '#e8590c' : '#2f9e44';
   // the tag sits in the row over the kitten (L9: the free cells beside the staircase)
   let x0 = 1e9, x1 = -1e9, y0 = 1e9;
   for (const [x, y] of kit.cells) { x0 = Math.min(x0, x); x1 = Math.max(x1, x); y0 = Math.min(y0, y); }
-  const fs = Math.max(11, Math.round(c * 0.27));
+  const bx0 = game.ox + 4, bx1 = game.ox + game.board.w * c - 4;
   ctx.save();
-  ctx.font = `800 ${fs}px ${FONT}`;
   ctx.textAlign = 'left';
   ctx.textBaseline = 'middle';
-  const cw = fs * 0.95, gap = fs * 0.3, br = fs * 0.62; // cushion width, gaps, wait badge radius
-  const tw = ctx.measureText(text).width;
-  const w = 10 + cw * 2 + gap + gap + tw + (to ? gap + br * 2 : 0) + 10, h = fs * 1.75;
-  const bx0 = game.ox + 4, bx1 = game.ox + game.board.w * c - 4;
+  let fs = Math.max(11, Math.round(c * 0.27)), fs2, cw, gap, tw1, tw2, w;
+  for (;;) { // the widest line sets the tag; a narrow board shrinks the type rather than cut it
+    fs2 = Math.round(fs * 0.88);
+    cw = fs * 0.95; gap = fs * 0.3;
+    ctx.font = `800 ${fs}px ${FONT}`;
+    tw1 = ctx.measureText(text).width;
+    ctx.font = `700 ${fs2}px ${FONT}`;
+    tw2 = line2 ? ctx.measureText(line2).width : 0;
+    w = 10 + Math.max(tw1, tw2) + gap * 1.5 + cw * 2 + gap * 0.6 + 10;
+    if (w <= bx1 - bx0 || fs <= 9) break;
+    fs--;
+  }
+  const h1 = fs * 1.75, h = line2 ? fs * 1.2 + fs2 * 1.2 + 10 : h1;
   const cx = clamp(game.ox + ((x0 + x1 + 1) / 2) * c, bx0 + w / 2, bx1 - w / 2);
-  const cy = game.oy + y0 * c - c * 0.42;
+  const bot = game.oy + y0 * c - c * 0.42 + h1 / 2; // the tail stays where the one-line tag had it
+  const cy = bot - h / 2;
   const L = cx - w / 2;
   ctx.fillStyle = '#fffaf0';
   ctx.strokeStyle = pal.base;
   ctx.lineWidth = 2.5;
-  game.rr(ctx, L, cy - h / 2, w, h, h / 2);
+  game.rr(ctx, L, cy - h / 2, w, h, Math.min(h / 2, fs * 0.9));
   ctx.fill();
   ctx.stroke();
   // the tail points down at the pair
   ctx.beginPath();
-  ctx.moveTo(cx - 6, cy + h / 2 - 1);
-  ctx.lineTo(cx, cy + h / 2 + 6);
-  ctx.lineTo(cx + 6, cy + h / 2 - 1);
+  ctx.moveTo(cx - 6, bot - 1);
+  ctx.lineTo(cx, bot + 6);
+  ctx.lineTo(cx + 6, bot - 1);
   ctx.fill();
   ctx.stroke();
   ctx.fillStyle = '#fffaf0';
-  ctx.fillRect(cx - 5, cy + h / 2 - 3, 10, 3);
-  // two cushions in the pair's colour
+  ctx.fillRect(cx - 5, bot - 3, 10, 3);
+  // the words: the seat cost, then where green waits in the queue
+  const tx = L + 10;
+  const ly1 = line2 ? cy - h / 2 + 5 + fs * 0.62 : cy + 1;
+  ctx.font = `800 ${fs}px ${FONT}`;
+  ctx.fillStyle = NAVY;
+  ctx.fillText(text, tx, ly1);
+  if (line2) {
+    ctx.font = `700 ${fs2}px ${FONT}`;
+    ctx.fillStyle = tone === '#e8590c' ? '#c2410c' : '#2b8a3e';
+    ctx.fillText(line2, tx, cy + h / 2 - 5 - fs2 * 0.62);
+  }
+  // two cushions in the pair's colour, at the tag's right end where the line to the carrier leaves
+  const ex0 = L + w - 10 - cw * 1.5 - gap * 0.6;
   for (let i = 0; i < 2; i++) {
-    const ex = L + 10 + cw / 2 + i * (cw + gap * 0.6);
+    const ex = ex0 + i * (cw + gap * 0.6);
     ctx.fillStyle = '#f3e2c4';
     ctx.strokeStyle = pal.base;
     ctx.lineWidth = 2;
@@ -201,15 +235,28 @@ function drawPairCost(game, ctx) {
     ctx.fill();
     ctx.stroke();
   }
-  const tx = L + 10 + cw * 2 + gap * 0.6 + gap;
-  ctx.fillStyle = NAVY;
-  ctx.fillText(text, tx, cy + 1);
   ctx.restore();
   if (!to) return;
-  drawBadge(ctx, tx + tw + gap + br, cy, br, to.k, to.k >= 2 ? '#e8590c' : '#2f9e44');
   // where green waits: a ring around its carrier (or its dot in the queue) with the same number
+  const br = fs * 0.62;
   const rr = to.k <= 2 ? game.cs * 0.42 : clamp(game.cs * 0.1, 6, 9) * 1.9;
+  // the link: from the cushions out to the rug's right edge, up it, then to the ring (never across a cat)
+  const sx = L + w, sy = cy + 1;
+  const xr = Math.min(game.W - 5, game.ox + game.board.w * c + 8);
+  const pts = Math.abs(xr - to.x) <= rr ? [[sx, sy], [xr, sy], [xr, to.y + rr + 1]]
+    : [[sx, sy], [xr, sy], [xr, to.y], [to.x + (xr > to.x ? rr + 1 : -rr - 1), to.y]];
   ctx.save();
+  ctx.lineCap = ctx.lineJoin = 'round';
+  ctx.setLineDash([6, 5]);
+  for (const [lw, col] of [[5, '#fffaf0'], [2.5, pal.base]]) {
+    ctx.lineWidth = lw;
+    ctx.strokeStyle = col;
+    ctx.beginPath();
+    ctx.moveTo(pts[0][0], pts[0][1]);
+    for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0], pts[i][1]);
+    ctx.stroke();
+  }
+  ctx.setLineDash([]);
   ctx.strokeStyle = pal.base;
   ctx.lineWidth = 3;
   ctx.setLineDash([5, 4]);
@@ -217,7 +264,7 @@ function drawPairCost(game, ctx) {
   ctx.arc(to.x, to.y, rr, 0, Math.PI * 2);
   ctx.stroke();
   ctx.restore();
-  drawBadge(ctx, to.x - rr * 0.8, to.y - rr * 0.8, Math.max(8, br * 0.85), to.k, to.k >= 2 ? '#e8590c' : '#2f9e44');
+  drawBadge(ctx, to.x - rr * 0.8, to.y - rr * 0.8, Math.max(8, br * 0.85), to.k, tone);
 }
 
 // drawn over the cats: the teaching mark's lane and "!" tag on the tap that cost the win

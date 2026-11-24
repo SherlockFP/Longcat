@@ -47,33 +47,61 @@ export function albumNext(d, week, dailyDone) {
   if (hp >= 0) return { k: 'hang', page: hp, left: 0, today: true };
   const out = [];
   const ci = r10.popIndex(week);
-  if (!r10.hasCard(d, ci) && !d.pop.paid[week]) {
-    const s = r10.popStamps(d, week, medals(d, week));
-    const left = Math.max(0, r10.POP_STAMPS - s.n);
-    const step = left === 0 ? { k: 'claim' } : !s.a ? { k: 'board', b: 'a' } : !s.b ? { k: 'board', b: 'b' } : { k: 'daily' };
-    out.push({ ...step, card: ci, w: week, left, cost: left - (s.daily ? 0 : 0.5), unit: 'stamp', arch: false, today: step.k !== 'daily' || !dailyDone });
-  }
+  const pop = popStep(d, week, dailyDone);
+  if (pop) out.push(pop);
   if (r10.catchOpen(d, week)) {
     const seen = new Set([ci]);
     for (const w of r10.catchWeeks(d, week, archiveWeeks(d, week))) {
       const i = r10.popIndex(w);
       if (w >= week || seen.has(i) || r10.hasCard(d, i)) continue;
       seen.add(i);
-      const m = medals(d, w);
-      const left = (m.a ? 0 : 1) + (m.b ? 0 : 1);
-      out.push({ k: left ? 'board' : 'catch', b: m.a ? 'b' : 'a', card: i, w, left, cost: left + 0.5, unit: 'board', arch: true, today: true });
+      out.push(archStep(d, w));
     }
   }
-  for (const g of out) {
-    g.page = r10.pageOf(g.card);
-    g.pageLeft = r10.CARDS_PER_PAGE - r10.pageHave(d, g.page) - 1;
-    g.promo = g.arch && (g.left <= 1 || g.pageLeft <= 0);
-    g.old = g.arch && !g.promo;
-  }
+  for (const g of out) pageCtx(d, g);
   const rank = (g) => (g.left === 0 ? 0 : g.promo ? 1 : g.arch ? 3 : 2);
   const key = (g) => [g.today ? 0 : 1, rank(g), g.cost, g.pageLeft];
   const cmp = (x, y) => { const a = key(x), b = key(y); for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
   return out.sort(cmp)[0] || null; // sort is stable: equal keys keep this week first, then the archive's order
+}
+
+// the steps albumNext ranks, one per missing postcard (R11 fix round 2: the album's empty slots show the same step)
+// this week's pop-up card -> { k: claim | board | daily, ... } or null (owned, or bought this week)
+function popStep(d, week, dailyDone) {
+  const ci = r10.popIndex(week);
+  if (r10.hasCard(d, ci) || d.pop.paid[week]) return null;
+  const s = r10.popStamps(d, week, medals(d, week));
+  const left = Math.max(0, r10.POP_STAMPS - s.n);
+  const step = left === 0 ? { k: 'claim' } : !s.a ? { k: 'board', b: 'a' } : !s.b ? { k: 'board', b: 'b' } : { k: 'daily' };
+  return { ...step, card: ci, w: week, left, cost: left - (s.daily ? 0 : 0.5), unit: 'stamp', arch: false, today: step.k !== 'daily' || !dailyDone };
+}
+// an archived week's catch-up -> its next board, or 'catch' once both are cleared
+function archStep(d, w) {
+  const m = medals(d, w);
+  const left = (m.a ? 0 : 1) + (m.b ? 0 : 1);
+  return { k: left ? 'board' : 'catch', b: m.a ? 'b' : 'a', card: r10.popIndex(w), w, left, cost: left + 0.5, unit: 'board', arch: true, today: true };
+}
+function pageCtx(d, g) {
+  g.page = r10.pageOf(g.card);
+  g.pageLeft = r10.CARDS_PER_PAGE - r10.pageHave(d, g.page) - 1;
+  g.promo = g.arch && (g.left <= 1 || g.pageLeft <= 0);
+  g.old = g.arch && !g.promo;
+  return g;
+}
+
+// R11 fix round 2 (sol-r12-2 retention): the exact next step for one missing postcard `i`, the one the map's strip would
+// show for it -> null (owned, or nothing the player can do toward it now: a later week names its date instead) or
+//   a step like albumNext's ({ k: claim | board | daily | catch, w, b, left, unit, arch, today }) or
+//   { k: 'wait', w, card, left: 0, unit: 'board', arch: true } (both boards cleared, but this week's one catch-up is
+//   used: it opens again next week)
+export function cardStep(d, week, i, dailyDone) {
+  if (r10.hasCard(d, i) || !eventsOpen(d)) return null;
+  if (r10.popIndex(week) === i) { const g = popStep(d, week, dailyDone); return g && pageCtx(d, g); }
+  const w = r10.catchWeeks(d, week, archiveWeeks(d, week)).find((x) => x < week && r10.popIndex(x) === i);
+  if (w == null) return null;
+  const g = pageCtx(d, archStep(d, w));
+  if (!r10.catchOpen(d, week) && g.k === 'catch') return { ...g, k: 'wait', today: false }; // its boards stay playable meanwhile
+  return g;
 }
 
 // can the step be taken right now (the button it shows does something)?

@@ -1,6 +1,6 @@
 // Friend challenge links: round trip, and every hostile payload is refused or clamped.
 import { createHash } from 'node:crypto';
-import { encode, encodeV1, decode, judge, cleanName, trGenitive, shortCode } from '../src/kit/dare.js';
+import { encode, encodeV1, decode, judge, cleanName, trGenitive, shortCode, qrCode } from '../src/kit/dare.js';
 import { qrMatrix } from '../src/kit/qr.js';
 
 const bad = [];
@@ -38,6 +38,26 @@ must(shortCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 3, rev: 3 }).startsWith('3l
 must(decode(s2.toUpperCase(), base)?.i === 'ab12cd', 'a typed (capitalised) core still decodes');
 must(decode('2d4-5-s0', base)?.m === 'seats' && decode('2d4-5-s0', base).g === 0 && decode('2d4-5-s0', base).k === 'd', 'daily no-park core');
 must(decode('2r9-5-t123', base)?.g === 123, 'time core');
+// R11 fix round 2: the QR's compact reply context: still lower-case and typeable, decodes to the same reply as the link
+{
+  const rp = { n: 13, b: 5, k: 'l', m: 'chain', g: 4, i: 'zz9k01', r: 'ab12cd', pg: 3, rd: 3, nm: 'Ana' };
+  const q = qrCode(rp);
+  must(q === '3l13-5-c4-zz9k01-r3-ab12cd', 'qr code ' + q);
+  const dq = decode(q, base);
+  must(dq && dq.r === 'ab12cd' && dq.pg === 3 && dq.i === 'zz9k01' && dq.g === 4, 'qr reply round trip ' + JSON.stringify(dq));
+  const dl = decode(encode(rp), base);
+  must(dl && dl.r === dq.r && dl.pg === dq.pg, 'qr and link carry the same reply');
+  must(decode(q + '-3', base)?.rd === 3, 'a round after the reply decodes');
+  must(qrCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 4, i: 'zz9k01' }) === shortCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 4, i: 'zz9k01' }), 'a first dare: the qr is the short core');
+  must(decode('3l13-5-c4-zz9k01-r99-ab12cd', base)?.pg === 8, 'qr reply target clamped');
+  must(decode('3l13-5-c4-zz9k01-r3-<x>', base) === null, 'hostile qr reply refused');
+  must(decode(q.toUpperCase(), base)?.r === 'ab12cd', 'a capitalised qr reply still decodes');
+  // on the production address a reply QR stays at version 4 (the size the 360 px read was tuned for) up to a 3-digit level
+  for (const n of [13, 130]) {
+    const v = qrMatrix('https://longcat-746.pages.dev/?c=' + qrCode({ ...rp, n })).version;
+    must(v <= 4, `reply QR version on the production address, level ${n}: ${v}`);
+  }
+}
 must(decode('2l2-5-c2m', base)?.x === 1, 'match flag on the core');
 const full = encode({ n: 13, b: 5, k: 'l', m: 'chain', g: 4, nm: 'Deniz', i: 'qq11', r: 'ab12cd', pg: 3, th: [{ nm: 'Ana', v: 3 }], rd: 2 });
 must(full.startsWith('3l13-5-c4-qq11.') && full.length < 160 && /^[A-Za-z0-9_.-]+$/.test(full), 'full v2 link ' + full);

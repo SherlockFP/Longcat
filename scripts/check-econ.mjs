@@ -325,6 +325,10 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
         ok(dg && (dg.k !== 'album' || RT.stepOk(d, week, dg.g, doneDay === day)), `day ${dd + 1} ${hour}:00: a concrete next goal reachable now (got ${dg ? dg.k : 'none'})`);
         const an = RT.albumNext(d, week, doneDay === day);
         if (an && an.today && !an.old) { openDays++; ok(dg && dg.k === 'album', `day ${dd + 1} ${hour}:00: an open album reward is the goal (got ${dg && dg.k})`); if (dg && dg.k === 'album') albumDays++; }
+        if (an && an.k !== 'hang') { // R11 fix round 2: the album slot of that postcard shows the very same step
+          const cs = RT.cardStep(d, week, an.card, doneDay === day);
+          ok(cs && cs.k === an.k && cs.w === an.w && cs.left === an.left && cs.b === an.b, `day ${dd + 1} ${hour}:00: album slot and map agree (${an.k} vs ${cs && cs.k})`);
+        }
         if (an && an.old && dg && dg.k === 'album') ok(doneDay === day && !d.req.list.length, `day ${dd + 1} ${hour}:00: an old archived board only leads when nothing fresher waits`);
       }
       // play this visit's half of the day's levels
@@ -847,9 +851,20 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   for (const k of ['a', 'b']) L.showMedal(d, g.w, k, false);
   const g2 = RT.albumNext(d, wk, true);
   eq([g2.k, g2.w], ['catch', g.w], 'both archived boards cleared: add it');
+  eq(RT.cardStep(d, wk, g2.card, true).k, 'catch', 'the album slot says the same: add it');
   R.catchUp(d, wk, g2.w, { a: true, b: true });
   const g3 = RT.albumNext(d, wk, true);
   ok(!g3 || !g3.arch, 'one catch-up a week: no second archived card this week');
+  { // R11 fix round 2: an archived card past this week's catch-up: its slot still names its board, or the date it opens
+    const aw = R.catchWeeks(d, wk, L.archiveWeeks(d, wk)).find((x) => x < wk && !R.hasCard(d, R.popIndex(x)));
+    if (aw != null) {
+      const s1 = RT.cardStep(d, wk, R.popIndex(aw), true);
+      ok(s1 && s1.k === 'board' && s1.w === aw, `archived slot after the catch-up: its next board (${s1 && s1.k})`);
+      for (const k of ['a', 'b']) L.showMedal(d, aw, k, false);
+      eq(RT.cardStep(d, wk, R.popIndex(aw), true).k, 'wait', 'both cleared, catch-up used: the slot waits for next week');
+    }
+    eq(RT.cardStep(d, wk, card, true), null, 'an owned postcard has no step');
+  }
   // a full page: the print waits, then it is hung
   const p = R.pageOf(card);
   for (const i of R.pageCards(p)) d.album.cards[i] = 1;

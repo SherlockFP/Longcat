@@ -153,6 +153,8 @@ const setTexts = () => {
   game.lastSeatText = t('lastSeat');
   game.teachTexts = [t('teachBoards'), t('teachWaits')];
   if (game.pairCost) game.pairCost = t('pairSeats'); // a language switch mid-L9
+  // R11 fix round 2 (sol-r12-2 fun): the pair tag names the queue in words: "Green in 3 carriers" (read at draw time)
+  game.pairWait = (k, color) => { const c = t('col_' + COLORS[color]); return t(k === 1 ? 'pairWait1' : 'pairWait', { k, c: c.charAt(0).toLocaleUpperCase(save.data.settings.lang === 'tr' ? 'tr' : 'en') + c.slice(1) }); };
   document.title = t('title');
 };
 const peekColor = () => COLORS[game.board.cats[0].color];
@@ -338,7 +340,9 @@ function pageInfo(p) {
     if (r10.hasCard(d, i)) return { ...c, own: true };
     const ago = r10.catchWeeks(d, w, live.archiveWeeks(d, w)).find((x) => r10.popIndex(x) === i);
     const ahead = r10.nextCardWeek(d, w, i);
-    return { ...c, own: false, src: !open ? 'locked' : ahead === 0 ? 'now' : ago != null ? 'arch' : 'soon', weeks: ahead };
+    // R11 fix round 2 (sol-r12-2 retention): the slot's exact next step, from the same rules as the map's album strip
+    const step = open ? rtg.cardStep(d, w, i, d.daily.doneDay === todayKey()) : null;
+    return { ...c, own: false, src: !open ? 'locked' : ahead === 0 ? 'now' : ago != null ? 'arch' : 'soon', weeks: ahead, step, endsMs: econ.showEndsMs(dayNum(), now()) };
   });
   const hungIn = Object.keys(d.album.hung).find((k) => d.album.hung[k] === p);
   return { p, name: cafe.loc(pg.name), print: pg.print, have: r10.pageHave(d, p), cards, done: r10.pageDone(d, p), hung: hungIn != null ? cafe.loc(cafe.AREAS[+hungIn].name) : '', from: live.EVENTS_FROM };
@@ -642,15 +646,20 @@ function startLevel(n, daily = false, show = false) {
   // R11: a curated board (core/curated.js) names its idea on the first try and the way through on a retry: on the card
   // under a 7-row board, as a toast on an 8-row one (a card there would sit on the bottom row of a 667px phone)
   const curLine = !special && board.meta.cur ? t((tries > 1 ? 'curTry_' : 'curIdea_') + board.meta.cur) : '';
-  if (curLine && board.h > 7) perks.push(curLine);
-  const tut = friend ? t('dareTeach') : !special && TUT_KEY[n] ? t(TUT_KEY[n]) : board.h <= 7 ? curLine : '';
+  // R11 fix round 2 (sol-r12-2 pres): every curated board (7 or 8 rows, L9 included) gets the card: since fix round 1 the
+  // board keeps a measured slot for it, so L9's full rule reads on two lines instead of an ellipsised toast
+  if (curLine && !curCard(board)) perks.push(curLine);
+  const tut = friend ? t('dareTeach') : !special && TUT_KEY[n] ? t(TUT_KEY[n]) : curCard(board) ? curLine : '';
   S.tutDrop = !!tut && (n > 4 || friend); // the hint card collapses after its first read (teaching levels only)
   S.scare = !special && n === 4 ? 1 : 0; // L4: one nudge once a park has cost the win
   S.scareMoves = 0;
   S.tut3b = false;
   S.curCue = '';
   S.tut = tut;
-  const tb = tut ? tutBox(tut) : null; // R11 fix round 1 (pres): the card's own slot under the board (game.js layout)
+  // R11 fix round 1 (pres): the card's own slot under the board (game.js layout). R11 fix round 2: on a curated board the
+  // slot fits the taller of the rule and the cue that may replace it mid-level (the pair parked / every seat full)
+  const tbs = tut ? [tut, ...(!friend && !special && !TUT_KEY[n] && board.meta.cur ? [t(board.meta.cur === 'pair' ? 'curPairPark' : 'curFull')] : [])].map(tutBox) : [];
+  const tb = tbs.length ? tbs.reduce((x, y) => (y.h > x.h ? y : x)) : null;
   game.load(board, { extraBottom: tut ? 64 : 0, tipExtra: tb ? tb.extra : 0, tutH: tb ? tb.h : 0 });
   game.rulesTeach = friend;
   game.waitTags = !special && (n === 4 || (!!board.meta.cur && tries >= 3)); // L4's clue: the free cats show how many carriers they would wait on a cushion (R11 fun: a curated lesson's 3rd try brings it back)
@@ -953,6 +962,7 @@ function makeClip(bg) { // bg (R11 vir): started by the win card, not a tap
 const srcName = (k, n) => (k === 'd' ? t('dailyLevel') : k === 's' ? t('showBoard') : k === 'r' ? t('rush') : t('level', { n }));
 const boardName = () => (S.show ? (S.show.kind === 'friend' ? srcName(S.show.k, S.n) : S.show.kind === 'rush' ? t('rush') : t('showBoardN', { k: S.show.k.toUpperCase() })) : S.daily ? t('dailyLevel') : t('level', { n: S.n }));
 const cur = () => (game.board && game.board.meta.cur) || ''; // a curated campaign board's idea (core/curated.js)
+const curCard = (b) => b.h <= 8; // R11 fix round 2: a curated board's line sits on the teaching card (its own slot under the board)
 const timed = () => !!S.show && (S.show.kind === 'rush' || (S.show.kind === 'friend' && S.show.m === 'time'));
 // "Ana's" / "Ana'nın"; no name: "your friend's" / "Arkadaşının"
 const whoOf = (nm) => (nm ? (save.data.settings.lang === 'tr' ? dare.trGenitive(nm) : nm + "'s") : t('dareWho'));
@@ -1053,8 +1063,9 @@ function dareText(d) {
 const dareUrl = (d) => dare.publicBase() + '?c=' + dare.encode(d);
 // what the clip shows: the link without its scheme, with the typeable core only (board, seats, goal, share id)
 const shortUrl = (d) => dare.publicBase().replace(/^https?:\/\//, '') + '?c=' + dare.shortCode(d);
-// the QR on the clip's end card and PNG: the same address with the same typeable core
-const qrUrl = (d) => dare.publicBase() + '?c=' + dare.shortCode(d);
+// the QR on the clip's end card and PNG: the same address with the same typeable core (R11 fix round 2: plus the compact
+// reply context on a counter-dare, so a scanned reply reaches Friend Results like the text link)
+const qrUrl = (d) => dare.publicBase() + '?c=' + dare.qrCode(d);
 // a ?c= link opened the game: decoded (and clamped) once, then dropped from the address bar
 function readDare() {
   let code = null;
@@ -1929,7 +1940,7 @@ async function boot() {
       const fr = cb.carriers[0];
       const full = cur() !== 'pair' && cb.benchUsed >= cb.benchSize && fr && freeCats(cb).some((i) => game.board.cats[i].color === fr.color);
       const want = pairIn ? 'curPairPark' : full ? 'curFull' : '';
-      const card = game.board.h <= 7; // an 8-row board gets the line as a toast (see startLevel)
+      const card = curCard(game.board); // a taller board gets the line as a toast (see startLevel)
       if (want && S.curCue !== want) { S.curCue = want; haptics.light(); if (card) { S.tutDrop = false; ui.setTut(t(want)); } else ui.toast(t(want)); }
       else if (!want && S.curCue) { S.curCue = ''; if (card) ui.setTut(''); } // the rules state frees seats at once
     }
@@ -2094,7 +2105,7 @@ async function boot() {
       pos: (id) => game.cellPos(id),
       layout: () => ({ beltY: game.beltY, benchY: game.benchY, bw: game.bw, oy: game.oy, cs: game.cs, W: game.W, cellsB: game.board ? game.oy + game.board.h * game.cell : 0 }), // cellsB: the bottom of the bottom row (R11 fix round 1)
       cue: () => (game.cue ? { ...game.cue, now: game.clock } : null),
-      fun: () => ({ pairCost: game.pairCost || '', ghost: !!game.funGhost, park: game.funPark ? game.funPark.seats.length : 0, culprit: game.funCulprit ? game.funCulprit.id : null, press: game.press ? game.press.dest.length : 0 }), // R11 fun lane
+      fun: () => ({ pairCost: game.pairCost || '', pairWait: fun.pairWaitText(game), ghost: !!game.funGhost, park: game.funPark ? game.funPark.seats.length : 0, culprit: game.funCulprit ? game.funCulprit.id : null, press: game.press ? game.press.dest.length : 0 }), // R11 fun lane
       benchOut: () => game.vis.benchOut.filter((x) => x != null).length,
       // frame strip of a move (qa/_leap-strip.jpg, _chain-strip.jpg): freeze the clock, tap, then step the game to each
       // time (seconds after the tap; 'end' = when the send finishes) and crop the play area into a 3-column grid

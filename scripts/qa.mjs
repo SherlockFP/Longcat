@@ -1454,7 +1454,7 @@ try {
     if (!(await ev('!!document.querySelector(".albbtn")'))) throw new Error('Residents should open the Album');
     await ev('document.querySelector(".albbtn").click()'); await sleep(700);
     await qa(`act("albpage", { p: ${page} })`); await sleep(500);
-    if ((await ev('document.querySelectorAll(".albgrid .pc:not(.empty)").length')) !== 3 || !(await ev('/Comes next week|This week|archive/.test(document.querySelector(".albgrid .pc.empty").textContent)'))) throw new Error('3/4 album page: three photos and how to get the fourth');
+    if ((await ev('document.querySelectorAll(".albgrid .pc:not(.empty)").length')) !== 3 || !(await ev('/Comes next week|This week|archive|clears? left|stamps? left|Catch-up opens/.test(document.querySelector(".albgrid .pc.empty").textContent)'))) throw new Error('3/4 album page: three photos and how to get the fourth');
     await shot('104j-album-3of4');
     await edit(`d.album.cards[${pi(w0 + 1)}] = 1`);
     await boot();
@@ -2173,7 +2173,8 @@ try {
     await qa('lang("en")');
     await qa('act("album", {})'); await sleep(700);
     const alb = await ev('document.querySelector("#sheet")?.textContent || ""');
-    if (!/In the archive/.test(alb)) throw new Error('r11: the started page should offer released postcards from the archive: ' + alb.slice(0, 200));
+    // R11 fix round 2: an archived postcard the catch-up can take names its exact step ("2 clears left" + Board A)
+    if (!/In the archive|clears? left/.test(alb)) throw new Error('r11: the started page should offer released postcards from the archive: ' + alb.slice(0, 200));
     await shot('r11-album-archive');
     // desktop: one primary Play (the column's), the goals in the left panel only
     await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
@@ -2284,11 +2285,12 @@ try {
     console.log(`  r12 L6 chain ${chain}`);
     await waitFor('window.__qa.state().screen === "win"', 30000);
     await qa('level(9)'); await sleep(700);
-    if (await qa('tut()')) throw new Error('r12: L9 has 8 rows: its lines are toasts, never the card over the bottom row');
+    // R11 fix round 2: L9's lines sit on the teaching card too (its measured slot keeps the bottom row clear)
+    if (!/mother and kitten/.test(await qa('tut()'))) throw new Error('r12: L9 should name its rule on the card: ' + (await qa('tut()')));
     for (const id of [5, 6]) { await idle2(); await qa(`tap(${id})`); }
     await idle2(); await qa('tap(9)');
     let pairT = '';
-    for (let k = 0; k < 30 && !/took 2 seats/.test(pairT); k++) { await sleep(100); pairT = await ev('[...document.querySelectorAll(".toast")].map((e) => e.textContent).join(" | ")'); }
+    for (let k = 0; k < 30 && !/took 2 seats/.test(pairT); k++) { await sleep(100); pairT = await qa('tut()'); }
     if (!/took 2 seats/.test(pairT)) throw new Error('r12: L9 should name the pair park at once: ' + pairT);
     await shot('r12-l9-pair');
     await qa('failNow()');
@@ -2396,6 +2398,17 @@ try {
       console.log(`  r11 f1 after a tap: ${JSON.stringify(h2)}`);
       if (!(h2.part > h1.part)) throw new Error('r11 f1: a tap on a slow board should redraw only its corner: ' + JSON.stringify([h1, h2]));
       await shot('r11-f1-after-tap');
+      // R11 fix round 2 (sol-r12-2 juice): mid-sprint the moving layer clears only its old + new bounds, and nothing sits
+      // outside this frame's bounds (no ghost left by a missed rectangle); the sprinting cat itself is inside them
+      const fr2 = (await qa('state()')).free;
+      if (fr2.length) {
+        await qa('slow(0.3)'); await qa(`tap(${fr2[0]})`); await sleep(260);
+        const fxs = await ev('(() => { const f = document.getElementById("pf-fx"); const d = f.getContext("2d").getImageData(0, 0, f.width, f.height).data; const r = window.__perf.fxRect; let inn = 0, out = 0; for (let y = 0; y < f.height; y++) for (let x = 0; x < f.width; x++) { if (!d[(y * f.width + x) * 4 + 3]) continue; if (r && x >= r[0] - 3 && x <= r[2] + 3 && y >= r[1] - 3 && y <= r[3] + 3) inn++; else out++; } return { parts: window.__perf.fxParts || 0, rect: r && r.map(Math.round), inn, out }; })()');
+        await qa('slow(1)');
+        console.log(`  r11 f2 moving layer mid-sprint: ${JSON.stringify(fxs)}`);
+        if (!fxs.parts || !fxs.rect || !fxs.inn || fxs.out) throw new Error('r11 f2: the moving layer should clear and draw by bounds: ' + JSON.stringify(fxs));
+        await shot('r11-f2-juice-sprint-bounds');
+      }
     }
     await ev('window.__perf.forceSlow = false');
     // wide screen: the layers stay inside the centred phone column (shot once the push-in has eased out: the R10
@@ -2423,6 +2436,8 @@ try {
     await qa('level(220)'); await sleep(1400);
     for (let k = 0; k < 3; k++) { await ev('(() => { const b = document.querySelector("[data-cgo]"); if (b) b.click(); })()'); await sleep(600); }
     await shot('r11-appeal-late');
+    await qa('level(9)'); await sleep(1200);
+    await shot('r11-f2-appeal-l9'); // R11 fix round 2: calmer hearts / zigzag near the shoulders; exit arrows at phone size
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }
@@ -2441,6 +2456,11 @@ try {
       if ((await qa('meta()')).cur !== 'pair') throw new Error('r11 fun: L9 should play the curated pair board');
       // R11 fix round 1: before any tap the pair wears its seat cost and green's place in the queue
       if ((await qa('fun()')).pairCost !== (lg === 'en' ? '2 seats' : '2 minder')) throw new Error('r11 fun: L9 should show the pair cost before the first tap');
+      // R11 fix round 2: the queue in words on the tag ("Green in 3 carriers") and L9's whole rule on the teaching card
+      const pw = (await qa('fun()')).pairWait;
+      if (pw !== (lg === 'en' ? 'Green in 3 carriers' : 'Yeşil 3 taşıyıcı sonra gelir')) throw new Error(`r11 fun ${lg}: the pair tag's queue line: ${pw}`);
+      const tutL9 = await ev('(() => { const t = document.getElementById("tut"); return t && !t.hidden ? { txt: t.textContent, clip: t.scrollWidth > t.clientWidth + 1 || t.scrollHeight > t.clientHeight + 1 } : null; })()');
+      if (!tutL9 || tutL9.clip || tutL9.txt !== (lg === 'en' ? 'A mother and kitten take two seats when they park.' : 'Anne ve yavrusu park edince iki minder kaplar.')) throw new Error(`r11 fun ${lg}: L9's rule should sit whole on the teaching card: ${JSON.stringify(tutL9)}`);
       await shot(`r11-f1-pair-cost-${lg}`);
       if (!(await qa('fun()')).ghost) throw new Error('r11 fun: L9 should preview its parks');
       for (const id of [5, 6]) { await idleF(); await qa(`tap(${id})`); }
@@ -2582,6 +2602,26 @@ try {
     const sent = await qa(`dareDecode(${JSON.stringify(code)})`);
     if (!back || back.nm !== 'Ece' || back.r !== sent.i || back.pg !== 3 || back.rd !== 2 || !back.th || back.th[0].nm !== 'Ana') throw new Error('vir: counter-dare payload ' + JSON.stringify(back));
     if (!(await qa('counters()')).dare_reshare) throw new Error('vir: the reshare should be counted');
+    // R11 fix round 2 (sol-r12-2 virality): the counter-dare's QR carries the reply context too, still readable at 360 px;
+    // scanned on the first sender's phone it lands in Friend Results like the text link
+    const vqr = await qa('virCard()');
+    const qcode = vqr && vqr.url.split('?c=')[1];
+    const qb = qcode && await qa(`dareDecode(${JSON.stringify(qcode)})`);
+    console.log('  vir counter-dare QR', qcode);
+    if (!qb || qb.r !== sent.i || qb.pg !== 3 || qb.i !== back.i) throw new Error('vir: the counter-dare QR should carry the reply: ' + JSON.stringify(qb));
+    const prq = await qa('virQrProbe()');
+    console.log('  vir counter-dare QR probe', JSON.stringify(prq));
+    // the QA build's address is 9 characters longer than production's (longcat-746.pages.dev, check-dare keeps reply
+    // codes there at QR version 4): a longer address may step up to version 5, read here at >= 3.6 px a module
+    const qmin = vqr.url.length <= 62 ? 4 : 3.6;
+    for (const k of ['card', 'end1', 'end2']) if (prq[k] && (prq[k].mod < qmin || prq[k].err > 0.02)) throw new Error(`vir: the counter-dare ${k} QR should read at 360 px wide: ` + JSON.stringify(prq[k]));
+    saveV('r11-f2-vir-reply-card.jpg', await qa('virCardShot()'));
+    await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 20, coins: 100, meta: { sessions: 4 }, fr: { list: [], sent: [${JSON.stringify(sent.i)}] }, ${cfgV('en')} }))`);
+    await boot('?c=' + qcode);
+    await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(400);
+    const frq = await ev('JSON.parse(localStorage.getItem("lco_save")).fr.list[0] || null');
+    if (!frq || frq.id !== qb.i || frq.pg !== 3 || !frq.mine) throw new Error('vir: a scanned counter-dare should land in Friend Results: ' + JSON.stringify(frq));
+    await shot('r11-f2-vir-qr-reply-landing');
     // 4 the counter-dare opened on another fresh save: Ece dares, the thread and the round
     await ev('localStorage.clear()');
     await boot('?c=' + cd.url.split('?c=')[1]);
@@ -2632,6 +2672,12 @@ try {
       if (!(await noClip('#cafe .rtcard .gt b, #cafe .rtcard .gcta'))) throw new Error(`r11-ret ${lg}: album card text clipped`);
       if (await ev('getComputedStyle(document.querySelector("#cafe .room > .goals:not(.rtalb)") || document.body).display !== "none" && !!document.querySelector("#cafe .room > .goals:not(.rtalb)")')) throw new Error(`r11-ret ${lg}: the album card should take the strip's place, not stack on it`);
       await shot(`r11-ret-map-${lg}`);
+      // R11 fix round 2 (sol-r12-2 retention): the album's empty slot for that postcard names the same step and button
+      await qa('act("album")'); await sleep(800);
+      const sl = await ev(`(() => { const s = document.querySelector(".album .pc.empty.step .pcgo[data-w='${wk}']")?.closest(".pc"); if (!s) return null; const b = s.querySelector(".pcgo"); return { txt: s.querySelector(".pcstep small").textContent, act: b && b.dataset.act, k: b && b.dataset.k }; })()`);
+      if (!sl || sl.act !== 'showplay' || sl.k !== 'a' || sl.txt !== (lg === 'en' ? '3 stamps left' : '3 damga kaldı')) throw new Error(`r11-ret ${lg}: the album slot should name the map's step: ${JSON.stringify(sl)}`);
+      if (!(await noClip('.album .pc.empty.step .pcstep small, .album .pc.empty.step .pcgo'))) throw new Error(`r11-ret ${lg}: album slot step clipped`);
+      await shot(`r11-f2-ret-album-${lg}`);
       // 2. the last card of a page, all three stamps in: Claim -> the room with Hang pre-selected, the postcard over it
       const cards = Object.fromEntries(others.map((i) => [i, 1]));
       await ev(`localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 30, coins: 300, meta: { sessions: 6 }, cafe: { stars: 0, built: {} }, show: { week: ${wk}, decor: {}, marks: { "${wk}a": 1, "${wk}b": 1 }, goals: {}, from: ${wk - 2} }, pop: { daily: { "${wk}": 1 }, paid: {}, cu: -1 }, album: { cards: ${JSON.stringify(cards)}, hung: {} }, ${cfgR(lg)} }))`);
@@ -2692,9 +2738,12 @@ try {
         if (!(await ev('[...document.querySelectorAll("#cafe .goal.feat .gt b")].every((e) => e.scrollWidth <= e.clientWidth + 1 && e.scrollHeight <= e.clientHeight + 1)'))) throw new Error(`pres ${w} ${lg}: featured goal text clipped`);
         // R11 fix round 1: the map fades out under the top bar, so no node sits half-hidden behind a pill
         if (await ev('getComputedStyle(document.querySelector("#cafe .hmscroll")).maskImage === "none" && getComputedStyle(document.querySelector("#cafe .hmscroll")).webkitMaskImage === "none"')) throw new Error(`pres ${w} ${lg}: the map should keep a safe band under the top bar`);
+        // R11 fix round 2 (sol-r12-2 presentation): the goal strip keeps Mochi's wins, the build card says what the piece needs
+        const dup = await ev('(() => { const a = document.querySelector("#cafe .goal.feat .gt b")?.textContent || "", b = document.querySelector("#cafe .nbcard small.thread")?.textContent || ""; return { a, b, cost: !!document.querySelector("#cafe .nbcard small.tcost") }; })()');
+        if (!dup.cost || dup.a === dup.b) throw new Error(`pres ${w} ${lg}: the build card should name the piece's cost, not repeat the goal strip: ${JSON.stringify(dup)}`);
         await shot(`r11-pres-map-${w}-${lg}`);
         // the teaching boards: the n/3 tag on the front carrier stays clear of the plaque
-        for (const lv of [4, 6, 7]) {
+        for (const lv of [4, 6, 7, 9]) {
           await qa(`level(${lv})`); await sleep(900);
           if (lv === 7 && (await qa('meta()')).cur !== 'warm') throw new Error(`pres ${w} ${lg}: L7 should play the curated warm-up board`);
           // R11 fix round 1: the teaching card has its own slot: its tail stays below the bottom row of cells
@@ -2704,7 +2753,16 @@ try {
           const gap = await ev(TAGGAP);
           console.log(`  pres ${w}x${h} ${lg} L${lv} tag-plaque gap ${gap}px`);
           if (gap < 3) throw new Error(`pres ${w} ${lg} L${lv}: the n/3 tag crowds the LEVEL plaque (${gap}px)`);
-          if (lv === 6 || lg === 'en') await shot(`r11-pres-l${lv}-${w}-${lg}`);
+          if (lv === 6 || lv === 9 || lg === 'en') await shot(`r11-pres-l${lv}-${w}-${lg}`);
+          if (lv === 9) { // R11 fix round 2: L9's rule on the card (not an ellipsised toast), then its fail sheet
+            if (!(await ev('(() => { const t = document.getElementById("tut"); return !!t && !t.hidden && t.textContent.length > 20 && t.scrollWidth <= t.clientWidth + 1 && t.scrollHeight <= t.clientHeight + 1; })()'))) throw new Error(`pres ${w} ${lg} L9: the rule should sit whole on the teaching card`);
+            if (await ev('[...document.querySelectorAll(".toast")].some((e) => e.scrollWidth > e.clientWidth + 1)')) throw new Error(`pres ${w} ${lg} L9: a clipped toast`);
+            await qa('failNow()');
+            await waitFor('window.__qa.state().screen === "fail"', 30000); await sleep(900);
+            if (!(await ev('[...document.querySelectorAll("#modal .card *")].filter((e) => e.children.length === 0).every((e) => e.scrollWidth <= e.clientWidth + 1)'))) throw new Error(`pres ${w} ${lg} L9: fail sheet text clipped`);
+            await shot(`r11-f2-pres-l9-fail-${w}-${lg}`);
+            await qa('level(9)'); await sleep(900);
+          }
         }
         await qa('winNow()');
         await waitFor('window.__qa.state().screen === "win"', 30000); await waitFor('!!document.querySelector("#modal .card.win")', 15000); await sleep(1100);

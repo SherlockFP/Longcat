@@ -689,9 +689,45 @@ class Perf {
     return q[0] < r[2] && q[2] > r[0] && q[1] < r[3] && q[3] > r[1];
   }
 
+  // R11 fix round 2 (sol-r12-2 juice): what the moving layer draws this frame, in CSS px: every running cat (tail to
+  // head along its path, with room for the paws, the bigger airborne head, its ground shadow and the speed streaks), a
+  // bench cat's hop arc, a dog's trot and every particle. null = not known (the sweep, a camera push-in or shake, an
+  // animation this does not know): the whole layer is cleared as before
+  fxBounds() {
+    const g = this.g, c = g.cell, t = g.clock;
+    if (g.sweep && t - g.sweep.t0 < 1.3) return null;
+    if (g.chainFx && t - (g.chainFx.t1 || g.chainFx.t0 || 0) < 1.8) return null;
+    if (g.shake && t - g.shake.t0 < 0.3) return null;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    const add = (x, y, m) => { if (x - m < x0) x0 = x - m; if (y - m < y0) y0 = y - m; if (x + m > x1) x1 = x + m; if (y + m > y1) y1 = y + m; };
+    for (const a of g.anims) {
+      if (a.type === 'run') {
+        const d = g.runDist(a, t - a.t0);
+        for (const m of a.members) {
+          const arrived = t >= m.arrAt;
+          const hi = arrived ? m.len : Math.max(0, Math.min(m.len, m.headBase + d * (1 + a.sig)));
+          const lo = Math.max(0, Math.min(m.len, d));
+          for (let s = Math.min(lo, hi); ; s += c * 0.5) { const p = sample(m.path, Math.min(s, hi)); add(p.x, p.y, c * 2.2); if (s >= hi) break; }
+        }
+      } else if (a.type === 'hop') {
+        const to = a.to(), r = (a.from.bw || g.bw) + 14;
+        add(a.from.x, a.from.y, r);
+        add(to.x, to.y, r);
+        add((a.from.x + to.x) / 2, Math.min(a.from.y, to.y) - g.cs * 0.7, r);
+      } else if (a.type === 'trot') {
+        const p = g.trotPose(a);
+        add(p.a0[0] + p.dx, p.a0[1], c * 1.9);
+        add(p.b0[0] + p.dx, p.b0[1], c * 1.9);
+      } else return null;
+    }
+    for (const p of g.parts) add(p.x, p.y, (p.s || 8) * 2 + 6);
+    return x0 === Infinity ? [0, 0, 0, 0] : [x0, y0, x1, y1];
+  }
+
   // called at the top of Game.draw: null = draw the whole frame on #game; else { board: ctx or null (still clean), fx }
   split() {
     const g = this.g;
+    if (this.fxClip) { this.fctx.restore(); this.fxClip = false; } // last frame's moving-layer clip
     const ss = this.splitState();
     const move = ss === 'move';
     const hold = ss === 'still' && this.wantHold();
@@ -708,6 +744,7 @@ class Perf {
         this.bctx.clearRect(0, 0, this.boardCv.width, this.boardCv.height);
         this.fctx.setTransform(1, 0, 0, 1, 0, 0);
         this.fctx.clearRect(0, 0, this.fxCv.width, this.fxCv.height);
+        this.fxPrev = [0, 0, 0, 0]; // R11 fix round 2: the moving layer is empty
         this.tctx.setTransform(1, 0, 0, 1, 0, 0);
         this.tctx.clearRect(0, 0, this.topCv.width, this.topCv.height);
         this.fxClean = true;
@@ -729,8 +766,27 @@ class Perf {
     // R11 fix round 1: nothing moves in an idle hold, so the moving layer and the counter strip are cleared once and then
     // left alone (an untouched canvas costs no raster)
     if (move || !this.fxClean) {
+      // R11 fix round 2: a moving frame clears only where the layer drew last frame and draws this frame, and it draws
+      // clipped to this frame's bounds, so nothing ever lands outside what the next frame clears. Unknown bounds, or most
+      // of the screen, clear it whole as before
+      const cur = move ? this.fxBounds() : null, prev = this.fxPrev;
       f.setTransform(1, 0, 0, 1, 0, 0);
-      f.clearRect(0, 0, fw, fh);
+      const px = (r) => [Math.max(0, Math.floor(r[0] * k) - 2), Math.max(0, Math.floor(r[1] * k) - 2), Math.min(fw, Math.ceil(r[2] * k) + 2), Math.min(fh, Math.ceil(r[3] * k) + 2)];
+      const u = cur && prev ? px([Math.min(cur[0], prev[0]), Math.min(cur[1], prev[1]), Math.max(cur[2], prev[2]), Math.max(cur[3], prev[3])]) : null;
+      if (u && (u[2] - u[0]) * (u[3] - u[1]) < 0.7 * fw * fh) {
+        if (u[2] > u[0] && u[3] > u[1]) f.clearRect(u[0], u[1], u[2] - u[0], u[3] - u[1]);
+        stats.fxParts = (stats.fxParts || 0) + 1;
+      } else f.clearRect(0, 0, fw, fh);
+      if (cur) {
+        const q = px(cur);
+        f.save();
+        f.beginPath();
+        f.rect(q[0], q[1], Math.max(0, q[2] - q[0]), Math.max(0, q[3] - q[1]));
+        f.clip();
+        this.fxClip = true;
+      }
+      this.fxPrev = move ? cur : [0, 0, 0, 0];
+      stats.fxRect = cur && cur.map((v) => v * k); // QA: the moving layer's device-px bounds this frame
       tc.setTransform(1, 0, 0, 1, 0, 0);
       tc.clearRect(0, 0, tw, th);
       this.fxClean = !move;

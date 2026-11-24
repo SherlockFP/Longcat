@@ -8,6 +8,12 @@ export function shade(hex, f) {
   if (f < 0) { r *= 1 + f; g *= 1 + f; b *= 1 + f; } else { r += (255 - r) * f; g += (255 - g) * f; b += (255 - b) * f; }
   return `rgb(${r | 0},${g | 0},${b | 0})`;
 }
+// R11 fix round 2: a colour u of the way from hex a to hex b (opaque, so overlapping strokes never darken)
+function mixHex(a, b, u) {
+  const x = parseInt(a.slice(1), 16), y = parseInt(b.slice(1), 16);
+  const ch = (sh) => Math.round(((x >> sh) & 255) * (1 - u) + ((y >> sh) & 255) * u);
+  return `rgb(${ch(16)},${ch(8)},${ch(0)})`;
+}
 
 // ---- arc-length path ----
 // sharp right-angle corners become round bends (radius ~ half a cell) so bodies read as soft curvy cats
@@ -424,6 +430,12 @@ export function drawBody(ctx, path, a, b, o) {
     fn(ctx, 0, 0, r * f);
     ctx.restore();
   };
+  // R11 fix round 2 (sol-r12-2 appeal): on a crowded board the pink hearts and the green zigzag fought the faces and the
+  // exit arrows. Both step down toward the shoulders (smaller, fainter over the last cell before the head) and sit a
+  // touch softer along the back, so the face reads first
+  const near = (s) => { const u = Math.max(0, Math.min(1, (end - s) / (c * 0.9))); return u * u * (3 - 2 * u); }; // 0 at the shoulder
+  const calmC = (s) => mixHex(pal.mark, pal.base, 0.14 + 0.46 * (1 - near(s))); // the mark eased toward the fur colour
+  const calmS = (s) => 0.6 + 0.4 * near(s);
   let i = 0;
   for (let s = a + gap[0] * c; s < end; s += c * gap[1], i++) {
     const p = sample(path, s);
@@ -456,10 +468,13 @@ export function drawBody(ctx, path, a, b, o) {
         if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.4, w * (i % 3 === 0 ? 0.2 : 0.16), disc); wrap(p, f, -side * 1.15, w * 0.13, disc); break; }
         disc(ctx, p.x + nx * side * w * 0.18, p.y + ny * side * w * 0.18, w * (i % 3 === 0 ? 0.2 : 0.15));
         break;
-      case 'hearts':
-        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.28, w * 0.27, heart); wrap(p, f, -side * 1.15, w * 0.14, heart); break; }
-        heart(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.27);
+      case 'hearts': {
+        ctx.fillStyle = calmC(s);
+        const k = calmS(s);
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.28, w * 0.25 * k, heart); wrap(p, f, -side * 1.15, w * 0.13 * k, heart); break; }
+        heart(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.25 * k);
         break;
+      }
       case 'stars':
         if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.28, w * 0.3, star); wrap(p, f, -side * 1.15, w * 0.15, star); break; }
         star(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.3);
@@ -485,19 +500,19 @@ export function drawBody(ctx, path, a, b, o) {
   }
   if (pal.pat === 'zigzag' && len > c * 0.5) {
     // a bold zigzag running down the back (lengthwise, so it never reads as a direction arrow)
-    ctx.lineWidth = w * 0.17;
-    ctx.beginPath();
+    // R11 fix round 2: drawn segment by segment, each one thinner, narrower and fainter as it nears the shoulders
+    ctx.save();
+    ctx.lineCap = 'round';
     let j = 0, q = null;
     for (let s = a - c * 0.05; s < end + c * 0.05; s += c * 0.2, j++) {
       const p = sample(path, s);
-      const f = shp ? prof(s, a, b, c) : 1;
+      const f = (shp ? prof(s, a, b, c) : 1) * calmS(s);
       const off = (j % 2 ? 1 : -1) * w * 0.24 * f;
       const x = p.x - p.ty * off, y = p.y + p.tx * off;
-      if (shp && q) { ctx.lineWidth = w * 0.17 * f; ctx.beginPath(); ctx.moveTo(q[0], q[1]); ctx.lineTo(x, y); ctx.stroke(); }
-      else if (!shp) ctx.lineTo(x, y);
+      if (q) { ctx.strokeStyle = calmC(s); ctx.lineWidth = w * 0.16 * f; ctx.beginPath(); ctx.moveTo(q[0], q[1]); ctx.lineTo(x, y); ctx.stroke(); }
       q = [x, y];
     }
-    if (!shp) ctx.stroke();
+    ctx.restore();
   }
   if (pal.pat === 'plain' && len > c * 0.8) {
     ctx.globalAlpha = al * (shp ? 0.4 : 0.55);

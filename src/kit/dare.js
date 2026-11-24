@@ -61,6 +61,16 @@ export function encodeV1(d) {
 export function shortCode(d) {
   return `${d.rev && d.rev < 3 ? 2 : d.rev >= 4 ? 4 : 3}${KINDS.includes(d.k) ? d.k : 'l'}${d.n}-${d.b}-${MCH[d.m]}${d.g}${d.m === 'chain' && d.x ? 'm' : ''}${d.i && ID.test(d.i) ? '-' + d.i : ''}`;
 }
+// R11 fix round 2 (sol-r12-2 virality): the QR (win card picture and the clip's end card) also carries the reply
+// context, compact and still lower-case: -r<target>-<answered share id> after the share id. A scanned counter-dare then
+// lands in the sender's Friend Results like the text link does; names, the thread and the round stay in the link (on the
+// production address a chain / seats reply then stays at QR version 4, the size the 360 px read was tuned for).
+// decode() also reads an optional -<round> after it
+export function qrCode(d) {
+  const core = shortCode(d);
+  if (!(d.i && ID.test(d.i) && d.r && ID.test(d.r) && Number.isFinite(d.pg))) return core;
+  return `${core}-r${Math.max(0, Math.round(d.pg))}-${d.r}`;
+}
 export function encode(d) {
   const ex = {};
   const nm = cleanName(d.nm);
@@ -71,7 +81,7 @@ export function encode(d) {
   if (Number.isFinite(d.rd) && d.rd > 1) ex.rd = Math.min(99, Math.round(d.rd));
   return shortCode(d) + (Object.keys(ex).length ? '.' + b64url(JSON.stringify(ex)) : '');
 }
-const V2 = /^([234])([ldsr])(\d{1,3})-(\d{1,2})-([cst])(\d{1,4})(m?)(?:-([a-z0-9]{1,8}))?$/;
+const V2 = /^([234])([ldsr])(\d{1,3})-(\d{1,2})-([cst])(\d{1,4})(m?)(?:-([a-z0-9]{1,8})(?:-r(\d{1,4})-([a-z0-9]{1,8})(?:-(\d{1,2}))?)?)?$/;
 const goalRange = (m, b) => (m === 'chain' ? [2, 8] : m === 'seats' ? [0, b] : [30, 9000]); // time: 3 s .. 15 min, in tenths
 function decodeV2(code, baseBench) {
   const dot = code.indexOf('.');
@@ -88,6 +98,12 @@ function decodeV2(code, baseBench) {
   if (m === 'chain' && mm[7]) out.x = 1;
   if (mm[8]) out.i = mm[8];
   if (rev >= 3) out.rev = rev;
+  if (mm[9] != null && mm[10]) { // the QR's compact reply context (qrCode)
+    const pg = int(mm[9], ...goalRange(m, b));
+    if (pg != null) { out.r = mm[10]; out.pg = pg; }
+    const rd = int(mm[11], 1, 99);
+    if (rd && rd > 1) out.rd = rd;
+  }
   if (dot < 0) return out;
   let ex;
   try { ex = JSON.parse(unb64url(code.slice(dot + 1))); } catch { return out; } // a mangled tail still plays the board
