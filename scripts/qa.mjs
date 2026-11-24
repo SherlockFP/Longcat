@@ -2453,7 +2453,7 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
     for (const lg of ['en', 'tr']) {
       await ev(saveF(lg, 5));
-      await boot(); await qa('slow(1)'); await qa('level(10)'); await sleep(700); // R12: the pair trap moved from L9 to L10
+      await boot(); await qa('slow(1)'); await qa('level(10, 6)'); await sleep(700); // R12: the pair trap moved from L9 to L10; R13: L10 is the mini boss, rev 6 keeps the trap
       if ((await qa('meta()')).cur !== 'pair') throw new Error('r11 fun: L9 should play the curated pair board');
       await waitFor('/two|iki/.test(document.getElementById("tut")?.textContent || "")', 5000); // R12: the order sits on the card first
       // R12: the pair tag (seat cost + queue line) is L9's only now; qa-fast f19 checks it there. L10's whole rule on the card

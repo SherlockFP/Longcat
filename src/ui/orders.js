@@ -147,8 +147,10 @@ function placeIntro() {
   const right = Math.max(r.right, clk && clk.offsetParent ? clk.getBoundingClientRect().right : 0);
   const host = document.body.getBoundingClientRect(); // wide screens: the centred phone column
   const left = right + 7;
+  const q = G.queueBox && G.queueBox(); // R14: never over the queue capsule (a colour gate's carrier may wait there)
+  const edge = q ? Math.min(host.right, G.canvas.getBoundingClientRect().left + q.x0) : host.right;
   intro.style.left = Math.round(left) + 'px';
-  intro.style.maxWidth = Math.max(120, Math.round(host.right - left - 6)) + 'px';
+  intro.style.maxWidth = Math.max(120, Math.round(edge - left - 6)) + 'px';
   intro.style.top = Math.round(r.top + r.height / 2) + 'px';
 }
 

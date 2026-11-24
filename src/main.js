@@ -608,7 +608,7 @@ function startLevel(n, daily = false, show = false) {
   clearTimeout(S.clipTimer);
   game.autoHint = !daily && !show && n <= 3; // L4 is a real choice: no tap-by-tap guide, only a nudge after a costly park
   game.hintWait = game.autoHint ? 3 : 0; // R13: the L1-3 arrow shows only once the player has hesitated 3 s
-  const board = boardOf(n, show && show.kind === 'friend' ? show.rev : BOARD_REV); // a curated L6 / L9 / L11 from rev 3 on, L7 from rev 4 (core/curated.js)
+  const board = boardOf(n, show && show.kind === 'friend' ? show.rev : S.qaRev || BOARD_REV); // a curated L6 / L9 / L11 from rev 3 on, L7 from rev 4 (core/curated.js)
   if (show && show.kind === 'friend') board.meta.benchSize = show.b; // the sender's seats: the exact board they played
   const tries = (S.tries[triesKey()] = (S.tries[triesKey()] || 0) + 1);
   S.continued = false;
@@ -2002,7 +2002,7 @@ async function boot() {
   if (import.meta.env.DEV) {
     const blocked = () => game.board.cats.filter((c) => game.state.alive[c.id] && findBlocker(game.state, c.id)).map((c) => c.id);
     window.__qa = {
-      level: (n) => startLevel(n),
+      level: (n, rev) => { S.qaRev = rev; startLevel(n); }, // QA: an older board revision (R14: qa.mjs plays the R12 L10 pair trap)
       // R11 fix 2 (appeal): the shaped tabby on a long straight run, a tight zigzag and an L bend, on the live renderer
       tabbyBoard: () => {
         const cats = [
@@ -2128,11 +2128,12 @@ async function boot() {
           hidden: cats.filter((c) => st.alive[c.id] && isHidden(st, c.id)).length,
           locked: cats.filter((c) => c.mech === 'lock' && st.alive[c.id] && isLocked(st, c.id)).map((c) => c.id), // R13
           gates: st.objs.filter((o, k) => o.kind === 'gate' && st.objAlive[k]).length,
+          gatesShown: st.objs.filter((o, k) => o.kind === 'gate' && game.mv.obj[k]).length, // R14: what the board still draws
           twins: cats.filter((c) => c.mech === 'twin' && st.alive[c.id]).length,
         };
       },
       pos: (id) => game.cellPos(id),
-      layout: () => ({ beltY: game.beltY, benchY: game.benchY, bw: game.bw, oy: game.oy, cs: game.cs, W: game.W, cellsB: game.board ? game.oy + game.board.h * game.cell : 0 }), // cellsB: the bottom of the bottom row (R11 fix round 1)
+      layout: () => ({ beltY: game.beltY, benchY: game.benchY, bw: game.bw, oy: game.oy, cs: game.cs, W: game.W, cellsB: game.board ? game.oy + game.board.h * game.cell : 0, queue: game.queueBox() }), // cellsB: the bottom of the bottom row (R11 fix round 1)
       cue: () => (game.cue ? { ...game.cue, now: game.clock } : null),
       fun: () => ({ pairCost: game.pairCost || '', pairWait: fun.pairWaitText(game), ghost: !!game.funGhost, park: game.funPark ? game.funPark.seats.length : 0, culprit: game.funCulprit ? game.funCulprit.id : null, press: game.press ? game.press.dest.length : 0 }), // R11 fun lane
       // R12: the alive cats (cells inset 10%, exit chevrons) under the pair's tag or its dashed route (5 px wide)

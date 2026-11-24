@@ -170,6 +170,12 @@ try {
     await sleep(2700);
     must((await qa('hintId()')) != null, 'L1: the arrow after a 3 s hesitation');
     await shot('r13-l1-hint');
+    // R14: a slow phone keeps the board held (baked) while the hint shows; only its arrow moves
+    await ev('window.__perf.forceSlow = true'); await sleep(600);
+    const h0 = await ev('window.__perf.hold || 0'); await sleep(500);
+    must((await ev('window.__perf.hold || 0')) > h0 && (await qa('hintId()')) != null, 'L1: the board stays held while the hint shows');
+    await shot('r14-l1-hint-held');
+    await ev('window.__perf.forceSlow = false');
   });
   await step('r13-l3-heart', async () => {
     await put(3, { shape: false }); await boot(); await qa('level(3)'); await sleep(1200);
@@ -366,12 +372,13 @@ try {
       await shot('f19-l9-rule-' + lg);
       if (lg === 'en') {
         await qa('slow(6)');
-        for (const id of [9, 5, 6, 1, 2, 3]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(60); }
+        // R14 (rev 8): the last blue waits on the little green, which parks beside the pair until the end
+        for (const id of [9, 5, 6, 11, 4]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(60); }
         await waitFor('!window.__qa.state().busy', 8000); await sleep(300);
         must(/took 2 seats/.test(await qa('tut()')), 'the pair park is named on the card');
-        must((await qa('state()')).screen === 'play', 'five seats hold the pair and the staircase');
+        must((await qa('state()')).screen === 'play', 'five seats hold the pair and the little green');
         await shot('f19-l9-pair-parked');
-        for (const id of [4, 7, 0, 8, 11]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(60); }
+        for (const id of [1, 2, 3, 7, 0, 8]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(60); }
         await winCard(); await qa('slow(1)');
         // R13: L10 is the mini boss now (the old L9 stays on a token 6 link): the r13-l10-* steps cover it
       }
@@ -485,11 +492,26 @@ try {
       must((k === 'gate' ? (await qa('objs()')).includes('gate') : (await qa(`mechCat('${k}')`)) != null), `L${lv} carries a ${k}`);
       const inf = await ev("window.__qaShape.info()");
       must(inf.cell >= 30, `L${lv} cells ${inf.cell}px (${inf.w}x${inf.h})`);
+      // R14: the order bubble keeps off the queue capsule (a colour gate's carrier may wait there)
+      const clash = await ev(`(async () => { for (let i = 0; i < 25; i++) { const b = document.querySelector('.ordintro'); const q = window.__qa.layout().queue; if (b && q) { const r = b.getBoundingClientRect(), c = document.getElementById('game').getBoundingClientRect(); return r.right > c.left + q.x0 && r.left < c.left + q.x1 && r.bottom > c.top + q.y0 && r.top < c.top + q.y1 ? 'over' : 'clear'; } await new Promise((f) => setTimeout(f, 80)); } return 'none'; })()`);
+      must(clash !== 'over', `L${lv}: the order bubble covers the queue capsule`);
       await sleep(300);
       await shot(name + '-board');
       await qa('slow(6)');
-      for (let i = 0; i < 30 && !(await ev(moment)); i++) { await waitFor('!window.__qa.state().busy', 8000); await qa('solveStep()'); await sleep(60); }
+      let gateSeen = null;
+      for (let i = 0; i < 30 && !(await ev(moment)); i++) {
+        await waitFor('!window.__qa.state().busy', 8000); await qa('solveStep()');
+        if (k === 'gate') for (let j = 0; j < 120 && gateSeen == null; j++) { // R14: the gate drops on screen as its carrier drives off
+          const m = await ev('(() => { const s = window.__qa.mechState(), q = window.__qa.state(); return { shown: s.gatesShown, open: s.gates === 0, leaving: q.leaving, busy: q.busy }; })()');
+          if (!m.shown) { gateSeen = m.leaving; break; }
+          if (!m.open && !m.busy) break;
+          await sleep(25);
+        }
+        await sleep(60);
+      }
       must(await ev(moment), `L${lv}: the ${k} moment happened on the solver's line`);
+      if (k === 'gate') must(gateSeen > 0, `L${lv}: the gate opened on screen with ${gateSeen} carrier(s) driving off`);
+      if (k === 'lock') { const b = (await qa('state()')).bench; must(b[0] <= 3, `L${lv}: the padlock opened with ${b[0]} of ${b[1]} seats taken (3 at most)`); }
       await waitFor('!window.__qa.state().busy', 8000); await qa('slow(1)'); await sleep(500);
       await shot(name + '-after');
     });
