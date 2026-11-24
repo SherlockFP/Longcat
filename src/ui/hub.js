@@ -97,8 +97,11 @@ function geometry(cur, W) {
   const first = Math.max(1, cur - 24);
   const lastLv = Math.max(cur + 3, Math.ceil(cur / 5) * 5); // boss lane: the next chest marker is always on the map
   const H = PAD_TOP + (lastLv - first) * GAP + PAD_BOT;
-  const cx = W / 2 - Math.min(16, W * 0.04); // the right rail stands over the room's right edge
-  const amp = Math.min(118, W * 0.25);
+  // the right rail stands over the room's right edge and the basket rail (ui/basket.js) over the left one: the road and
+  // the big current node stay in the band between them
+  const lo = 112, hi = W - 100;
+  const cx = (lo + hi) / 2;
+  const amp = Math.min(118, (hi - lo) / 2);
   const pos = (lv) => ({ x: cx + amp * Math.sin(lv * 0.82 + 0.6), y: H - PAD_BOT - (lv - first) * GAP });
   return { first, lastLv, H, pos, cx, amp };
 }

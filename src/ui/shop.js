@@ -14,6 +14,7 @@ import { audio } from '../kit/audio.js';
 import { haptics } from '../kit/haptics.js';
 import { dayOf, dayStart } from '../game/econ.js';
 import * as S from '../game/shop.js';
+import * as BK from '../game/basket.js';
 import { IMG } from '../game/assets.js';
 import { drawHead } from '../game/render.js';
 import { drawHat, drawCarrierSkin, drawSkinCat, lookOf, roomImage } from '../game/shop-look.js';
@@ -67,8 +68,9 @@ function offersPage() {
   <div class="s4dt"><b class="s4h">${t('starterBundle')}</b><div class="s4chips">${chip('coins', P.coins)}${chip('scoop', P.scoop)}<span class="s4chip">${noAdSvg}<b>${t('noAds')}</b></span></div></div>
   <div class="s4dp">${cashBtn('starter')}</div>
 </div>` : '';
-  // R13: Fast paws (kit/iap.js fastpaws) wakes every sleepy basket on the map (src/game/basket.js)
-  const paws = `<div class="s4noadrow s4paws">${r7('cat_curl_purple', 's4pi')}<div class="s4dt"><b class="s4h">${t('fpName')}</b><small>${t('fpSub')}</small></div>${cashBtn('fastpaws')}</div>`;
+  // R13: Fast paws (kit/iap.js fastpaws) wakes every sleepy basket on the map (src/game/basket.js): offered only while one waits
+  const tn = now();
+  const paws = !BK.state(d).s.some((x) => BK.status(x, tn) !== 'ready') ? '' : `<div class="s4noadrow s4paws">${r7('cat_curl_purple', 's4pi')}<div class="s4dt"><b class="s4h">${t('fpName')}</b><small>${t('fpSub')}</small></div>${cashBtn('fastpaws')}</div>`;
   let free = '';
   if (ads.available()) {
     const gift = (g) => {

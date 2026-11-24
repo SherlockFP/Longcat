@@ -150,6 +150,11 @@ body.bosslv #hud .lvl-pill { visibility: hidden; }
 @keyframes cxFlash { 0% { opacity: 0; } 15% { opacity: 1; } 100% { opacity: 0; } }
 @keyframes cxDrop { 0% { opacity: 0; transform: translateY(-420px) scale(.8); } 70% { opacity: 1; transform: translateY(0) scale(1.06, .9); } 100% { transform: none; } }
 @keyframes cxWob { 0% { transform: none; } 20% { transform: rotate(-11deg) scale(1.04); } 45% { transform: rotate(9deg) scale(1.06); } 70% { transform: rotate(-6deg) translateY(-6px); } 100% { transform: none; } }
+/* R14: a timed basket: the sleepy cat breathes on each tap, then wakes, stretches up and tips the loot out (one shot) */
+#chestfx.k-bask .cxshut.wob { animation-name: bkSnore; }
+#chestfx.k-bask.opened .cxopen { transform-origin: 50% 90%; animation: bkWake .7s cubic-bezier(.3, 1.4, .5, 1); }
+@keyframes bkSnore { 0% { transform: none; } 35% { transform: scale(1.07, .93); } 65% { transform: scale(.96, 1.06) rotate(-3deg); } 100% { transform: none; } }
+@keyframes bkWake { 0% { transform: translateY(12px) scale(1.1, .78); } 45% { transform: translateY(-16px) scale(.92, 1.16); } 75% { transform: rotate(-5deg) scale(1.03, .97); } 100% { transform: none; } }
 @keyframes cxPop { 0% { transform: scale(.4); } 100% { transform: none; } }
 @keyframes cxBump { 50% { transform: scale(1.15); } }
 

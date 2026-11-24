@@ -387,6 +387,7 @@ export function showChest({ e, loot }, coins0, done) {
   chestOn = true;
   const tier = loot.tier;
   const gold = e.t === 'boss' || tier !== 'common'; // a rare / epic basket or gift: the gold chest and its tier tag
+  const art = e.t === 'bask' ? 'basket' : gold ? 'chest_gold' : 'chest_wood'; // R14: a basket opens as its sleepy cat
   const el = document.createElement('div');
   el.id = 'chestfx';
   el.className = `t-${tier} k-${e.t}${calm() ? ' calm' : ''}`;
@@ -397,9 +398,9 @@ export function showChest({ e, loot }, coins0, done) {
   const cosIt = loot.cos ? SH.item(loot.cos) : null;
   el.innerHTML = `<div class="cxrays"></div><div class="cxflash"></div>
 <div class="cxhead"><b>${t(KIND[e.t])}</b>${gold ? `<i class="cxtier">${t(TIER[tier])}</i>` : ''}</div>
-<div class="cxstage">${img(gold ? 'chest_gold' : 'chest_wood', 'cxshut')}${img(gold ? 'chest_gold_open' : 'chest_wood_open', 'cxopen')}</div>
+<div class="cxstage">${img(art, 'cxshut')}${img(art + '_open', 'cxopen')}</div>
 <div class="cxloot">${items.map((it, i) => `<div class="cxit k-${it.k}" style="--i:${i}">${itemArt(it)}<b>${it.k === 'coins' ? '+0' : it.k === 'cos' ? esc(loc(cosIt.name)) : '+' + it.n}</b></div>`).join('')}</div>
-<small class="cxhint">${t('chTapOpen')}</small>
+<small class="cxhint">${t(e.t === 'bask' ? 'bkTapWake' : 'chTapOpen')}</small>
 <button class="btn cxgo" hidden>${t('chCollect')}</button>
 <div class="cxpill">${img('hud_coin')}<b>${coins0}</b></div>`;
   document.body.appendChild(el);

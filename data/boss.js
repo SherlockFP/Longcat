@@ -19,8 +19,8 @@ export const BOSSES = [
   { id: 'moonbeam', art: 'wizard', tint: 'hue-rotate(60deg) saturate(1.2)', acc: 'crown', hue: '#b0912a', name: { en: 'Empress Moonbeam', tr: 'İmparatoriçe Ayışığı' } },
 ];
 // R13: the first session ends on a mini boss (L10, src/game/boss.js MINI): a little chef with his own lines
-// (the chef portrait: L20's Duke follows right after, the big chef boss is L60)
-export const MINI_BOSS = { id: 'muffin', art: 'chef', tint: 'hue-rotate(15deg) saturate(1.1)', acc: 'bow', hue: '#e8590c', name: { en: 'Little Chef Muffin', tr: 'Minik Şef Muffin' },
+// (R14: its own kitten portrait boss_muffin; L20's Duke follows right after, the big chef boss is L60)
+export const MINI_BOSS = { id: 'muffin', art: 'muffin', hue: '#e8590c', name: { en: 'Little Chef Muffin', tr: 'Minik Şef Muffin' },
   taunt: { en: 'My little order is BIG!', tr: 'Minik siparişim KOCAMAN!' }, defeat: { en: 'Fine! Take my first treasure!', tr: 'Peki! İlk hazinem senin olsun!' } };
 
 // what a boss says: on the intro card (taunt), at 75 / 50 / 25% HP (hurt), when beaten (defeat)
