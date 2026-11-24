@@ -7,6 +7,11 @@
 .hmpath { position: relative; width: 100%; overflow: hidden; }
 .hmbg { position: absolute; left: 0; right: 0; background: var(--hm-bg) center / 100% 100% no-repeat; pointer-events: none; }
 .hmbg.f { transform: scaleY(-1); }
+/* R11 look: one ground layer per chapter (look-world.js); the higher chapter fades in over the boundary */
+.lookch { position: absolute; left: 0; right: 0; overflow: hidden; pointer-events: none; }
+.lookch.fade { -webkit-mask-image: linear-gradient(to top, transparent, #000 300px); mask-image: linear-gradient(to top, transparent, #000 300px); }
+.lookch.t-garden { background-color: #86b463; } .lookch.t-autumn { background-color: #b9a052; } .lookch.t-snow { background-color: #e9eef2; }
+.lookch.t-lantern { background-color: #2f4a55; } .lookch.t-beach { background-color: #ecd39c; } .lookch.t-bakery { background-color: #f4cfd2; }
 .hmroad { position: absolute; left: 0; top: 0; pointer-events: none; }
 .hmroad path { fill: none; stroke-linecap: round; stroke-linejoin: round; }
 .hmroad .r0 { stroke: rgba(40, 60, 15, .25); stroke-width: 42px; transform: translate(-3px, 6px); }
@@ -58,6 +63,12 @@
 .hmprop.l { left: 11%; }
 .hmprop.r { left: 76%; }
 .hmprop img { display: block; width: 100%; height: auto; filter: drop-shadow(-2px 4px 2px rgba(30, 50, 10, .35)); }
+/* R11 look: the road props take the chapter's light (one static filter each) */
+.hmprop.t-autumn img { filter: sepia(.35) hue-rotate(-18deg) saturate(1.25) drop-shadow(-2px 4px 2px rgba(60, 35, 10, .35)); }
+.hmprop.t-snow img { filter: saturate(.6) brightness(1.1) drop-shadow(-2px 4px 2px rgba(40, 60, 90, .3)); }
+.hmprop.t-lantern img { filter: brightness(.82) saturate(.85) drop-shadow(0 0 6px rgba(255, 200, 110, .55)) drop-shadow(-2px 4px 2px rgba(5, 15, 30, .45)); }
+.hmprop.t-beach img { filter: saturate(1.15) brightness(1.05) drop-shadow(-2px 4px 2px rgba(110, 80, 30, .3)); }
+.hmprop.t-bakery img { filter: hue-rotate(-25deg) saturate(1.1) brightness(1.06) drop-shadow(-2px 4px 2px rgba(120, 50, 60, .3)); }
 .hmend, .hmstart { position: absolute; left: 50%; transform: translate(-50%, -100%); padding: 6px 16px; border-radius: 999px; background: rgba(255, 250, 240, .9); border: 2.5px solid #8e5530; font: 700 14px var(--font); color: #8e5530; white-space: nowrap; z-index: 2; box-shadow: 0 3px 0 rgba(90, 52, 24, .45); }
 .hmstart { transform: translate(-50%, 0); font-size: 12px; padding: 3px 12px; }
 

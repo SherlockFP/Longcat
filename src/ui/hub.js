@@ -5,6 +5,7 @@
 import './hub.css';
 import { t, lang } from '../i18n.js';
 import { assetUrl } from '../game/breeds.js';
+import { chapterGround, mapBg, mapTheme, deskFor } from './look-world.js';
 import { save } from '../kit/save.js';
 import { levelKind, TEACH } from '../core/generate.js';
 import { RESIDENTS, isBuilt } from '../game/cafe.js';
@@ -38,6 +39,7 @@ export const mapShown = () => mapOn && !!document.querySelector('#cafe.on .hubma
 
 export function hubAfter(screen, info) {
   last = { screen, info };
+  deskFor(chapterOf(save.data.level));
   if (screen === 'cafe') {
     tabs(info);
     if (mapOn) showMap(info); else { hideMap(); layoutResidents(); }
@@ -121,9 +123,8 @@ function mapHtml(cur, W) {
   for (let lv = first - 1; lv <= lastLv + 1; lv++) all.push(pos(lv));
   const done = all.slice(0, cur - first + 2);
   const ahead = all.slice(cur - first + 1);
-  // mirror-tiled lawn: every other block is flipped, so the tiles meet without a seam
-  const bh = Math.round(W * 1.5);
-  const bg = Array.from({ length: Math.ceil(H / bh) }, (_, i) => `<i class="hmbg ${i % 2 ? 'f' : ''}" style="top:${H - (i + 1) * bh}px;height:${bh}px"></i>`).join('');
+  // the ground changes with the chapter (look-world.js): mirror-tiled layers that fade into each other
+  const bg = chapterGround(first, lastLv, H, pos, CHAPTER_LEN, Math.round(W * 1.5));
   const items = [];
   for (let lv = first; lv <= lastLv; lv++) {
     const p = pos(lv);
@@ -144,7 +145,7 @@ function mapHtml(cur, W) {
       // a garden prop on the far side of the road (never where a signpost stands)
       const q = pos(lv + 0.5);
       const side = q.x > G.cx ? 'l' : 'r';
-      items.push(`<i class="hmprop ${side}" style="top:${q.y.toFixed(1)}px">${r7('map_prop_' + PROPS[hash(lv + 7) % PROPS.length])}</i>`);
+      items.push(`<i class="hmprop ${side} t-${mapTheme(chapterOf(lv))}" style="top:${q.y.toFixed(1)}px">${r7('map_prop_' + PROPS[hash(lv + 7) % PROPS.length])}</i>`);
     }
   }
   const pc = pos(cur);
@@ -427,7 +428,7 @@ ${Lv && Lv.goals && Lv.goals.length ? `<h4>${t('hsGoals')}</h4><div class="hsgoa
   const cards = cardsOwned(d);
   Rr.innerHTML = `<div class="hscard">
 <h3>${t('hsMap')}</h3>
-<div class="hsroad"><div class="hssign">${r7('map_sign')}<span><small>${t('mapChapter', { n: c })}</small><b>${esc(chapterName(c))}</b></span></div>
+<div class="hsroad" style="--hm-bg:${mapBg(c)}"><div class="hssign">${r7('map_sign')}<span><small>${t('mapChapter', { n: c })}</small><b>${esc(chapterName(c))}</b></span></div>
 <div class="hsdots">${Array.from({ length: CHAPTER_LEN }, (_, i) => `<i class="${i < inCh ? 'on' : i === inCh ? 'cur' : ''}"></i>`).join('')}</div>
 <small>${t('hsChapterProg', { a: inCh, b: CHAPTER_LEN })}</small>
 <small class="hsnext">${t('mapLevel', { n: cur })}</small></div>
