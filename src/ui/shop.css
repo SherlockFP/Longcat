@@ -6,7 +6,7 @@
 .s4bal { position: absolute; left: 10px; top: 12px; display: flex; align-items: center; gap: 3px; height: 34px; padding: 0 10px 0 4px; border-radius: 999px; background: var(--cream7); border: 3px solid var(--oak-d); box-shadow: 0 3px 0 rgba(142,85,48,.45); font: 700 16px var(--font); color: var(--ink); }
 .s4bal img { width: 24px; height: 24px; }
 .s4tabs { flex: none; gap: 4px; padding: 3px; }
-.s4tabs .stab { height: 34px; font-size: 14px; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.s4tabs .stab { height: 44px; font-size: 14px; padding: 0 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .s4pg { flex: 1; min-height: 0; display: flex; flex-direction: column; gap: 9px; padding: 8px 2px 10px; text-align: left; }
 .s4pg > * { flex-shrink: 0; }
 .s4pg .ci { width: 20px; height: 20px; flex: none; }

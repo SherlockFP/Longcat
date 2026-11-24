@@ -58,6 +58,7 @@ export const tierOf = (i) => (i <= 0 ? 'rare' : CYCLE[(i - 1) % CYCLE.length]);
 const RARE = COSMETICS.filter((x) => x.cost && (x.kind === 'hat' || x.kind === 'car')).sort((a, b) => a.cost - b.cost);
 const EPIC = COSMETICS.filter((x) => x.cost && x.kind === 'room').sort((a, b) => a.cost - b.cost);
 const firstFree = (d, list) => { shopEnsure(d); return list.find((x) => !owns(d, x.id)) || null; };
+export const nextLook = (d) => firstFree(d, RARE); // the cheapest outfit / carrier skin not owned yet (or null)
 
 // what a queued chest holds -> { t, tier, coins, items: { hint, undo, scoop }, cos: cosmetic id | null }
 export function lootOf(d, e) {
@@ -132,10 +133,14 @@ export function openNext(d) {
   const b = state(d);
   const e = b.q.shift();
   if (!e) return null;
-  const loot = lootOf(d, e);
+  const loot = pay(d, lootOf(d, e));
+  b.open++;
+  return { e, loot };
+}
+// pay a loot ({ coins, items, cos }) into the save; the timed baskets (src/game/basket.js) pay through here too
+export function pay(d, loot) {
   d.coins += loot.coins;
   for (const [k, v] of Object.entries(loot.items)) if (k in d.boosters) d.boosters[k] += v;
   if (loot.cos) { shopEnsure(d); d.shop.own[loot.cos] = 1; }
-  b.open++;
-  return { e, loot };
+  return loot;
 }

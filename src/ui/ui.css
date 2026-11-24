@@ -10,6 +10,12 @@
 body { font-family: var(--font); color: var(--navy); -webkit-tap-highlight-color: transparent; }
 button { font-family: inherit; color: inherit; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; }
 img { -webkit-user-drag: none; pointer-events: none; }
+/* R13 a11y: a visible ring on whatever the keyboard focuses (taps never show it) */
+:focus-visible { outline: 3px solid #1d6fd8; outline-offset: 2px; }
+/* R13 a11y: small hub / map / shop buttons get a 44px hit area (the look stays; :where keeps any existing position) */
+:where(.r7hub .cafe-top .round, .r7hub .pill.sm, .rrail .rr, .phead .round.x, .stab, .s4buy, .s4watch, .s4pk) { position: relative; }
+.phead .round.x { z-index: 2; } /* its grown hit area stays over the tab row under it */
+:where(.r7hub .cafe-top .round, .r7hub .pill.sm, .rrail .rr, .phead .round.x, .stab, .s4buy, .s4watch, .s4pk)::after { content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
 .screen { position: absolute; inset: 0; pointer-events: none; }
 .screen > * { pointer-events: auto; }
 

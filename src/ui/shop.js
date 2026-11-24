@@ -66,6 +66,8 @@ function offersPage() {
   <div class="s4dt"><b class="s4h">${t('starterBundle')}</b><div class="s4chips">${chip('coins', P.coins)}${chip('scoop', P.scoop)}<span class="s4chip">${noAdSvg}<b>${t('noAds')}</b></span></div></div>
   <div class="s4dp">${cashBtn('starter')}</div>
 </div>` : '';
+  // R13: Fast paws (kit/iap.js fastpaws) wakes every sleepy basket on the map (src/game/basket.js)
+  const paws = `<div class="s4noadrow s4paws">${r7('cat_curl_purple', 's4pi')}<div class="s4dt"><b class="s4h">${t('fpName')}</b><small>${t('fpSub')}</small></div>${cashBtn('fastpaws')}</div>`;
   let free = '';
   if (ads.available()) {
     const gift = (g) => {
@@ -77,7 +79,7 @@ ${left ? `<button class="btn teal s4watch" data-act="shopad" data-id="${g.id}">â
     };
     free = `<div class="s4sec">${t('shFree')}</div><div class="s4gifts">${S.AD_GIFTS.map(gift).join('')}</div>`;
   }
-  return deal + starter + free;
+  return deal + starter + paws + free;
 }
 
 // ---- Coins ----

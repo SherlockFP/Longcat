@@ -1,6 +1,7 @@
 // IAP stub. Test mode: purchase() resolves after a short fake sheet. Real store plugin plugs in behind the same interface (setBackend).
 import { save } from './save.js';
 import { grant } from '../game/econ.js';
+import { wakeAll } from '../game/basket.js';
 
 export const PRODUCTS = {
   starter: { price: '$4.99', coins: 1200, scoop: 3, noAds: true, once: true },
@@ -10,6 +11,7 @@ export const PRODUCTS = {
   coins4000: { price: '$6.99', coins: 4000 },
   scoop3: { price: '$1.99', scoop: 3 },
   scoop10: { price: '$4.99', scoop: 10 },
+  fastpaws: { price: '$0.99', wake: true }, // R13: every sleeping basket on the map wakes now (src/game/basket.js)
 };
 // Dev/test builds only: a production build with no real store backend registered buys nothing (fail closed).
 export const TEST_MODE = !!(import.meta.env && import.meta.env.DEV);
@@ -25,6 +27,7 @@ export function applyPurchase(d, id, tx) {
     if (d.iap.tx.length > 30) d.iap.tx.shift();
   }
   grant(d, p);
+  if (p.wake) wakeAll(d);
   if (p.once) d.iap.owned[id] = 1;
   if (p.noAds) d.ads.removeAds = true;
   return true;

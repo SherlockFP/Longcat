@@ -70,6 +70,7 @@ const uiKind = (el) => {
 };
 import './ui/r11-vir.css';
 import './i18n-boss.js';
+import { bigText } from './kit/a11y.js';
 import * as bossUi from './ui/boss.js'; // R11 boss lane: boss every 20 levels, chests, the flame streak (src/game/boss.js)
 
 const HINT_COST = 60;
@@ -1781,6 +1782,7 @@ const actions = {
     save.data.settings[k] = !save.data.settings[k];
     save.commit();
     if (k === 'music' || k === 'sound') audio.sync();
+    if (k === 'big') bigText(save.data.settings.big);
     ui.settings(settingsInfo());
   },
   lang({ l }) {
@@ -1926,6 +1928,7 @@ async function boot() {
   document.documentElement.lang = save.data.settings.lang;
   window.addEventListener('pointerdown', () => audio.unlock(), { once: true });
   await loadAssets();
+  bigText(save.data.settings.big); // R13 a11y: Settings > Bigger text
   econTick(); // day stamps repaired and rolled before the first screen reads them
   const dc = readDare();
   if (dc) { startHome(); dareLanding(dc); } // a friend's challenge link: one intro card, then straight onto that board

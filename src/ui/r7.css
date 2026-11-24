@@ -102,10 +102,12 @@ button.pill { color: var(--ink); }
 .opt { border-color: var(--oak-d); }
 
 /* ---- settings: toggles in a grid ---- */
-.setgrid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.setgrid .setrow { flex-direction: column; justify-content: center; gap: 4px; font-size: 17px; background: #fff3dd; border: 2.5px solid var(--cream7-d); border-radius: 16px; padding: 6px 2px; min-height: 0; }
-/* a fourth toggle (reminders) gets the whole second row, so a long label (TR "Hatırlatmalar") never widens a column */
-.setgrid .setrow:nth-child(4) { grid-column: 1 / -1; flex-direction: row; gap: 12px; }
+.setgrid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.setgrid .setrow { grid-column: span 2; flex-direction: column; justify-content: center; gap: 4px; font-size: 17px; background: #fff3dd; border: 2.5px solid var(--cream7-d); border-radius: 16px; padding: 6px 2px; min-height: 0; }
+/* the second row: Bigger text and reminders half each (R13), or one of them alone across the whole row, so a long
+   label (TR "Hatırlatmalar") never widens a column */
+.setgrid .setrow:nth-child(n+4) { grid-column: span 3; }
+.setgrid .setrow:nth-child(4):last-child { grid-column: 1 / -1; flex-direction: row; gap: 12px; }
 .setgrid .toggle { width: 84px; height: 40px; font-size: 15px; }
 .setgrid .toggle i { width: 28px; height: 28px; top: 3px; }
 .setgrid .toggle.on i { left: 44px; }
@@ -118,6 +120,8 @@ button.pill { color: var(--ink); }
 .seg { border-color: var(--oak-d); }
 .card.settings { gap: 8px; }
 .card.settings .setrow { min-height: 46px; font-size: 19px; }
+.bigtext .card.settings { gap: 4px; padding-top: 12px; } /* R13: Bigger text still fits a 375x667 screen */
+.bigtext .card.settings .setgrid .setrow { padding: 3px 2px; }
 
 /* ---- sheets: compact pages, no scroll ---- */
 .sheet .panel { max-height: calc(100dvh - 20px); }
