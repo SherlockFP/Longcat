@@ -365,7 +365,7 @@ export const ui = {
     root.addEventListener('click', (e) => {
       const el = e.target.closest('[data-act]');
       if (!el || el.disabled) return;
-      if (actions.click) actions.click();
+      if (actions.click) actions.click(el);
       // view-only taps (hub view, tabs, pages, the fail sheet's "More help") never reach the game
       const a = el.dataset.act;
       if (el.dataset.view) cafeView = el.dataset.view;
@@ -637,7 +637,7 @@ export const ui = {
   ${info.canInstall ? `<div class="setrow"><span>${t('installApp')}</span><button class="seg wide" data-act="install">${t('install')}</button></div>` : ''}
   <div class="setrow"><span>${t('removeAds')}</span>${info.removeAds ? `<b class="owned">${t('owned')}</b>` : `<button class="seg wide" data-act="shop">${t('shop')}</button>`}</div>
   <div class="setrow"><button class="link" data-act="restore">${t('restore')}</button></div>
-  <p class="credits" style="margin:6px 0 10px;font-size:12px;line-height:1.35;opacity:.7;text-align:center">${t('credits')}: IgnasD, Kerzoven, AntumDeluge, Traceletz, EZduzziteh, rubberduck, PWL, Spring Spring, Fupi, MintoDog (CC0, OpenGameArt.org)</p>
+  <p class="credits" style="margin:6px 0 10px;font-size:12px;line-height:1.35;opacity:.7;text-align:center">${t('credits')}: IgnasD, Kerzoven, AntumDeluge, Traceletz, EZduzziteh, rubberduck, PWL, Spring Spring, Fupi, MintoDog (CC0, OpenGameArt.org), Zeno Studio (UI)</p>
   <button class="btn teal" data-act="close">${t('close')}</button>
 </div></div>`);
   },

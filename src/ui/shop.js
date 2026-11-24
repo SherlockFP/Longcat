@@ -224,7 +224,7 @@ function pop(sel) {
 // main.js: Object.assign(actions, shopActions(syncCoins)); sync refreshes the HUD coins and booster counts
 export function shopActions(sync) {
   let busy = false;
-  const paid = (msg, sel) => { save.commit(); audio.clear(); haptics.success(); sync(); if (document.querySelector('#sheet .shop4')) render(); ui.toast(msg); if (sel) pop(sel); };
+  const paid = (msg, sel) => { save.commit(); audio.ui('coin'); haptics.success(); sync(); if (document.querySelector('#sheet .shop4')) render(); ui.toast(msg); if (sel) pop(sel); };
   return {
     stab4({ tab }) { if (!TABS.some(([k]) => k === tab)) return; V.tab = tab; render(); track('shop_tab', { tab }); },
     shopcat({ k }) { if (!S.KINDS.includes(k)) return; V.cat = k; render(); },

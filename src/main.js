@@ -58,6 +58,15 @@ import './i18n-fun.js';
 import * as fun from './game/r11-fun.js'; // R11 fun lane: winnable Take back, park ghosts, teaching rewind, a free opening
 import * as vir from './ui/r11-vir.js'; // R11 vir: QR dare card, background video
 import './i18n-r11-vir.js';
+// which UI sound a [data-act] tap makes (the action itself may add a result sound: build, claim, coin, error)
+const UI_BACK = /^(close|closesheet|cafeback|arriveclose|arrivalclose|pcclose|home|rtlater|dareskip)$/;
+const UI_TAB = /^(cafeview|cafearea|evtab|iqtab|shoptab|stab4|rpage|albpage|archpage|iqpage|lang|toggle|shopsel|reno)$/;
+const UI_OK = /^(play|next|retry|dailyplay|dareplay|rushplay|showplay|iqplay|iqrun|arriveplay|rematch)$/;
+const UI_SILENT = /^(build|streetbuild|treat|party|hang|rthang|rthangroom|wear|qclaim|chest|loginclaim|popclaim|catchup|jobclaim|rushclaim|seasonclaim|jarcollect|reqclaim|buy|shoppack|shopcos|shopcat|starter|restore|liferefill|shopad|adlife)$/;
+const uiKind = (el) => {
+  const a = (el && el.dataset && el.dataset.act) || '';
+  return UI_BACK.test(a) ? 'back' : UI_TAB.test(a) ? 'tab' : UI_OK.test(a) ? 'ok' : UI_SILENT.test(a) ? '' : 'click';
+};
 import './ui/r11-vir.css';
 
 const HINT_COST = 60;
@@ -1196,7 +1205,7 @@ function onFail(silent = false) {
 // ---- actions ----
 const actions = {
   perfgpu() { toggleGpu(); ui.settings(settingsInfo()); }, // r10 perf: the opt-in PixiJS board renderer
-  click: () => audio.tick(),
+  click: (el) => audio.ui(uiKind(el)),
   play: () => tryStart(save.data.level),
   daily: () => tryStart(dailyLevel(), true),
   cafe: () => startHome(),
@@ -1219,8 +1228,8 @@ const actions = {
     if (S.mode !== 'cafe') return;
     const r = cafe.RESIDENTS.find((x) => x.id === id);
     if (!r || cafe.loveOf(id) >= cafe.LOVE_COSTS.length) return;
-    if (!cafe.treat(id)) return ui.toast(t('needCoins', { n: cafe.treatCost(id) }));
-    audio.star(1);
+    if (!cafe.treat(id)) return audio.ui('err'), ui.toast(t('needCoins', { n: cafe.treatCost(id) }));
+    audio.ui('ok');
     haptics.success();
     live.addHearts(save.data, id, 3); // a treat is also 3 affection hearts toward the outfits
     save.commit();
@@ -1237,9 +1246,9 @@ const actions = {
   build({ id }) {
     const task = cafe.ALL_TASKS.find((x) => x.id === id);
     if (!task || S.mode !== 'cafe') return;
-    if (!cafe.build(id)) return ui.toast(t('needStars', { n: task.cost || 1 }));
+    if (!cafe.build(id)) return audio.ui('err'), ui.toast(t('needStars', { n: task.cost || 1 }));
     S.area = task.area;
-    audio.clear();
+    audio.ui('build');
     haptics.success();
     track('task_done', { id });
     ui.cafe(cafeInfo(id));
@@ -1252,13 +1261,13 @@ const actions = {
       save.commit();
       const ask = rq ? t('reqFirst', { name: task.resident.name, what: t('g_' + rq.k, { n: rq.need }) }) : '';
       setTimeout(() => {
-        if (S.mode === 'cafe') { audio.star(2); ui.arrive({ resident: task.resident, sprite: task.sprite, level: save.data.level, ask }); ui.toast(t('arriveGift', { name: task.resident.name })); }
+        if (S.mode === 'cafe') { audio.ui('friend'); ui.arrive({ resident: task.resident, sprite: task.sprite, level: save.data.level, ask }); ui.toast(t('arriveGift', { name: task.resident.name })); }
       }, 1100);
     }
   },
   party() {
     if (S.mode !== 'cafe') return;
-    if (!cafe.hostParty()) return ui.toast(t('needStars', { n: cafe.PARTY_COST }));
+    if (!cafe.hostParty()) return audio.ui('err'), ui.toast(t('needStars', { n: cafe.PARTY_COST }));
     econ.grant(save.data, cafe.PARTY_REWARD);
     save.commit();
     audio.clear();
@@ -1272,9 +1281,9 @@ const actions = {
     if (S.mode !== 'cafe' || !cafe.partyOpen()) return;
     const d = save.data;
     const r = street.streetBuild(d);
-    if (!r) return ui.toast(t('needStars', { n: street.nextTask(d).cost }));
+    if (!r) return audio.ui('err'), ui.toast(t('needStars', { n: street.nextTask(d).cost }));
     save.commit();
-    audio.clear();
+    audio.ui('build');
     haptics.success();
     track('street_build', { n: street.built(d), house: r.house.id });
     ui.cafe(cafeInfo('street'));
@@ -1288,17 +1297,17 @@ const actions = {
         : h.kind === 'up' ? { kind: 'upgrade', id: h.id, name: h.keeper.name, line: h.keeper.line, place: t('streetUpName', { house: cafe.loc(h.name) }), reward: r.reward }
           : h.kind === 'mix' ? { kind: 'guest', id: h.id, art: h.guest.art, name: h.guest.name, line: { en: `I came for ${h.theme.name.en}. Can I stay?`, tr: `${h.theme.name.tr} için geldim. Kalabilir miyim?` }, place: cafe.loc(h.name), theme: cafe.loc(h.theme.name), reward: r.reward }
             : { kind: 'keeper', id: h.id, name: h.keeper.name, line: h.keeper.line, place: cafe.loc(h.name), reward: r.reward };
-      setTimeout(() => { if (S.mode === 'cafe') { audio.star(2); lui.arrival(a); } }, 900);
+      setTimeout(() => { if (S.mode === 'cafe') { audio.ui('friend'); lui.arrival(a); } }, 900);
     }
   },
   // renovation: buy (and apply) the offered theme set of this finished room, or cycle the owned ones
   reno() {
     const R = renoInfo();
     if (S.mode !== 'cafe' || !R) return;
-    if (R.ti < 0) { street.renoCycle(save.data, R.area); save.commit(); audio.tick(); ui.cafe(cafeInfo()); return; }
-    if (!street.renoBuy(save.data, R.area, R.ti)) return ui.toast(t('needStars', { n: R.set.cost }));
+    if (R.ti < 0) { street.renoCycle(save.data, R.area); save.commit(); audio.ui('tab'); ui.cafe(cafeInfo()); return; }
+    if (!street.renoBuy(save.data, R.area, R.ti)) return audio.ui('err'), ui.toast(t('needStars', { n: R.set.cost }));
     save.commit();
-    audio.clear();
+    audio.ui('build');
     haptics.success();
     track('reno', { area: R.area, set: R.set.id });
     ui.cafe(cafeInfo('reno'));
@@ -1313,7 +1322,7 @@ const actions = {
     const n = live.jarCollect(d, now(), resOwned().length, cafe.love());
     if (!n) { lui.cafeSheet(cafeSheetInfo()); return; }
     save.commit();
-    audio.star(0);
+    audio.ui('coin');
     haptics.success();
     track('jar_collect', { n, at: 'room' });
     lui.coinBurst(el, before, d.coins);
@@ -1350,7 +1359,7 @@ const actions = {
     const r = await iap.purchase(id);
     if (!r.ok) return ui.toast(t('buyFail'));
     track('iap_purchase', { id });
-    audio.clear();
+    audio.ui('rare');
     haptics.success();
     ui.toast(t('thanks'));
     if (ui.sheet === 'starter') ui.hideSheet();
@@ -1369,7 +1378,7 @@ const actions = {
     if (!econ.questClaim(save.data, id, dayNum())) return;
     save.commit();
     track('daily_task_done', { id });
-    audio.star(0);
+    audio.ui('claim');
     ui.quests(questsInfo());
     syncCoins();
     if (S.mode === 'cafe') ui.setDots(dots());
@@ -1378,7 +1387,7 @@ const actions = {
     if (!econ.chestClaim(save.data)) return ui.toast(t('chestSub'));
     save.commit();
     track('daily_chest');
-    audio.clear();
+    audio.ui('chest');
     haptics.success();
     ui.quests(questsInfo());
     syncCoins();
@@ -1394,7 +1403,7 @@ const actions = {
     }
     save.commit();
     track('login_claim', { idx: save.data.login.idx });
-    audio.star(1);
+    audio.ui('claim');
     ui.quests(questsInfo());
     syncCoins();
     if (S.mode === 'cafe') ui.setDots(dots());
@@ -1410,7 +1419,7 @@ const actions = {
     const r = r10.popClaim(d, w, popMedals(w));
     if (!r) return;
     save.commit();
-    audio.clear();
+    audio.ui('claim');
     haptics.success();
     track('pop_claim', { w, card: r.card });
     syncCoins();
@@ -1423,7 +1432,7 @@ const actions = {
     const r = r10.catchUp(d, weekNum(), +w, popMedals(+w));
     if (!r) return;
     save.commit();
-    audio.star(1);
+    audio.ui('sparkle');
     track('pop_catchup', { w: +w, card: r.card });
     lui.eventsSheet(eventsInfo());
     if (r.page >= 0) retPageDone(r.page);
@@ -1445,7 +1454,7 @@ const actions = {
     if (!r10.hangPrint(d, +p, room)) return;
     rui.closePostcard();
     save.commit();
-    audio.clear();
+    audio.ui('build');
     track('print_hang', { p: +p, room });
     ui.hideSheet();
     S.area = room;
@@ -1459,7 +1468,7 @@ const actions = {
     if (!r10.hangPrint(d, +p, a)) return;
     rtg.clearHang(d);
     save.commit();
-    audio.clear();
+    audio.ui('build');
     track('print_hang', { p: +p, room: a, from: 'ret' });
     S.area = a;
     ui.cafe(cafeInfo('print'));
@@ -1472,7 +1481,7 @@ const actions = {
     const r = r10.jobsClaim(d, dayNum(), resOwned(), +s);
     if (!r) return;
     save.commit();
-    audio.star(0);
+    audio.ui('claim');
     haptics.success();
     track('job_claim', { who: r.who });
     syncCoins();
@@ -1492,7 +1501,7 @@ const actions = {
     const r = live.rushClaim(save.data);
     if (!r) return;
     save.commit();
-    audio.clear();
+    audio.ui('claim');
     haptics.success();
     track('rush_claim', { rank: r.rank });
     ui.toast(t(r.cup ? 'rushCupToast' : 'rushPrizeToast', { n: r.rank, c: r.coins }));
@@ -1506,7 +1515,7 @@ const actions = {
     const r = live.seasonClaim(d, s, dayNum());
     if (!r) return;
     save.commit();
-    audio.star(2);
+    audio.ui('rare');
     haptics.success();
     track('season_claim', { s, visitor: r.visitor || '', repeat: !!r.repeat });
     if (r.visitor && !r.repeat && S.mode === 'cafe') { // the arrival scene: walks in, waves, shows its nook
@@ -1531,7 +1540,7 @@ const actions = {
     const n = live.jarCollect(d, now(), resOwned().length, cafe.love());
     if (!n) return;
     save.commit();
-    audio.star(0);
+    audio.ui('coin');
     haptics.success();
     track('jar_collect', { n });
     ui.cafe(cafeInfo());
@@ -1545,7 +1554,7 @@ const actions = {
     const r = live.reqClaim(d, +i, now());
     if (!r) return;
     save.commit();
-    audio.star(1);
+    audio.ui('claim');
     haptics.success();
     track('request_done', { who: r.who });
     funnel('first_request');
@@ -1574,7 +1583,7 @@ const actions = {
   wear({ id, o }) {
     if (!live.wear(save.data, id, o || '')) return;
     save.commit();
-    audio.tick();
+    audio.ui('ok');
     track('wear', { id, o: o || '' });
     ui.residents();
   },
@@ -1659,7 +1668,7 @@ const actions = {
     if (busy || S.mode !== 'play' || !game.over) return;
     const cost = seatCost();
     if (!game.state.failed) return;
-    if (save.data.coins < cost) return ui.toast(t('needCoins', { n: cost }));
+    if (save.data.coins < cost) return audio.ui('err'), ui.toast(t('needCoins', { n: cost }));
     save.data.coins -= cost;
     S.seatBuys = (S.seatBuys || 0) + 1;
     save.commit();
