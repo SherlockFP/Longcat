@@ -8,7 +8,7 @@
 import { isBossLevel, BOSS_EVERY } from '../core/generate.js';
 import { COSMETICS } from '../../data/shop.js';
 import { owns, ensure as shopEnsure } from './shop.js';
-import { BOSSES, TAUNTS, HURT, DEFEAT, CH_ADJ, CH_PLACE, WOOD, STREAK, STREAK_LEN, BOSS_CHEST } from '../../data/boss.js';
+import { BOSSES, TAUNTS, HURT, DEFEAT, CH_ADJ, CH_PLACE, WOOD, STREAK, STREAK_LEN, BOSS_CHEST, MINI_BOSS } from '../../data/boss.js';
 
 export { BOSSES, TAUNTS, HURT, DEFEAT, STREAK_LEN, isBossLevel, BOSS_EVERY };
 
@@ -32,7 +32,12 @@ export function state(d) {
 
 // ---- who the boss is ----
 export const bossIndex = (n) => (isBossLevel(n) ? n / BOSS_EVERY - 1 : -1);
+// R13: L10 is a mini boss (its rev-7 board is kind 'boss', core/curated.js): the boss card, HP bar and defeat, a gold chest
+// that is always rare (chest index 0, like the first big boss); it never counts as a beaten boss
+export const MINI = 10;
+export const isBoss = (n) => n === MINI || isBossLevel(n);
 export function bossOf(n) {
+  if (n === MINI) return { ...MINI_BOSS, i: 0, n, lap: 0, mini: true };
   const i = bossIndex(n);
   if (i < 0) return null;
   const B = BOSSES[i % BOSSES.length];
@@ -104,7 +109,8 @@ export function onClear(d, n) {
   b.last = n;
   b.fl.fail = 0; // won: a lost bench on the way was continued
   const got = [];
-  if (isBossLevel(n)) {
+  if (n === MINI) got.push({ t: 'boss', n, i: 0 });
+  else if (isBossLevel(n)) {
     got.push({ t: 'boss', n, i: bossIndex(n) });
     b.beat = Math.max(b.beat, bossIndex(n) + 1);
   } else if (n % WOOD.step === 0) got.push({ t: 'wood', n });
@@ -124,7 +130,7 @@ export const pending = (d) => state(d).q.length;
 // the next chest on the road from level `cur` (the level about to be played): { n, t: 'wood' | 'boss', left }
 export function nextChest(cur) {
   const n = Math.ceil(Math.max(1, cur) / WOOD.step) * WOOD.step;
-  return { n, t: isBossLevel(n) ? 'boss' : 'wood', left: n - cur + 1 };
+  return { n, t: isBoss(n) ? 'boss' : 'wood', left: n - cur + 1 };
 }
 
 // open the oldest queued chest: pays it into the save -> { e, loot } or null

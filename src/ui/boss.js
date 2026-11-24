@@ -603,7 +603,7 @@ export function decorateMap(m, geo, curLv) {
   for (let lv = geo.first; lv <= geo.lastLv; lv++) {
     if (lv % 5 || lv === curLv - 1) continue; // the chest just earned sits under the pill: left out
     const p = geo.pos(lv + 0.5);
-    const gold = B.isBossLevel(lv);
+    const gold = B.isBoss(lv);
     const open = lv < curLv;
     html.push(`<i class="bmchest${gold ? ' gold' : ''}${open ? ' open' : ''}" style="left:${p.x.toFixed(1)}px;top:${p.y.toFixed(1)}px">${img(gold ? (open ? 'chest_gold_open' : 'chest_gold') : open ? 'chest_wood_open' : 'chest_wood')}</i>`);
   }

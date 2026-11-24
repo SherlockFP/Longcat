@@ -916,7 +916,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
     const d = fresh();
     const got = {};
     for (let n = 1; n <= 40; n++) got[n] = BS.onClear(d, n).map((e) => e.t).join('+');
-    eq([got[5], got[10], got[15], got[20], got[40]], ['wood', 'wood', 'wood+streak', 'boss', 'boss'], 'chests on 5 / 10 / 15 / 20 / 40');
+    eq([got[5], got[10], got[15], got[20], got[40]], ['wood', 'boss', 'wood+streak', 'boss', 'boss'], 'chests on 5 / 10 (R13 mini boss: gold, rare) / 15 / 20 / 40');
     eq(BS.onClear(d, 12), [], 'a replayed level queues nothing');
     ok(BS.state(d).beat === 2, 'two bosses beaten');
     const f = fresh();

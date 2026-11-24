@@ -2,7 +2,7 @@
 import { createHash } from 'node:crypto';
 import { encode, encodeV1, decode, judge, cleanName, trGenitive, shortCode, qrCode, codeOf } from '../src/kit/dare.js';
 import { qrMatrix } from '../src/kit/qr.js';
-import { boardOf, linkRev } from '../src/core/curated.js';
+import { boardOf, linkRev, R13 } from '../src/core/curated.js';
 import { generate, levelKind } from '../src/core/generate.js';
 
 const bad = [];
@@ -75,7 +75,7 @@ must(decode('4l34-4-c3', bb)?.b === 4 && sha(boardOf(34, 4)) === OLD34, 'a token
   // below L15 both schedules deal the same boards, so linkRev keeps those links on their old digit
   const strip = (b) => { const m = { ...b.meta }; delete m.shape; delete m.folds; return JSON.stringify({ ...b, meta: m }); };
   for (let n = 1; n < 15; n++) must(strip(generate(n, 1)) === strip(generate(n, 2)), `L${n} is the same board on both schedules`);
-  for (let n = 1; n < 15; n++) must(linkRev(n) === (n === 7 ? 4 : n === 9 || n === 10 ? 6 : 3), `L${n} link digit ${linkRev(n)}`);
+  for (let n = 1; n < 15; n++) must(linkRev(n) === (R13[n] ? 7 : n === 9 ? 6 : 3), `L${n} link digit ${linkRev(n)}`);
   // R12: the teaching pair took L9 and the old L9 moved to L10. A token 3-5 L9 link still opens the old L9 (a 2 the
   // generated one), a token 3-5 L10 link the generated L10; a new 6 link opens the new boards
   const OL9 = JSON.stringify({ ...boardOf(10, 6), meta: { ...boardOf(10, 6).meta, n: 9 } });
@@ -83,6 +83,16 @@ must(decode('4l34-4-c3', bb)?.b === 4 && sha(boardOf(34, 4)) === OLD34, 'a token
   for (const tok of ['3l10-5-c3', '5l10-5-c3']) { const d = decode(tok, bb); must(JSON.stringify(boardOf(10, d.rev)) === JSON.stringify(generate(10, d.rev >= 5 ? 2 : 1)), `old token ${tok} opens the generated L10`); }
   const n9 = shortCode({ n: 9, b: 5, k: 'l', m: 'chain', g: 3, rev: linkRev(9) });
   must(n9 === '6l9-5-c3' && decode(n9, bb)?.rev === 6 && JSON.stringify(boardOf(9, 6)) !== OL9 && boardOf(9, 6).meta.cur === 'pair' && boardOf(10, decode('6l10-5-c3', bb).rev).meta.cur === 'pair', 'a new L9 / L10 link (token 6) opens the new boards ' + n9);
+  // R13: the opening boards (L1-3, L5-7, L10) arrived in rev 7. An older token (2-6) opens the board it was made on, a 7
+  // token the new one; L4 / L8 / L9 links keep their digit
+  const was = { 1: generate(1), 5: generate(5, 2), 6: boardOf(6, 6), 7: boardOf(7, 4), 10: boardOf(10, 6) };
+  for (const n of [1, 5, 6, 7, 10]) {
+    for (const tok of [`3l${n}-5-c3`, `6l${n}-5-c3`]) { const d = decode(tok, bb); const b = boardOf(n, d.rev); must(!R13[n] || JSON.stringify(b) !== JSON.stringify(R13[n]()), `old token ${tok} keeps the old board`); if (d.rev === 6) must(JSON.stringify(b) === JSON.stringify(was[n]), `old token ${tok} opens the rev 6 board`); }
+    const code = shortCode({ n, b: 5, k: 'l', m: 'chain', g: 3, rev: linkRev(n) });
+    const d7 = decode(code, bb);
+    must(code === `7l${n}-5-c3` && d7?.rev === 7 && JSON.stringify(boardOf(n, d7.rev)) === JSON.stringify(R13[n]()), `a new L${n} link (token 7) opens the R13 board: ${code}`);
+  }
+  must(boardOf(10, 7).meta.kind === 'boss' && boardOf(10, 6).meta.cur === 'pair' && JSON.stringify(boardOf(4, 7)) === JSON.stringify(boardOf(4, 3)) && JSON.stringify(boardOf(8, 7)) === JSON.stringify(boardOf(8, 5)), 'R13: L10 a mini boss only on token 7; L4 / L8 unchanged');
 }
 must(decode(s2.toUpperCase(), base)?.i === 'ab12cd', 'a typed (capitalised) core still decodes');
 must(decode('2d4-5-s0', base)?.m === 'seats' && decode('2d4-5-s0', base).g === 0 && decode('2d4-5-s0', base).k === 'd', 'daily no-park core');

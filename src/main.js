@@ -591,7 +591,7 @@ function startHome() {
 }
 
 // one-line hint card: the tutorial levels and the teaching level of each new mechanic
-const TUT_KEY = { 1: 'tut1', 2: 'tut2', 3: 'tut3', 4: 'tut4', 8: 'tutDog', 12: 'tutYarn', 41: 'tutMystery', 55: 'tutFrozen' }; // mystery on L41: L40 is a boss (R11 boss lane)
+const TUT_KEY = { 1: 'tut1', 2: 'tut2', 3: 'tutHeart', 4: 'tut4', 5: 'tutChain', 7: 'tutQuilt', 8: 'tutDog', 12: 'tutYarn', 41: 'tutMystery', 55: 'tutFrozen' }; // mystery on L41: L40 is a boss (R11 boss lane)
 Object.assign(TUT_KEY, cui.TUT);
 
 function startLevel(n, daily = false, show = false) {
@@ -605,7 +605,8 @@ function startLevel(n, daily = false, show = false) {
   S.rushT0 = 0; // Café Rush: the clock starts on the first cat out
   S.winToken = (S.winToken || 0) + 1; // a pending win-card job (clip preview) of an older attempt is dropped
   clearTimeout(S.clipTimer);
-  game.autoHint = !daily && !show && n <= 3; // L3's arrow points past the tempting pink pair; L4 is a real choice now: no tap-by-tap guide, only a nudge after a costly park
+  game.autoHint = !daily && !show && n <= 3; // L4 is a real choice: no tap-by-tap guide, only a nudge after a costly park
+  game.hintWait = game.autoHint ? 3 : 0; // R13: the L1-3 arrow shows only once the player has hesitated 3 s
   const board = boardOf(n, show && show.kind === 'friend' ? show.rev : BOARD_REV); // a curated L6 / L9 / L11 from rev 3 on, L7 from rev 4 (core/curated.js)
   if (show && show.kind === 'friend') board.meta.benchSize = show.b; // the sender's seats: the exact board they played
   const tries = (S.tries[triesKey()] = (S.tries[triesKey()] || 0) + 1);
@@ -662,7 +663,7 @@ function startLevel(n, daily = false, show = false) {
   // board keeps a measured slot for it, so L9's full rule reads on two lines instead of an ellipsised toast
   if (curLine && !curCard(board)) perks.push(curLine);
   const tut = friend ? t('dareTeach') : !special && TUT_KEY[n] ? t(TUT_KEY[n]) : curCard(board) ? curLine : '';
-  S.tutDrop = !!tut && (n > 4 || friend); // the hint card collapses after its first read (teaching levels only)
+  S.tutDrop = !!tut; // the hint card collapses after the first tap (R13: the tutorials too, one line each)
   S.scare = !special && n === 4 ? 1 : 0; // L4: one nudge once a park has cost the win
   S.scareMoves = 0;
   S.tut3b = false;
@@ -2188,6 +2189,7 @@ async function boot() {
         return { ok: !!(r.ok || r.freed), boards: ev.filter((e) => e.type === 'board').length, wake: ev.some((e) => e.type === 'wake'), used: st.benchUsed, failed: !!st.failed };
       },
       order: () => game.board.meta.order || [],
+      hintId: () => game.hintId, // R13: the L1-3 arrow waits for a 3 s hesitation
       meta: () => ({ ...game.board.meta, order: undefined }),
       tap: (id) => { const r = game.tapCat(id); return !!r; },
       alive: (id) => !!game.state && !!game.state.alive[id],

@@ -85,6 +85,7 @@ export function levelStart(n, special, board) {
   const s = seen();
   const k = board.shape && !s.shape ? 'shape' : board.folds && board.folds.length && !s.fold ? 'fold' : null;
   if (!k) return;
+  if (n <= 10) { mark(k); return; } // R13: the opening's heart (L3) and quilt (L7) get one line on the hint card, no modal
   const b0 = board;
   let tries = 0;
   const show = () => {
