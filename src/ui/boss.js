@@ -617,10 +617,33 @@ export function decorateMap(m, geo, curLv) {
   const wait = bst.q.length;
   const right = wait
     ? `<button class="bmopen" data-bx="open">${img(bst.q[0].t === 'boss' ? 'chest_gold' : 'chest_wood')}<b>${t('chTapOpen')}</b></button>`
-    : `<span class="bmnext${boss ? ' boss' : ''}">${img(boss ? 'chest_gold' : 'chest_wood')}<b>${label}</b></span>`;
+    : `<span class="bmnext${boss ? ' boss' : ''}">${img(boss ? 'chest_gold' : 'chest_wood')}<b>${label}</b><i class="bmleft">${nx.left}</i></span>`;
   const W = path.clientWidth || 360;
-  html.push(`<div class="bmpill" style="left:${clamp(pc.x, 112, W - 112).toFixed(1)}px;top:${(pc.y + 50).toFixed(1)}px"><span class="bmflame" title="${esc(t('flameTip'))}" aria-label="${esc(t('flameLine', { a: k, b: B.STREAK_LEN }))}">${img('boss_flame')}<span class="bxpips">${pips}</span></span>${right}</div>`);
+  html.push(`<div class="bmpill" data-x="${pc.x.toFixed(1)}" data-y="${pc.y.toFixed(1)}" style="left:${clamp(pc.x, 112, W - 112).toFixed(1)}px;top:${(pc.y + 50).toFixed(1)}px"><span class="bmflame" title="${esc(t('flameTip'))}" aria-label="${esc(t('flameLine', { a: k, b: B.STREAK_LEN }))}">${img('boss_flame')}<span class="bxpips">${pips}</span></span>${right}</div>`);
   path.insertAdjacentHTML('beforeend', html.join(''));
+}
+
+// hub.js, once the view is placed (scrollTop = top): when the goals strip would cover the pill (the view keeps the current
+// node low to pull the next castle / chest in, e.g. L37 on a 375x667 phone), the pill docks beside the node instead,
+// compact: the flame, the chest and the levels left
+export function dockPill(m, top) {
+  const pill = m.querySelector('.bmpill');
+  const sc = m.querySelector('.hmscroll');
+  const path = m.querySelector('.hmpath');
+  if (!pill || !sc || !path) return;
+  const strip = [...document.querySelectorAll('#cafe .goals')].find((e) => e.getBoundingClientRect().height > 0);
+  const vis = Math.min(sc.clientHeight, strip ? strip.getBoundingClientRect().top - sc.getBoundingClientRect().top : sc.clientHeight);
+  const x = +pill.dataset.x;
+  const y = +pill.dataset.y;
+  const side = !pill.querySelector('.bmopen') && y + 50 + pill.offsetHeight + 4 > top + vis;
+  pill.classList.toggle('side', side);
+  if (!side) return;
+  const W = path.clientWidth || 360;
+  const w = pill.offsetWidth;
+  const R = 50; // the current node's half width + air
+  const cx = x + R + w <= W - 6 || x - R - w < 6 ? x + R + w / 2 : x - R - w / 2;
+  pill.style.left = clamp(cx, w / 2 + 6, W - w / 2 - 6).toFixed(1) + 'px';
+  pill.style.top = (y - pill.offsetHeight / 2).toFixed(1) + 'px';
 }
 
 // map chapter names past the named stops (hub.js chapterName)

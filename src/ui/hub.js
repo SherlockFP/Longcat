@@ -14,7 +14,7 @@ import { cardsOwned, WEEKS } from '../game/r10.js';
 import { CHAPTER_LEN, CHAPTERS, PROPS } from '../../data/hub.js';
 import { goalsHtml, featGoalHtml, featGoal } from './live.js';
 import { retMap, retRoom, retPanel } from './r11-ret.js'; // R11 retention lane: the album card, the hang card
-import { decorateMap, chapterName as bossChapter } from './boss.js'; // boss lane: castle nodes, chest markers, the chest / flame pill
+import { decorateMap, dockPill, chapterName as bossChapter } from './boss.js'; // boss lane: castle nodes, chest markers, the chest / flame pill
 import { nextChest } from '../game/boss.js';
 
 const root = document.getElementById('ui');
@@ -192,6 +192,7 @@ function showMap(info) {
   const from = st.seen > 0 && st.seen < cur && cur - st.seen <= 3 ? st.seen : 0;
   if (mapScroll && mapScroll.lv === cur) sc.scrollTop = mapScroll.top;
   else sc.scrollTop = target(cur);
+  dockPill(m, mapScroll && mapScroll.lv === cur ? mapScroll.top : target(cur)); // R11x: a pill the goals strip would cover goes beside the node
   sc.addEventListener('scroll', () => { mapScroll = { lv: cur, top: sc.scrollTop }; }, { passive: true });
   if (st.seen !== cur) { st.seen = cur; save.commit(); }
   // the level ceremony: the cat hops from the level just cleared onto the new one, and the new node pops open

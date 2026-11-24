@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "check": "node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs && node scripts/check-sfx.mjs && node scripts/check-dare.mjs"
+    "check": "node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs && node scripts/check-sfx.mjs && node scripts/check-dare.mjs",
+    "qa:fast": "node scripts/qa-fast.mjs"
   },
   "devDependencies": {
     "vite": "^8.0.0"
