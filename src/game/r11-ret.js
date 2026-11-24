@@ -60,7 +60,8 @@ export function albumNext(d, week, dailyDone) {
   }
   for (const g of out) pageCtx(d, g);
   const rank = (g) => (g.left === 0 ? 0 : g.promo ? 1 : g.arch ? 3 : 2);
-  const key = (g) => [g.today ? 0 : 1, rank(g), g.cost, g.pageLeft];
+  // R12: a claim still leads, then the pinned page's steps (a ready catch-up elsewhere would spend the week's one)
+  const key = (g) => [g.today ? 0 : 1, g.k === 'claim' ? 0 : 1, g.page === d.album.pin ? 0 : 1, rank(g), g.cost, g.pageLeft];
   const cmp = (x, y) => { const a = key(x), b = key(y); for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i]; return 0; };
   return out.sort(cmp)[0] || null; // sort is stable: equal keys keep this week first, then the archive's order
 }
@@ -84,7 +85,7 @@ function archStep(d, w) {
 function pageCtx(d, g) {
   g.page = r10.pageOf(g.card);
   g.pageLeft = r10.CARDS_PER_PAGE - r10.pageHave(d, g.page) - 1;
-  g.promo = g.arch && (g.left <= 1 || g.pageLeft <= 0);
+  g.promo = g.arch && (g.left <= 1 || g.pageLeft <= 0 || g.page === d.album.pin); // R12: the pinned page is never old
   g.old = g.arch && !g.promo;
   return g;
 }

@@ -32,7 +32,7 @@ const defaults = () => ({
   // v9 (R10, src/game/r10.js): pop-up week stamps (daily: week -> 1, paid: week -> 1, cu: the week a catch-up postcard was
   // taken), the album (cards: postcard index -> 1, hung: room index -> page), the Daily record, resident jobs, friend results
   pop: { daily: {}, paid: {}, cu: -1 },
-  album: { cards: {}, hung: {} },
+  album: { cards: {}, hung: {}, pin: -1 }, // R12 pin: the page the player chose as their goal (-1: none)
   drec: { n: 0, last: -1, got: 0 },
   jobs: { day: -1, p: [0, 0], paid: 0 },
   fr: { list: [], sent: [] },
@@ -198,6 +198,7 @@ function validate(d) {
   for (const k of Object.keys(A.cards)) if (!(+k >= 0 && +k < 24)) delete A.cards[k];
   A.hung = intMap(isObj(A.hung) ? A.hung : {}, 5);
   for (const k of Object.keys(A.hung)) if (!(+k >= 0 && +k < 5)) delete A.hung[k];
+  A.pin = Number.isInteger(A.pin) && A.pin >= 0 && A.pin < 6 ? A.pin : -1;
   d.drec.n = Number.isInteger(d.drec.n) && d.drec.n >= 0 ? d.drec.n : 0;
   d.drec.last = Number.isInteger(d.drec.last) ? d.drec.last : -1;
   d.drec.got = Number.isInteger(d.drec.got) && d.drec.got >= 0 && d.drec.got < 32 ? d.drec.got : 0;

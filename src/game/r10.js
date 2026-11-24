@@ -53,7 +53,9 @@ export function catchUp(d, week, pastW, medals) { // -> { card, page } or null
 // done within four event weeks even when the player starts on a page's last week.
 export function catchWeeks(d, week, archive = []) {
   const cur = popIndex(week);
-  const pages = PAGES.map((_, p) => p).filter((p) => p === pageOf(cur) || pageHave(d, p) > 0).sort((a, b) => pageHave(d, b) - pageHave(d, a));
+  // R12: the page the player pinned leads, even with no postcard on it yet
+  const pin = d.album.pin;
+  const pages = PAGES.map((_, p) => p).filter((p) => p === pin || p === pageOf(cur) || pageHave(d, p) > 0).sort((a, b) => (b === pin) - (a === pin) || pageHave(d, b) - pageHave(d, a));
   const first = [];
   for (const p of pages) {
     for (const i of pageCards(p)) {
@@ -76,6 +78,12 @@ export function hangPrint(d, p, area) {
   if (!pageDone(d, p)) return false;
   for (const k of Object.keys(d.album.hung)) if (d.album.hung[k] === p) delete d.album.hung[k]; // one place per print
   d.album.hung[area] = p;
+  return true;
+}
+// R12 (sol-r12-3 fix 5): pin an unfinished page as the goal -> true; its missing cards lead the catch-up and the map
+export function pinPage(d, p) {
+  if (!(Number.isInteger(p) && p >= 0 && p < PAGES.length) || pageDone(d, p)) return false;
+  d.album.pin = p;
   return true;
 }
 export const printsHung = (d) => Object.keys(d.album.hung).length;

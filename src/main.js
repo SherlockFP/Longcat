@@ -320,7 +320,7 @@ function popInfo(w = weekNum()) {
 // the album (R2): 6 pages x 4 postcards; an empty slot names its week and where to get it
 let albumPage = 0;
 // an empty album opens on the page holding this week's postcard (page 1 alone can be all "Comes in 10 weeks")
-const firstAlbumPage = () => { const d = save.data; const i = r10.PAGES.findIndex((_, p) => r10.pageHave(d, p) > 0 && !r10.pageDone(d, p)); if (i >= 0) return i; const j = r10.PAGES.findIndex((_, p) => r10.pageHave(d, p) > 0); if (j >= 0) return j; return Math.max(0, r10.PAGES.findIndex((_, p) => pageInfo(p).cards.some((c) => c.src === 'now'))); };
+const firstAlbumPage = () => { const d = save.data; if (d.album.pin >= 0 && !r10.pageDone(d, d.album.pin)) return d.album.pin; const i = r10.PAGES.findIndex((_, p) => r10.pageHave(d, p) > 0 && !r10.pageDone(d, p)); if (i >= 0) return i; const j = r10.PAGES.findIndex((_, p) => r10.pageHave(d, p) > 0); if (j >= 0) return j; return Math.max(0, r10.PAGES.findIndex((_, p) => pageInfo(p).cards.some((c) => c.src === 'now'))); };
 // a full page's print hangs in a finished room: the room after the ones already holding a print, else the ground floor
 function hangRoom(p) {
   const d = save.data;
@@ -357,7 +357,7 @@ function pageInfo(p) {
     return { ...c, own: false, src: !open ? 'locked' : ahead === 0 ? 'now' : ago != null ? 'arch' : 'soon', weeks: ahead, step, endsMs: econ.showEndsMs(dayNum(), now()) };
   });
   const hungIn = Object.keys(d.album.hung).find((k) => d.album.hung[k] === p);
-  return { p, name: cafe.loc(pg.name), print: pg.print, have: r10.pageHave(d, p), cards, done: r10.pageDone(d, p), hung: hungIn != null ? cafe.loc(cafe.AREAS[+hungIn].name) : '', from: live.EVENTS_FROM };
+  return { p, name: cafe.loc(pg.name), print: pg.print, have: r10.pageHave(d, p), cards, done: r10.pageDone(d, p), pin: d.album.pin === p, hung: hungIn != null ? cafe.loc(cafe.AREAS[+hungIn].name) : '', from: live.EVENTS_FROM };
 }
 const albumInfo = () => ({ page: pageInfo(albumPage), pages: r10.PAGES.length, total: r10.cardsOwned(save.data), all: r10.WEEKS.length, prints: r10.PAGES.map((_, p) => r10.pageDone(save.data, p)) });
 // friend results (R6): the latest replies to this player's dares, newest first, with Rematch on the exact board
@@ -1075,8 +1075,9 @@ function dareText(d) {
 // R11 fix 2: the link, the typed code and the QR share one address (dare.publicBase: the public https address of the
 // build, else this page), so what a friend types off the clip and what a camera scans open the same board
 const dareUrl = (d) => dare.publicBase() + '?c=' + dare.encode(d);
-// what the clip shows: the link without its scheme, with the typeable core only (board, seats, goal, share id)
-const shortUrl = (d) => dare.publicBase().replace(/^https?:\/\//, '') + '?c=' + dare.shortCode(d);
+// what the clip shows: the link without its scheme, with the typeable core only (board, seats, goal, share id); R12: plus
+// the QR's compact reply context, so a counter-dare typed off the clip lands in Friend Results like the scanned one
+const shortUrl = (d) => dare.publicBase().replace(/^https?:\/\//, '') + '?c=' + dare.qrCode(d);
 // the QR on the clip's end card and PNG: the same address with the same typeable core (R11 fix round 2: plus the compact
 // reply context on a counter-dare, so a scanned reply reaches Friend Results like the text link)
 const qrUrl = (d) => dare.publicBase() + '?c=' + dare.qrCode(d);
@@ -1086,6 +1087,10 @@ function readDare() {
   try { code = new URLSearchParams(location.search).get('c'); } catch { /* no URL API */ }
   if (!code) return null;
   try { const u = new URL(location.href); u.searchParams.delete('c'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch { /* file:// */ }
+  return openCode(code);
+}
+// a dare code from the address bar or (R12) pasted / typed into Friend Results: decoded and clamped, a reply imported
+function openCode(code) {
   const d = dare.decode(code, (n, rev) => boardOf(n, rev).meta.benchSize);
   if (d && !d.rev) d.rev = 2; // an older link: the generated board it was made on
   track(d ? 'dare_open' : 'dare_bad', d ? { m: d.m, k: d.k, i: d.i || '' } : {});
@@ -1445,6 +1450,13 @@ const actions = {
     rui.postcard({ card: cardInfo(r.card), coins: 0, page: r.page >= 0 ? pageInfo(r.page) : null });
   },
   pcclose() { rui.closePostcard(); },
+  // R12: a link or code pasted / typed into Friend Results opens like the link itself (a reply lands, the board plays)
+  frcode() {
+    const d = openCode(dare.codeOf(document.getElementById('frcode')?.value));
+    if (!d) return ui.toast(t('frCodeBad'));
+    ui.hideSheet();
+    dareLanding(d);
+  },
   rematch({ id }) {
     const e = save.data.fr.list.find((x) => x.id === id);
     if (!e) return;
@@ -1453,6 +1465,8 @@ const actions = {
     startDare({ n: e.n, b: e.b, k: e.k, m: e.m, g: e.g, nm: e.nm, x: 0, i: e.id });
   },
   album({ p }) { rui.closePostcard(); if (p != null) albumPage = +p; else albumPage = firstAlbumPage(); rui.album(albumInfo()); track('album_open'); },
+  // R12: pin an unfinished page as the goal; the map under the sheet redraws its strip for it
+  albpin({ p }) { if (!r10.pinPage(save.data, +p)) return; save.commit(); track('album_pin', { p: +p }); if (S.mode === 'cafe') ui.cafe(cafeInfo()); rui.album(albumInfo()); },
   albpage({ p }) { albumPage = Math.max(0, Math.min(r10.PAGES.length - 1, +p || 0)); rui.album(albumInfo()); },
   hang({ p }) {
     const d = save.data;

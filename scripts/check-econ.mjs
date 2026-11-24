@@ -833,6 +833,17 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
     ok(gp && gp.arch && gp.w === ga.w && gp.promo && gp.left === 1, `one board from its postcard, the archived week leads (${gp && gp.k} w${gp && gp.w})`);
     eq(RT.dayGoal(d3, { week: wk, day: wk * 7, dailyDone: false, res: [] }).k, 'daily', 'an old archived board waits behind the Daily');
   }
+  { // R12: a pinned page with no postcard yet: its released cards lead the catch-up, each slot has a step, the map follows it
+    const dp = JSON.parse(JSON.stringify(d));
+    const pp = (R.pageOf(card) + 2) % R.PAGES.length;
+    ok(R.pinPage(dp, pp) && !R.pinPage(dp, 99) && dp.album.pin === pp, 'pin a page');
+    const ws = R.catchWeeks(dp, wk, []).slice(0, 4);
+    ok(R.pageCards(pp).every((i) => ws.some((w) => w < wk && R.popIndex(w) === i)), 'the pinned page leads the catch-up list');
+    ok(R.pageCards(pp).every((i) => RT.cardStep(dp, wk, i, false)?.k === 'board'), 'every pinned slot names its board');
+    const gq = RT.albumNext(dp, wk, false);
+    ok(gq && gq.page === pp && gq.arch && !gq.old, `the map's step is on the pinned page (${gq && gq.page})`);
+    eq(RT.dayGoal(dp, { week: wk, day: wk * 7, dailyDone: false, res: [] }).k, 'album', 'the pinned step is the day goal');
+  }
   L.showMedal(d, wk, 'a', false);
   g = RT.albumNext(d, wk, false);
   eq([g.k, g.b, g.left], ['board', 'b', 2], 'then board B');
