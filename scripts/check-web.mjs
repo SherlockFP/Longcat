@@ -10,7 +10,7 @@ const read = (f) => readFileSync(join(ROOT, f), 'utf8');
 
 const m = JSON.parse(read('public/manifest.webmanifest'));
 must(m.name === 'Long Cat Out!', 'manifest name');
-must(m.display === 'standalone' && m.orientation === 'portrait', 'manifest display/orientation');
+must(m.display === 'fullscreen' && m.orientation === 'portrait', 'manifest display/orientation');
 must(m.start_url === './' && m.scope === './', 'manifest start_url/scope must be relative');
 for (const [sz, purpose] of [['192x192', 'any'], ['512x512', 'any'], ['512x512', 'maskable']]) {
   const i = m.icons.find((x) => x.sizes === sz && x.purpose === purpose);
