@@ -72,7 +72,7 @@ addStrings({
     rushGoal: 'Bu haftanın tahtasını olabildiğince hızlı bitir', rushBest: 'En iyin: {t} · {n}/20. sıra', rushNone: 'Henüz süren yok. Tekrar serbest, güçlendirici yok.',
     you: 'Sen', botTag: 'BOT', rushBots: 'Rakipler simüle süreli antrenman botlarıdır, gerçek oyuncu değil', rushPrizes: 'İlk 3 kafeye kupa kazanır',
     rushLastWeek: 'Geçen hafta: {n}. sıra', rushTime: 'Süre {t} sn · {n}/20. sıra', rushCupToast: '{n}. sıra! Kafene bir kupa ve +{c} altın', rushPrizeToast: '{n}. sıra: +{c} altın', runAgain: 'Tekrar koş', rushFaster: '{d} sn daha hızlı', rushSlower: 'rekorundan {d} sn yavaş',
-    notifications: 'Hatırlatmalar', notifyDenied: 'Bu tarayıcıda hatırlatmalar engelli',
+    notifications: 'Hatırlatma', notifyDenied: 'Bu tarayıcıda hatırlatmalar engelli',
     nJarTitle: 'Bahşiş kavanozun doldu!', nJarBody: 'Sakinler senin için altın biriktirdi.',
     nLivesTitle: 'Canların doldu!', nLivesBody: 'Beş can hazır: kediler seni bekliyor.',
     nShowTitle: 'Yeni Kedi Şovu haftası!', nShowBody: 'İki yeni Şov tahtası ve yeni bir Kafe Yarışı.',

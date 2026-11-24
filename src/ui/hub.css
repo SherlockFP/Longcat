@@ -40,8 +40,7 @@
 
 .hmn.cur { width: 88px; height: 88px; z-index: 6; cursor: pointer; }
 .hmn.cur b { font-size: 34px; color: #5a300f; text-shadow: 0 2px 0 rgba(255, 246, 229, .7); }
-.hmn.cur::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 4px solid rgba(255, 214, 110, .95); animation: hmPulse 1.5s ease-out infinite; pointer-events: none; }
-@keyframes hmPulse { 0% { transform: scale(.92); opacity: 1; } 100% { transform: scale(1.32); opacity: 0; } }
+.hmn.cur::after { content: ""; position: absolute; inset: -6px; border-radius: 50%; border: 4px solid rgba(255, 214, 110, .95); pointer-events: none; } /* R16: a still ring, only Play pulses on the map */
 .hmn.cur .hmtag { top: auto; bottom: -2px; }
 .hmn.lock .hmtag { top: auto; bottom: calc(100% - 6px); } /* above a locked node: the map cat perches under the next one */
 .hmn.cur.wait { filter: grayscale(.7) brightness(.95); }

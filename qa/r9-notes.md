@@ -504,3 +504,41 @@ Weak spots:
 - On a narrow phone the L121 order bubble can wrap to two lines.
 - rapid6 p95 is still 50 ms at x4.
 - The full qa.mjs was not run. Not checked on a real phone.
+
+## R16 (talking cats + Sol r15 fixes)
+
+Merged `r16/fix` (17366ee) then `r16/talk` (efdf030), both with `--no-ff`. The only conflict was `scripts/qa-fast.mjs`, where both lanes appended steps at the same place. Both sets of steps were kept. `main.js` already had talk's import and `talk.init(...)` from the talk lane.
+
+- **Sol r15 fixes (r16/fix)**
+  - Compact win card: Next is one full-width button. Home, Dare a friend and the QR card sit smaller above it.
+  - Through L15 the win card shows one café line.
+  - The first affordable build leads the win card once (`meta.buildNudge`).
+  - L9: the two seats the pair will take are outlined before it parks, and one bracket sits under them after. The dashed route is gone.
+  - Lesson boards show the keeper strip and never the order bubble. The order bubble now first shows at L13.
+  - TR share label: "Arkadaşına meydan oku".
+  - The Shop Offer badge shows only after L15.
+  - Map: only Play pulses, and at most one red badge shows.
+- **Talking cats (r16/talk)**
+  - One `#talk` bubble on the board, with a finite pop. It shows for a freed cat, a bumped cat, the bench almost full, a chain, the last cat, the boss answer and the boss giving up.
+  - Café guests say personality lines when tapped, plus one idle line every 20-30 s.
+  - Settings has a "Cat chatter" / "Kedi sohbeti" toggle (`settings.chatter`, on by default).
+  - EN and TR each have 58 lines, all 24 characters or fewer.
+- **Integration fixes**
+  - Settings overflowed at 375x667 because the sixth toggle opened a third grid row. Six toggles now sit in two rows of three, with 15 px labels that wrap at a space. The TR label changed from "Hatırlatmalar" to "Hatırlatma".
+  - The current map node's ring pulsed forever (`.hmn.cur::after`), which broke "only Play pulses". The ring is still now, and the unused `hmPulse` keyframes are removed.
+  - Big win card: the "Home" text button lost its word to the wrapping share label, and in TR the row went off-screen. The row now uses the round Home icon, as the compact card does.
+  - The QA `__qaTalk.say('bench')` hook anchored the bubble on seat 0, under the HUD chip. It now uses the seat the real moment uses (`benchSize - 2`).
+- **Checks**
+  - Build ok. `npm run check` passed on the first run.
+  - qa:fast (full, GPU): 283.9 s (4 m 45 s wall). It found 3 failures, all fixed above: the settings scroll twice, and the map pulse.
+  - Reruns after the fixes, all with 0 failures: `QA_ONLY=r16-talk-settings,f23-a11y,r16-fix-map`, `r16-fix-win,r16-talk-bench`, and `r16-fix-win` twice.
+  - One `r16-fix-win` rerun logged a `navigator.vibrate` "user hasn't tapped" console error. It did not come back on the next run, so it looks like a flake.
+
+Weak spots:
+- On the big win card, the second star overlaps the gold-time pill.
+- The big win card is still busy: a new resident, the replay, coins, stars, the build line, three share/home actions and Next.
+- The boss answer can land low on the board, over cats, and is caught mid-fade in the frame.
+- The café line bubble can sit over the guest's heart pop.
+- The L9 bracket frame still shows three identical green cushions.
+- The TR big-text settings: "Hatırlatma" is a single-line label next to two-line ones, so its toggle sits higher.
+- Not checked on a real phone.

@@ -553,7 +553,7 @@ export const ui = {
   ${drecRow(info.drec)}
   ${info.purr && !(info.chain && main) ? `<div class="purr">${info.purr}</div>` : ''}
   ${info.chain ? '' : dres}
-  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? `<button class="btn pink sm sharebtn dsend" data-act="share">${SHARE_SVG}<span>${t('dareSendResult')}</span></button>` : ''}${cardBtn()}` : `<button class="btn teal sm" data-act="home">${t('home')}</button>${shareBtn}`}</div>
+  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? `<button class="btn pink sm sharebtn dsend" data-act="share">${SHARE_SVG}<span>${t('dareSendResult')}</span></button>` : ''}${cardBtn()}` : `${homeRound}${shareBtn}`}</div>
   ${primary}
 </div></div>`);
     if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);

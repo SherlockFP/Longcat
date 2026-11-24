@@ -156,7 +156,7 @@ export function init(opts) {
   if (import.meta.env && import.meta.env.DEV) {
     window.__qaTalk = {
       say: (kind = 'free') => {
-        if (kind === 'bench') { const p = G.benchPos(0); return say(kind, p.x, p.y - p.bw * 0.5, 'qa'); }
+        if (kind === 'bench') { const p = G.benchPos(G.state.benchSize - 2); return say(kind, p.x, p.y - p.bw * 0.5, 'qa'); } // the seat the real moment uses
         if (kind === 'chain') { const p = G.carrierMouth(); return say(kind, p.x, p.y - G.cs * 0.3, 'qa'); }
         return say(kind, ...head(aliveCat()), 'qa');
       },

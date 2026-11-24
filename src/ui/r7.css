@@ -106,7 +106,10 @@ button.pill { color: var(--ink); }
 .setgrid .setrow { grid-column: span 2; flex-direction: column; justify-content: center; gap: 4px; font-size: 17px; background: #fff3dd; border: 2.5px solid var(--cream7-d); border-radius: 16px; padding: 6px 2px; min-height: 0; }
 /* the second row: Bigger text and reminders half each (R13), or one of them alone across the whole row, so a long
    label (TR "Hatırlatmalar") never widens a column */
-.setgrid .setrow:nth-child(n+4) { grid-column: span 3; }
+.setgrid .setrow:nth-child(4):nth-last-child(2), .setgrid .setrow:nth-child(5):last-child { grid-column: span 3; }
+/* six toggles (R16 Cat chatter + reminders): two rows of three, labels a size down and wrapping at a space, so the
+   card still fits 375x667 */
+.setgrid:has(> :nth-child(6)) .setrow > span { font-size: 15px; line-height: 1.1; text-align: center; }
 .setgrid .setrow:nth-child(4):last-child { grid-column: 1 / -1; flex-direction: row; gap: 12px; }
 .setgrid .toggle { width: 84px; height: 40px; font-size: 15px; }
 .setgrid .toggle i { width: 28px; height: 28px; top: 3px; }
