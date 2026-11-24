@@ -11,8 +11,9 @@ import { makeRng, hashSeed, levelSeed } from './rng.js';
 import { DIRS, DIR_KEYS, BREEDS, makeBoard, makeCat, dirKey } from './board.js';
 import { exitRay, edgeNeighbours, catsNear, DOG_NEAR } from './rules.js';
 import { dependencyDepth, replay, kittenStats } from './solver.js';
-import { compile, Sim, decisions, mechChanges } from './search.js';
+import { compile, Sim, decisions, mechChanges, searchWin } from './search.js';
 import { packPlan, pickMech, mechCandidates, mechUsed, springTune, thinPlan } from './content-mech.js';
+import { shapeParams, shapeFinish, shapeKeeps, shapeOff } from './shape.js'; // shape lane: shaped boards, folded flaps, wide / tall boxes past L50
 
 const SIZES = [[5, 6], [6, 7], [6, 8], [7, 9], [7, 10], [8, 10], [8, 11]];
 const SIZE_FROM = [1, 4, 5, 12, 20, 34, 50]; // 6x8 from L5 so four colours of chunky cats fit
@@ -140,7 +141,7 @@ export function params(n) {
     P.kittenMax = 3;
     P.pairs = 3;
   }
-  return P;
+  return shapeParams(P); // shape lane: may change w x h, adds mask / area / folds
 }
 
 // ---- hand-made tutorials (5x6) ----
@@ -235,10 +236,12 @@ function runAttempt(P, rng) {
   let evalStamp = 0;
   let filled = 0;
   const cap = P.depthTarget + 1;
+  const M = P.mask; // shape lane: 0 = void cell (open air: never occupied, rays pass over it)
+  const area = P.area || N;
 
   const pickLen = () => (rng.chance(P.longP) ? rng.int(4, P.maxLen) : rng.int(P.minLen, 3));
 
-  const free = (x, y) => x >= 0 && y >= 0 && x < W && y < H && occ[y * W + x] < 0 && stamp[y * W + x] !== cur;
+  const free = (x, y) => x >= 0 && y >= 0 && x < W && y < H && occ[y * W + x] < 0 && stamp[y * W + x] !== cur && (!M || M[y * W + x] === 1);
 
   // Grow a body backwards from the head; d = facing. Returns cells tail-first/head-last.
   function grow(hx, hy, d, len) {
@@ -276,7 +279,7 @@ function runAttempt(P, rng) {
   }
 
   function sampleHead() {
-    const idx = rng.int(0, N - 1);
+    const idx = M ? P.floor[rng.int(0, P.floor.length - 1)] : rng.int(0, N - 1);
     if (occ[idx] >= 0) return null;
     const x = idx % W;
     const y = (idx / W) | 0;
@@ -383,7 +386,7 @@ function runAttempt(P, rng) {
   let nCats = 0;
   for (;;) {
     if (nCats >= (P.maxCats || 99)) break; // big boards stay readable: at most ~18 cats, longer bodies fill the room
-    const fill = filled / N;
+    const fill = filled / area;
     const pairsLeft = P.pairs - pairsPlaced;
     const pairOpen = pairsLeft > 0 && pairFails < 60;
     let c = null;
@@ -413,7 +416,7 @@ function runAttempt(P, rng) {
 
   let depth = 0;
   for (const d of down) depth = Math.max(depth, d);
-  return { units, occ, filled, fill: filled / N, depth, pairsPlaced };
+  return { units, occ, filled, fill: filled / area, depth, pairsPlaced };
 }
 
 // ---- helpers over units ----
@@ -478,6 +481,7 @@ function placeObstacles(temp, n, rng) {
     const g = new Uint8Array(w * h);
     for (const c of temp.cats) for (const [x, y] of c.cells) g[y * w + x] = 1;
     for (const o of temp.objs) for (const [x, y] of o.cells) g[y * w + x] = 1;
+    if (temp.mask) for (let i = 0; i < w * h; i++) if (!temp.mask[i]) g[i] = 1; // shape lane: no dog / yarn on a void cell
     return g;
   };
   // empty cells on a cat's lane: a blocker there is what holds that cat. Lanes with no cat in the way come first:
@@ -566,6 +570,7 @@ function drawOrder(P, units, rng) {
     if (e.role === 'p') pid.set(e.unit, i);
   });
   const temp = makeBoard(P.w, P.h, entries.map((e) => makeCat(e.id, e.cells, 'tabby', e.role === 'k' ? pid.get(e.unit) : null)));
+  temp.mask = P.mask || null; // shape lane (placeObstacles)
   const mechs = P.n >= 8 ? placeObstacles(temp, P.n, rng) : null;
   const C = compile(temp);
   const sim = new Sim(C, 9999);
@@ -859,6 +864,15 @@ function bandScore(d, P) {
   return s;
 }
 
+// shape lane: a winning line on a folded board that never needs the last cushion (root cat ids), or null
+function foldLine(board, budget) {
+  const sim = new Sim(compile(board), board.meta.benchSize);
+  if (searchWin(sim, budget) !== 1) return null;
+  const order = sim.line.map((u) => sim.C.units[u]);
+  const rp = replay(board, order);
+  return rp.won && rp.peak <= board.meta.benchSize - 1 ? order : null;
+}
+
 const WORK_CAP = 60000;
 const MAX_EVALS = 14; // decision measurements per level (each is a few hundred solver nodes)
 
@@ -880,7 +894,7 @@ export function generate(n) {
       if (u.kitten) pairs++;
       if (u.parent.cells.length >= 4) long++;
     }
-    const fill = filled / (P.w * P.h);
+    const fill = filled / (P.area || P.w * P.h);
     const depth = depthOf(P, units);
     const cats = totalCats(units);
     const ok = fill >= P.fillMin && depth >= P.depthMin && pairs >= P.pairs && long * 4 >= units.length && cats >= needCats && kittenStats(tempBoard(P, units)).matter >= 1;
@@ -937,7 +951,7 @@ export function generate(n) {
     }
     return false;
   };
-  const maxEvals = MAX_EVALS + (P.kind === 'super' ? 50 : P.kind !== 'normal' ? 30 : P.teach ? 70 : P.after || n < 40 ? 40 : P.medium ? 30 : 22);
+  const maxEvals = MAX_EVALS + (P.kind === 'super' ? 50 : P.kind !== 'normal' ? 30 : P.teach ? 70 : P.after || n < 40 ? 40 : P.medium ? 30 : 22) + (P.evalBonus || 0); // shape lane: a shaped board measures a few more
   let fallback = null;
   let done = false;
   for (let a = 0; a < MAX_ATTEMPTS + 30 && !done && evals < maxEvals; a++) {
@@ -955,12 +969,13 @@ export function generate(n) {
   }
   if (!best) throw new Error('generate failed for level ' + n);
   const { board, d, L } = best;
+  if (P.shape && ((best.base < 1000 && P.kind === 'normal' && n !== 16) || !shapeKeeps(board, d, P, kittenStats(board), dependencyDepth(board)))) { shapeOff.add(n); return generate(n); } // shape lane: this shape missed the level's band: it ships plain
   const inBand = best.base >= 1000;
   let filled = 0;
   for (const c of board.cats) filled += c.cells.length;
   Object.assign(board.meta, {
     depth: L.depth,
-    fill: +(filled / (P.w * P.h)).toFixed(3),
+    fill: +(filled / (P.area || P.w * P.h)).toFixed(3),
     benchPeak: d.peak,
     chains: d.chains,
     chain3: d.chain3,
@@ -975,5 +990,5 @@ export function generate(n) {
     band: inBand,
     flavour: P.flavour === 'yarn' && !board.objs.some((o) => o.kind === 'yarn') ? null : P.flavour, // a yarn alley whose balls never mattered shipped plain
   });
-  return board;
+  return shapeFinish(board, P, { decide: decisions, solveLine: foldLine }); // shape lane: board.shape, folded flaps (meta follows their decisions)
 }

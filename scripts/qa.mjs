@@ -2820,6 +2820,74 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
     await ev('localStorage.removeItem("lco_save")');
   }
+  // ---- shape lane (r11x): shaped boards and folded quilts that open mid-level. 375x667: the first shaped board (L16
+  // heart) with its one-time card, heart (L96) and paw (L84) boards mid-play, the first folded board's card (L57), a tap
+  // on the flap (nothing leaves), the unfold before / during / after; the TR fold card; 1600x900. Cells stay >= 30 px.
+  // QA_SKIP_SHAPE=1 skips it. ----
+  if (!process.env.QA_SKIP_SHAPE) {
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
+    const cfgS = (lg) => `settings: { lang: '${lg}', sound: false, music: false, haptics: false }`;
+    const saveS = (lg, lv) => `localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: ${lv}, coins: 100, meta: { sessions: 3 }, cafe: { stars: 0, built: {} }, ${cfgS(lg)} })); localStorage.removeItem("lco_shape")`;
+    const sinfo = () => ev('window.__qaShape.info()');
+    const closeCards = async () => { for (const sel of ['#smodal [data-sgo]', '#cmodal [data-cgo]']) await ev(`document.querySelector(${JSON.stringify(sel)})?.click()`); await sleep(300); };
+    const cellOk = async (tag) => { const i = await sinfo(); console.log(`  shape ${tag}: ${i.shape || '-'} ${i.w}x${i.h} cell ${i.cell}px folds ${JSON.stringify(i.folds)}`); if (i.cell < 30) throw new Error(`shape ${tag}: cells ${i.cell}px < 30`); return i; };
+    await ev(saveS('en', 16));
+    await boot();
+    // 1. the first shaped board and its card (once)
+    await qa('level(16)');
+    await waitFor('window.__qaShape.card() === "shape"', 10000); await sleep(700);
+    if ((await cellOk('L16')).shape !== 'heart') throw new Error('shape: L16 should be the heart');
+    await shot('r11x-shape-first-card');
+    await closeCards(); await sleep(400);
+    await shot('r11x-shape-first-board');
+    await qa('level(16)'); await sleep(1600);
+    if (await ev('window.__qaShape.card()')) throw new Error('shape: the shaped-board card should show once');
+    // 2. heart and paw boards mid-play (three solver taps each)
+    for (const n of [96, 84]) {
+      await qa(`level(${n})`); await sleep(900); await closeCards();
+      for (let k = 0; k < 3; k++) { await waitFor('!window.__qa.state().busy', 10000); await qa('solveStep()'); await sleep(420); }
+      await waitFor('!window.__qa.state().busy', 10000); await sleep(300); await closeCards(); // a pack's new-piece card can open late
+      await cellOk('L' + n);
+      await shot(`r11x-shape-mid-${n}`);
+    }
+    // 3. the first folded board: its card, a tap on the flap (a wiggle and a toast, no cat leaves), then the unfold
+    await qa('level(57)');
+    await waitFor('window.__qaShape.card() === "fold"', 10000); await sleep(700);
+    await shot('r11x-shape-fold-card');
+    await closeCards(); await sleep(300);
+    let fi = await cellOk('L57');
+    if (!fi.folds.length || fi.folds[0].open) throw new Error('shape: L57 should start with a closed flap');
+    const alive0 = (await qa('state()')).alive;
+    const fp = await ev('window.__qaShape.flapAt(0)');
+    await tap(fp[0], fp[1]); await sleep(500);
+    if ((await qa('state()')).alive !== alive0) throw new Error('shape: a tap on the flap must not send a cat');
+    await shot('r11x-shape-fold-before');
+    for (let k = 0; k < 24 && !(await sinfo()).folds[0].open; k++) { await waitFor('!window.__qa.state().busy', 10000); await qa('solveStep()'); await sleep(380); }
+    if (!(await sinfo()).folds[0].open) throw new Error('shape: the flap should open once its count is reached');
+    await waitFor('window.__qaShape.unfolding()', 6000); await sleep(260);
+    await shot('r11x-shape-fold-mid');
+    await waitFor('!window.__qa.state().busy', 10000); await sleep(500);
+    await shot('r11x-shape-fold-after');
+    // the solver still finds the win after the flap opened
+    for (let k = 0; k < 40 && (await qa('state()')).screen !== 'win'; k++) { await waitFor('!window.__qa.state().busy', 10000).catch(() => {}); if ((await qa('solveStep()')) == null) await sleep(300); await sleep(300); }
+    await waitFor('window.__qa.state().screen === "win"', 30000);
+    // 4. TR: the fold card on the first folded board in Turkish
+    await ev(saveS('tr', 22));
+    await boot(); await qa('level(22)');
+    await waitFor('window.__qaShape.card() === "fold"', 10000); await sleep(700);
+    if (!(await ev('[...document.querySelectorAll("#smodal .card *")].every((e) => e.scrollWidth <= e.clientWidth + 1)'))) throw new Error('shape: TR fold card text clipped');
+    await shot('r11x-shape-fold-card-tr');
+    await closeCards(); await cellOk('L22');
+    await shot('r11x-shape-fold-l22-tr');
+    // 5. the wide screen: the paw board in the phone column
+    await send('Emulation.setDeviceMetricsOverride', { width: 1600, height: 900, deviceScaleFactor: 1, mobile: false });
+    await ev(saveS('en', 84) + '; localStorage.setItem("lco_shape", JSON.stringify({ shape: 1, fold: 1 }))');
+    await boot(); await qa('level(84)'); await sleep(1200); await closeCards();
+    await cellOk('L84 1600');
+    await shot('r11x-shape-desk-1600');
+    await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: +(process.env.QA_DPR || 2), mobile: true });
+    await ev('localStorage.removeItem("lco_save"); localStorage.removeItem("lco_shape")');
+  }
   if (scrollFails.length) { console.log('NO-SCROLL FAILS:'); for (const f of scrollFails) console.log('  ' + f); errs.push('no-scroll: ' + scrollFails.join(' | ')); }
   console.log('final state', JSON.stringify(await qa('state()')));
 

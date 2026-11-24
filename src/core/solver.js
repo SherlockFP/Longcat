@@ -4,7 +4,7 @@ import { fillRatio } from './board.js';
 import { compile, Sim, searchWin } from './search.js';
 
 // The plain cat layout: arrow metrics ignore dogs and yarn (they are placed so a known order still wins).
-const bare = (board) => (board.objs && board.objs.length ? { ...board, objs: [] } : board);
+const bare = (board) => ((board.objs && board.objs.length) || board.folds ? { ...board, objs: [], folds: null } : board); // shape lane: flaps too
 
 export function unitRoot(board, id) {
   let c = board.cats[id];

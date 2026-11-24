@@ -4,6 +4,7 @@
 // carrier rolls in and matching bench cats hop in (chains). No seat for a cat = fail.
 import { DIRS } from './board.js';
 import { mechBlocker, swivelNewest } from './content-mech.js';
+import { foldState, foldTick, isFolded, foldWall } from './shape.js'; // shape lane: folded flaps (the board grows)
 
 export const BENCH_DEFAULT = 5;
 export const CARRIER_CAP = 3;
@@ -85,6 +86,7 @@ export function createState(board) {
     undos: 0,
     scoops: 0,
     undo: [],
+    ...foldState(board), // shape lane: foldOf / foldCell / foldNeed / foldOpen / gone
   };
 }
 
@@ -106,13 +108,15 @@ export function exitRay(cat, w, h) {
 // First occupied ray cell: { cell:[x,y], id (cat id or -1), obj (dog/yarn index or -1) } or null when the way out is clear.
 export function findBlocker(state, id) {
   const cat = state.board.cats[id];
-  if (cat.mech === 'spring' || cat.mech === 'swivel') return mechBlocker(state, id); // content-mech.js
+  if (cat.mech === 'spring' || cat.mech === 'swivel') return (state.foldCell && foldWall(state, cat)) || mechBlocker(state, id); // content-mech.js (a closed flap first: shape.js)
   const { w, h, grid } = state;
+  const fc = state.foldCell; // a closed flap is a wall (shape.js)
   const head = cat.cells[cat.cells.length - 1];
   const [dx, dy] = DIRS[cat.dir];
   let x = head[0] + dx;
   let y = head[1] + dy;
   while (x >= 0 && y >= 0 && x < w && y < h) {
+    if (fc && fc[y * w + x] && !state.foldOpen[fc[y * w + x] - 1]) return { cell: [x, y], id: -1, obj: -1, fold: fc[y * w + x] - 1 };
     const o = grid[y * w + x];
     if (o !== -1) return { cell: [x, y], id: o >= 0 ? o : -1, obj: o >= 0 ? -1 : -2 - o };
     x += dx;
@@ -124,7 +128,8 @@ export function findBlocker(state, id) {
 export const isFrozen = (state, id) => state.frozen[id] === 1;
 // a mystery cat shows "?" until a neighbour leaves
 export const isHidden = (state, id) => state.board.cats[id].mech === 'mystery' && !state.revealed[id] && !!state.alive[id];
-export const canExit = (state, id) => !state.failed && !!state.alive[id] && !state.frozen[id] && findBlocker(state, id) === null;
+export const canExit = (state, id) => !state.failed && !!state.alive[id] && !state.frozen[id] && !isFolded(state, id) && findBlocker(state, id) === null;
+export { isFolded };
 // zzz counter of a sleeping dog (exits still needed), 0 once awake
 export const dogLeft = (state, k) => (state.objAlive[k] && state.near[k] ? Math.max(0, state.wake[k] - state.dogCount[k]) : 0);
 export const isFailed = (state) => state.failed;
@@ -194,6 +199,7 @@ function exitEffects(state, freed, events, knock) {
       } else events.push({ type: 'zzz', obj: k, left: state.wake[k] - state.dogCount[k] });
     });
   }
+  if (state.foldOf) foldTick(state, freed.length, events); // shape lane: enough cats left -> a flap opens
 }
 
 // ---- carriers and bench ----
@@ -272,6 +278,8 @@ function snapshot(state) {
     frozen: state.frozen.slice(),
     thaw: state.thaw.slice(),
     revealed: state.revealed.slice(),
+    gone: state.gone,
+    foldOpen: state.foldOpen.slice(),
   });
 }
 
@@ -298,6 +306,8 @@ export function undo(state, silent = false) {
   state.frozen = s.frozen;
   state.thaw = s.thaw;
   state.revealed = s.revealed;
+  state.gone = s.gone;
+  state.foldOpen = s.foldOpen;
   if (!silent) state.undos++;
   return { ok: true };
 }
@@ -312,6 +322,7 @@ export function tap(state, id) {
   const cat = state.board.cats[id];
   if (!cat || !state.alive[id]) return { ok: false, bonk: false, gone: true };
   if (state.failed || isWon(state)) return { ok: false, bonk: false, over: true };
+  if (isFolded(state, id)) return { ok: false, bonk: false, folded: true, id }; // under a closed flap: not on the board yet
   if (state.frozen[id]) {
     state.bonks++;
     return { ok: false, bonk: true, frozen: true, id };
@@ -336,6 +347,7 @@ export function scoop(state, id) {
   const cat = state.board.cats[id];
   if (!cat || !state.alive[id]) return { ok: false, gone: true };
   if (state.failed || isWon(state)) return { ok: false, over: true };
+  if (isFolded(state, id)) return { ok: false, folded: true };
   const f = state.carriers[0];
   const matches = f && f.color === cat.color && f.fill < f.cap;
   if (!matches && state.benchUsed >= state.benchSize) return { ok: false, full: true };

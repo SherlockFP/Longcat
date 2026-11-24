@@ -3,6 +3,7 @@
 // near: a wide ambient shadow under the rug, the belt's shadow on the wall, the rug + tiles, the bench plank, a vignette
 // live: soft shadows under the carriers on the belt (one cached blob sprite each)
 import { IMG } from './assets.js';
+import { rugShadowPath } from './shape.js'; // shape lane: a shaped rug's shadow follows its outline
 
 const OVER = 1.035; // the room is drawn this much larger than cover-fit: room for the parallax sway
 
@@ -77,7 +78,7 @@ export function buildNear(g, ctx) {
     softShadow(ctx, dpr, 'rgba(60,30,10,0.26)', 12, -4, 9, (k) => { g.rr(k, (W - bw) / 2 + 6, g.beltY - bh * 0.1, bw - 12, bh * 0.55, bh * 0.2); k.fill(); });
   }
   // a wide ambient shadow under the rug: the table sits in the room, not on it
-  softShadow(ctx, dpr, 'rgba(50,25,8,0.30)', 26, -8, 16, (k) => { g.rr(k, g.ox - R, g.oy - R, gw + 2 * R, gh + 2 * R, R + 4); k.fill(); });
+  softShadow(ctx, dpr, 'rgba(50,25,8,0.30)', 26, -8, 16, (k) => { if (!rugShadowPath(g, k, R)) g.rr(k, g.ox - R, g.oy - R, gw + 2 * R, gh + 2 * R, R + 4); k.fill(); });
   g.drawBoard(ctx);
   if (IMG['r7/cushion'] && g.vis) g.drawPlank(ctx, g.vis.bench.length);
   vignette(ctx, W, H);

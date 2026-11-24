@@ -6,6 +6,7 @@ import { hint as solverHint } from '../core/solver.js';
 import { DIRS } from '../core/board.js';
 import { IMG } from './assets.js';
 import * as content from './content.js'; // spring cats, swivel beds, pack themes (content lane)
+import * as shp from './shape.js'; // shape lane: shaped rug, quilted flaps over folded sections
 import * as fun from './r11-fun.js'; // R11 fun lane: park ghosts + carrier line, the winnable rewind's teaching mark
 import { COLOR_PAL, COLLARS, NAVY, MYSTERY_PAL } from './breeds.js';
 import { attach as perfAttach, DPR_CAP } from './perf.js';
@@ -272,12 +273,14 @@ export class Game {
       mv.frozen[cat.id] = s.frozen[cat.id] === 1;
       mv.chip[cat.id] = s.thaw[cat.id];
     }
+    shp.syncFolds(this, mv);
     this.mv = mv;
   }
 
   // reactions to cats leaving, timed to when the sprinting cat clears the edge
   scheduleMech(events, t0) {
     const at0 = t0 + 0.26;
+    shp.scheduleFold(this, events, at0); // flap counts tick, a flap opens
     for (const e of events) {
       if (e.type === 'knock') {
         this.pending.push({ at: at0, vis: true, fn: () => {
@@ -426,6 +429,7 @@ export class Game {
     if (document.querySelector('#modal, .fake-ad')) return;
     const r = this.canvas.getBoundingClientRect();
     const px = e.clientX - r.left, py = e.clientY - r.top;
+    if (shp.flapPointer(this, px, py)) return; // a closed flap: it wiggles, its cats are not on the board yet
     const id = this.hitCat(px, py);
     if (id < 0) {
       const gx = Math.floor((px - this.ox) / this.cell), gy = Math.floor((py - this.oy) / this.cell);
@@ -710,7 +714,7 @@ export class Game {
     const n = this.board.cats.length;
     const was = this.demo ? null : this.board.cats.map((c) => this.state.alive[c.id] && canExit(this.state, c.id));
     const r = tap(this.state, id);
-    if (r.gone || r.over) return r;
+    if (r.gone || r.over || r.folded) return r;
     if (!this.demo && r.ok) this.log.push({ op: 'tap', id, t: this.clock, b: (r.events || []).filter((e) => e.type === 'board').length }); // a bonk changes nothing on the board
     if (was && r.ok) { // one or two cats whose way out this tap just opened: point at them once the runner is gone
       const opened = [];
@@ -1263,6 +1267,7 @@ export class Game {
         ctx.translate(-this.W / 2, -fy);
       }
     }
+    shp.unfoldCam(this, ctx); // a flap opening: the camera leans in, then settles on the grown board
     if (this.pf) this.pf.camera(ctx); // the baked underlay follows the camera
     if (L) L.cam(ctx);
     {
@@ -1281,17 +1286,19 @@ export class Game {
     this.drawObjs(ctx);
     for (const a of this.anims) if (a.type === 'roll') this.drawRoll(ctx, a); // a knocked yarn ball rolls under the cats, never over them
     for (const id of this.order) {
-      if (!this.state.alive[id] || animIds.has(id)) continue;
+      if (!this.state.alive[id] || animIds.has(id) || shp.underFlap(this, id)) continue; // a cat under a closed flap is not drawn at all
       if (L && L.clip && !this.pf.inClip(id)) continue; // R11 fix round 1: a partial redraw paints only the cats it touches
       this.drawStatic(ctx, id);
     }
     for (const cat of this.board.cats) if (cat.kittenOf != null) this.drawTether(ctx, cat, animIds);
+    shp.drawFlaps(this, ctx); // closed flaps over their folded cats (one baked sprite each)
     if (L && L.clip) { ctx.restore(); L.clip = false; } // the dirty-rectangle clip (perf.js split)
     }
     { const ctx = L ? L.fx : this.ctx; // R11 juice: moving cats and particles (the low-res layer on a split frame)
     for (const a of this.anims) {
       if (a.type === 'bonk') this.drawBonk(ctx, a);
       else if (a.type === 'trot') this.drawTrot(ctx, a);
+      else if (a.type === 'unfold') shp.drawUnfold(this, ctx, a);
     }
     for (const p of this.parts) {
       if (p.kind === 'paw' && now >= p.delay) drawPaw(ctx, p.x, p.y, p.s, Math.min(1, p.life / p.max) * 0.8, p.dog ? '#b97a3c' : undefined);
@@ -1554,6 +1561,7 @@ export class Game {
 
   // r7: stitched rust rug (table_top 9-slice) with a soft contact shadow, ivory tiles with hairline seams
   drawBoard7(ctx) {
+    if (this.board.shape && shp.drawShapedRug(this, ctx)) return; // shape lane: the rug follows the board's outline
     const { w, h } = this.board;
     const c = this.cell;
     const gx = this.ox, gy = this.oy, gw = c * w, gh = c * h;
