@@ -9,7 +9,7 @@ const defaults = () => ({
   level: 1,
   coins: 50,
   bestStars: {},
-  settings: { sound: true, music: true, haptics: true, lang: guessLang(), notify: false, big: false }, // music: older saves get it on through the defaults merge
+  settings: { sound: true, music: true, haptics: true, lang: guessLang(), notify: false, big: false, chatter: true }, // music: older saves get it on through the defaults merge
   daily: { last: '', streak: 0, doneDay: '', shieldW: -1 }, // shieldW: the week whose one free missed day is spent
   ads: { wins: 0, lastInterstitial: 0, removeAds: false },
   counters: {},
