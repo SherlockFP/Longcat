@@ -21,6 +21,7 @@ import { drawHead } from '../game/render.js';
 import { drawHat, drawCarrierSkin } from '../game/shop-look.js';
 import { IMG } from '../game/assets.js';
 import { bonusOf } from '../game/orders.js';
+import * as bask from './basket.js'; // R13 timed baskets + start gifts: open with this chest opening
 import './boss.css';
 
 let G = null; // the Game
@@ -79,6 +80,7 @@ const SFX = {
 export function init(game, c) {
   G = game;
   ctx = c;
+  bask.init(c);
   const on = game.on;
   const wrap = (k, fn) => { const prev = on[k]; on[k] = (...a) => { const r = prev ? prev(...a) : undefined; fn(...a); return r; }; };
   wrap('land', (e) => { if (e && e.kind === 'carrier') hit(); });
@@ -272,11 +274,12 @@ function cleared(stars, go) {
   const camp = !!G && !G.demo && S.mode === 'play' && !S.daily && !S.show;
   const first = camp && S.n === save.data.level; // checked before main's onWin moves the level on
   const got = first ? B.onClear(save.data, S.n) : [];
+  const bk = first ? bask.onWin(S.n) : null; // a basket drop, a start gift
   if (got.length) { save.commit(); track('chest_earned', { n: S.n, t: got.map((e) => e.t).join('+') }); }
   const bossNow = !!cur && G.board === cur.board && camp;
   dismissIntro(true);
   if (bossNow) { cur.shown = cur.total; draw(); }
-  const fin = () => { go(stars); afterWin(got); };
+  const fin = () => { go(stars); afterWin(got, bk); };
   if (flushing || !bossNow) return fin();
   defeat(got.some((e) => e.t === 'boss'), fin);
 }
@@ -329,7 +332,7 @@ function confetti(host, n) {
 }
 
 // ---------------- win card: the flame meter and a chest waiting to be opened ----------------
-function afterWin(got) {
+function afterWin(got, bk) {
   let n = 0;
   const poll = setInterval(() => {
     const card = document.querySelector('#modal .card.win');
@@ -341,6 +344,8 @@ function afterWin(got) {
     const streak = got.some((e) => e.t === 'streak');
     if (!S.daily && !S.show) { card.insertAdjacentHTML('beforeend', flameChip(streak)); if (streak) audio.ui('sparkle'); } // the flame fills: three wins in a row
     chestButton(card);
+    if (bk && bk.gift && bk.gift.chest && B.pending(save.data)) setTimeout(openQueue, 700); // start gift 5: the milestone chest opens by itself
+    else bask.winCard(card, bk);
   }, 120);
 }
 const flameChip = (full) => {
@@ -358,7 +363,7 @@ function chestButton(card) {
 }
 
 // ---------------- chest opening ----------------
-const KIND = { wood: 'chWood', boss: 'chBoss', streak: 'chStreak' };
+const KIND = { wood: 'chWood', boss: 'chBoss', streak: 'chStreak', bask: 'bkName', gift: 'bkGift', welcome: 'bkWelcome' };
 const TIER = { common: 'tierCommon', rare: 'tierRare', epic: 'tierEpic' };
 function openQueue() {
   if (chestOn) return;
@@ -376,10 +381,11 @@ function openQueue() {
   });
 }
 
-function showChest({ e, loot }, coins0, done) {
+export const chestBusy = () => chestOn;
+export function showChest({ e, loot }, coins0, done) {
   chestOn = true;
-  const gold = e.t === 'boss';
   const tier = loot.tier;
+  const gold = e.t === 'boss' || tier !== 'common'; // a rare / epic basket or gift: the gold chest and its tier tag
   const el = document.createElement('div');
   el.id = 'chestfx';
   el.className = `t-${tier} k-${e.t}${calm() ? ' calm' : ''}`;
@@ -621,6 +627,7 @@ export function decorateMap(m, geo, curLv) {
   const W = path.clientWidth || 360;
   html.push(`<div class="bmpill" data-x="${pc.x.toFixed(1)}" data-y="${pc.y.toFixed(1)}" style="left:${clamp(pc.x, 112, W - 112).toFixed(1)}px;top:${(pc.y + 50).toFixed(1)}px"><span class="bmflame" title="${esc(t('flameTip'))}" aria-label="${esc(t('flameLine', { a: k, b: B.STREAK_LEN }))}">${img('boss_flame')}<span class="bxpips">${pips}</span></span>${right}</div>`);
   path.insertAdjacentHTML('beforeend', html.join(''));
+  bask.rail(m);
 }
 
 // hub.js, once the view is placed (scrollTop = top): when the goals strip would cover the pill (the view keeps the current

@@ -550,7 +550,7 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   ok(!applyPurchase(d, 'nope', 't'), 'unknown product refused');
   const n = fresh();
   ok(applyPurchase(n, 'noads', 'a') && n.ads.removeAds && !applyPurchase(n, 'noads', 'b'), 'No Ads flag, once');
-  eq(Object.keys(PRODUCTS).length, 7, 'seven products');
+  eq(Object.keys(PRODUCTS).length, 8, 'eight products (R13: Fast paws)');
   const many = fresh();
   for (let i = 0; i < 40; i++) applyPurchase(many, 'coins500', 'x' + i);
   ok(many.iap.tx.length <= 30, 'receipt list stays bounded');
@@ -1003,6 +1003,120 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
     ok(allAt > 30 && allAt < 120, `with chests: the cosmetics are still a sink (all owned on day ${allAt + 1})`);
     ok(gifts >= 3 && gifts <= order.length - 2, `chests give some looks, the shop sells the rest (${gifts} of ${order.length})`);
     console.log(`  boss chests 120 days: ${cpd.toFixed(1)} coins/day from chests vs ${ppd.toFixed(0)} from play (${((cpd / ppd) * 100).toFixed(0)}%), ${bpd.toFixed(2)} boosters/day (used ${used}, peak unused ${peak}), ${gifts} looks from chests, all cosmetics on day ${allAt + 1}, ${BS.state(d).beat} bosses`);
+  }
+}
+
+// ---------------- R13 timed baskets ("wait or pay"), the start gifts, Fast paws; 120 days with chests + baskets ----------------
+{
+  const K = await import('../src/game/basket.js');
+  const BS = await import('../src/game/boss.js');
+  const SH = await import('../src/game/shop.js');
+  const { levelKind } = await import('../src/core/generate.js');
+  const MIN = 60000;
+  {
+    const d = fresh();
+    eq([K.price(15 * MIN), K.price(60 * MIN), K.price(180 * MIN), K.price(10000)], [25, 90, 270, 5], 'wake prices 15 min / 1 h / 3 h / seconds');
+    ok(K.roll(6) === K.roll(6), 'the drop roll is deterministic');
+    ok(K.onClear(d, 3) === null, 'no basket before the map (L4)');
+    const drops = [];
+    for (let n = 4; n < 80 && drops.length < 3; n++) { const r = K.onClear(d, n); if (r) drops.push(r); }
+    let full = null;
+    for (let n = 80; n < 200 && !full; n++) full = K.onClear(d, n) === 'full' ? n : null;
+    ok(drops.length === 3 && !!full && K.state(d).s.length === 3, `3 slots, then "slots full" (L${full})`);
+    ok(K.start(d, 0, T0) && !K.start(d, 1, T0), 'one basket wakes at a time');
+    const s0 = K.state(d).s[0];
+    ok(K.status(s0, T0 + K.durMs(s0.r) - 1) === 'wake' && K.status(s0, T0 + K.durMs(s0.r)) === 'ready', 'the timer ends on time');
+    ok(K.take(d, 1, T0) === null, 'a sleeping basket does not open');
+    const end0 = K.state(d).s[0].end;
+    ok(K.adSkip(d, 0, T0) && K.state(d).s[0].end === end0 - K.AD_SKIP, 'an ad takes 30 min off the waking basket');
+    ok(!K.adSkip(d, 1, T0), 'no ad skip on a sleeping basket');
+    d.coins = 10;
+    ok(K.buyWake(d, 1, T0) === 0 && d.coins === 10, 'waking needs the coins');
+    d.coins = 1000;
+    const c = K.buyWake(d, 1, T0);
+    ok(c === K.price(K.durMs(K.state(d).s[1].r)) && d.coins === 1000 - c && K.status(K.state(d).s[1], T0) === 'ready', `a sleeping basket wakes for its full price (${c})`);
+    const c0 = d.coins;
+    const b0 = d.boosters.hint + d.boosters.undo + d.boosters.scoop;
+    const r = K.take(d, 1, T0);
+    ok(r && d.coins === c0 + r.loot.coins && d.boosters.hint + d.boosters.undo + d.boosters.scoop === b0 + K.TIERS[r.e.r].boost && K.state(d).s.length === 2, 'opening pays its coins and boosters and frees the slot');
+    save.commit();
+    const mod = await import('../src/kit/save.js?bask=' + Math.random());
+    ok(mod.save.data.bask && mod.save.data.bask.s.length === 2 && mod.save.data.bask.s[0].end === K.state(d).s[0].end, 'baskets and their timers survive a reload');
+    ok(applyPurchase(d, 'fastpaws', 'txfp') && K.state(d).s.every((x) => K.status(x, T0) === 'ready'), 'Fast paws wakes every basket');
+    const e = K.lootOf(d, { r: 'epic', end: 1 });
+    ok(!!e.cos && SH.item(e.cos).kind !== 'room', `an epic basket holds a look (${e.cos})`);
+  }
+  // start gifts: once each on the first 5 first clears, in order; the welcome gift once, after the tutorial levels
+  {
+    const d = fresh();
+    const c0 = d.coins;
+    const h0 = d.boosters.hint;
+    const g = [1, 2, 3, 4, 5].map((n) => K.startGift(d, n));
+    ok(g[0].loot.coins === 50 && d.boosters.hint === h0 + 2 && g[2].basket && K.status(K.state(d).s[0], T0) === 'ready' && !!g[3].loot.cos && SH.owns(d, g[3].loot.cos) && g[4].chest, 'L1 coins, L2 a booster, L3 an awake basket, L4 a look, L5 the chest');
+    ok(K.startGift(d, 5) === null && K.startGift(d, 6) === null, 'each start gift pays once');
+    ok(d.coins === c0 + 50, 'start gift coins');
+    d.level = 3;
+    ok(K.welcome(d) === null, 'no welcome before the map');
+    d.level = 4;
+    const w = K.welcome(d);
+    ok(w && w.loot.coins === 100 && K.welcome(d) === null, 'the welcome gift pays once');
+    const old = fresh();
+    old.level = 40;
+    ok(K.startGift(old, 40) === null && K.welcome(old) === null, 'a player past L5 before the update gets no start or welcome gift');
+  }
+  // 120 days: the boss sim's steady player (10 / 6 / 4 levels a day, one level in 6 retried) opens every chest and waits
+  // out every basket between sessions (no coins spent on waking). Baskets stay a side income on top of the chests, the
+  // boosters from both stay bounded, the cosmetics stay a sink.
+  {
+    const d = fresh();
+    d.level = 1;
+    const order = SH.COSMETICS.filter((x) => x.cost).sort((x, y) => x.cost - y.cost);
+    let play = 0, chestCoins = 0, bkCoins = 0, cs = 0, peak = 0, used = 0, allAt = -1, dropped = 0, lost = 0, opened = 0, late = 0;
+    for (let dd = 0; dd < 120; dd++) {
+      const c0 = d.coins;
+      const tn = T0 + dd * 86400000;
+      for (let k = 0; k < (dd === 0 ? 10 : dd < 7 ? 6 : 4); k++) {
+        const n = d.level;
+        const kind = levelKind(n);
+        if (n % 6 === 4) BS.markFail(d, n);
+        BS.startAttempt(d);
+        d.coins += 20 + Math.floor(n / 5) + 5 + (kind === 'boss' ? 20 : kind === 'hard' ? 10 : 0) + Math.min(15, Math.floor(dd / 6));
+        BS.onClear(d, n);
+        const r = K.onClear(d, n);
+        if (r === 'full') lost++; else if (r) dropped++;
+        d.level++;
+        const use = (n % 3 === 0 ? 1 : 0) + (kind !== 'normal' ? 1 : 0);
+        for (let u = 0; u < use && cs > 0; u++) { cs--; used++; }
+      }
+      d.coins += 15 + 15 + 20 + E.CHEST.coins + (E.LOGIN_REWARDS[dd % 7].coins || 0);
+      play += d.coins - c0;
+      const b1 = d.boosters.hint + d.boosters.undo + d.boosters.scoop;
+      let c1 = d.coins;
+      while (BS.pending(d)) BS.openNext(d);
+      chestCoins += d.coins - c1;
+      c1 = d.coins;
+      let t = tn;
+      while (K.state(d).s.length) { K.start(d, 0, t); t = K.state(d).s[0].end; K.take(d, 0, t); opened++; } // one at a time, back to back
+      if (t - tn >= 86400000) late++;
+      bkCoins += d.coins - c1;
+      cs += d.boosters.hint + d.boosters.undo + d.boosters.scoop - b1;
+      const lv = Math.round((d.coins - c0) * 0.25);
+      d.coins -= lv;
+      for (const it of order) if (!SH.owns(d, it.id) && d.coins - it.cost >= 300) SH.cosBuy(d, it.id);
+      const x = SH.dealOf(E.dayOf(T0) + dd);
+      if (d.coins - x.price >= 300) SH.dealBuy(d, E.dayOf(T0) + dd); // the deal of the day, as in the boss sim
+      if (allAt < 0 && order.every((it) => SH.owns(d, it.id))) allAt = dd;
+      peak = Math.max(peak, cs);
+      ok(d.coins >= 0, `basket sim day ${dd + 1}: coins never go negative`);
+    }
+    const ppd = play / 120, cpd = chestCoins / 120, kpd = bkCoins / 120;
+    ok(!late, `every day's baskets wake before the next day (${late} late days)`);
+    ok(kpd >= 5 && kpd <= ppd * 0.1, `basket coins a day ${kpd.toFixed(1)} within 5..10% of play (${ppd.toFixed(0)})`);
+    ok(cpd + kpd <= ppd * 0.25, `chests + baskets ${(cpd + kpd).toFixed(1)} coins a day <= 25% of play`);
+    ok(peak <= 16, `chest + basket boosters never pile up (peak unused ${peak})`);
+    ok(lost <= (dropped + lost) * 0.15, `few baskets lost to full slots for a player who waits them out (${lost} of ${dropped + lost})`);
+    ok(allAt > 30 && allAt < 120, `with chests and baskets the cosmetics are still a sink (all owned on day ${allAt + 1})`);
+    console.log(`  baskets 120 days: ${opened} opened, ${lost} lost to full slots, ${kpd.toFixed(1)} coins/day (chests ${cpd.toFixed(1)}, play ${ppd.toFixed(0)}: ${(((cpd + kpd) / ppd) * 100).toFixed(0)}% together), boosters peak unused ${peak} (used ${used}), all cosmetics on day ${allAt + 1}`);
   }
 }
 

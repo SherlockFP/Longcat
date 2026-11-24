@@ -9,7 +9,7 @@ const defaults = () => ({
   level: 1,
   coins: 50,
   bestStars: {},
-  settings: { sound: true, music: true, haptics: true, lang: guessLang(), notify: false }, // music: older saves get it on through the defaults merge
+  settings: { sound: true, music: true, haptics: true, lang: guessLang(), notify: false, big: false }, // music: older saves get it on through the defaults merge
   daily: { last: '', streak: 0, doneDay: '', shieldW: -1 }, // shieldW: the week whose one free missed day is spent
   ads: { wins: 0, lastInterstitial: 0, removeAds: false },
   counters: {},
@@ -106,6 +106,7 @@ function validate(d) {
   s.sound = !!s.sound;
   s.music = !!s.music;
   s.haptics = !!s.haptics;
+  s.big = !!s.big; // R13: Settings > Bigger text (main.js bigText)
   if (s.lang !== 'en' && s.lang !== 'tr') s.lang = guessLang();
   d.daily.last = String(d.daily.last ?? '');
   d.daily.doneDay = String(d.daily.doneDay ?? '');
@@ -235,6 +236,7 @@ function load() {
       if (isObj(m.vis)) d.vis = m.vis;
       if (isObj(m.orders)) d.orders = m.orders; // adoption orders: free-form, sanitised in src/game/orders.js
       if (isObj(m.hub)) d.hub = { seen: Number.isInteger(m.hub.seen) && m.hub.seen >= 0 ? m.hub.seen : 0 }; // hub lane (src/ui/hub.js): the last level the map showed
+      if (isObj(m.bask)) d.bask = m.bask; // R13 timed baskets + start gifts (sanitised in src/game/basket.js state())
       if (isObj(m.boss)) d.boss = m.boss; // R11 boss lane: chests + flame streak (sanitised in src/game/boss.js state())
       if (isObj(m.ret)) d.ret = m.ret; // R11 ret lane: day wins + a print waiting to be hung (sanitised in src/game/r11-ret.js state())
       for (const [o, ks] of [['pop', ['daily', 'paid']], ['album', ['cards', 'hung']]]) if (isObj(m[o])) for (const k of ks) if (isObj(m[o][k])) d[o][k] = m[o][k];

@@ -339,6 +339,62 @@ try {
     await size(375, 667);
   });
 
+  // ---- R13: timed baskets, the start gifts, accessibility ----
+  // icon-only buttons with no name, and tap targets under 44px (hit-tested: 21px out from the centre each way still lands
+  // on the button, so a grown hit area counts), in the given root; buttons in a scrolled-away part are skipped
+  const A11Y = (root) => `[...document.querySelectorAll(${JSON.stringify(root)})].flatMap((r) => [...r.querySelectorAll('button, [role=button], a[href]')]).filter((b) => b.getClientRects().length && getComputedStyle(b).visibility !== 'hidden').map((b) => { const r = b.getBoundingClientRect(); const cx = r.left + r.width / 2, cy = r.top + r.height / 2; for (let p = b.parentElement; p; p = p.parentElement) { if (getComputedStyle(p).overflowY === 'visible') continue; const q = p.getBoundingClientRect(); if (r.top - 6 < q.top || r.bottom + 6 > q.bottom) return ''; } // at / past the edge of its scrolling list
+    const at = (x, y) => { const h = document.elementFromPoint(x, y); return !!h && h.closest('button, [role=button], a[href]') === b; }; if (!at(cx, cy)) return '';
+    const nm = (b.getAttribute('aria-label') || b.textContent || '').trim(); const bad = []; if (!nm) bad.push('no-name');
+    if (![[cx - 21, cy], [cx + 21, cy], [cx, cy - 21], [cx, cy + 21]].every(([x, y]) => at(x, y))) bad.push(Math.round(r.width) + 'x' + Math.round(r.height));
+    return bad.length ? (b.className || b.tagName).toString().slice(0, 30) + ' ' + (b.dataset.act || '') + ' ' + bad.join(',') : ''; }).filter(Boolean)`;
+  await step('f21-baskets', async () => {
+    const tn = Date.now();
+    await put(30, { extra: `bask: { s: [{ r: 'common', end: 1 }, { r: 'rare', end: ${tn + 40 * 60000} }, { r: 'epic', end: 0 }], k: 0, g: 5, w: 1 }` }); await boot(); await home();
+    must((await ev('document.querySelectorAll("#cafe .bkrail button.bkslot").length')) === 3, 'three baskets on the map rail');
+    must(await inView('#cafe .bkslot.s-wake') && await uncovered('#cafe .bkslot.s-ready b'), 'the rail is in view and on top');
+    must(/\d+m/.test(await ev('document.querySelector("#cafe .bkslot.s-wake b").textContent')), 'a waking basket shows its time left as text');
+    await shot('f21-baskets-map');
+    await ev('document.querySelector("#cafe .bkslot.s-wake").click()'); await sleep(400);
+    must(+(await ev('document.querySelector("#sheet .bkprice")?.textContent')) === 60, 'the 40-minute wake costs 60 coins');
+    await shot('f21-baskets-sheet');
+    await ev('document.querySelector("#sheet [data-bk=coins]").click()');
+    await waitFor('!!document.getElementById("chestfx")', 4000);
+    for (let k = 0; k < 6; k++) { await ev('document.getElementById("chestfx")?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))'); await sleep(120); }
+    await waitFor('!document.querySelector("#chestfx .cxgo").hidden', 12000); await sleep(400);
+    await shot('f21-baskets-open');
+    await ev('document.querySelector("#chestfx .cxgo").click()'); await sleep(900);
+    must((await ev('document.querySelectorAll("#cafe .bkrail button.bkslot").length')) === 2 && (await ev('window.__bask.st().k')) === 1, 'the bought basket opened and left the rail');
+  });
+  await step('f22-gift-l1', async () => {
+    await put(1, { shape: true }); await ev('localStorage.setItem("lco_save", localStorage.getItem("lco_save").replace(\'"coins":400\', \'"coins":50\'))'); await boot();
+    await qa('level(1)'); await sleep(500); await qa('slow(5)'); await qa('winNow()');
+    await winCard(); await qa('slow(1)');
+    await waitFor('!!document.getElementById("chestfx")', 4000);
+    must(/gift/i.test(await ev('document.querySelector("#chestfx .cxhead").textContent')), 'the first win opens a gift');
+    await waitFor('!document.querySelector("#chestfx .cxgo").hidden', 12000); await sleep(500);
+    await shot('f22-gift-l1');
+    await put(6, { extra: `bask: { s: [], k: 0, g: 5, w: 1 }` }); await boot(); // L6 drops a rare basket (basket.js roll)
+    await qa('level(6)'); await sleep(500); await qa('slow(5)'); await qa('winNow()');
+    await winCard(); await qa('slow(1)');
+    must(await inView('#modal .bknote') && /Rare basket/.test(await ev('document.querySelector("#modal .bknote").textContent')), 'the win card says a rare basket dropped');
+    must(await ev(`(() => { const a = document.querySelector('#modal .bknote').getBoundingClientRect(); return [...document.querySelectorAll('#modal .bxflame, #modal .bxchest')].every((e) => { const b = e.getBoundingClientRect(); return !(a.left < b.right && b.left < a.right && a.top < b.bottom && b.top < a.bottom); }); })()`), 'the note clears the flame chip and the chest');
+    await shot('f22-win-drop');
+  });
+  await step('f23-a11y', async () => {
+    await put(30, { lg: 'tr', extra: `bask: { s: [{ r: 'rare', end: 0 }], k: 0, g: 5, w: 1 }, settings: { lang: 'tr', sound: false, music: false, haptics: false, big: true }` }); await boot(); await home();
+    must(await ev('document.documentElement.classList.contains("bigtext")'), 'Bigger text is on after a reload');
+    const map = await ev(A11Y('#cafe'));
+    must(!map.length, 'map: every button named and >= 44px: ' + JSON.stringify(map));
+    await shot('f23-a11y-map-big');
+    await qa('screen("shop")'); await sleep(600);
+    const shop = await ev(A11Y('#sheet'));
+    must(!shop.length, 'shop: every button named and >= 44px: ' + JSON.stringify(shop));
+    await shot('f23-a11y-shop-big');
+    await ev('document.querySelector("#sheet [data-act=closesheet]").click()'); await sleep(300);
+    await qa('screen("settings")'); await sleep(400);
+    await shot('f23-a11y-settings-big');
+  });
+
   const secs = ((Date.now() - T0) / 1000).toFixed(1);
   console.log(`\nqa-fast: ${secs}s, ${fails.length} failure(s), ${errs.length} console error(s)`);
   for (const f of fails) console.log('  FAIL ' + f);
