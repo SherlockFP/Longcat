@@ -166,13 +166,13 @@ export function disc(ctx, x, y, r) {
 // [start offset (cells), spacing (cells)] per pattern
 function patGap(kind) {
   switch (kind) {
-    case 'stripes': return [0.2, 0.42];
+    case 'stripes': return [0.2, 0.46];
     case 'zigzag': return [0.2, 0.4];
-    case 'dots': return [0.15, 0.32];
-    case 'hearts': return [0.2, 0.5];
-    case 'stars': return [0.2, 0.5];
-    case 'clouds': return [0.22, 0.55];
-    case 'spots': return [0.15, 0.42];
+    case 'dots': return [0.15, 0.42];
+    case 'hearts': return [0.2, 0.64];
+    case 'stars': return [0.2, 0.58];
+    case 'clouds': return [0.22, 0.62];
+    case 'spots': return [0.15, 0.52];
     case 'qmark': return [0.2, 0.55];
     default: return [1, 99];
   }
@@ -421,12 +421,13 @@ export function drawBody(ctx, path, a, b, o) {
     discs(ctx, path, a, b, c, w * 0.49);
     ctx.clip();
   }
-  const wrap = (p, f, th, r, fn) => {
-    const hw = w * 0.5 * f, sn = Math.sin(th);
+  const wrap = (p, f, th, r, fn, up = false) => {
+    const hw = w * 0.5 * f, sn = Math.sin(th), rot = Math.atan2(p.tx, -p.ty);
     ctx.save();
     ctx.translate(p.x - p.ty * hw * sn, p.y + p.tx * hw * sn);
-    ctx.rotate(Math.atan2(p.tx, -p.ty)); // local x = across the body, local up = toward the head
+    ctx.rotate(rot); // local x = across the body, local up = toward the head
     ctx.scale(Math.max(0.42, Math.cos(th)), 1);
+    if (up) ctx.rotate(-rot * 0.9); // hearts stay upright-ish on left / down-facing cats (near-round squash: no visible shear)
     fn(ctx, 0, 0, r * f);
     ctx.restore();
   };
@@ -436,11 +437,16 @@ export function drawBody(ctx, path, a, b, o) {
   const near = (s) => { const u = Math.max(0, Math.min(1, (end - s) / (c * 0.9))); return u * u * (3 - 2 * u); }; // 0 at the shoulder
   const calmC = (s) => mixHex(pal.mark, pal.base, 0.14 + 0.46 * (1 - near(s))); // the mark eased toward the fur colour
   const calmS = (s) => 0.6 + 0.4 * near(s);
+  // R12 appeal (sol-r12-3 fix 4): every pattern gets that calm near the head, fewer and smaller marks, and no flank
+  // marks on a bend (where the inner side bunches up), so the face and exit arrow read first on a crowded board
+  const bent = (s) => { const q = sample(path, s - c * 0.3), r = sample(path, s + c * 0.3); return q.tx * r.tx + q.ty * r.ty < 0.7; };
   let i = 0;
-  for (let s = a + gap[0] * c; s < end; s += c * gap[1], i++) {
+  for (let s = a + gap[0] * c; s < end - c * 0.12; s += c * gap[1], i++) {
     const p = sample(path, s);
     const nx = -p.ty, ny = p.tx;
     const side = i % 2 ? 1 : -1;
+    const k = calmS(s), flank = !bent(s);
+    ctx.fillStyle = ctx.strokeStyle = calmC(s);
     switch (pal.pat) {
       case 'stripes': {
         if (shp) {
@@ -465,28 +471,25 @@ export function drawBody(ctx, path, a, b, o) {
         break;
       }
       case 'dots':
-        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.4, w * (i % 3 === 0 ? 0.2 : 0.16), disc); wrap(p, f, -side * 1.15, w * 0.13, disc); break; }
-        disc(ctx, p.x + nx * side * w * 0.18, p.y + ny * side * w * 0.18, w * (i % 3 === 0 ? 0.2 : 0.15));
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.4, w * (i % 3 === 0 ? 0.18 : 0.15) * k, disc); if (flank && i % 2) wrap(p, f, -side * 1.15, w * 0.12 * k, disc); break; }
+        disc(ctx, p.x + nx * side * w * 0.18, p.y + ny * side * w * 0.18, w * (i % 3 === 0 ? 0.18 : 0.14) * k);
         break;
-      case 'hearts': {
-        ctx.fillStyle = calmC(s);
-        const k = calmS(s);
-        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.28, w * 0.25 * k, heart); wrap(p, f, -side * 1.15, w * 0.13 * k, heart); break; }
-        heart(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.25 * k);
+      case 'hearts':
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.22, w * 0.23 * k, heart, true); break; }
+        heart(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.23 * k);
         break;
-      }
       case 'stars':
-        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.28, w * 0.3, star); wrap(p, f, -side * 1.15, w * 0.15, star); break; }
-        star(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.3);
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.28, w * 0.28 * k, star); if (flank) wrap(p, f, -side * 1.15, w * 0.14 * k, star); break; }
+        star(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.28 * k);
         break;
       case 'clouds':
-        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.25, w * 0.26, cloud); wrap(p, f, -side * 1.2, w * 0.15, cloud); break; }
-        cloud(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.26);
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * 0.25, w * 0.25 * k, cloud); if (flank) wrap(p, f, -side * 1.2, w * 0.14 * k, cloud); break; }
+        cloud(ctx, p.x + nx * side * w * 0.1, p.y + ny * side * w * 0.1, w * 0.25 * k);
         break;
       case 'spots': {
         const off = (i * 7 + seed) % 3 ? 0.17 : 0.04;
-        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * (off > 0.1 ? 0.75 : 0.12), w * (0.13 + 0.05 * ((i + seed) % 3)), disc); if ((i + seed) % 2) wrap(p, f, -side * 1.2, w * 0.11, disc); break; }
-        disc(ctx, p.x + nx * side * w * off, p.y + ny * side * w * off, w * (0.13 + 0.05 * ((i + seed) % 3)));
+        if (shp) { const f = prof(s, a, b, c); wrap(p, f, side * (off > 0.1 ? 0.75 : 0.12), w * (0.12 + 0.04 * ((i + seed) % 3)) * k, disc); if (flank && (i + seed) % 2) wrap(p, f, -side * 1.2, w * 0.1 * k, disc); break; }
+        disc(ctx, p.x + nx * side * w * off, p.y + ny * side * w * off, w * (0.12 + 0.04 * ((i + seed) % 3)) * k);
         break;
       }
       case 'qmark':
