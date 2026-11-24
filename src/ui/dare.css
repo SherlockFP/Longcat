@@ -7,7 +7,7 @@
 .card.win.compact .r7row .btn.sharebtn .shi { width: 21px; height: 21px; }
 .sharebtn .nudge { position: absolute; right: 4px; bottom: calc(100% + 9px); padding: 5px 11px; border-radius: 12px; background: #fffaf0; border: 3px solid var(--ink, #1d2b53); color: var(--ink, #1d2b53); font: 700 15px/1.1 var(--font); font-style: normal; white-space: nowrap; text-shadow: none; box-shadow: 0 3px 0 rgba(0,0,0,.18); pointer-events: none; animation: nudgeBob 1.6s ease-in-out infinite; }
 .sharebtn .nudge::after { content: ''; position: absolute; right: 28px; top: 100%; width: 10px; height: 10px; background: #fffaf0; border-right: 3px solid var(--ink, #1d2b53); border-bottom: 3px solid var(--ink, #1d2b53); transform: translateY(-6px) rotate(45deg); }
-.card.win .sharebtn:has(.nudge) { animation: sharePulse 1.6s ease-in-out infinite; }
+.card.win .sharebtn:has(.nudge) { animation: sharePulse 1.6s ease-in-out 4; }
 @keyframes nudgeBob { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
 @keyframes sharePulse { 0%, 100% { box-shadow: 0 5px 0 #c23a68, 0 0 0 0 rgba(255,93,143,.55); } 50% { box-shadow: 0 5px 0 #c23a68, 0 0 0 8px rgba(255,93,143,0); } }
 @media (prefers-reduced-motion: reduce) { .sharebtn .nudge, .card.win .sharebtn:has(.nudge) { animation: none; } }

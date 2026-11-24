@@ -923,16 +923,7 @@ function clipPreview() {
     if (cv) clip.start(cv);
     const b = document.querySelector('#modal [data-act=shareclip]');
     if (b) b.hidden = false;
-    // R11 fix round 1 (sol-r12-1 virality): the video starts on its own a moment later, so from the first frame the
-    // thumbnail says it is being prepared (not "Make video", which read as a third thing to do)
-    if (b && canRecord() && !clip.failed() && !clip.ready() && !clip.encoding()) {
-      b.classList.add('making');
-      const sp = b.querySelector('span');
-      if (sp) sp.textContent = t('virVideoBg', { p: 0 });
-      b.setAttribute('aria-label', t('virVideoPrep'));
-      clipCap(t('virVideoPrep'));
-    }
-    vir.onWinCard(); // R11 vir: the QR card is drawn and the video starts recording in the background
+    vir.onWinCard(); // R11 vir: the QR card is drawn (the video waits for a tap)
   }, 60); // one frame after the card mounts: the card's pop-in starts before the replay to the peak runs
 }
 // R11 fix round 1: the line under the thumbnail: "Preparing video" until the clip is ready, then "Send video"

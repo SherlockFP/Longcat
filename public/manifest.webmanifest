@@ -4,7 +4,7 @@
   "description": "Tap the long cats out of the room and fill the carriers.",
   "start_url": "./",
   "scope": "./",
-  "display": "standalone",
+  "display": "fullscreen",
   "orientation": "portrait",
   "background_color": "#03dbcc",
   "theme_color": "#03dbcc",

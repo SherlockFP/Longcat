@@ -133,6 +133,7 @@ class Perf {
     host.parentNode.insertBefore(this.topCv, this.fxDom.edgeL.nextSibling);
     this.tctx = this.topCv.getContext('2d');
     this.topY = null;
+    this.splitShow(false); // R13: empty full-screen layers still cost a blend per frame on phones
     this.domSet = {};
     this.pulseAt = null;
     try {
@@ -143,14 +144,15 @@ class Perf {
     this.setRenderer(wantedRenderer());
   }
 
-  // the room sways a few px over ten seconds (compositor animation, none with reduced motion)
+  // R13: the room no longer sways: a running animation made the compositor blend every full-screen layer each frame
+  // (phone lag even on an idle board)
   drift() {
-    try {
-      if (this.driftAnim) this.driftAnim.cancel();
-      this.driftAnim = null;
-      if (this.g.calm || !this.far.animate) return;
-      this.driftAnim = this.far.animate([{ translate: '-3px 0px' }, { translate: '3px -2px' }], { duration: 10000, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' });
-    } catch { /* old engine: a still room */ }
+    if (this.driftAnim) this.driftAnim.cancel();
+    this.driftAnim = null;
+  }
+
+  splitShow(on) {
+    this.boardCv.style.display = this.fxCv.style.display = this.topCv.style.display = on ? 'block' : 'none';
   }
 
   async setRenderer(r) {
@@ -739,6 +741,7 @@ class Perf {
       this.boardDrawn = true; // a whole frame on #game: every still cat rastered
       if (this.splitOn) {
         this.splitOn = false;
+        this.splitShow(false);
         this.bsig = null;
         this.bctx.setTransform(1, 0, 0, 1, 0, 0);
         this.bctx.clearRect(0, 0, this.boardCv.width, this.boardCv.height);
@@ -755,6 +758,7 @@ class Perf {
     const bw = Math.round(g.W * d), bh = Math.round(g.H * d), fw = Math.round(g.W * k), fh = Math.round(g.H * k);
     if (this.boardCv.width !== bw || this.boardCv.height !== bh) { this.boardCv.width = bw; this.boardCv.height = bh; this.bsig = null; }
     if (this.fxCv.width !== fw || this.fxCv.height !== fh) { this.fxCv.width = fw; this.fxCv.height = fh; this.fxClean = false; }
+    if (!this.splitOn) this.splitShow(true);
     this.splitOn = true;
     this.L.top = this.tctx;
     if (move) stats.split++; else stats.hold = (stats.hold || 0) + 1;

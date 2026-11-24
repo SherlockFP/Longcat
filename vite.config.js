@@ -36,7 +36,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const r = e.request;
   if (r.method !== 'GET' || new URL(r.url).origin !== location.origin) return; // fonts and ad scripts go straight to the network
-  e.respondWith(caches.match(r, { ignoreSearch: true }).then((hit) => hit || fetch(r).catch(() => (r.mode === 'navigate' ? caches.match('./') : Response.error()))));
+  // the page itself: network first, so a new deploy shows on the next open (the old cache-first page kept phones on old builds)
+  if (r.mode === 'navigate') return e.respondWith(fetch(r).catch(() => caches.match('./')));
+  e.respondWith(caches.match(r, { ignoreSearch: true }).then((hit) => hit || fetch(r).catch(() => Response.error())));
 });
 `);
     },

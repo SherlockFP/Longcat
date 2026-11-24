@@ -6,7 +6,7 @@
 import { t } from '../i18n.js';
 import { save } from '../kit/save.js';
 import { track } from '../kit/analytics.js';
-import { shareFile, canRecord } from '../kit/clip.js';
+import { shareFile } from '../kit/clip.js';
 import { dareCard } from '../kit/r11-vir-card.js';
 import { qrMatrix } from '../kit/qr.js';
 import { IMG } from '../game/assets.js';
@@ -53,16 +53,7 @@ export function onWinCard() {
   const token = ctx.S.winToken;
   const live = () => token === ctx.S.winToken && ctx.ui.screen === 'win';
   setTimeout(() => { if (live()) cardPng().catch(() => {}); }, 150);
-  const { clip } = ctx;
-  if (!clip.has() || !canRecord()) return;
-  // after the card's pop-in and the coin flight: the replay is a second game running at 30 fps
-  setTimeout(() => {
-    if (!live() || clip.ready() || clip.encoding() || clip.failed()) return;
-    track('clip_bg', { dpr: clip.src && clip.src.dpr });
-    Promise.resolve(ctx.makeClip(true)).then((r) => {
-      if (r && r.lag > 1.25 && r.dpr > 1 && !vir().slow) { vir().slow = 1; save.commit(); track('clip_slow', { lag: Math.round(r.lag * 100) }); }
-    });
-  }, 700);
+  // R13: no background video recording: its real-time encode made the win card stutter on phones; a tap makes it
 }
 
 export function init(c) {
