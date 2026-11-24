@@ -2,10 +2,11 @@
 import { IMG, TONE, FACES } from './assets.js';
 import { NAVY, COLOR_PAL, MYSTERY_PAL } from './breeds.js';
 
-export function shade(hex, f) {
+export function shade(hex, f, asHex = false) {
   const n = parseInt(hex.slice(1), 16);
   let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
   if (f < 0) { r *= 1 + f; g *= 1 + f; b *= 1 + f; } else { r += (255 - r) * f; g += (255 - g) * f; b += (255 - b) * f; }
+  if (asHex) return '#' + ((1 << 24) | (r << 16) | (g << 8) | b).toString(16).slice(1);
   return `rgb(${r | 0},${g | 0},${b | 0})`;
 }
 // R11 fix round 2: a colour u of the way from hex a to hex b (opaque, so overlapping strokes never darken)
@@ -133,7 +134,7 @@ const shapeHw = (w, s, a, b, c) => (w / 2) * prof(s, a, b, c);
 export function bodyShape(ctx, path, a, b, c, pal) { if (shaped(pal)) fillShape(ctx, path, a, b, c); else strokeTaper(ctx, path, a, b, c); }
 
 // ---- shapes ----
-function heart(ctx, x, y, r) {
+export function heart(ctx, x, y, r) {
   ctx.beginPath();
   ctx.moveTo(x, y + r * 0.9);
   ctx.bezierCurveTo(x - r * 1.5, y - r * 0.1, x - r * 0.7, y - r * 1.2, x, y - r * 0.45);
@@ -268,6 +269,33 @@ function seam(ctx, path, a, b, w, c, al, shp) {
     ctx.stroke();
   }
   ctx.restore();
+}
+
+// A few small accents along the body spline, under the breed's markings.
+function drawFur(ctx, path, a, b, c, w, skin) {
+  const span = b - a - c * 0.32;
+  if (span <= 0) return;
+  const swirl = skin === 'skin_candy';
+  const gold = skin === 'skin_golden';
+  const count = Math.min(9, Math.ceil(span / (c * (swirl ? 0.52 : 0.29))));
+  ctx.fillStyle = gold ? '#ffd23f' : swirl ? 'rgba(255,249,248,0.8)' : '#f4f2ff';
+  ctx.beginPath();
+  for (let i = 0; i < count; i++) {
+    const p = sample(path, a + span * (i + 0.5) / count);
+    const off = w * (gold ? -0.31 : (i % 2 ? 0.24 : -0.22));
+    const x = p.x - p.ty * off, y = p.y + p.tx * off;
+    if (swirl) {
+      const dx = p.tx * w * 0.17, dy = p.ty * w * 0.17;
+      ctx.moveTo(x - dx, y - dy);
+      ctx.quadraticCurveTo(x + dy, y - dx, x + dx, y + dy);
+      ctx.quadraticCurveTo(x + dy * 0.3, y - dx * 0.3, x - dx, y - dy);
+    } else {
+      const r = w * (gold ? 0.075 : i % 3 === 0 ? 0.07 : 0.045);
+      ctx.moveTo(x + r, y);
+      ctx.arc(x, y, r, 0, Math.PI * 2);
+    }
+  }
+  ctx.fill();
 }
 
 // o: { pal (COLOR_PAL entry), c (cell px), w (body width px), alpha, glow, collar, seed, run (leg phase or null), wag (tail angle) }
@@ -406,6 +434,7 @@ export function drawBody(ctx, path, a, b, o) {
     ctx.restore();
   }
 
+  if (pal.skin) drawFur(ctx, path, a, b, c, w, pal.skin);
   // pattern, anchored to the body (offset from the tail), not to the path; bold so it reads at a glance
   ctx.fillStyle = pal.mark;
   ctx.strokeStyle = pal.mark;

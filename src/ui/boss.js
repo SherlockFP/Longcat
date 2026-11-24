@@ -18,7 +18,8 @@ import { track } from '../kit/analytics.js';
 import * as B from '../game/boss.js';
 import * as SH from '../game/shop.js';
 import { drawHead } from '../game/render.js';
-import { drawHat, drawCarrierSkin } from '../game/shop-look.js';
+import { drawHat, drawCarrierSkin, drawSkinCat } from '../game/shop-look.js';
+import { LOOKS } from '../../data/shop.js';
 import { IMG } from '../game/assets.js';
 import { bonusOf } from '../game/orders.js';
 import * as bask from './basket.js'; // R13 timed baskets + start gifts: open with this chest opening
@@ -499,7 +500,7 @@ function itemArt(it) {
   if (it.k === 'coins') return img('hud_coin');
   if (it.k === 'cos') {
     const x = SH.item(it.id);
-    return x.kind === 'room' ? img(x.art, 'cxroom') : `<canvas class="cxcv" data-cos="${it.id}" width="96" height="96"></canvas>`;
+    return x.kind === 'room' ? img(LOOKS[x.look].room, 'cxroom') : `<canvas class="cxcv" data-cos="${it.id}" width="96" height="96"></canvas>`;
   }
   return img('btn_' + it.k);
 }
@@ -510,6 +511,7 @@ function paintCos(cv, id) {
   const h = cv.height;
   c.clearRect(0, 0, w, h);
   if (x.kind === 'hat') { drawHead(c, 0, w / 2, h * 0.6, 0, w * 0.6, 1, { v: 0 }); drawHat(c, w / 2, h * 0.6, 0, w * 0.6, 1, id); return; }
+  if (x.kind === 'skin') { drawSkinCat(c, w * 0.68, h * 0.55, w * 0.42, id); return; }
   const art = IMG[`r7/carrier_${COLOR_PAL[1].name}`];
   if (!art) return;
   const cw = w * 0.8;
@@ -527,7 +529,7 @@ function reveal(host, x, tier) {
   r.id = 'cxreveal';
   r.className = `t-${tier}`;
   r.innerHTML = `<div class="cxrays"></div><i class="cxtier">${t(TIER[tier])}</i><small>${t(x.kind === 'room' ? 'chNewRoom' : 'chNewLook')}</small>
-<div class="cxbig">${x.kind === 'room' ? img(x.art, 'cxroom') : `<canvas data-cos="${x.id}" width="200" height="200"></canvas>`}</div>
+<div class="cxbig">${x.kind === 'room' ? img(LOOKS[x.look].room, 'cxroom') : `<canvas data-cos="${x.id}" width="200" height="200"></canvas>`}</div>
 <b>${esc(loc(x.name))}</b><div class="cxrow"><button class="btn green sm cxwear">${t(x.kind === 'room' ? 'chUse' : 'chWear')}</button><button class="btn sm cxok">${t('chCollect')}</button></div>`;
   host.appendChild(r);
   const cv = r.querySelector('canvas[data-cos]');

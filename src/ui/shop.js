@@ -3,6 +3,7 @@
 // (Hint, Undo, Scoop, Extra Cushion packs for coins) and Cosmetics (cat outfits, carrier skins, room themes, with a live
 // preview). Replaces ui.shop; its taps are the actions below (main.js merges them into its action table).
 import { t, lang } from '../i18n.js';
+import { LOOKS } from '../../data/shop.js';
 import { assetUrl, COLOR_PAL } from '../game/breeds.js';
 import { save } from '../kit/save.js';
 import * as iap from '../kit/iap.js';
@@ -15,7 +16,7 @@ import { dayOf, dayStart } from '../game/econ.js';
 import * as S from '../game/shop.js';
 import { IMG } from '../game/assets.js';
 import { drawHead } from '../game/render.js';
-import { drawHat, drawCarrierSkin, roomImage } from '../game/shop-look.js';
+import { drawHat, drawCarrierSkin, drawSkinCat, lookOf, roomImage } from '../game/shop-look.js';
 import { ui, openSheet } from './ui.js';
 import './shop.css';
 
@@ -30,7 +31,7 @@ const num = (n) => n.toLocaleString(lang());
 const ICON = { hint: 'btn_hint', undo: 'btn_undo', scoop: 'btn_scoop', cushion: 'cushion' };
 const NAME = { hint: 'hint', undo: 'undo', scoop: 'scoop', cushion: 'shCushion' };
 const DESC = { hint: 'shHintD', undo: 'shUndoD', scoop: 'shScoopD', cushion: 'shCushD' };
-const CAT = { hat: 'shCatHat', car: 'shCatCar', room: 'shCatRoom' };
+const CAT = { hat: 'shCatHat', skin: 'shCatSkin', car: 'shCatCar', room: 'shCatRoom' };
 const TABS = [['offers', 'shTabOffers'], ['coins', 'shTabCoins'], ['boosters', 'shTabBoost'], ['style', 'shTabStyle']];
 const noAdSvg = '<svg class="s4noad" viewBox="0 0 48 48"><circle cx="24" cy="24" r="19" fill="#fff6e5" stroke="#e5484d" stroke-width="5"/><rect x="13" y="16" width="22" height="16" rx="4" fill="#26334A"/><path d="M21.5 20.2v7.6l6.4-3.8z" fill="#fff6e5"/><path d="M10.5 37.5 37.5 10.5" stroke="#e5484d" stroke-width="5" stroke-linecap="round"/></svg>';
 
@@ -105,6 +106,8 @@ function boostersPage() {
 }
 
 // ---- Cosmetics ----
+const roomLook = (id) => LOOKS[lookOf(null, id)];
+
 function stylePage() {
   const d = save.data;
   S.ensure(d);
@@ -118,8 +121,11 @@ function stylePage() {
   const tile = (x) => {
     const own = S.owns(d, x.id);
     const on = S.equipped(d, x.kind) === x.id;
-    const thumb = x.kind === 'room' ? r7(x.art, 's4room') : `<canvas class="s4cv" data-prev="${x.id}"></canvas>`;
-    const foot = on ? `<span class="s4on">${t('shInUse')}</span>` : own ? `<span class="s4own">✓</span>` : `<span class="s4price">${coin()}${num(x.cost)}</span>`;
+    const look = x.kind === 'room' && roomLook(x.id);
+    const thumb = look
+      ? `<div class="s4thumb" data-room="${look.room}">${r7(roomImage(look.room) ? look.room : LOOKS.garden.room, 's4room')}<i class="s4rug" style="background:${look.rug};border-color:${look.stitch}"></i></div>`
+      : `<canvas class="s4cv" data-prev="${x.id}"></canvas>`;
+    const foot = on ? `<span class="s4on">${t('shInUse')}</span>` : own ? `<span class="s4own">✓</span>` : `<span class="s4price">${x.iap ? t('shPremium') : coin() + num(x.cost)}</span>`;
     return `<button class="s4item ${sel === x.id ? 'sel' : ''} ${on ? 'eq' : ''}" data-act="shopsel" data-id="${x.id}" aria-label="${x.name[lang()] || x.name.en}">${thumb}<small class="s4nm">${x.name[lang()] || x.name.en}</small>${foot}</button>`;
   };
   const it = S.item(sel);
@@ -127,6 +133,7 @@ function stylePage() {
   const on = S.equipped(d, it.kind) === sel;
   const act = on ? `<button class="btn teal s4act" disabled>${t('shInUse')}</button>`
     : own ? `<button class="btn green s4act" data-act="shopcos" data-id="${sel}">${t('shUse')}</button>`
+      : it.iap ? cashBtn(it.iap)
       : `<button class="btn green s4act ${d.coins < it.cost ? 'dim' : ''}" data-act="shopcos" data-id="${sel}">${coin()}<b>${num(it.cost)}</b></button>`;
   return `<div class="s4stage"><canvas class="s4scene" data-scene="1"></canvas><i class="s4pv">${t('shPreview')}</i><b class="s4sname">${it.name[lang()] || it.name.en}</b></div>
 <div class="s4cats">${cats}</div>
@@ -157,32 +164,58 @@ function carrierAt(ctx, x, y, cw, skin, color = 1) {
   ctx.restore();
 }
 const headAt = (ctx, x, y, size, hat, color = 0, v = 0) => { drawHead(ctx, color, x, y, 0, size, 1, { v }); drawHat(ctx, x, y, 0, size, 1, hat); };
+function rugAt(ctx, x, y, size, look) {
+  ctx.fillStyle = look.rug;
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, size, size, size * 0.12);
+  else ctx.rect(x, y, size, size);
+  ctx.fill();
+  ctx.strokeStyle = look.stitch;
+  ctx.setLineDash([3, 2]); ctx.stroke(); ctx.setLineDash([]);
+  const tile = IMG['r7/tile_ivory'];
+  const pad = size * 0.11, cell = (size - 2 * pad) / 2;
+  for (let j = 0; j < 2; j++) for (let i = 0; i < 2; i++) {
+    const tx = x + pad + i * cell, ty = y + pad + j * cell;
+    if (tile) ctx.drawImage(tile, tx, ty, cell - 1, cell - 1);
+    else { ctx.fillStyle = '#FFF0D3'; ctx.fillRect(tx, ty, cell - 1, cell - 1); }
+  }
+  if (look.tile) { ctx.fillStyle = look.tile; ctx.fillRect(x + pad, y + pad, 2 * cell - 1, 2 * cell - 1); }
+}
 function drawPreviews() {
   const root = document.querySelector('#sheet .shop4');
   if (!root) return;
+  for (const thumb of root.querySelectorAll('[data-room]')) {
+    const img = thumb.querySelector('img');
+    const room = roomImage(thumb.dataset.room, function () { if (img.isConnected) img.src = this.src; });
+    if (room && img.src !== room.src) img.src = room.src;
+  }
   for (const cv of root.querySelectorAll('canvas[data-prev]')) {
     const it = S.item(cv.dataset.prev);
     const { ctx, w, h } = fitCanvas(cv);
     if (it.kind === 'hat') headAt(ctx, w / 2, h * 0.6, Math.min(w, h) * 0.62, it.id, 0, 0);
+    else if (it.kind === 'skin') drawSkinCat(ctx, w * 0.76, h * 0.55, Math.min(w * 0.48, h * 0.7), it.id, 'hat_none');
     else carrierAt(ctx, w / 2, h * 0.92, Math.min(w, h * 1.2) * 0.9, it.id, 1);
   }
   const sc = root.querySelector('canvas[data-scene]');
-  if (sc) {
-    const { ctx, w, h } = fitCanvas(sc);
-    const d = save.data;
-    const pick = (k) => (V.cat === k ? V.sel[k] : S.equipped(d, k));
-    const room = roomImage(pick('room')) || IMG['r7/bg_play_room'];
-    if (room) { // cover-fit, the window corner and the top of the table in view
-      const s = Math.max(w / room.width, (h * 1.9) / room.height);
-      ctx.drawImage(room, w - room.width * s, 0, room.width * s, room.height * s);
-    }
-    const im = roomImage(pick('room'));
-    if (!im && pick('room') !== 'room_sunny') setTimeout(drawPreviews, 250); // the theme art is still on its way
-    carrierAt(ctx, w * 0.76, h * 0.94, Math.min(h * 0.78, w * 0.36), pick('car'), 1);
-    const hs = Math.min(h * 0.46, w * 0.19);
-    headAt(ctx, w * 0.17, h * 0.95 - hs * 0.62, hs, pick('hat'), 0, 0);
-    headAt(ctx, w * 0.39, h * 0.97 - hs * 0.55, hs * 0.86, pick('hat'), 2, 2);
+  if (sc) drawScene(sc);
+}
+function drawScene(sc) {
+  if (!sc.isConnected) return;
+  const { ctx, w, h } = fitCanvas(sc);
+  const pick = (k) => (V.cat === k ? V.sel[k] : S.equipped(save.data, k));
+  const look = roomLook(pick('room'));
+  const art = roomImage(look.room, () => drawScene(sc));
+  const room = art || IMG['r7/bg_play_room'];
+  if (room) { // cover-fit, the window corner and the top of the table in view
+    const s = Math.max(w / room.width, (h * 1.9) / room.height);
+    ctx.drawImage(room, w - room.width * s, 0, room.width * s, room.height * s);
   }
+  if (!art && look.wash) { ctx.fillStyle = look.wash; ctx.fillRect(0, 0, w, h); }
+  const rs = Math.min(h * 0.56, w * 0.24);
+  rugAt(ctx, w * 0.25 - rs / 2, h * 0.45 - rs / 2, rs, look);
+  const hs = Math.min(h * 0.46, w * 0.17);
+  drawSkinCat(ctx, w * 0.56, h * 0.7, hs, pick('skin'), pick('hat'));
+  carrierAt(ctx, w * 0.78, h * 0.88, Math.min(h * 0.78, w * 0.36), pick('car'), 0);
 }
 
 // ---- the sheet ----
@@ -231,7 +264,7 @@ export function shopActions(sync) {
     stab4({ tab }) { if (!TABS.some(([k]) => k === tab)) return; V.tab = tab; render(); track('shop_tab', { tab }); },
     shopcat({ k }) { if (!S.KINDS.includes(k)) return; V.cat = k; render(); },
     shopsel({ id }) { const it = S.item(id); if (!it) return; V.cat = it.kind; V.sel[it.kind] = id; render(); },
-    shopsoon() { ui.toast(t('shSoonToast')); },
+    shopsoon({ id }) { ui.toast(t(iap.PRODUCTS[id]?.cos ? 'shPremiumSoon' : 'shSoonToast')); },
     shopdeal() {
       const x = S.dealBuy(save.data, day());
       if (!x) return ui.toast(t('noCoins'));

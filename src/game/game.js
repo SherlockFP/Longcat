@@ -4,6 +4,7 @@
 import { createState, tap, scoop as rulesScoop, undo as rulesUndo, canUndo, addSeat, isWon, stars as starsOf, isHidden, dogLeft, findBlocker, THAW_NEED, DOG_NEAR, canExit } from '../core/rules.js';
 import { hint as solverHint } from '../core/solver.js';
 import { DIRS } from '../core/board.js';
+import { LOOKS } from '../../data/shop.js';
 import { IMG } from './assets.js';
 import * as content from './content.js'; // spring cats, swivel beds, pack themes (content lane)
 import * as shp from './shape.js'; // shape lane: shaped rug, quilted flaps over folded sections
@@ -11,7 +12,7 @@ import * as fun from './r11-fun.js'; // R11 fun lane: park ghosts + carrier line
 import { COLOR_PAL, COLLARS, NAVY, MYSTERY_PAL } from './breeds.js';
 import { attach as perfAttach, DPR_CAP } from './perf.js';
 import { landKick, stampScale, drawLandPulse, closeSquash, stampSprite } from './r11-juice.js'; // R11 juice: final-landing beat, lid slam
-import { roomImage as shopRoom, drawHat as shopHat, drawCarrierSkin as shopSkin } from './shop-look.js';
+import { lookOf, roomId, roomImage, skinPal, drawHat as shopHat, drawCarrierSkin as shopSkin } from './shop-look.js';
 import { makePath, sample, drawBody, drawHead, drawArrow, drawChevron, drawPaw, drawPatBadge, drawPaws, disc, FONT, drawDog, drawYarn, drawIce, drawQuestion, drawBadge, head7, shade } from './render.js';
 
 const FACE = { U: -Math.PI / 2, R: 0, D: Math.PI / 2, L: Math.PI };
@@ -1483,26 +1484,44 @@ export class Game {
     ctx.restore();
   }
 
-  // the room behind the board (the perf underlay bakes it): a bought room (shop lane) beats a pack theme (content lane),
-  // else the sunny room
+  // The active board look and its backdrop. Chapter looks keep the pack's room art.
   roomArt() {
-    const bought = shopRoom();
-    if (bought) return { img: bought, key: 'shop:' + bought.src };
-    return content.room(this) || { img: IMG['r7/bg_play_room'], key: 'play' };
+    const id = roomId();
+    const theme = lookOf(this, id);
+    const look = LOOKS[theme];
+    const pack = id === 'room_sunny' && content.room(this);
+    if (pack) return { ...pack, key: `${theme}|pack:${pack.key}|${pack.img.src}`, look, pack: true };
+    const img = roomImage(look.room);
+    return { img: img || IMG['r7/bg_play_room'], wash: img ? null : look.wash, key: `${theme}|${!!img}`, look };
   }
 
   drawBg(ctx) {
-    if (this.pf && this.pf.bg(ctx)) { if (!shopRoom()) content.ambient(this, ctx); return; } // baked room: clear, then only the pack's live rain/petals
+    const art = this.roomArt();
+    if (this.pf && this.pf.bg(ctx, art)) {
+      if (art.pack) content.ambient(this, ctx);
+      return;
+    }
     const { W, H } = this;
-    const bought = shopRoom();
-    if (!bought && content.bg(this, ctx)) return; // a themed pack room (content lane); a bought room wins
-    const room = bought || IMG['r7/bg_play_room']; // a shop room theme, else the sunny room
+    let room = art.img;
     if (room) {
+      if (art.wash) {
+        // The renderer without an underlay still bakes the wash once for this image.
+        if (this.roomTint?.img !== room || this.roomTint.wash !== art.wash) {
+          const cv = document.createElement('canvas');
+          cv.width = room.width; cv.height = room.height;
+          const k = cv.getContext('2d');
+          k.drawImage(room, 0, 0);
+          k.fillStyle = art.wash; k.fillRect(0, 0, cv.width, cv.height);
+          this.roomTint = { img: room, wash: art.wash, cv };
+        }
+        room = this.roomTint.cv;
+      }
       // the sunny boarding room: one painted layer, cover-fit, never tiled
       const sc = Math.max(W / room.width, H / room.height);
       const dw = room.width * sc, dh = room.height * sc;
       ctx.drawImage(room, (W - dw) / 2, (H - dh) / 2, dw, dh);
-      if (!this.calm) { // the window light drifts by a few percent (cheap: one gradient)
+      if (art.pack) content.ambient(this, ctx);
+      else if (!this.calm) { // the window light drifts by a few percent (cheap: one gradient)
         const a = 0.05 + 0.03 * Math.sin(this.clock * (Math.PI / 3));
         const g = ctx.createLinearGradient(W, 0, W * 0.35, H * 0.55);
         g.addColorStop(0, `rgba(255,214,140,${a * 2})`);
@@ -1560,8 +1579,8 @@ export class Game {
   }
 
   // r7: stitched rust rug (table_top 9-slice) with a soft contact shadow, ivory tiles with hairline seams
-  drawBoard7(ctx) {
-    if (this.board.shape && shp.drawShapedRug(this, ctx)) return; // shape lane: the rug follows the board's outline
+  drawBoard7(ctx, look) {
+    if (this.board.shape && shp.drawShapedRug(this, ctx, look)) return; // shape lane: the rug follows the board's outline
     const { w, h } = this.board;
     const c = this.cell;
     const gx = this.ox, gy = this.oy, gw = c * w, gh = c * h;
@@ -1577,6 +1596,15 @@ export class Game {
     ctx.fill();
     ctx.restore();
     this.nine(ctx, IMG['r7/table_top'], x0, y0, rw, rh, 84, R * 1.55);
+    if (look.rug !== LOOKS.garden.rug) {
+      ctx.save();
+      this.rr(ctx, x0 + 1, y0 + 1, rw - 2, rh - 2, R * 1.75);
+      ctx.clip();
+      ctx.globalCompositeOperation = 'color';
+      ctx.fillStyle = look.rug;
+      ctx.fillRect(x0, y0, rw, rh);
+      ctx.restore();
+    }
     ctx.fillStyle = '#E8D5B0';
     ctx.fillRect(gx - 1, gy - 1, gw + 2, gh + 2);
     const tile = IMG['r7/tile_ivory'];
@@ -1584,6 +1612,7 @@ export class Game {
       if (tile) ctx.drawImage(tile, gx + x * c + 0.75, gy + y * c + 0.75, c - 1.5, c - 1.5);
       else { ctx.fillStyle = '#FFF0D3'; ctx.fillRect(gx + x * c + 0.75, gy + y * c + 0.75, c - 1.5, c - 1.5); }
     }
+    if (look.tile) { ctx.fillStyle = look.tile; ctx.fillRect(gx, gy, gw, gh); }
     // a whisper of the window light across the tiles (evenly lit: just enough to feel the sun)
     const g = ctx.createLinearGradient(gx + gw, gy, gx, gy + gh);
     g.addColorStop(0, 'rgba(255,236,190,0.18)');
@@ -1593,9 +1622,9 @@ export class Game {
   }
 
   // orange fringed rug with a cream grid
-  drawBoard(ctx) {
+  drawBoard(ctx, look = LOOKS.garden) {
     if (this.pf && this.pf.owns(ctx)) return; // baked on the underlay
-    if (IMG['r7/table_top']) { this.drawBoard7(ctx); return; }
+    if (IMG['r7/table_top']) { this.drawBoard7(ctx, look); return; }
     const { w, h } = this.board;
     const c = this.cell;
     const gx = this.ox, gy = this.oy, gw = c * w, gh = c * h;
@@ -1696,7 +1725,7 @@ export class Game {
   }
 
   // r7: one oak plank cut into seat cells (any seat count keeps a hollow under every cushion)
-  drawPlank(ctx, n) {
+  drawPlank(ctx, n, look) {
     const im = IMG['r7/bench_plank'];
     if (!im || !n || (this.pf && this.pf.owns(ctx))) return; // baked on the underlay
     const { step } = this.benchGeom(n);
@@ -1715,6 +1744,16 @@ export class Game {
     for (let i = 0; i < n; i++) ctx.drawImage(im, cap, 0, cellS, sh, x0 + i * step, y0, step + 0.6, h);
     ctx.drawImage(im, im.width - cap, 0, cap, sh, x0 + n * step, y0, cap * sc, h);
     ctx.restore();
+    if (look?.plank) {
+      const x = x0 - cap * sc, w = n * step + 2 * cap * sc;
+      ctx.save();
+      this.rr(ctx, x + 1, y0 + 1, w - 2, h * 0.83, Math.min(cap * sc, h * 0.42));
+      ctx.clip();
+      ctx.globalCompositeOperation = 'color';
+      ctx.fillStyle = look.plank;
+      ctx.fillRect(x, y0, w, h);
+      ctx.restore();
+    }
   }
 
   drawBench(ctx) {
@@ -2127,6 +2166,7 @@ export class Game {
   // body + head over a path window
   paintCat(ctx, cat, path, a, b, o = {}) {
     const st = this.catStyle(cat);
+    st.pal = skinPal(st.pal);
     const c = this.cell;
     if (!(o.still && this.pf && this.pf.body(ctx, cat, path, a, b, st, o))) drawBody(ctx, path, a, b, {
       pal: st.pal, c, w: st.w * (o.wScale || 1), alpha: o.alpha, glow: o.glow, collar: st.collar, seed: cat.id * 3 + 1,
@@ -2383,7 +2423,7 @@ export class Game {
       const len = m.len;
       const arrived = this.clock >= m.arrAt;
       const fold = arrived ? easeOut(clamp((this.clock - m.arrAt) / FOLD, 0, 1)) : 0;
-      const pal = COLOR_PAL[cats[m.id].color];
+      const pal = skinPal(COLOR_PAL[cats[m.id].color]);
       if (fold >= 1) { // folded in: only the tail is left, and it snaps in with a white-tip flick
         if (!this.calm) this.drawFlick(ctx, m, pal, (this.clock - m.arrAt - FOLD) / FLICK);
         continue;

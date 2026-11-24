@@ -8,9 +8,9 @@ export { UNIT, BOOSTERS, PACKS, DEALS, AD_GIFTS, COSMETICS, KINDS };
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const int = (v, lo = 0) => (Number.isInteger(v) && v >= lo ? v : lo);
 export const item = (id) => COSMETICS.find((x) => x.id === id) || null;
-const firstOf = (kind) => COSMETICS.find((x) => x.kind === kind && !x.cost).id;
+const firstOf = (kind) => COSMETICS.find((x) => x.kind === kind && !x.cost && !x.iap).id;
 
-// d.shop.{ own: { cosmetic id: 1 }, eq: { hat, car, room }, deal: { day, got }, ad: { day, coins, hint }, cush, cushLv }
+// d.shop.{ own: { cosmetic id: 1 }, eq: { hat, skin, car, room }, deal: { day, got }, ad: { day, coins, hint }, cush, cushLv }
 export function ensure(d) {
   const s = d.shop;
   if (!isObj(s.own)) s.own = {};
@@ -117,12 +117,12 @@ export function cushionAt(d, n) {
 }
 
 // ---- cosmetics ----
-export const owns = (d, id) => { const it = item(id); return !!it && (!it.cost || !!d.shop.own?.[id]); };
+export const owns = (d, id) => { const it = item(id); return !!it && ((!it.cost && !it.iap) || !!d.shop.own?.[id]); };
 export const equipped = (d, kind) => ensure(d).eq[kind];
 export function cosBuy(d, id) { // -> coins paid, 0 when owned already / not enough coins; a bought item goes on at once
   const it = item(id);
   ensure(d);
-  if (!it || owns(d, id) || d.coins < it.cost) return 0;
+  if (!it || it.iap || owns(d, id) || d.coins < it.cost) return 0;
   d.coins -= it.cost;
   d.shop.own[id] = 1;
   d.shop.eq[it.kind] = id;

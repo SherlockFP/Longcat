@@ -200,22 +200,6 @@ export function run(game, lead, t0) {
 // ---- pack rooms ----
 // game.theme (set per level by src/ui/content.js): the pack's painted room, a colour wash and a light ambient effect
 // (rain on the glass, flour motes, petals, twinkling stars). Static with reduced motion.
-export function bg(game, ctx) {
-  const art = room(game);
-  if (!art) return false;
-  const { W, H } = game;
-  const sc = Math.max(W / art.img.width, H / art.img.height);
-  const dw = art.img.width * sc;
-  const dh = art.img.height * sc;
-  ctx.drawImage(art.img, (W - dw) / 2, (H - dh) / 2, dw, dh);
-  if (art.wash) {
-    ctx.fillStyle = art.wash;
-    ctx.fillRect(0, 0, W, H);
-  }
-  ambient(game, ctx);
-  return true;
-}
-
 // the pack room as data, for the perf lane's baked underlay: { img, wash, key }, or null for the default room
 export function room(game) {
   const th = !game.demo && game.theme && THEMES[game.theme];

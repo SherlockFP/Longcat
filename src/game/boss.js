@@ -55,7 +55,7 @@ const CYCLE = ['common', 'rare', 'common', 'epic', 'common', 'rare'];
 export const tierOf = (i) => (i <= 0 ? 'rare' : CYCLE[(i - 1) % CYCLE.length]);
 
 // the next cosmetic a chest gives: rare = an outfit or carrier skin, epic = a play-room theme (cheapest unowned first)
-const RARE = COSMETICS.filter((x) => x.cost && (x.kind === 'hat' || x.kind === 'car')).sort((a, b) => a.cost - b.cost);
+const RARE = COSMETICS.filter((x) => x.cost && x.kind !== 'room').sort((a, b) => a.cost - b.cost);
 const EPIC = COSMETICS.filter((x) => x.cost && x.kind === 'room').sort((a, b) => a.cost - b.cost);
 const firstFree = (d, list) => { shopEnsure(d); return list.find((x) => !owns(d, x.id)) || null; };
 export const nextLook = (d) => firstFree(d, RARE); // the cheapest outfit / carrier skin not owned yet (or null)

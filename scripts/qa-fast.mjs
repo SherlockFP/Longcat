@@ -394,6 +394,21 @@ try {
     await qa('screen("settings")'); await sleep(400);
     await shot('f23-a11y-settings-big');
   });
+  await step('looks-board', async () => {
+    await put(25, { extra: "shop: { eq: { room: 'room_sunny', skin: 'skin_galaxy' }, own: { skin_galaxy: 1 } }" }); await boot();
+    await qa('level(25)'); await closeCards(); await sleep(700);
+    must((await qa('state()')).level === 25 && await inView('#pf-near'), 'level 25 renders the chapter board');
+    must(await ev('window.__qa.state().level === 25 && JSON.parse(localStorage.getItem("lco_save")).shop.eq.skin === "skin_galaxy"'), 'galaxy fur stays on');
+    await shot('looks-board');
+  });
+  await step('looks-shop', async () => {
+    await put(25); await boot();
+    await qa('screen("shop")'); await qa('act("stab4", {tab:"style"})');
+    await qa('act("shopcat", {k:"skin"})'); await qa('act("shopsel", {id:"skin_galaxy"})'); await sleep(450);
+    must(await inView('.k-skin .s4item.sel[data-id="skin_galaxy"]'), 'Galaxy fur is selected and visible');
+    must(await inView('.s4cat[data-k="room"]'), 'all four categories fit on screen');
+    await shot('looks-shop');
+  });
 
   const secs = ((Date.now() - T0) / 1000).toFixed(1);
   console.log(`\nqa-fast: ${secs}s, ${fails.length} failure(s), ${errs.length} console error(s)`);

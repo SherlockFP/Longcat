@@ -7,12 +7,11 @@ import { rugShadowPath } from './shape.js'; // shape lane: a shaped rug's shadow
 
 const OVER = 1.035; // the room is drawn this much larger than cover-fit: room for the parallax sway
 
-export function buildFar(g, ctx) {
+export function buildFar(g, ctx, art) {
   const { W, H, dpr } = g;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  const art = g.roomArt ? g.roomArt() : { img: IMG['r7/bg_play_room'] }; // a pack theme or a bought room, else sunny
   const room = art.img;
   if (!room) { g.drawBg(ctx); return; }
   const sc = Math.max(W / room.width, H / room.height) * OVER;
@@ -62,7 +61,7 @@ function softShadow(ctx, dpr, color, blur, dx, dy, shape) {
   ctx.restore();
 }
 
-export function buildNear(g, ctx) {
+export function buildNear(g, ctx, look) {
   const { W, H, dpr } = g;
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
@@ -79,8 +78,8 @@ export function buildNear(g, ctx) {
   }
   // a wide ambient shadow under the rug: the table sits in the room, not on it
   softShadow(ctx, dpr, 'rgba(50,25,8,0.30)', 26, -8, 16, (k) => { if (!rugShadowPath(g, k, R)) g.rr(k, g.ox - R, g.oy - R, gw + 2 * R, gh + 2 * R, R + 4); k.fill(); });
-  g.drawBoard(ctx);
-  if (IMG['r7/cushion'] && g.vis) g.drawPlank(ctx, g.vis.bench.length);
+  g.drawBoard(ctx, look);
+  if (IMG['r7/cushion'] && g.vis) g.drawPlank(ctx, g.vis.bench.length, look);
   vignette(ctx, W, H);
 }
 
