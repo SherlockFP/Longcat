@@ -1,0 +1,15 @@
+/* Talking cats (src/ui/talk.js): one small bubble, placed once per show, a finite pop. Sits under #ui in the DOM, so any
+   card that opens covers it. No shadow filter, no infinite animation (R16 perf rule). */
+#talk { position: fixed; left: 0; top: 0; pointer-events: none; transform: translate(-50%, -100%); --tx: 0px; }
+#talk[hidden] { display: none; }
+#talk b { position: relative; display: block; max-width: 180px; width: max-content; padding: 4px 10px 5px; background: var(--cream, #fff6e5); border: 2.5px solid var(--navy, #1d2b53); border-radius: 14px; font: 800 13px/1.15 var(--body, sans-serif); color: var(--navy, #1d2b53); text-align: center; transform-origin: calc(50% + var(--tx)) 110%; opacity: 0; }
+#talk b::after { content: ""; position: absolute; left: calc(50% + var(--tx)); bottom: -8px; width: 10px; height: 10px; margin-left: -6px; background: inherit; border: solid var(--navy, #1d2b53); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+#talk.dn { transform: translate(-50%, 0); }
+#talk.dn b { transform-origin: calc(50% + var(--tx)) -10%; }
+#talk.dn b::after { bottom: auto; top: -8px; border-width: 2.5px 0 0 2.5px; }
+#talk.on b { animation: talkPop 1.6s ease-out both; }
+#talk.on.calm b { animation-name: talkFade; }
+@keyframes talkPop { 0% { opacity: 0; transform: scale(.4); } 12% { opacity: 1; transform: scale(1.08); } 20%, 85% { opacity: 1; transform: scale(1); } 100% { opacity: 0; transform: scale(.92); } }
+@keyframes talkFade { 0% { opacity: 0; } 10%, 85% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { #talk.on b { animation-name: talkFade; } }
+.talksr { position: fixed; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; left: 0; top: 0; }

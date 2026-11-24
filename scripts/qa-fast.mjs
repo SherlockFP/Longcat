@@ -547,6 +547,49 @@ try {
     });
   }
 
+  // ---- R16 talking cats: one bubble on the board (forced via __qaTalk), the boss answer, a café guest's line, the toggle ----
+  const talkIn = async () => { const b = await ev('window.__qaTalk.box()'); return b.r > b.l && b.l >= 0 && b.t >= 0 && b.r <= 376 && b.b <= 668; };
+  for (const [kind, lg] of [['bonk', 'en'], ['bench', 'tr'], ['chain', 'en'], ['last', 'tr']]) {
+    await step('r16-talk-' + kind, async () => {
+      await put(12, { lg }); await boot(); await qa('level(12)'); await sleep(900); await closeCards();
+      must(await ev(`window.__qaTalk.say('${kind}')`), `L12: a ${kind} bubble shows`);
+      await sleep(250);
+      const s = await ev('window.__qaTalk.text()');
+      must(s.length > 1 && s.length <= 24, `the ${kind} line is short: "${s}"`);
+      must(await talkIn(), `the ${kind} bubble sits inside the screen`);
+      must((await ev('document.querySelectorAll("#talk").length')) === 1, 'one bubble element');
+      await shot('r16-talk-' + kind);
+    });
+  }
+  await step('r16-talk-boss', async () => {
+    await put(20); await boot(); await qa('level(20)'); await sleep(700); await closeCards();
+    must(!(await ev('window.__qaTalk.text()')), 'no bubble while the boss intro is up');
+    await ev('document.getElementById("bossintro")?.click()'); await waitFor('!document.getElementById("bossintro")', 6000);
+    await waitFor('!!window.__qaTalk.text()', 6000).catch(() => must(false, 'a cat answers the boss after the intro'));
+    await shot('r16-talk-boss');
+  });
+  await step('r16-talk-quiet-l2', async () => {
+    await put(2); await boot(); await qa('level(2)'); await sleep(900);
+    await qa('tap(0)'); await sleep(400);
+    must(!(await ev('window.__qaTalk.text()')), 'L2: no chatter in the opening');
+  });
+  await step('r16-talk-cafe', async () => {
+    await put(15, { lg: 'tr', extra: 'cafe: { stars: 2, built: { counter_counter: 1, counter_pastry: 1, counter_lamps: 1, counter_chalkboard: 1 } }' }); await boot();
+    await ev('document.querySelector("#cafe .tab[data-act=cafeview]")?.click()'); await sleep(900);
+    const s = await ev('window.__qaTalk.hub()');
+    must(s.length > 1, `a tapped guest speaks: "${s}"`);
+    await sleep(500);
+    await shot('r16-talk-cafe');
+  });
+  await step('r16-talk-settings', async () => {
+    await put(12); await boot(); await qa('screen("settings")'); await sleep(500);
+    must(await ev('!!document.querySelector("#modal [data-k=chatter].on")'), 'Settings: Cat chatter, on by default');
+    await shot('r16-talk-settings');
+    await ev('document.querySelector("#modal [data-k=chatter]").click()'); await sleep(300);
+    await qa('level(12)'); await sleep(900); await closeCards();
+    must(!(await ev(`window.__qaTalk.say('free')`)), 'chatter off: no bubble');
+  });
+
   const secs = ((Date.now() - T0) / 1000).toFixed(1);
   console.log(`\nqa-fast: ${secs}s, ${fails.length} failure(s), ${errs.length} console error(s)`);
   for (const f of fails) console.log('  FAIL ' + f);

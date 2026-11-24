@@ -72,6 +72,7 @@ import './ui/r11-vir.css';
 import './i18n-boss.js';
 import { bigText } from './kit/a11y.js';
 import * as bossUi from './ui/boss.js'; // R11 boss lane: boss every 20 levels, chests (src/game/boss.js)
+import * as talk from './ui/talk.js'; // R16: talking cats (board bubbles, café guest lines, Settings > Cat chatter)
 
 const HINT_COST = 60;
 const UNDO_COST = 90;
@@ -1885,6 +1886,7 @@ async function boot() {
   game.on.demoReset = () => game.load(generate(1), { demo: true, top: 146, bottom: 246 });
   ordUi.initOrders(game, { cur: () => S }); // adoption orders: wraps the hooks above (strip, ceremony, album tab)
   bossUi.init(game, { cur: () => S, sync: syncCoins, toast: (s) => ui.toast(s), hubRedraw: () => { if (S.mode === 'cafe' && ui.screen === 'cafe') ui.cafe(cafeInfo()); } }); // boss lane: HP bar, defeat ceremony, chests
+  talk.init({ game, audio, cur: () => S, pet: (id) => ui.pet(id) }); // R16 talking cats: wraps on.free/bonk/land/chain and game.load
   Object.assign(actions, shopActions(syncCoins)); // R10 shop tabs, packs, deal, ad gifts, cosmetics (src/ui/shop.js)
   Object.assign(actions, vir.init({ S, clip, ui, winDare, dareText, dareUrl, shortUrl, qrUrl, peek: peekColor, makeClip, goalLine: (d) => `${dareGoal(d.m, d.g, d.x)} · ${t('dareBoard', { board: boardName(), n: d.b })}` })); // R11 vir: Share QR card
   ui.init(actions);

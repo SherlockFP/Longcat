@@ -632,7 +632,7 @@ export const ui = {
     root.insertAdjacentHTML('beforeend', `
 <div class="backdrop" id="modal"><div class="card cream settings">
   <h2 class="title navy">${t('settings')}</h2>
-  <div class="setgrid">${tog('sound', t('sound'))}${tog('music', t('music'))}${tog('haptics', t('haptics'))}${tog('big', t('bigText'))}${info.notifyOk ? tog('notify', t('notifications')) : ''}</div>
+  <div class="setgrid">${tog('sound', t('sound'))}${tog('music', t('music'))}${tog('haptics', t('haptics'))}${tog('big', t('bigText'))}${tog('chatter', t('chatter'))}${info.notifyOk ? tog('notify', t('notifications')) : ''}</div>
   <div class="setrow"><span>${t('language')}</span><div class="segs">${langs}</div></div>${gpuRow()}
   ${info.canInstall ? `<div class="setrow"><span>${t('installApp')}</span><button class="seg wide" data-act="install">${t('install')}</button></div>` : ''}
   <div class="setrow"><span>${t('removeAds')}</span>${info.removeAds ? `<b class="owned">${t('owned')}</b>` : `<button class="seg wide" data-act="shop">${t('shop')}</button>`}</div>
