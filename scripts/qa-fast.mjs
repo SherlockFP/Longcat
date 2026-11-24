@@ -1,6 +1,6 @@
 // Fast QA (R11x): at most 5 minutes. No playing through: every screen is reached by "teleporting" (a save injected
 // into localStorage lco_save, then the window.__qa hooks), one frame each, console errors and page scroll asserted.
-// vite dev on PORT (default 5193) + chrome-headless-shell over raw CDP, GPU off. Frames land in qa/fast/.
+// vite dev on PORT (default 5193) + chrome-headless-shell over raw CDP on the GPU (QA_NOGPU=1: software raster, CPU-heavy). Frames land in qa/fast/.
 // Usage: npm run qa:fast
 import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
@@ -33,7 +33,7 @@ try {
   const origin = `http://localhost:${PORT}`;
   for (let i = 0; ; i++) { try { if ((await fetch(origin + '/')).ok) break; } catch { /* not yet */ } if (i > 150) throw new Error('vite did not start'); await sleep(200); }
   const cport = await new Promise((res) => { const s = net.createServer(); s.listen(0, '127.0.0.1', () => { const p = s.address().port; s.close(() => res(p)); }); });
-  const ch = spawn(CHROME, [`--remote-debugging-port=${cport}`, `--user-data-dir=${profile}`, '--headless', '--mute-audio', '--disable-gpu', '--window-size=375,667', '--disable-extensions', '--no-first-run', '--hide-scrollbars', 'about:blank'], { stdio: 'ignore' });
+  const ch = spawn(CHROME, [`--remote-debugging-port=${cport}`, `--user-data-dir=${profile}`, '--headless', '--mute-audio', ...(process.env.QA_NOGPU ? ['--disable-gpu'] : ['--use-angle=d3d11', '--enable-gpu', '--ignore-gpu-blocklist']), '--window-size=375,667', '--disable-extensions', '--no-first-run', '--hide-scrollbars', 'about:blank'], { stdio: 'ignore' });
   procs.push(ch.pid);
   let targets;
   for (let i = 0; ; i++) { try { targets = await (await fetch(`http://127.0.0.1:${cport}/json/list`)).json(); if (targets.some((t) => t.type === 'page')) break; } catch { /* not yet */ } if (i > 100) throw new Error('chrome did not start'); await sleep(200); }
