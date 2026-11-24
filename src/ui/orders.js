@@ -194,8 +194,17 @@ function bump(n) {
 function showIntro() {
   const o = cur.o;
   const c = O.CUSTOMERS[o.shop];
-  intro = document.createElement('div');
   const tuck = o.kind === 'normal';
+  // R12 (sol-r12-3 pres): on a pair lesson (L9 / L10) the order borrows the teaching card instead of a bubble beside the
+  // pair's tag and route, then hands the card back to the seat rule (unless a tap or a cue took it meanwhile)
+  const tut = document.getElementById('tut');
+  if (tuck && cur.board.meta.cur === 'pair' && tut && !tut.hidden) {
+    const rule = tut.textContent, title = orderTitle(o, cur.total);
+    tut.textContent = title;
+    setTimeout(() => { if (tut.textContent === title) tut.textContent = rule; }, 2600);
+    return;
+  }
+  intro = document.createElement('div');
   intro.className = 'ordintro' + (tuck ? ' tuck' : '') + (calm() ? ' calm' : '');
   const line = o.kind === 'normal' ? loc(c.why[o.why]) : t(o.kind === 'vip' ? 'ordVipLine' : 'ordUrgentLine', { c: o.bonus });
   intro.innerHTML = tuck

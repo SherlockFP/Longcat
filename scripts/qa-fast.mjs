@@ -248,6 +248,44 @@ try {
     await size(375, 667);
   });
 
+  // ---- R12 L9 (sol-r12-3 fixes 1 + 2) at 360x640: the order on the teaching card (no bubble), then the seat rule; the
+  // pair's tag and route clear of cats and exit arrows; parked first, the pair still wins (EN). L10: the old L9 ----
+  for (const lg of ['en', 'tr']) {
+    await step('f19-l9-pair-' + lg, async () => {
+      await size(360, 640);
+      await put(9, { lg }); await boot(); await qa('level(9)'); await sleep(600); await closeCards();
+      const rule = lg === 'en' ? 'A mother and kitten take two seats when they park.' : 'Anne ve yavrusu park edince iki minder kaplar.';
+      const card = () => ev('(() => { const t = document.getElementById("tut"); return t && !t.hidden ? { txt: t.textContent, clip: t.scrollWidth > t.clientWidth + 1 || t.scrollHeight > t.clientHeight + 1, gap: Math.round(t.getBoundingClientRect().top - 10 - window.__qa.layout().cellsB) } : null; })()');
+      let c = await card();
+      must(!(await ev('!!document.querySelector(".ordintro")')), 'no order bubble on L9');
+      must(c && /12/.test(c.txt) && !c.clip && c.gap >= 0, 'the order sits whole on the teaching card first: ' + JSON.stringify(c));
+      await shot('f19-l9-order-' + lg);
+      await waitFor(`document.getElementById("tut")?.textContent === ${JSON.stringify(rule)}`, 5000);
+      c = await card();
+      must(!c.clip && c.gap >= 0, 'the seat rule sits whole on the card: ' + JSON.stringify(c));
+      const fn = await qa('fun()');
+      must(fn.pairCost === (lg === 'en' ? '2 seats' : '2 minder') && fn.pairWait === (lg === 'en' ? 'Green in 3 carriers' : 'Yeşil 3 taşıyıcı sonra gelir'), 'the pair tag: ' + JSON.stringify(fn));
+      const clash = await qa('pairClash()');
+      must(Array.isArray(clash) && !clash.length, 'the pair tag and its route clear of cats and exit arrows: ' + JSON.stringify(clash));
+      await shot('f19-l9-rule-' + lg);
+      if (lg === 'en') {
+        await qa('slow(6)');
+        for (const id of [9, 5, 6, 1, 2, 3]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(60); }
+        await waitFor('!window.__qa.state().busy', 8000); await sleep(300);
+        must(/took 2 seats/.test(await qa('tut()')), 'the pair park is named on the card');
+        must((await qa('state()')).screen === 'play', 'five seats hold the pair and the staircase');
+        await shot('f19-l9-pair-parked');
+        for (const id of [4, 7, 0, 8, 11]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(60); }
+        await winCard(); await qa('slow(1)');
+        await qa('level(10)'); await sleep(600); await closeCards();
+        must((await qa('meta()')).cur === 'pair' && (await qa('fun()')).pairCost === '', 'L10 plays the old L9 (the pair rule on the card, no tag)');
+        await sleep(2600);
+        await shot('f19-l10-big-pair');
+      }
+      await size(375, 667);
+    });
+  }
+
   const secs = ((Date.now() - T0) / 1000).toFixed(1);
   console.log(`\nqa-fast: ${secs}s, ${fails.length} failure(s), ${errs.length} console error(s)`);
   for (const f of fails) console.log('  FAIL ' + f);

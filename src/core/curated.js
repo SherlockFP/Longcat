@@ -6,17 +6,41 @@
 import { makeCat, makeBoard } from './board.js';
 import { generate } from './generate.js';
 
-export const BOARD_REV = 5; // the newest board revision (kit/dare.js token digit): 5 = the R11x schedule (generate.js SCHED 2:
-// bosses, shaped boards, folded quilts); 2, 3 and 4 (made before it) keep the schedule-1 board
+export const BOARD_REV = 6; // the newest board revision (kit/dare.js token digit): 5 = the R11x schedule (generate.js SCHED 2:
+// bosses, shaped boards, folded quilts); 2, 3 and 4 (made before it) keep the schedule-1 board; 6 = 5 + the R12 L9 / L10
+// (the teaching pair on L9, the old L9 moved to L10)
 // R11 fix round 1: the revision each curated board arrived in. A link names the oldest revision that plays the board it
 // was made on (linkRev), so every link made before L7 was curated keeps opening the board it names. Below L15 both
 // schedules deal the same boards (scripts/check-dare.mjs), so only a link from L15 on needs the schedule-2 digit
-const SINCE = { 6: 3, 9: 3, 11: 3, 7: 4 };
+const SINCE = { 6: 3, 9: 6, 11: 3, 7: 4, 10: 6 };
 export const SCHED_FROM = 15;
-export const linkRev = (n) => (n >= SCHED_FROM ? BOARD_REV : Math.max(3, CURATED[n] ? SINCE[n] : 3));
+export const linkRev = (n) => (n >= SCHED_FROM ? 5 : Math.max(3, CURATED[n] ? SINCE[n] : 3)); // L15+: schedule 2 since 5
 
 const mk = (list) => list.map((c, i) => makeCat(i, c[1], c[0]));
 const O = 'tabby', B = 'tuxedo', P = 'calico', G = 'gray';
+
+// L9 "the big pair": blue goes first and the last blue sits at the foot of a staircase (orange, orange, pink, orange,
+// each freeing the next): four cushions. The big green mother + kitten by the thumb is free all along, and parked
+// it squats on TWO cushions until green comes last: 4 + 2 > 5, a proven loss from the moment it parks.
+function bigPair(n) {
+  const cats = mk([
+    [O, [[2, 0], [3, 0]]], // 0 orange, free: the first step
+    [O, [[2, 2], [2, 1]]], // 1 orange, held by 0
+    [P, [[4, 2], [3, 2]]], // 2 pink, held by 1
+    [O, [[4, 4], [4, 3]]], // 3 orange, held by 2
+    [B, [[2, 4], [3, 4]]], // 4 the last blue, held by 3
+    [B, [[0, 4], [0, 3]]], // 5 blue, free
+    [B, [[3, 5], [4, 5], [5, 5]]], // 6 blue, free
+    [P, [[2, 6], [2, 5]]], // 7 pink, held by 4
+    [P, [[0, 6], [1, 6]]], // 8 pink, held by 7
+    [G, [[3, 7], [2, 7], [1, 7]]], // 9 the green mother, free (the obvious park)
+    [G, [[5, 7], [4, 7]]], // 10 her kitten
+    [G, [[5, 1], [5, 2], [5, 3]]], // 11 green, held by 6 and the pair
+  ]);
+  cats[10].kittenOf = 9;
+  const carriers = [{ color: 1, cap: 3 }, { color: 0, cap: 3 }, { color: 2, cap: 3 }, { color: 3, cap: 3 }];
+  return makeBoard(6, 8, cats, { n, kind: 'normal', benchSize: 5, cur: 'pair', colors: 4, order: [5, 6, 0, 1, 2, 3, 4, 7, 8, 9, 11] }, carriers);
+}
 
 export const CURATED = {
   // L6 "last cushion": the last orange sleeps under a ladder of five cats (three blues, two pinks). Digging it out takes
@@ -60,28 +84,31 @@ export const CURATED = {
     const carriers = [{ color: 0, cap: 3 }, { color: 1, cap: 3 }, { color: 2, cap: 3 }];
     return makeBoard(6, 7, cats, { n: 7, kind: 'normal', benchSize: 5, cur: 'warm', colors: 3, order: [0, 8, 1, 3, 4, 2, 5, 6, 7] }, carriers);
   },
-  // L9 "the big pair": blue goes first and the last blue sits at the foot of a staircase (orange, orange, pink, orange,
-  // each freeing the next): four cushions. The big green mother + kitten by the thumb is free all along, and parked
-  // it squats on TWO cushions until green comes last: 4 + 2 > 5, a proven loss from the moment it parks.
+  // L9 "the pair" (R12, sol-r12-3 fun): the pair's cost is the lesson, not a delayed loss. Blue goes first and the last
+  // blue sits under a three-step staircase (orange, pink, orange): three cushions. Park the green mother + kitten early
+  // and 2 + 3 still fits five seats, with one way through: dig only the staircase (the little green parked too is 6).
+  // Leave the pair on the rug and there is room to spare. Row 6 stays empty for the pair's "2 seats" tag
   9: () => {
     const cats = mk([
-      [O, [[2, 0], [3, 0]]], // 0 orange, free: the first step
-      [O, [[2, 2], [2, 1]]], // 1 orange, held by 0
-      [P, [[4, 2], [3, 2]]], // 2 pink, held by 1
-      [O, [[4, 4], [4, 3]]], // 3 orange, held by 2
-      [B, [[2, 4], [3, 4]]], // 4 the last blue, held by 3
-      [B, [[0, 4], [0, 3]]], // 5 blue, free
-      [B, [[3, 5], [4, 5], [5, 5]]], // 6 blue, free
-      [P, [[2, 6], [2, 5]]], // 7 pink, held by 4
-      [P, [[0, 6], [1, 6]]], // 8 pink, held by 7
+      [P, [[0, 4], [1, 4]]], // 0 pink, held by orange 7
+      [O, [[1, 1], [1, 0]]], // 1 orange, free: the first step
+      [P, [[3, 1], [2, 1]]], // 2 pink, held by 1
+      [O, [[3, 3], [3, 2]]], // 3 orange, held by 2
+      [B, [[1, 3], [2, 3]]], // 4 the last blue, held by 3
+      [B, [[5, 2], [5, 1]]], // 5 blue, free
+      [B, [[4, 2], [4, 1]]], // 6 blue, free
+      [O, [[2, 5], [2, 4]]], // 7 orange, held by the last blue
+      [P, [[0, 5], [1, 5]]], // 8 pink, held by 7
       [G, [[3, 7], [2, 7], [1, 7]]], // 9 the green mother, free (the obvious park)
       [G, [[5, 7], [4, 7]]], // 10 her kitten
-      [G, [[5, 1], [5, 2], [5, 3]]], // 11 green, held by 6 and the pair
+      [G, [[0, 3], [0, 2]]], // 11 the little green, free: parked with the pair it is one seat too many
     ]);
     cats[10].kittenOf = 9;
     const carriers = [{ color: 1, cap: 3 }, { color: 0, cap: 3 }, { color: 2, cap: 3 }, { color: 3, cap: 3 }];
-    return makeBoard(6, 8, cats, { n: 9, kind: 'normal', benchSize: 5, cur: 'pair', colors: 4, order: [5, 6, 0, 1, 2, 3, 4, 7, 8, 9, 11] }, carriers);
+    return makeBoard(6, 8, cats, { n: 9, kind: 'normal', benchSize: 5, cur: 'pair', colors: 4, order: [5, 6, 1, 2, 3, 4, 7, 0, 8, 9, 11] }, carriers);
   },
+  // L10 "the big pair" (L9 until R12; a pre-R12 L9 link still opens it as L9, boardOf): the same seat rule, now tight.
+  10: () => bigPair(10),
   // L11 "boards now": four stacks of sleeping cats; only the top cat of a stack can leave. The pinks go first and each
   // one sits under a different colour, so digging parks a few cats; a stack top that matches the front carrier never
   // needs a cushion. A lost bench here is meant to be undone: Take back nearly always leaves a cat that boards now
@@ -109,6 +136,7 @@ export const CURATED = {
 
 // the board a level plays: a curated one from the revision it arrived in on, else the generated one on the link's schedule
 export function boardOf(n, rev = BOARD_REV) {
+  if (n === 9 && rev >= 3 && rev < SINCE[9]) return bigPair(9); // a rev 3-5 L9 link: the old L9 (L10's board since R12)
   const f = CURATED[n] && rev >= SINCE[n] && CURATED[n];
   return f ? f() : generate(n, rev >= 5 ? 2 : 1);
 }

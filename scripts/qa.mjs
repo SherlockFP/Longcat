@@ -2285,7 +2285,8 @@ try {
     console.log(`  r12 L6 chain ${chain}`);
     await waitFor('window.__qa.state().screen === "win"', 30000);
     await qa('level(9)'); await sleep(700);
-    // R11 fix round 2: L9's lines sit on the teaching card too (its measured slot keeps the bottom row clear)
+    // R11 fix round 2: L9's lines sit on the teaching card too (its measured slot keeps the bottom row clear); R12: after the order
+    for (let k = 0; k < 40 && !/mother and kitten/.test(await qa('tut()')); k++) await sleep(100);
     if (!/mother and kitten/.test(await qa('tut()'))) throw new Error('r12: L9 should name its rule on the card: ' + (await qa('tut()')));
     for (const id of [5, 6]) { await idle2(); await qa(`tap(${id})`); }
     await idle2(); await qa('tap(9)');
@@ -2452,13 +2453,10 @@ try {
     await send('Emulation.setDeviceMetricsOverride', { width: 375, height: 667, deviceScaleFactor: 2, mobile: true });
     for (const lg of ['en', 'tr']) {
       await ev(saveF(lg, 5));
-      await boot(); await qa('slow(1)'); await qa('level(9)'); await sleep(700);
+      await boot(); await qa('slow(1)'); await qa('level(10)'); await sleep(700); // R12: the pair trap moved from L9 to L10
       if ((await qa('meta()')).cur !== 'pair') throw new Error('r11 fun: L9 should play the curated pair board');
-      // R11 fix round 1: before any tap the pair wears its seat cost and green's place in the queue
-      if ((await qa('fun()')).pairCost !== (lg === 'en' ? '2 seats' : '2 minder')) throw new Error('r11 fun: L9 should show the pair cost before the first tap');
-      // R11 fix round 2: the queue in words on the tag ("Green in 3 carriers") and L9's whole rule on the teaching card
-      const pw = (await qa('fun()')).pairWait;
-      if (pw !== (lg === 'en' ? 'Green in 3 carriers' : 'Yeşil 3 taşıyıcı sonra gelir')) throw new Error(`r11 fun ${lg}: the pair tag's queue line: ${pw}`);
+      await waitFor('/two|iki/.test(document.getElementById("tut")?.textContent || "")', 5000); // R12: the order sits on the card first
+      // R12: the pair tag (seat cost + queue line) is L9's only now; qa-fast f19 checks it there. L10's whole rule on the card
       const tutL9 = await ev('(() => { const t = document.getElementById("tut"); return t && !t.hidden ? { txt: t.textContent, clip: t.scrollWidth > t.clientWidth + 1 || t.scrollHeight > t.clientHeight + 1 } : null; })()');
       if (!tutL9 || tutL9.clip || tutL9.txt !== (lg === 'en' ? 'A mother and kitten take two seats when they park.' : 'Anne ve yavrusu park edince iki minder kaplar.')) throw new Error(`r11 fun ${lg}: L9's rule should sit whole on the teaching card: ${JSON.stringify(tutL9)}`);
       await shot(`r11-f1-pair-cost-${lg}`);

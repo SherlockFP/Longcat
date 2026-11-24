@@ -75,7 +75,14 @@ must(decode('4l34-4-c3', bb)?.b === 4 && sha(boardOf(34, 4)) === OLD34, 'a token
   // below L15 both schedules deal the same boards, so linkRev keeps those links on their old digit
   const strip = (b) => { const m = { ...b.meta }; delete m.shape; delete m.folds; return JSON.stringify({ ...b, meta: m }); };
   for (let n = 1; n < 15; n++) must(strip(generate(n, 1)) === strip(generate(n, 2)), `L${n} is the same board on both schedules`);
-  for (let n = 1; n < 15; n++) must(linkRev(n) === (n === 7 ? 4 : 3), `L${n} link digit ${linkRev(n)}`);
+  for (let n = 1; n < 15; n++) must(linkRev(n) === (n === 7 ? 4 : n === 9 || n === 10 ? 6 : 3), `L${n} link digit ${linkRev(n)}`);
+  // R12: the teaching pair took L9 and the old L9 moved to L10. A token 3-5 L9 link still opens the old L9 (a 2 the
+  // generated one), a token 3-5 L10 link the generated L10; a new 6 link opens the new boards
+  const OL9 = JSON.stringify({ ...boardOf(10, 6), meta: { ...boardOf(10, 6).meta, n: 9 } });
+  for (const tok of ['3l9-5-c3', '4l9-5-c3', '5l9-5-c3']) must(JSON.stringify(boardOf(9, decode(tok, bb).rev)) === OL9, `old token ${tok} opens the old L9`);
+  for (const tok of ['3l10-5-c3', '5l10-5-c3']) { const d = decode(tok, bb); must(JSON.stringify(boardOf(10, d.rev)) === JSON.stringify(generate(10, d.rev >= 5 ? 2 : 1)), `old token ${tok} opens the generated L10`); }
+  const n9 = shortCode({ n: 9, b: 5, k: 'l', m: 'chain', g: 3, rev: linkRev(9) });
+  must(n9 === '6l9-5-c3' && decode(n9, bb)?.rev === 6 && JSON.stringify(boardOf(9, 6)) !== OL9 && boardOf(9, 6).meta.cur === 'pair' && boardOf(10, decode('6l10-5-c3', bb).rev).meta.cur === 'pair', 'a new L9 / L10 link (token 6) opens the new boards ' + n9);
 }
 must(decode(s2.toUpperCase(), base)?.i === 'ab12cd', 'a typed (capitalised) core still decodes');
 must(decode('2d4-5-s0', base)?.m === 'seats' && decode('2d4-5-s0', base).g === 0 && decode('2d4-5-s0', base).k === 'd', 'daily no-park core');

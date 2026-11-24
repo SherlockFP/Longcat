@@ -4,11 +4,12 @@
 //   3<k><n>-<b>-<m><g>[m][-<i>][.<base64url JSON extras>]      e.g. 3l13-5-c3-ab12cd
 //   the leading digit is the token version and pins the board revision (bump it when a campaign board changes):
 //   2 = the generated boards, 3 = the curated L6 / L9 / L11 (src/core/curated.js), 4 = also the curated L7, 5 (current)
-//   = 4 + the R11x schedule (generate.js SCHED 2: bosses every 20, hard levels moved, shaped boards and folded quilts).
+//   = 4 + the R11x schedule (generate.js SCHED 2: bosses every 20, hard levels moved, shaped boards and folded quilts),
+//   6 = 5 + the R12 L9 (the teaching pair) and L10 (the old L9).
 //   It doubles as the schedule version: a token without it (v1, 2, 3, 4) is schedule 1, the plain pre-R11x boards.
 //   decode() returns rev: 3 / 4 / 5 for those tokens and no rev for older links, which keep opening the board they were
 //   made on. A new link carries the oldest revision that plays its board (curated.js linkRev): below L15 both schedules
-//   deal the same boards, so those links read as before (4 only for L7); from L15 on a new link says 5;
+//   deal the same boards, so those links read as before (4 only for L7, 6 for L9 / L10); from L15 on a new link says 5;
 //   k: l level | d daily | s Cat Show | r Café Rush; m: c chain | s seats | t time (tenths of a second); a trailing m on
 //   the goal = match (the chain is already the board's best); i: share id. The core alone plays the exact board and goal
 //   (it is what the clip burns in, so a friend can type it); the extras carry the names and the reply thread:
@@ -62,7 +63,7 @@ export function encodeV1(d) {
 
 // the typeable part: board, seats, goal, share id (lower case; what the clip shows)
 export function shortCode(d) {
-  return `${d.rev && d.rev < 3 ? 2 : d.rev >= 5 ? 5 : d.rev === 4 ? 4 : 3}${KINDS.includes(d.k) ? d.k : 'l'}${d.n}-${d.b}-${MCH[d.m]}${d.g}${d.m === 'chain' && d.x ? 'm' : ''}${d.i && ID.test(d.i) ? '-' + d.i : ''}`;
+  return `${d.rev && d.rev < 3 ? 2 : d.rev >= 6 ? 6 : d.rev === 5 ? 5 : d.rev === 4 ? 4 : 3}${KINDS.includes(d.k) ? d.k : 'l'}${d.n}-${d.b}-${MCH[d.m]}${d.g}${d.m === 'chain' && d.x ? 'm' : ''}${d.i && ID.test(d.i) ? '-' + d.i : ''}`;
 }
 // R11 fix round 2 (sol-r12-2 virality): the QR (win card picture and the clip's end card) also carries the reply
 // context, compact and still lower-case: -r<target>-<answered share id> after the share id. A scanned counter-dare then
@@ -84,7 +85,7 @@ export function encode(d) {
   if (Number.isFinite(d.rd) && d.rd > 1) ex.rd = Math.min(99, Math.round(d.rd));
   return shortCode(d) + (Object.keys(ex).length ? '.' + b64url(JSON.stringify(ex)) : '');
 }
-const V2 = /^([2345])([ldsr])(\d{1,3})-(\d{1,2})-([cst])(\d{1,4})(m?)(?:-([a-z0-9]{1,8})(?:-r(\d{1,4})-([a-z0-9]{1,8})(?:-(\d{1,2}))?)?)?$/;
+const V2 = /^([2-6])([ldsr])(\d{1,3})-(\d{1,2})-([cst])(\d{1,4})(m?)(?:-([a-z0-9]{1,8})(?:-r(\d{1,4})-([a-z0-9]{1,8})(?:-(\d{1,2}))?)?)?$/;
 const goalRange = (m, b) => (m === 'chain' ? [2, 8] : m === 'seats' ? [0, b] : [30, 9000]); // time: 3 s .. 15 min, in tenths
 function decodeV2(code, baseBench) {
   const dot = code.indexOf('.');
@@ -128,7 +129,7 @@ function decodeV2(code, baseBench) {
 // baseBench(n, rev): the board's own seat count; a link may add at most two seats (the sender's perk seats), never remove any
 export function decode(code, baseBench) {
   if (typeof code !== 'string' || !code || code.length > MAX_LEN || !/^[A-Za-z0-9_.-]+$/.test(code)) return null;
-  if (code[0] === '2' || code[0] === '3' || code[0] === '4' || code[0] === '5') return decodeV2(code, baseBench); // a v1 code starts with eyJ
+  if ('23456'.includes(code[0])) return decodeV2(code, baseBench); // a v1 code starts with eyJ
   if (code.includes('.')) return null;
   let o;
   try { o = JSON.parse(unb64url(code)); } catch { return null; }

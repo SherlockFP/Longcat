@@ -334,3 +334,13 @@ Merged in that order from main d204fce. The only textual conflicts were the appe
 - The quilt unfold still plays `audio.clear()`, not a UI-pack sound.
 - The flame chip on the win card hangs over the empty board's rug corner.
 - Not done: perf.mjs after the merge (shaped and boss boards on the 6x software raster), a real phone, and a fresh-player session.
+
+## R12 fun lane: L9 teaches the pair's cost (sol-r12-3 fixes 1 + 2)
+
+- L9 is a new board. Its staircase is three steps: orange, pink, orange over the last blue. Park the green pair early and it still fits: 2 + 3 = 5 seats. The only way through is then to dig the staircase. Parking the free little green as well is a proven loss. Leave the pair on the rug and there are seats to spare. Probe: random win 9.0% (was 2.7%), first moves: small orange 15%, the pair 5%, the little green 5%. Fewest seats: 3.
+- The old L9 trap moved to L10 unchanged: 4 + 2 > 5, a proven loss once the pair parks. L10 keeps the pair rule on the card, the park cue and the teaching rewind. It has no pair tag, because the tag would sit over its row-6 cats.
+- Board revision 6 (`BOARD_REV`): a token 3-5 L9 link still opens the old L9, and a token 3-5 L10 link opens the generated L10. New L9 and L10 links say 6. Links from L15 on still say 5.
+- On L9 and L10 the order intro uses the teaching card for 2.6 s, then the card goes back to the seat rule. No bubble appears beside the tag. A tap or a cue in that time keeps the card.
+- The pair tag's bottom now sits on the pair's row. At 360x640 the cells are 31 px, and the two-line tag reached into row 5. On L9 row 6 is empty, so the tag and its route clear every cat and exit arrow in EN and TR (`__qa.pairClash()`).
+- check-core: on L9, the early pair park and the small orange both win, and the pair plus the little green loses. On L10 the pair park loses and the orange wins. Old revisions open the boards they were made on. check-dare: tokens 3/4/5/6 for L9 and L10.
+- qa-fast f19 (`QA_ONLY=f19`, about 20 s): the order on the card, then the rule, the tag clash check, and an early pair park won through the five seats. EN and TR at 360x640, plus an L10 frame. scripts/qa.mjs: the R11 fun section's pair-loss walk now runs on L10. That edit has not been run.
