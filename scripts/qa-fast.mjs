@@ -163,6 +163,62 @@ try {
     await shot('f08-l22-quilt-after');
   });
 
+  // ---- R13 opening: the late hint (L1), the heart (L3), the forced x3 (L5), the quilt (L7), the L10 mini boss ----
+  await step('r13-l1-hint', async () => {
+    await put(1); await boot(); await qa('level(1)'); await sleep(1000);
+    must((await qa('hintId()')) == null, 'L1: no arrow before the player hesitates');
+    await sleep(2700);
+    must((await qa('hintId()')) != null, 'L1: the arrow after a 3 s hesitation');
+    await shot('r13-l1-hint');
+  });
+  await step('r13-l3-heart', async () => {
+    await put(3, { shape: false }); await boot(); await qa('level(3)'); await sleep(1200);
+    must(!(await ev('!!document.getElementById("smodal")')), 'L3: no shape modal, one line instead');
+    const tut = await qa('tut()');
+    must(/heart/i.test(tut), 'L3 one-line card: ' + tut);
+    const i = await ev('window.__qaShape.info()');
+    must(i.shape === 'heart' && i.cell >= 30, 'L3 heart board, cells ' + i.cell);
+    await shot('r13-l3-heart');
+  });
+  await step('r13-l5-x3', async () => {
+    await put(5); await boot(); await qa('level(5)'); await sleep(900);
+    must(/blue/i.test(await qa('tut()')), 'L5 one-line card');
+    for (const id of [0, 1, 3, 4, 6]) { await qa(`tap(${id})`); await sleep(150); await waitFor('!window.__qa.state().busy', 8000); }
+    must(JSON.stringify((await qa('state()')).bench) === '[3,5]', 'L5: the three blues parked ' + JSON.stringify((await qa('state()')).bench));
+    await qa('tap(7)');
+    await waitFor('(window.__qa.chainFx() || {}).n >= 3', 8000); await sleep(450);
+    await shot('r13-l5-x3');
+  });
+  await step('r13-l7-quilt', async () => {
+    await put(7, { shape: false }); await boot(); await qa('level(7)'); await sleep(1200);
+    must(!(await ev('!!document.getElementById("smodal")')), 'L7: no quilt modal, one line instead');
+    must(/quilt/i.test(await qa('tut()')), 'L7 one-line card');
+    const i = await ev('window.__qaShape.info()');
+    must(i.folds.length === 1 && !i.folds[0].open && i.folds[0].need === 3, 'L7 starts with a closed quilt: ' + JSON.stringify(i.folds));
+    await shot('r13-l7-quilt');
+  });
+  await step('r13-l10-mini', async () => {
+    await put(10, { extra: 'boss: { last: 9, fl: { n: 0, fail: 0, k: 0 }, q: [] }' }); await boot(); await qa('level(10)');
+    await waitFor('!!document.getElementById("bossintro")', 8000); await sleep(800);
+    must(await inView('#bossintro') && await inView('#bossbar'), 'mini boss intro + nameplate on screen');
+    const st = await qa('state()');
+    must(st.cell >= 30 && st.board.join('x') === '7x7', 'L10 mini boss board ' + st.board + ' cells ' + st.cell);
+    await shot('r13-l10-intro');
+    await waitFor('!document.getElementById("bossintro")', 6000); await sleep(300);
+    await shot('r13-l10-board');
+    await qa('slow(5)'); await qa('winNow()');
+    await waitFor('!!document.getElementById("bossdefeat")', 20000); await qa('slow(1)'); await sleep(1300);
+    await shot('r13-l10-defeat');
+    await winCard();
+    must(await ev('!!document.querySelector("#modal .bxchest.gold")'), 'the L10 win card holds the gold chest');
+    await ev('document.querySelector("#modal .bxchest").click()');
+    await waitFor('!!document.getElementById("chestfx")', 4000);
+    for (let k = 0; k < 6; k++) { await ev('document.getElementById("chestfx")?.dispatchEvent(new PointerEvent("pointerdown", { bubbles: true }))'); await sleep(120); }
+    await waitFor('!!document.getElementById("cxreveal")', 12000); await sleep(800);
+    must(/RARE!/.test(await ev('document.getElementById("cxreveal").textContent')), 'the mini boss chest is rare');
+    await shot('r13-l10-chest');
+  });
+
   // ---- the boss: intro + HP, defeat, the gold chest, the reveal ----
   await step('f09-boss', async () => {
     await put(20, { extra: 'boss: { last: 19, fl: { n: 0, fail: 0, k: 0 }, q: [] }' }); await boot(); await qa('level(20)');

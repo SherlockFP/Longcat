@@ -6,15 +6,15 @@
 import { makeCat, makeBoard } from './board.js';
 import { generate } from './generate.js';
 
-export const BOARD_REV = 6; // the newest board revision (kit/dare.js token digit): 5 = the R11x schedule (generate.js SCHED 2:
+export const BOARD_REV = 7; // the newest board revision (kit/dare.js token digit): 5 = the R11x schedule (generate.js SCHED 2:
 // bosses, shaped boards, folded quilts); 2, 3 and 4 (made before it) keep the schedule-1 board; 6 = 5 + the R12 L9 / L10
-// (the teaching pair on L9, the old L9 moved to L10)
+// (the teaching pair on L9, the old L9 moved to L10); 7 = 6 + the R13 opening (R13 below: L1-3, L5-7, L10)
 // R11 fix round 1: the revision each curated board arrived in. A link names the oldest revision that plays the board it
 // was made on (linkRev), so every link made before L7 was curated keeps opening the board it names. Below L15 both
 // schedules deal the same boards (scripts/check-dare.mjs), so only a link from L15 on needs the schedule-2 digit
 const SINCE = { 6: 3, 9: 6, 11: 3, 7: 4, 10: 6 };
 export const SCHED_FROM = 15;
-export const linkRev = (n) => (n >= SCHED_FROM ? 5 : Math.max(3, CURATED[n] ? SINCE[n] : 3)); // L15+: schedule 2 since 5
+export const linkRev = (n) => (n >= SCHED_FROM ? 5 : R13[n] ? 7 : Math.max(3, CURATED[n] ? SINCE[n] : 3)); // L15+: schedule 2 since 5
 
 const mk = (list) => list.map((c, i) => makeCat(i, c[1], c[0]));
 const O = 'tabby', B = 'tuxedo', P = 'calico', G = 'gray';
@@ -134,8 +134,119 @@ export const CURATED = {
   },
 };
 
+// R13 "highlight reel" (rev 7): the first session hooks instead of teaching. L1-L10 each show one new thing in 20-60 s
+// with one line at most, and the session ends on a mini boss. L4, L8 (the dog) and L9 (the pair) keep their boards.
+// Measured with scripts/curate-probe.mjs (random-play odds: scripts/check-core.mjs keeps L1-L8 at 25% or more).
+const maskOf = (rows) => rows.join('').split('').map((c) => (c === '#' ? 1 : 0)); // '#' floor, '.' open air
+const pair = (cats, kit, mom) => { cats[kit].kittenOf = mom; return cats; };
+const car = (...cols) => cols.map((color) => ({ color, cap: 3 }));
+const up = (x, y, len) => Array.from({ length: len }, (_, i) => [x, y + len - 1 - i]); // a column cat facing up, head at y
+export const R13 = {
+  // L1 "burst": nine oranges, all free, three carriers: every tap lands, quick taps bring the Purrfect popup
+  1: () => {
+    const cats = pair(mk([
+      [O, [[0, 2], [0, 1]]], [O, [[1, 2], [1, 1]]], [O, [[2, 3], [2, 2], [2, 1]]], [O, [[3, 2], [3, 1]]], [O, [[4, 2], [4, 1]]],
+      [O, [[2, 4], [1, 4], [0, 4]]], [O, [[4, 4], [3, 4]]], // 5 mother, 6 her kitten: two cats in one tap
+      [O, [[1, 5], [0, 5]]], [O, [[2, 5], [3, 5], [4, 5]]],
+    ]), 6, 5);
+    return makeBoard(5, 6, cats, { n: 1, kind: 'normal', benchSize: 5, colors: 1, order: [0, 1, 2, 3, 4, 5, 7, 8] }, car(0, 0, 0));
+  },
+  // L2 "first hop": two blues lie on the oranges, so they park before the first carrier can fill; the blue carrier rolls
+  // in and both hop in together (a forced x2). The last blue sleeps under an orange
+  2: () => {
+    const cats = mk([
+      [B, [[1, 1], [0, 1]]], // 0 free
+      [B, [[3, 1], [4, 1]]], // 1 free
+      [O, up(0, 3, 3)], // 2 held by 0
+      [O, up(2, 3, 3)], // 3 free
+      [O, up(4, 3, 3)], // 4 held by 1
+      [O, up(1, 2, 2)], // 5 held by 0
+      [B, up(1, 4, 2)], // 6 the last blue, held by 5
+      [O, up(3, 2, 2)], // 7 held by 1
+      [O, up(3, 4, 2)], // 8 held by 7
+    ]);
+    return makeBoard(5, 6, cats, { n: 2, kind: 'normal', benchSize: 5, colors: 2, order: [3, 0, 2, 5, 1, 6, 4, 7, 8] }, car(0, 1, 0));
+  },
+  // L3 "heart": a small heart; the top cats slide out over the open air between the lobes. Orange mother + kitten first
+  3: () => {
+    const cats = pair(mk([
+      [P, [[2, 0], [1, 0]]], // 0 free (slides over the gap)
+      [B, [[4, 0], [5, 0]]], // 1 free
+      [O, up(3, 1, 3)], // 2 orange mother, free
+      [O, up(3, 4, 2)], // 3 her kitten
+      [O, up(6, 1, 2)], // 4 free
+      [B, up(1, 1, 3)], // 5 held by 0
+      [P, up(2, 1, 4)], // 6 held by 0
+      [B, up(5, 1, 3)], // 7 held by 1
+      [P, up(4, 1, 4)], // 8 held by 1
+    ]), 3, 2);
+    const b = makeBoard(7, 6, cats, { n: 3, kind: 'normal', benchSize: 5, colors: 3, order: [2, 4, 1, 7, 0, 5, 6, 8] }, car(0, 1, 2));
+    b.shape = { name: 'heart', mask: maskOf(['.##.##.', '#######', '#######', '.#####.', '..###..', '...#...']) };
+    return b;
+  },
+  // L5 "x3": three stacks, a blue on top of each orange: the orange carrier fills only after every blue parked, then the
+  // blue carrier rolls in and all three hop in at once (a forced x3, the slow-mo chain); pinks parked meanwhile follow
+  5: () => {
+    const cats = mk([
+      [B, up(0, 0, 2)], [O, up(0, 2, 2)], [P, up(0, 4, 3)],
+      [B, up(2, 0, 2)], [O, up(2, 2, 3)], [P, up(2, 5, 2)],
+      [B, up(4, 0, 2)], [O, up(4, 2, 2)], [P, up(4, 4, 3)],
+    ]);
+    return makeBoard(5, 7, cats, { n: 5, kind: 'normal', benchSize: 5, colors: 3, order: [0, 1, 3, 4, 6, 7, 2, 5, 8] }, car(0, 1, 2));
+  },
+  // L6: the R11 warm-up board (L7 until R13): free the oranges, the bench empties by itself
+  6: () => { const b = CURATED[7](); b.meta.n = 6; return b; },
+  // L7 "quilt": the bottom three rows are a folded quilt that opens after three cats leave
+  7: () => {
+    const cats = mk([
+      [O, up(0, 1, 3)], // 0 free
+      [B, up(1, 0, 3)], // 1 free
+      [O, [[3, 0], [4, 0]]], // 2 free
+      [B, up(3, 1, 3)], // 3 held by 2
+      [P, up(4, 1, 3)], // 4 held by 2
+      [O, up(5, 1, 3)], // 5 free
+      [P, [[0, 4], [0, 5], [0, 6]]], // 6..11 under the quilt
+      [G, [[1, 4], [1, 5], [1, 6]]],
+      [G, [[2, 4], [3, 4], [4, 4]]], // 8 held by 9
+      [B, [[5, 4], [5, 5], [5, 6]]],
+      [P, [[2, 5], [2, 6]]],
+      [G, [[3, 5], [3, 6]]],
+    ]);
+    const b = makeBoard(6, 7, cats, { n: 7, kind: 'normal', benchSize: 5, colors: 4, order: [0, 2, 5, 1, 3, 9, 4, 6, 10, 7, 8, 11] }, car(0, 1, 2, 3));
+    const cells = [];
+    for (let y = 4; y < 7; y++) for (let x = 0; x < 6; x++) cells.push([x, y]);
+    b.folds = [{ side: 'bottom', cells, need: 3, cats: [6, 7, 8, 9, 10, 11] }];
+    return b;
+  },
+  // L10 "mini boss": a cat-head board, fifteen cats (HP 15); the face is free, the chin waits under it, the ears hold the
+  // cheeks. The gold chest and the boss card: src/game/boss.js MINI
+  10: () => {
+    const cats = mk([
+      [O, up(0, 0, 2)], // 0 left ear, free
+      [B, up(6, 0, 2)], // 1 right ear, free
+      [P, up(0, 2, 2)], // 2 held by 0
+      [G, up(0, 4, 2)], // 3 held by 2
+      [O, up(6, 2, 4)], // 4 held by 1
+      [B, up(1, 1, 3)], // 5..9 the face: free
+      [B, up(2, 2, 2)],
+      [P, up(3, 2, 2)],
+      [O, up(4, 2, 2)],
+      [O, up(5, 1, 3)],
+      [O, up(1, 4, 3)], // 10..14 the chin, each held by the cat above
+      [P, up(2, 4, 3)],
+      [G, up(3, 4, 3)],
+      [G, up(4, 4, 3)],
+      [O, up(5, 4, 3)],
+    ]);
+    const b = makeBoard(7, 7, cats, { n: 10, kind: 'boss', benchSize: 5, colors: 4, order: [0, 8, 9, 1, 5, 6, 2, 7, 11, 3, 12, 13, 4, 10, 14] }, car(0, 1, 2, 3, 0));
+    b.shape = { name: 'cathead', mask: maskOf(['#.....#', '##...##', '#######', '#######', '#######', '#######', '.#####.']) };
+    return b;
+  },
+};
+
 // the board a level plays: a curated one from the revision it arrived in on, else the generated one on the link's schedule
 export function boardOf(n, rev = BOARD_REV) {
+  if (rev >= 7 && R13[n]) return R13[n]();
   if (n === 9 && rev >= 3 && rev < SINCE[9]) return bigPair(9); // a rev 3-5 L9 link: the old L9 (L10's board since R12)
   const f = CURATED[n] && rev >= SINCE[n] && CURATED[n];
   return f ? f() : generate(n, rev >= 5 ? 2 : 1);

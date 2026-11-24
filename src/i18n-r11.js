@@ -12,12 +12,12 @@ addStrings({
     clipSend: 'Send video',
     // fix 2: curated boards (core/curated.js): the idea on the first try, the way through on a retry and the lost card
     curIdea_cushion: 'The last orange sleeps under five cats. You have five seats.',
-    curIdea_pair: 'A mother and kitten take two seats when they park.',
+    curIdea_pair: 'A parked mom + kitten takes 2 seats.',
     curIdea_now: 'Only the top cat of a stack can leave.',
     curTry_cushion: 'Park only the cats on top of the last orange: it needs all five seats.',
     curTry_pair: 'Leave the big pair for last: park the small orange first.',
     // R11 fix round 1: L7, the warm-up between two lessons, and the L9 pair's seat cost on the board
-    curIdea_warm: 'Free the oranges first. The bench empties by itself.',
+    curIdea_warm: 'Free the oranges: the bench empties itself.',
     curTry_warm: 'Park only the cats that sit on an orange.',
     pairSeats: '2 seats',
     pairWait: '{c} in {k} carriers', pairWait1: '{c} in 1 carrier', // R11 fix round 2: the pair tag's second line
@@ -36,11 +36,11 @@ addStrings({
     clipMakingP: 'Yapılıyor %{p}',
     clipSend: 'Videoyu yolla',
     curIdea_cushion: 'Son turuncu beş kedinin altında uyuyor. Beş minderin var.',
-    curIdea_pair: 'Anne ve yavrusu park edince iki minder kaplar.',
+    curIdea_pair: 'Park eden anne + yavru 2 minder kaplar.',
     curIdea_now: 'Bir yığından sadece en üstteki kedi çıkabilir.',
     curTry_cushion: 'Sadece son turuncunun üstündekileri park et: beş minderin hepsi lazım.',
     curTry_pair: 'Büyük ikiliyi sona bırak: önce küçük turuncuyu park et.',
-    curIdea_warm: 'Önce turuncuları kurtar. Minderler kendiliğinden boşalır.',
+    curIdea_warm: 'Turuncuları kurtar: minderler kendi boşalır.',
     curTry_warm: 'Sadece bir turuncunun üstündeki kedileri park et.',
     pairSeats: '2 minder',
     pairWait: '{c} {k} taşıyıcı sonra gelir', pairWait1: '{c} 1 taşıyıcı sonra gelir',

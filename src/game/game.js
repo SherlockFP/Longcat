@@ -237,7 +237,7 @@ export class Game {
     this.layout();
     this.syncVis();
     this.order = board.cats.map((c) => c.id).sort((a, b) => board.cats[a].cells.at(-1)[1] - board.cats[b].cells.at(-1)[1]);
-    if (this.autoHint) this.refreshHint();
+    if (this.autoHint) this.hintSoon(0);
   }
 
   // rebuild the carrier queue and bench from the rules state (start, undo, scoop reset)
@@ -392,6 +392,14 @@ export class Game {
     if (this.state && !isWon(this.state)) this.hintId = solverHint(this.state);
   }
 
+  // the auto-hint (L1-3) comes back d s after a move, or after hintWait s (R13: only once the player hesitates)
+  hintSoon(d) {
+    const at = this.clock + Math.max(d, this.hintWait || 0);
+    this.hintAt = at;
+    if (at <= this.clock) return this.refreshHint();
+    this.pending.push({ at, fn: () => { if (this.hintAt === at) this.refreshHint(); } });
+  }
+
   busy() {
     return this.anims.some((a) => a.type === 'run' || a.type === 'hop') || this.vis.leaving.length > 0 || this.pending.some((p) => p.vis || p.blk);
   }
@@ -410,7 +418,7 @@ export class Game {
     this.cue = null;
     this.press = null;
     this.syncVis();
-    if (this.autoHint) this.refreshHint();
+    if (this.autoHint) this.hintSoon(0);
     return true;
   }
 
@@ -876,7 +884,7 @@ export class Game {
       this.popup(1 + (this.comboN = (this.comboN || 0) + 1) % 2); // 'Purrfect!' is kept for a flawless win
     }
     if (this.on.free) this.on.free({ ids: freed, step: Math.max(0, count - 1), purrfect, count });
-    if (this.autoHint) this.pending.push({ at: now + 0.35, fn: () => this.refreshHint() });
+    if (this.autoHint) this.hintSoon(0.35);
     for (const id of freed) {
       this.mv.hidden[id] = false;
       this.mv.frozen[id] = false;

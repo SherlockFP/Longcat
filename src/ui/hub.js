@@ -15,7 +15,7 @@ import { CHAPTER_LEN, CHAPTERS, PROPS } from '../../data/hub.js';
 import { goalsHtml, featGoalHtml, featGoal } from './live.js';
 import { retMap, retRoom, retPanel } from './r11-ret.js'; // R11 retention lane: the album card, the hang card
 import { decorateMap, dockPill, chapterName as bossChapter } from './boss.js'; // boss lane: castle nodes, chest markers, the chest / flame pill
-import { nextChest } from '../game/boss.js';
+import { nextChest, MINI } from '../game/boss.js';
 
 const root = document.getElementById('ui');
 const r7 = (name, cls = '') => `<img class="${cls}" src="${assetUrl('r7/' + name + '.webp')}" alt="" draggable="false">`;
@@ -132,7 +132,7 @@ function mapHtml(cur, W) {
   const items = [];
   for (let lv = first; lv <= lastLv; lv++) {
     const p = pos(lv);
-    const kind = levelKind(lv);
+    const kind = lv === MINI ? 'boss' : levelKind(lv); // R13: the L10 mini boss gets a castle too
     const tag = kind === 'boss' ? `<i class="hmtag super">${t('mapSuper')}</i>` : kind === 'hard' ? `<i class="hmtag hard">${t('mapHard')}</i>` : '';
     const nw = TEACH[lv] ? `<i class="hmnew">${t('mapNew')}</i>` : '';
     const st = `left:${p.x.toFixed(1)}px;top:${p.y.toFixed(1)}px`;
