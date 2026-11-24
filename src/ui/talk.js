@@ -1,5 +1,5 @@
-// Talking cats (R16): one short speech bubble at a time, at a few meaningful board moments (a freed cat, a bumped cat,
-// the bench almost full, a bench chain, the last cat, a boss level), and a personality line from a café guest when it is
+// Talking cats (R16): one short speech bubble at a time, at a few meaningful board moments (the bench almost full, a
+// chain of 3+, a boss beaten), and a personality line from a café guest when it is
 // tapped plus one idle line every 20-30 s. The board bubble is one reusable DOM element placed once per show (no
 // per-frame work); the café reuses each guest's own .gbub bubble, so nothing new sits on the room.
 // main.js: init({ game, audio, cur: () => S, pet: (id) => ui.pet(id) }) once at boot. Settings > Cat chatter
@@ -17,7 +17,7 @@ export const moodOf = (id) => MOOD[id] || MOODS[[...String(id)].reduce((a, c) =>
 // anything open over the board: a card, a sheet, the boss intro / defeat, a chest, the hint card
 const BLOCK = '#modal, #sheet, #cmodal, #smodal, #ordcer, #bossintro, #bossdefeat, #pcard, #chestfx, #cxreveal, #arrival, #tut:not([hidden])';
 const GAP = 2500; // ms between two ordinary bubbles
-const SHOW = 1600;
+const SHOW = 1100; // Sol r16: about a second, then the board is clear again
 
 let G = null;
 let o = null;
@@ -32,7 +32,7 @@ let lv = 0; // the level number; 0 for a Daily / Show / friend board
 
 const on = () => save.data.settings.chatter !== false;
 const now = () => performance.now();
-const pick = (k) => { const p = (TALK[lang()] || TALK.en)[k]; const s = p[Math.floor(Math.random() * p.length)]; return s.replace('{name}', boss ? boss.name[lang()] || boss.name.en : ''); };
+const pick = (k) => { const p = (TALK[lang()] || TALK.en)[k]; const s = p[Math.floor(Math.random() * p.length)]; return s.replace('{name}', boss ? boss.name[lang()] || boss.name.en : '').trim(); };
 const voice = (step) => { if (now() - voiceAt < 1500) return; voiceAt = now(); o.audio.mrrp(step); };
 const head = (id) => { const p = G.cellPos(id); return [p.x, p.y - G.cell * 0.35]; };
 const aliveCat = () => { const c = G.board.cats.find((x) => G.state.alive[x.id]); return c ? c.id : 0; };
@@ -43,7 +43,7 @@ function say(kind, x, y, force = false) {
   if (!on() || !G.board || G.demo) return false;
   if (force !== 'qa') {
     if (!document.querySelector('#hud.on') || document.querySelector(BLOCK)) return false;
-    if (lv && lv <= 3 && kind !== 'last') return false; // the opening stays clean: only the last cat speaks
+    if (lv && lv <= 3) return false; // the opening stays clean
     if (!force && now() - lastAt < GAP) return false;
   }
   lastAt = now();
@@ -84,16 +84,21 @@ function line(g) {
   return true;
 }
 
+let idleDone = false; // Sol r16: one idle line per café visit at most
 function idle() {
-  if (!on() || !document.querySelector('#cafe.on') || document.querySelector('#sheet, #modal, #arrival, .guest.petted')) return false;
+  if (!document.querySelector('#cafe.on')) { idleDone = false; return false; }
+  if (idleDone) return false;
+  if (!on() || document.querySelector('#sheet, #modal, #arrival, .guest.petted')) return false;
   const gs = [...document.querySelectorAll('#cafe.on .guest.g7')].filter((g) => g.offsetParent && !document.querySelector(`.rqbub[data-who="${g.dataset.id}"]`));
   const g = gs[Math.floor(Math.random() * gs.length)];
   if (!g || !line(g)) return false;
+  idleDone = true;
+  g.classList.add('talky');
   o.pet(g.dataset.id); // the guest's own hop + bubble (ui.pet), no reward: that stays on a real tap
   voice(2);
   return true;
 }
-const idleLoop = () => setTimeout(() => { idle(); idleLoop(); }, 20000 + Math.random() * 10000);
+const idleLoop = () => setTimeout(() => { idle(); idleLoop(); }, 20000 + Math.random() * 10000); // also notices the café closing (resets the visit)
 
 export function init(opts) {
   o = opts;
@@ -119,23 +124,13 @@ export function init(opts) {
     const S = o.cur();
     lv = S.daily || S.show ? 0 : S.n;
     boss = lv && G.board.meta && G.board.meta.kind === 'boss' ? bossOf(lv) : null;
-    if (boss && !G.demo) { // a cat answers the boss once its intro card is gone
-      const b0 = G.board;
-      let n = 0;
-      const tryBoss = () => { if (G.board !== b0 || n++ > 20) return; if (!say('boss', ...head(aliveCat()), true)) setTimeout(tryBoss, 500); };
-      setTimeout(tryBoss, 900);
-    }
     return r;
   };
   wrap('free', ({ ids }) => {
     if (G.demo || !ids.length) return;
     const id = ids[ids.length - 1];
-    if (G.state.aliveCount === 0) say(boss ? 'bossWin' : 'last', ...head(id), true);
-    else if (Math.random() < 1 / 3) say('free', ...head(id));
-  });
-  wrap('bonk', (r) => {
-    if (G.demo || Math.random() < 0.5) return;
-    say('bonk', ...head(r.blockerId != null && r.blockerId >= 0 ? r.blockerId : r.who != null ? r.who : r.id)); // the bumped cat complains
+    // Sol r16: routine sends, bumps, the last cat and the boss's opening line were clutter; one boss line stays, at the end
+    if (G.state.aliveCount === 0 && boss) say('bossWin', ...head(id), true);
   });
   wrap('land', (e) => {
     const st = G.state;
@@ -144,20 +139,20 @@ export function init(opts) {
     const p = G.benchPos(Math.max(0, seat));
     if ((benchSaid = say('bench', p.x, p.y - p.bw * 0.5, true))) voice(4);
   });
-  wrap('chain', () => {
-    if (G.demo) return;
-    const p = G.carrierMouth();
-    say('chain', p.x, p.y - G.cs * 0.3, true);
+  wrap('chain', (e) => {
+    if (G.demo || !e || e.n < 3) return; // big chains only
+    const p = G.benchPos(Math.floor(G.state.benchSize / 2)); // Sol r16: over the bench, clear of the carrier counts
+    say('chain', p.x, p.y - p.bw * 0.5, true);
   });
 
-  document.addEventListener('click', (e) => { const g = e.target.closest && e.target.closest('#cafe.on .guest'); if (g) line(g); }, true); // before ui.pet shows the bubble
+  document.addEventListener('click', (e) => { const g = e.target.closest && e.target.closest('#cafe.on .guest'); if (g) g.classList.toggle('talky', line(g)); }, true); // before ui.pet shows the bubble
   idleLoop();
 
   if (import.meta.env && import.meta.env.DEV) {
     window.__qaTalk = {
-      say: (kind = 'free') => {
+      say: (kind = 'chain') => {
         if (kind === 'bench') { const p = G.benchPos(G.state.benchSize - 2); return say(kind, p.x, p.y - p.bw * 0.5, 'qa'); } // the seat the real moment uses
-        if (kind === 'chain') { const p = G.carrierMouth(); return say(kind, p.x, p.y - G.cs * 0.3, 'qa'); }
+        if (kind === 'chain') { const p = G.benchPos(Math.floor(G.state.benchSize / 2)); return say(kind, p.x, p.y - p.bw * 0.5, 'qa'); }
         return say(kind, ...head(aliveCat()), 'qa');
       },
       text: () => (el.hidden ? '' : el.textContent),

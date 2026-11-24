@@ -13,3 +13,6 @@
 @keyframes talkFade { 0% { opacity: 0; } 10%, 85% { opacity: 1; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) { #talk.on b { animation-name: talkFade; } }
 .talksr { position: fixed; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; left: 0; top: 0; }
+
+/* Sol r16: a café line waits for the pet heart to float away */
+.guest.petted.talky .gbub { animation-delay: .9s; }

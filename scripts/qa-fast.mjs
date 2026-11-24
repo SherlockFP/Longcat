@@ -620,7 +620,7 @@ try {
 
   // ---- R16 talking cats: one bubble on the board (forced via __qaTalk), the boss answer, a café guest's line, the toggle ----
   const talkIn = async () => { const b = await ev('window.__qaTalk.box()'); return b.r > b.l && b.l >= 0 && b.t >= 0 && b.r <= 376 && b.b <= 668; };
-  for (const [kind, lg] of [['bonk', 'en'], ['bench', 'tr'], ['chain', 'en'], ['last', 'tr']]) {
+  for (const [kind, lg] of [['bench', 'tr'], ['chain', 'en'], ['bossWin', 'tr']]) {
     await step('r16-talk-' + kind, async () => {
       await put(12, { lg }); await boot(); await qa('level(12)'); await sleep(900); await closeCards();
       must(await ev(`window.__qaTalk.say('${kind}')`), `L12: a ${kind} bubble shows`);
@@ -636,8 +636,8 @@ try {
     await put(20); await boot(); await qa('level(20)'); await sleep(700); await closeCards();
     must(!(await ev('window.__qaTalk.text()')), 'no bubble while the boss intro is up');
     await ev('document.getElementById("bossintro")?.click()'); await waitFor('!document.getElementById("bossintro")', 6000);
-    await waitFor('!!window.__qaTalk.text()', 6000).catch(() => must(false, 'a cat answers the boss after the intro'));
-    await shot('r16-talk-boss');
+    await sleep(2500);
+    must(!(await ev('window.__qaTalk.text()')), 'Sol r16: no boss reply over the playable board');
   });
   await step('r16-talk-quiet-l2', async () => {
     await put(2); await boot(); await qa('level(2)'); await sleep(900);
