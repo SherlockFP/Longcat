@@ -11,7 +11,7 @@ const defaults = () => ({
   bestStars: {},
   settings: { sound: true, music: true, haptics: true, lang: guessLang(), notify: false, big: false, chatter: true }, // music: older saves get it on through the defaults merge
   daily: { last: '', streak: 0, doneDay: '', shieldW: -1 }, // shieldW: the week whose one free missed day is spent
-  ads: { wins: 0, lastInterstitial: 0, removeAds: false },
+  ads: { wins: 0, lastInterstitial: 0, removeAds: false, lastReward: 0, dc: { day: -1, n: 0 } }, // lastReward: the last rewarded ad watched (no interstitial right after it); dc: double-coins ads used today
   counters: {},
   boosters: { hint: 3, scoop: 2, undo: 3 },
   cafe: { stars: 0, built: {}, hintDay: '', hintN: 0, scoopLevel: 0, love: {}, party: 0, hearts: {}, wear: {}, petDay: {}, street: 0, reno: {}, style: {} }, // street: Cat Street pieces built (src/game/street.js); reno: area id -> owned theme-set bits; style: area id -> shown set // hintN: free perk hints used on hintDay; love: resident id -> affection level 0..3 (treats)
@@ -116,6 +116,9 @@ function validate(d) {
   d.ads.wins = num(d.ads.wins, 0, 0);
   d.ads.lastInterstitial = num(d.ads.lastInterstitial, 0, 0);
   d.ads.removeAds = !!d.ads.removeAds;
+  d.ads.lastReward = num(d.ads.lastReward, 0, 0);
+  if (!isObj(d.ads.dc)) d.ads.dc = { day: -1, n: 0 };
+  d.ads.dc = { day: Number.isInteger(d.ads.dc.day) ? d.ads.dc.day : -1, n: num(d.ads.dc.n, 0, 0) };
   const c = d.cafe;
   c.stars = Number.isInteger(c.stars) && c.stars >= 0 ? c.stars : 0;
   if (!isObj(c.built)) c.built = {};

@@ -159,11 +159,26 @@ export function clampAhead(d, day) {
   return hit;
 }
 
-// ---- ads: after a win only, from level 8, 1 per 3 min, none in the first 5 minutes after install ----
+// ---- ads: after a win only, from level 8, 1 per 3 min, none in the first 5 minutes after install, none right after a rewarded ad ----
 export function interstitialOk(d, level, now) {
   if (d.ads.removeAds || level < INTERSTITIAL_FROM) return false;
   if (d.meta.firstOpen && now - d.meta.firstOpen < FIRST_SESSION_MS) return false;
+  if (now - (d.ads.lastReward || 0) < INTERSTITIAL_GAP_MS) return false;
   return now - d.ads.lastInterstitial >= INTERSTITIAL_GAP_MS;
+}
+
+// ---- R17 rewarded hooks ----
+// a close loss: few cats were left on the board, so a rewarded +1 seat is worth offering (once per board, main.js)
+export const closeLoss = (left, total) => left > 0 && left <= Math.max(3, Math.ceil(total * 0.25));
+// double coins on a first clear: the base reward is paid at once, a rewarded ad pays it again, DC_PER_DAY times a day
+export const DC_PER_DAY = 5;
+export const dcLeft = (d, day) => (d.ads.dc.day === day ? Math.max(0, DC_PER_DAY - d.ads.dc.n) : DC_PER_DAY);
+export function dcClaim(d, day, base) { // -> coins added, 0 when today's cap is used up or there is nothing to double
+  if (!(base > 0) || dcLeft(d, day) <= 0) return 0;
+  if (d.ads.dc.day !== day) d.ads.dc = { day, n: 0 };
+  d.ads.dc.n++;
+  d.coins += base;
+  return base;
 }
 
 // ---- starter bundle: offered once, after level 10 ----

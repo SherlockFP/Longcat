@@ -45,6 +45,8 @@ const testBackend = {
 let backend = TEST_MODE ? testBackend : null;
 const offBackend = { buy: () => Promise.resolve({ ok: false }), restore: () => Promise.resolve([]) };
 export const setBackend = (b) => { backend = b; };
+// dev QA (__qa.noStore): act like a production build with no store backend (true), or back to the test store (false)
+export const qaNoStore = (off) => { backend = off || !TEST_MODE ? null : testBackend; };
 // false when nothing can be bought (production build without a store backend): hide prices and offers
 export const available = () => !!backend;
 

@@ -661,6 +661,61 @@ try {
     must(!(await ev(`window.__qaTalk.say('free')`)), 'chatter off: no bubble');
   });
 
+  // ---- R17 money lane (dev fake ads: 2 s each): the rewarded offers and the shop without a store backend ----
+  const money = () => qa('money()');
+  const adWait = async () => { await sleep(2300); await waitFor('!document.querySelector(".fake-ad")', 4000); await sleep(200); };
+  await step('r17-money-seat', async () => {
+    await put(14); await boot(); await qa('closeLoss(true)'); await qa('level(14)'); await sleep(900); await closeCards();
+    await qa('failNow()'); await waitFor('window.__qa.state().screen === "fail"', 20000); await sleep(600);
+    must((await money()).seatAd, 'a close loss offers +1 seat for an ad');
+    await ev('document.querySelector("#modal [data-act=morehelp]")?.click()'); await sleep(300);
+    await shot('r17-money-seat');
+    await ev('document.querySelector("#modal [data-act=adheart]").click()'); await adWait();
+    const m = await money();
+    must(m.counters.ad_grant_seat === 1 && (await qa('state().screen')) === 'play', 'the seat is granted after the ad and play resumes');
+    await qa('failNow()'); await waitFor('window.__qa.state().screen === "fail"', 20000); await sleep(400);
+    must(!(await money()).seatAd, 'one rewarded seat per board');
+  });
+  await step('r17-money-double', async () => {
+    await put(14); await boot(); await qa('level(14)'); await sleep(900); await closeCards();
+    await qa('winNow()'); await winCard();
+    const m = await money();
+    must(m.dc > 0 && m.dcBtn, 'a first clear offers Double coins');
+    must(await inView('#modal .dcbtn') && await inView('#modal [data-act=next]'), 'Double coins and Next both on screen');
+    must(await ev('document.querySelector("#modal [data-act=next]").getBoundingClientRect().top < document.querySelector("#modal .dcbtn").getBoundingClientRect().top'), 'Double coins sits under Next');
+    await shot('r17-money-double');
+    await ev('document.querySelector("#modal .dcbtn").click()'); await adWait();
+    const m2 = await money();
+    must(m2.coins === m.coins + m.dc && !m2.dcBtn && m2.counters.ad_grant_dcoins === 1, `coins doubled once (${m.coins} -> ${m2.coins}, +${m.dc})`);
+  });
+  await step('r17-money-life', async () => {
+    await put(14, { extra: `lives: { n: 0, t: ${Date.now()} }` }); await boot(); await qa('screen("nolives")'); await sleep(400);
+    must(await ev('!!document.querySelector("#sheet [data-act=adlife]")'), 'zero lives: +1 life for an ad');
+    await shot('r17-money-life');
+    await ev('document.querySelector("#sheet [data-act=adlife]").click()'); await adWait();
+    const m = await money();
+    must(m.lives === 1 && !m.sheet, 'one life granted, the sheet closes');
+  });
+  await step('r17-money-hint', async () => {
+    await put(14, { extra: 'coins: 0, boosters: { hint: 0, scoop: 0, undo: 0 }' }); await boot(); await qa('level(14)'); await sleep(900); await closeCards();
+    await ev('document.querySelector("[data-act=hint]").click()'); await sleep(400);
+    must((await money()).sheet === 'hintad' && !(await ev('!!document.querySelector(".fake-ad")')), 'no hints, no coins: an explicit offer, no ad yet');
+    await shot('r17-money-hint');
+    await ev('document.querySelector("#sheet [data-act=adhint]").click()'); await adWait();
+    must((await money()).counters.ad_grant_hint === 1, 'the hint is granted after the ad');
+  });
+  await step('r17-money-shop-nostore', async () => {
+    await put(30, { extra: 'cafe: { stars: 2, built: { counter_counter: 1, counter_pastry: 1, counter_lamps: 1, counter_chalkboard: 1 } }' }); await boot();
+    must(!(await qa('noStore(true)')), 'QA flag: no store backend');
+    await qa('screen("shop")'); await sleep(500);
+    must(await ev('!document.querySelector("#sheet .s4soon, #sheet [data-tab=coins], #sheet .cash")'), 'no cash rows, no Coins tab, no Coming soon');
+    must(await ev('!!document.querySelector("#sheet .s4bun [data-act=shopbundle]")'), 'the helper bundle shows once a resident lives in');
+    await shot('r17-money-shop-nostore');
+    await ev('document.querySelector("#sheet [data-act=stab4][data-tab=style]").click()'); await sleep(400);
+    for (const k of ['skin', 'room']) { await ev(`document.querySelector("#sheet [data-act=shopcat][data-k=${k}]").click()`); await sleep(250); must(await ev('!document.querySelector("#sheet .s4soon, #sheet .cash")'), `no premium cosmetics (${k})`); }
+    await qa('noStore(false)');
+  });
+
   const secs = ((Date.now() - T0) / 1000).toFixed(1);
   console.log(`\nqa-fast: ${secs}s, ${fails.length} failure(s), ${errs.length} console error(s)`);
   for (const f of fails) console.log('  FAIL ' + f);

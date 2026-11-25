@@ -19,6 +19,8 @@ import { IMG } from '../game/assets.js';
 import { drawHead } from '../game/render.js';
 import { drawHat, drawCarrierSkin, drawSkinCat, lookOf, roomImage } from '../game/shop-look.js';
 import { ui, openSheet } from './ui.js';
+import * as cafe from '../game/cafe.js';
+import '../i18n-money.js';
 import './shop.css';
 
 const img = (name, cls = '') => `<img class="${cls}" src="${assetUrl(name)}" alt="" draggable="false">`;
@@ -34,6 +36,9 @@ const NAME = { hint: 'hint', undo: 'undo', scoop: 'scoop', cushion: 'shCushion' 
 const DESC = { hint: 'shHintD', undo: 'shUndoD', scoop: 'shScoopD', cushion: 'shCushD' };
 const CAT = { hat: 'shCatHat', skin: 'shCatSkin', car: 'shCatCar', room: 'shCatRoom' };
 const TABS = [['offers', 'shTabOffers'], ['coins', 'shTabCoins'], ['boosters', 'shTabBoost'], ['style', 'shTabStyle']];
+// R17: without a store backend (every production build today) nothing priced in real money shows: no Coins tab, no
+// cash rows, no premium cosmetics, no "Coming soon"
+const tabs = () => TABS.filter(([k]) => k !== 'coins' || iap.available());
 const noAdSvg = '<svg class="s4noad" viewBox="0 0 48 48"><circle cx="24" cy="24" r="19" fill="#fff6e5" stroke="#e5484d" stroke-width="5"/><rect x="13" y="16" width="22" height="16" rx="4" fill="#26334A"/><path d="M21.5 20.2v7.6l6.4-3.8z" fill="#fff6e5"/><path d="M10.5 37.5 37.5 10.5" stroke="#e5484d" stroke-width="5" stroke-linecap="round"/></svg>';
 
 // local view state
@@ -70,7 +75,7 @@ function offersPage() {
 </div>` : '';
   // R13: Fast paws (kit/iap.js fastpaws) wakes every sleepy basket on the map (src/game/basket.js): offered only while one waits
   const tn = now();
-  const paws = !BK.state(d).s.some((x) => BK.status(x, tn) !== 'ready') ? '' : `<div class="s4noadrow s4paws">${r7('cat_curl_purple', 's4pi')}<div class="s4dt"><b class="s4h">${t('fpName')}</b><small>${t('fpSub')}</small></div>${cashBtn('fastpaws')}</div>`;
+  const paws = !iap.available() || !BK.state(d).s.some((x) => BK.status(x, tn) !== 'ready') ? '' : `<div class="s4noadrow s4paws">${r7('cat_curl_purple', 's4pi')}<div class="s4dt"><b class="s4h">${t('fpName')}</b><small>${t('fpSub')}</small></div>${cashBtn('fastpaws')}</div>`;
   let free = '';
   if (ads.available()) {
     const gift = (g) => {
@@ -82,7 +87,16 @@ ${left ? `<button class="btn teal s4watch" data-act="shopad" data-id="${g.id}">â
     };
     free = `<div class="s4sec">${t('shFree')}</div><div class="s4gifts">${S.AD_GIFTS.map(gift).join('')}</div>`;
   }
-  return deal + starter + paws + free;
+  // R17: the helper bundle (coins, once a day) once the first resident has moved in
+  const b = S.bundleOf();
+  const bgot = S.bundleBought(d, dy);
+  const bundle = !cafe.RESIDENTS.some((r) => cafe.isBuilt(r.task.id)) ? '' : `<div class="s4deal s4bun ${bgot ? 'got' : ''}">
+  <i class="s4stk">${t('shOff', { n: b.off })}</i>
+  <div class="s4art">${r7('shop_gift')}</div>
+  <div class="s4dt"><small class="s4kick">${t('shBundle')}</small><div class="s4chips">${Object.entries(b.items).map(([k, n]) => chip(k, n)).join('')}</div><small class="s4tmr">${t('shBundleSub')}</small></div>
+  <div class="s4dp">${bgot ? `<span class="s4done">âœ“</span>` : `<s>${num(b.was)}</s>${coinBtn(b.price, 'shopbundle', '', d.coins < b.price)}`}</div>
+</div>`;
+  return deal + bundle + starter + paws + free;
 }
 
 // ---- Coins ----
@@ -113,11 +127,11 @@ const roomLook = (id) => LOOKS[lookOf(null, id)];
 function stylePage() {
   const d = save.data;
   S.ensure(d);
-  const items = S.COSMETICS.filter((x) => x.kind === V.cat);
-  const sel = S.item(V.sel[V.cat]) && S.item(V.sel[V.cat]).kind === V.cat ? V.sel[V.cat] : S.equipped(d, V.cat);
+  const items = S.COSMETICS.filter((x) => x.kind === V.cat && (!x.iap || iap.available() || S.owns(d, x.id)));
+  const sel = items.some((x) => x.id === V.sel[V.cat]) ? V.sel[V.cat] : S.equipped(d, V.cat);
   V.sel[V.cat] = sel;
   const cats = S.KINDS.map((k) => {
-    const all = S.COSMETICS.filter((x) => x.kind === k);
+    const all = S.COSMETICS.filter((x) => x.kind === k && (!x.iap || iap.available() || S.owns(d, x.id)));
     return `<button class="s4cat ${V.cat === k ? 'on' : ''}" data-act="shopcat" data-k="${k}"><b>${t(CAT[k])}</b><small>${t('shOwnedN', { a: all.filter((x) => S.owns(d, x.id)).length, b: all.length })}</small></button>`;
   }).join('');
   const tile = (x) => {
@@ -225,8 +239,9 @@ function render() {
   const old = document.querySelector('#sheet .shop4 .s4pg');
   const keep = old && old.dataset.pg === V.tab ? old.scrollTop : 0;
   const pages = { offers: offersPage, coins: coinsPage, boosters: boostersPage, style: stylePage };
-  const tabs = TABS.map(([k, label]) => `<button class="stab ${V.tab === k ? 'on' : ''}" data-act="stab4" data-tab="${k}">${t(label)}</button>`).join('');
-  openSheet('shop', 'shop shop4', t('shop'), `<div class="stabs s4tabs">${tabs}</div><div class="s4pg scrollarea pg-${V.tab}" data-pg="${V.tab}">${pages[V.tab]()}</div>`);
+  if (!tabs().some(([k]) => k === V.tab)) V.tab = 'offers';
+  const tabRow = tabs().map(([k, label]) => `<button class="stab ${V.tab === k ? 'on' : ''}" data-act="stab4" data-tab="${k}">${t(label)}</button>`).join('');
+  openSheet('shop', 'shop shop4', t('shop'), `<div class="stabs s4tabs">${tabRow}</div><div class="s4pg scrollarea pg-${V.tab}" data-pg="${V.tab}">${pages[V.tab]()}</div>`);
   const panel = document.querySelector('#sheet .shop4');
   if (!panel) return;
   panel.dataset.tab = V.tab;
@@ -263,7 +278,7 @@ export function shopActions(sync) {
   let busy = false;
   const paid = (msg, sel) => { save.commit(); audio.ui('coin'); haptics.success(); sync(); if (document.querySelector('#sheet .shop4')) render(); ui.toast(msg); if (sel) pop(sel); };
   return {
-    stab4({ tab }) { if (!TABS.some(([k]) => k === tab)) return; V.tab = tab; render(); track('shop_tab', { tab }); },
+    stab4({ tab }) { if (!tabs().some(([k]) => k === tab)) return; V.tab = tab; render(); track('shop_tab', { tab }); },
     shopcat({ k }) { if (!S.KINDS.includes(k)) return; V.cat = k; render(); },
     shopsel({ id }) { const it = S.item(id); if (!it) return; V.cat = it.kind; V.sel[it.kind] = id; render(); },
     shopsoon({ id }) { ui.toast(t(iap.PRODUCTS[id]?.cos ? 'shPremiumSoon' : 'shSoonToast')); },
@@ -272,6 +287,12 @@ export function shopActions(sync) {
       if (!x) return ui.toast(t('noCoins'));
       track('shop_deal', { id: x.id, price: x.price });
       paid(t('shDealToast'), '.s4deal');
+    },
+    shopbundle() {
+      const x = S.bundleBuy(save.data, day());
+      if (!x) return ui.toast(t('noCoins'));
+      track('shop_bundle', { price: x.price });
+      paid(t('shBundleGot'), '.s4bun');
     },
     shoppack({ k, i }) {
       const c = S.buyPack(save.data, k, +i);

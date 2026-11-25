@@ -35,7 +35,7 @@ Test it: `npm run preview`, open the shown URL on a phone-sized window. Offline 
 Use `store/listing.md` for texts and tags, `store/shots/` for screenshots (1080x1920, `en-*` and `tr-*`), `store/shots/cover.png` (1280x720) for the cover, `public/icons/icon-512.png` for the icon.
 
 - itch.io: create a project, kind "HTML", upload `dist` as a zip, tick "This file will be played in the browser", viewport 540x960, enable fullscreen. Add the privacy URL in the description.
-- CrazyGames: developer portal, upload the zip of `dist`. They use their own ad SDK; their rules apply. Until an SDK integration exists, build as-is (the H5 provider stays off) and read their ads/monetization section.
+- CrazyGames: use the dedicated build (section 9), not `dist`.
 - Poki: apply through their developer site. They require their SDK for ads and events; not integrated here yet.
 
 ## 5. Google H5 Games Ads (optional, later)
@@ -72,3 +72,39 @@ PORT=5193 node scripts/store-shots.mjs
 ## 8. Updating the live game
 
 Each build gets a new cache name in `dist/sw.js` (content hash), so returning players get the new version on their next visit. Just redeploy `dist/`.
+
+## 9. CrazyGames
+
+The game has a CrazyGames build with the CrazyGames SDK v3 (`src/kit/portal.js`, ads in `src/kit/ads.js`).
+
+```
+npm run build:crazygames-basic   # Basic Launch: SDK events only, no ad buttons at all
+npm run build:crazygames         # Full Launch: CrazyGames midgame + rewarded ads
+```
+
+Both write `dist-crazygames/` and `dist-crazygames.zip` (index.html at the zip root). The script sets
+`VITE_PORTAL=crazygames` and `VITE_ADS_PROVIDER=crazygames` (Basic: `off`) itself; nothing goes in `.env.production`.
+
+1. Test locally first: `npx vite preview --outDir dist-crazygames --port 5203`, open it on `localhost` (the SDK runs in
+   its "local" mode there and shows a stand-in for ads), and play: L1 starts at once, a lost board with few cats left
+   offers "+1 seat" for an ad, a first clear shows "Watch ad: +N more coins" under Next.
+2. Upload: CrazyGames developer portal, new game, HTML5, upload `dist-crazygames.zip`. Orientation: portrait.
+   Covers: `store/shots/cover.png` and the screenshots in `store/shots/`.
+3. Submit **Basic Launch** first with the `build:crazygames-basic` zip (CrazyGames shows no ads in Basic Launch and pays
+   nothing; this build has no ad buttons, so nothing promises a reward). After CrazyGames moves the game to **Full
+   Launch**, upload the `build:crazygames` zip.
+4. Leave "Progress save" off for now: progress stays in the browser (localStorage), see weak spots below.
+
+What the CrazyGames build does differently (their rules: docs.crazygames.com/requirements/):
+- No service worker, no "Install app", no automatic fullscreen (CrazyGames gives its own fullscreen button).
+- Only CrazyGames ads: midgame on Next after a campaign win (from L8, not in the first 5 minutes, 3 minutes apart,
+  never right after a rewarded ad; the SDK paces too), rewarded only on a player's tap, reward only on `adFinished`.
+  Game sound is muted from `adStarted` to the end and follows the portal's mute setting.
+- Ad buttons hide when CrazyGames refuses ads for the session (Basic Launch, kids mode, ad blocker).
+- Dare / share links use the CrazyGames invite link (`?c=` rides on it as an invite param), never our own address.
+- No real-money items (no Coins tab, no premium looks): there is no store backend.
+- SDK events: `loadingStart/Stop` around boot, `gameplayStart/Stop` whenever a board is in play / covered by a card or
+  menu, `happytime` on a boss clear or a super-hard (3-star) clear.
+
+Weak spots to know: the game reads its language from the browser, not from the SDK's `locale`; progress is not synced
+with the CrazyGames Data module (a player who changes device starts over).

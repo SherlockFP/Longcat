@@ -8,7 +8,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "check": "node scripts/check-core.mjs && node scripts/check-econ.mjs && node scripts/check-web.mjs && node scripts/check-sfx.mjs && node scripts/check-dare.mjs",
-    "qa:fast": "node scripts/qa-fast.mjs"
+    "qa:fast": "node scripts/qa-fast.mjs",
+    "build:crazygames": "node scripts/build-crazygames.mjs",
+    "build:crazygames-basic": "node scripts/build-crazygames.mjs --basic"
   },
   "devDependencies": {
     "vite": "^8.0.0"

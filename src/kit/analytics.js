@@ -9,6 +9,10 @@ export function track(name, props = {}) {
   if (import.meta.env.DEV) console.log('[an]', name, JSON.stringify(props));
 }
 
+// R17 ad placements: one counter per placement and step (ad_offer_life, ad_accept_life, ad_complete_life,
+// ad_nofill_life, ad_grant_life ...), kept local like every other counter
+export const adEvent = (placement, ev) => track(`ad_${ev}_${placement}`);
+
 // session-1 funnel milestones: l1, l3, first_resident, l10
 export function funnel(step) {
   const f = save.data.meta.funnel;

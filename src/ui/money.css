@@ -1,0 +1,5 @@
+/* R17 money lane: the win card's Double coins button (small, secondary, under Next) and the Hint offer sheet */
+.dcbtn { display: flex; align-items: center; justify-content: center; gap: 6px; margin: 6px auto 0; padding: 4px 12px; min-height: 32px; border-radius: 16px; background: rgba(255, 255, 255, .22); color: #fff; font: 700 14px var(--body); pointer-events: auto; }
+.dcbtn .adi { width: 20px; height: 20px; }
+.hintad .pbody { align-items: stretch; gap: 8px; }
+.hadsub { margin: 0 0 4px; text-align: center; font: 700 15px var(--body); color: var(--navy); }

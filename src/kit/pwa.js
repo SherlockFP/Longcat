@@ -20,6 +20,8 @@ export const pwa = {
 };
 
 export function initPwa() {
+  // R17: a portal build (CrazyGames) registers no service worker, offers no install and leaves fullscreen to the portal
+  if (import.meta.env.VITE_PORTAL) return;
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     deferred = e;

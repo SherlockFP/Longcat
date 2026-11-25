@@ -23,7 +23,8 @@ must(/base:\s*'\.\/'/.test(read('vite.config.js')), "vite base must be './'");
 const html = read('index.html');
 must(html.includes('rel="manifest"') && !/(href|src)="\/(?!src\/)/.test(html), 'index.html: manifest link, no root-absolute paths');
 const ads = read('src/kit/ads.js');
-must(/provider:\s*env\.VITE_ADS_PROVIDER === 'h5' \? 'h5' : 'off'/.test(ads), 'ads provider must default to off');
+must(/provider: \['h5', 'crazygames'\]\.includes\(env\.VITE_ADS_PROVIDER\) \? env\.VITE_ADS_PROVIDER : 'off'/.test(ads), 'ads provider must default to off');
+must(/if \(import\.meta\.env\.VITE_PORTAL\) return;/.test(read('src/kit/pwa.js')), 'R17: a portal build registers no service worker');
 
 if (bad.length) {
   console.error('check-web FAILED:\n  ' + bad.join('\n  '));
