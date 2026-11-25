@@ -14,6 +14,8 @@ import { audio } from './kit/audio.js';
 import { haptics } from './kit/haptics.js';
 import { landBuzz } from './ui/r11-juice.js'; // R11 juice: the chain's last landing buzz
 import { ads } from './kit/ads.js';
+import * as portal from './kit/portal.js'; // R17: CrazyGames SDK (crazygames build only)
+import * as money from './ui/money.js'; // R17: rewarded offers (double coins, hint), shop flags
 import { track, funnel, retention } from './kit/analytics.js';
 import { now } from './kit/clock.js';
 import * as iap from './kit/iap.js';
@@ -63,7 +65,7 @@ import './i18n-r11-vir.js';
 const UI_BACK = /^(close|closesheet|cafeback|arriveclose|arrivalclose|pcclose|home|rtlater|dareskip)$/;
 const UI_TAB = /^(cafeview|cafearea|evtab|iqtab|shoptab|stab4|rpage|albpage|archpage|iqpage|lang|toggle|shopsel|reno)$/;
 const UI_OK = /^(play|next|retry|dailyplay|dareplay|rushplay|showplay|iqplay|iqrun|arriveplay|rematch)$/;
-const UI_SILENT = /^(build|streetbuild|treat|party|hang|rthang|rthangroom|wear|qclaim|chest|loginclaim|popclaim|catchup|jobclaim|rushclaim|jarcollect|reqclaim|buy|shoppack|shopcos|shopcat|starter|restore|liferefill|shopad|adlife)$/;
+const UI_SILENT = /^(build|streetbuild|treat|party|hang|rthang|rthangroom|wear|qclaim|chest|loginclaim|popclaim|catchup|jobclaim|rushclaim|jarcollect|reqclaim|buy|shoppack|shopcos|shopcat|starter|restore|liferefill|shopad|adlife|shopbundle|adcoins|adhint)$/;
 const uiKind = (el) => {
   const a = (el && el.dataset && el.dataset.act) || '';
   return UI_BACK.test(a) ? 'back' : UI_TAB.test(a) ? 'tab' : UI_OK.test(a) ? 'ok' : UI_SILENT.test(a) ? '' : 'click';
@@ -71,6 +73,7 @@ const uiKind = (el) => {
 import './ui/r11-vir.css';
 import './i18n-boss.js';
 import { bigText } from './kit/a11y.js';
+import { isBoss } from './game/boss.js'; // R17: CrazyGames happytime on boss clears
 import * as bossUi from './ui/boss.js'; // R11 boss lane: boss every 20 levels, chests (src/game/boss.js)
 import * as talk from './ui/talk.js'; // R16: talking cats (board bubbles, café guest lines, Settings > Cat chatter)
 
@@ -523,6 +526,7 @@ function tryStart(n, daily = false, show = false) {
   if (daily) { startLevel(n, true); return true; } // the daily puzzle: retries are free, no life is spent // Cat Show / Café Rush retries are free and unlimited: no life is spent
   if (lifeGate() && econ.lives(save.data, now()) <= 0) {
     ui.noLives({ ms: econ.livesMs(save.data, now()), coins: save.data.coins, cost: econ.LIFE_REFILL_COST, ad: ads.available() });
+    if (ads.available()) ads.offer('life');
     track('no_lives_gate', { n });
     return false;
   }
@@ -849,6 +853,11 @@ function onWin(stars) {
   save.commit();
   for (let i = 0; i < stars; i++) setTimeout(() => audio.star(i), 300 + i * 300);
   cui.onWin(S.n, first); // a pack's last level: its reward and host
+  // R17: a first clear's base coins can be doubled once with a rewarded ad (a small button under Next), capped per day
+  S.dcBase = first && reward > 0 && ads.available() && econ.dcLeft(d, dayNum()) > 0 ? reward : 0;
+  S.dcToken = S.winToken;
+  if (S.dcBase && money.dcOffer(S.dcBase)) ads.offer('dcoins');
+  if (first && (stars === 3 || isBoss(S.n))) portal.happytime(); // CrazyGames: a boss or a super-hard clear only
   clipPreview();
 }
 
@@ -1069,18 +1078,18 @@ function dareText(d) {
 }
 // R11 fix 2: the link, the typed code and the QR share one address (dare.publicBase: the public https address of the
 // build, else this page), so what a friend types off the clip and what a camera scans open the same board
-const dareUrl = (d) => dare.publicBase() + '?c=' + dare.encode(d);
+const dareUrl = (d) => dare.gameLink(dare.encode(d));
 // what the clip shows: the link without its scheme, with the typeable core only (board, seats, goal, share id); R12: plus
 // the QR's compact reply context, so a counter-dare typed off the clip lands in Friend Results like the scanned one
-const shortUrl = (d) => dare.publicBase().replace(/^https?:\/\//, '') + '?c=' + dare.qrCode(d);
+const shortUrl = (d) => dare.gameLink(dare.qrCode(d)).replace(/^https?:\/\//, '');
 // the QR on the clip's end card and PNG: the same address with the same typeable core (R11 fix round 2: plus the compact
 // reply context on a counter-dare, so a scanned reply reaches Friend Results like the text link)
-const qrUrl = (d) => dare.publicBase() + '?c=' + dare.qrCode(d);
+const qrUrl = (d) => dare.gameLink(dare.qrCode(d));
 // a ?c= link opened the game: decoded (and clamped) once, then dropped from the address bar
 function readDare() {
   let code = null;
   try { code = new URLSearchParams(location.search).get('c'); } catch { /* no URL API */ }
-  if (!code) return null;
+  if (!code) { code = portal.inviteParam('c'); return code ? openCode(code) : null; } // R17: a CrazyGames invite link
   try { const u = new URL(location.href); u.searchParams.delete('c'); history.replaceState(null, '', u.pathname + u.search + u.hash); } catch { /* file:// */ }
   return openCode(code);
 }
@@ -1167,7 +1176,7 @@ function failInfo() {
     canSeat: save.data.coins >= seatCost(),
     scoop: save.data.boosters.scoop,
     scoopCost: SCOOP_COST,
-    ad: ads.available(),
+    ad: !S.show && ads.available() && S.adSeat !== triesKey() && !!st && (S.qaClose || econ.closeLoss(st.aliveCount, game.board.cats.length)), // R17: a close loss, once per board
     store: iap.available(),
     tip: S.daily ? t('dailyRetryFree') : cur() ? t('curTry_' + cur()) : t(st && st.carriers[0] && freeCats(st).some((i) => game.board.cats[i].color === st.carriers[0].color) ? 'failTip2' : 'failTip'),
     // the first lost bench on a level offers one free Take Back (the losing tap undone), so the lesson can be applied
@@ -1203,6 +1212,7 @@ function onFail(silent = false) {
   const st = game.state;
   if (st && st.pending && st.pending.length) game.cueNeed(game.board.cats[st.pending[0]].color);
   ui.fail(info);
+  if (info.ad) ads.offer('seat');
   if (info.offer) {
     save.data.shop.starterShown = true;
     save.commit();
@@ -1581,9 +1591,10 @@ const actions = {
     ui.residents();
   },
   adlife: guarded(async () => {
-    if (ui.sheet !== 'nolives' || !ads.available()) return;
+    if (ui.sheet !== 'nolives' || !ads.available() || econ.lives(save.data, now()) > 0) return; // R17: only at zero lives
     if (!(await ads.rewarded('life'))) return ui.toast(t('adNone'));
-    if (ui.sheet !== 'nolives') return;
+    if (ui.sheet !== 'nolives' || econ.lives(save.data, now()) > 0) return;
+    ads.grant('life');
     econ.addLife(save.data, 1);
     save.commit();
     track('life_ad');
@@ -1646,8 +1657,11 @@ const actions = {
   adheart: guarded(async () => {
     const st = game.state;
     if (S.mode !== 'play' || !game.over || !st.failed || !ads.available()) return;
-    if (!(await ads.rewarded('heart'))) return ui.toast(t('adNone'));
+    if (S.adSeat === triesKey()) return;
+    if (!(await ads.rewarded('seat'))) return ui.toast(t('adNone'));
     if (S.mode !== 'play' || game.state !== st || !game.over || !st.failed) return; // the failure was already resolved while the ad ran
+    S.adSeat = triesKey(); // one rewarded seat per board
+    ads.grant('seat');
     game.heartsAdd();
     ui.hideModal();
     ui.resume();
@@ -1731,11 +1745,38 @@ const actions = {
       track('hint_booster');
     } else if (!ads.available()) {
       ui.toast(t('noCoins'));
-    } else if (await ads.rewarded('hint')) {
-      if (ok()) game.setHint();
-      else { save.data.boosters.hint++; save.commit(); ui.setHud(hudInfo()); ui.toast(t('hintSaved')); } // the board moved on while the ad ran: the hint waits in stock
-      track('hint_ad');
-    } else ui.toast(t('adNone'));
+    } else {
+      money.hintOffer(HINT_COST); // R17: an explicit offer (watch an ad, or no thanks), never an ad straight off the Hint button
+      ads.offer('hint');
+    }
+  }),
+  adhint: guarded(async () => {
+    if (ui.sheet !== 'hintad') return;
+    ui.hideSheet();
+    const ok = () => S.mode === 'play' && !S.show && game.state && !game.over && !isFailed(game.state) && game.state.aliveCount > 0 && game.hintId == null;
+    if (!(await ads.rewarded('hint'))) return ui.toast(t('adNone'));
+    ads.grant('hint');
+    if (ok()) game.setHint();
+    else { save.data.boosters.hint++; save.commit(); ui.setHud(hudInfo()); ui.toast(t('hintSaved')); } // the board moved on while the ad ran: the hint waits in stock
+    track('hint_ad');
+  }),
+  // R17: double the base coins of a first clear (paid already) with a rewarded ad, capped per day (econ.dcClaim)
+  adcoins: guarded(async () => {
+    const token = S.winToken;
+    const base = S.dcBase;
+    if (!base || S.dcToken !== token || ui.screen !== 'win' || !ads.available()) return;
+    if (!(await ads.rewarded('dcoins'))) return ui.toast(t('adNone'));
+    if (S.dcToken !== token || S.dcBase !== base) return; // the card moved on while the ad ran: nothing to double any more
+    S.dcBase = 0;
+    const got = econ.dcClaim(save.data, dayNum(), base);
+    save.commit();
+    money.dcDone();
+    if (!got) return;
+    ads.grant('dcoins');
+    track('double_coins', { n: S.n, coins: got });
+    syncCoins();
+    audio.ui('coin');
+    ui.toast(t('dcGot', { n: got }));
   }),
   daresheet: () => track('share_sheet'), // R17: the standout win's Dare a friend sheet opened (ui.js toggles it)
   // Share / Dare a friend: the challenge (text + link to this exact board), at once
@@ -1865,7 +1906,7 @@ async function shareHouse({ k, to, id }) {
   } finally { S.sharing = false; }
 }
 
-const settingsInfo = () => ({ notifyOk: live.eventsOpen(save.data) && notify.supported(), settings: save.data.settings, removeAds: ads.isRemoved(), canInstall: pwa.canInstall() });
+const settingsInfo = () => ({ notifyOk: live.eventsOpen(save.data) && notify.supported(), settings: save.data.settings, removeAds: ads.isRemoved(), canInstall: pwa.canInstall(), store: iap.available() });
 
 // ---- boot ----
 async function boot() {
@@ -1908,7 +1949,11 @@ async function boot() {
   pwa.onChange(() => { if (ui.screen === 'settings') ui.settings(settingsInfo()); });
   document.documentElement.lang = save.data.settings.lang;
   window.addEventListener('pointerdown', () => audio.unlock(), { once: true });
+  // R17 CrazyGames build only: the SDK loads beside the assets; the first screen waits for both (at most 8 s for the SDK)
+  const portalUp = portal.initPortal().then((ok) => { if (ok) { portal.loading(true); portal.checkAdblock(); } });
   await loadAssets();
+  await portalUp;
+  portal.loading(false);
   bigText(save.data.settings.big); // R13 a11y: Settings > Bigger text
   econTick(); // day stamps repaired and rolled before the first screen reads them
   const dc = readDare();
@@ -1916,6 +1961,8 @@ async function boot() {
   else if (save.data.level < CAFE_FROM) startLevel(save.data.level);
   else startHome();
   setInterval(() => {
+    // R17 CrazyGames: gameplay runs while a board is in play and no card, sheet or intro covers it (only changes are sent)
+    portal.gameplay(S.mode === 'play' && ui.screen === 'play' && !ui.sheet && !document.querySelector('#modal, #smodal, #cmodal, #bossintro'));
     if (S.mode !== 'play' || !game.state) return;
     ui.setHud(hudInfo());
     // L4: no answer up front. The card names the idea, never the tap: at 4 of 5 seats a reminder of the rule, and once a
@@ -1983,6 +2030,10 @@ async function boot() {
     const blocked = () => game.board.cats.filter((c) => game.state.alive[c.id] && findBlocker(game.state, c.id)).map((c) => c.id);
     window.__qa = {
       level: (n, rev) => { S.qaRev = rev; startLevel(n); }, // QA: an older board revision (R14: qa.mjs plays the R12 L10 pair trap)
+      // R17 money QA: no store backend (a production build), the rewarded offers' state
+      noStore: (off = true) => { iap.qaNoStore(off); return iap.available(); },
+      closeLoss: (on = true) => { S.qaClose = on; }, // the next lost bench counts as a close loss (few cats left)
+      money: () => ({ dc: S.dcBase || 0, dcBtn: !!document.querySelector('#modal .dcbtn'), seatAd: !!document.querySelector('#modal [data-act=adheart]'), sheet: ui.sheet, lives: econ.lives(save.data, now()), coins: save.data.coins, counters: Object.fromEntries(Object.entries(save.data.counters).filter(([k]) => k.startsWith('ad_'))) }),
       // R11 fix 2 (appeal): the shaped tabby on a long straight run, a tight zigzag and an L bend, on the live renderer
       tabbyBoard: () => {
         const cats = [

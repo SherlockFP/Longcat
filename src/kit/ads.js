@@ -1,10 +1,14 @@
 // Ads. Dev builds: a 2s fake overlay. Web release: a Google H5 Games Ads provider (adBreak/adConfig), OFF unless
-// VITE_ADS_PROVIDER=h5 is set at build time (see RELEASE.md). Anything else grants nothing (fail closed).
+// VITE_ADS_PROVIDER=h5 is set at build time (see RELEASE.md); VITE_ADS_PROVIDER=crazygames uses the CrazyGames SDK
+// (src/kit/portal.js). Anything else grants nothing (fail closed). One ad at a time; every placement is counted
+// (analytics.adEvent: offer / accept / complete / nofill / grant).
 import { save } from './save.js';
 import { t } from '../i18n.js';
 import { interstitialOk } from '../game/econ.js';
 import { now } from './clock.js';
 import { audio } from './audio.js';
+import * as portal from './portal.js';
+import { adEvent } from './analytics.js';
 
 // Dev/test builds only: a production build with no real ad plugin registered grants nothing (fail closed).
 export const AD_TEST = !!(import.meta.env && import.meta.env.DEV);
@@ -13,7 +17,7 @@ const FAKE_MS = 2000;
 // Build-time config (vite env). Default: no real provider. Portals that run their own ads load the game with ?noads=1.
 const env = (import.meta.env) || {};
 export const ADS_CONFIG = {
-  provider: env.VITE_ADS_PROVIDER === 'h5' ? 'h5' : 'off',
+  provider: ['h5', 'crazygames'].includes(env.VITE_ADS_PROVIDER) ? env.VITE_ADS_PROVIDER : 'off', // default off: nothing loads, nothing promises a reward
   h5ClientId: env.VITE_H5_CLIENT_ID || 'ca-pub-0000000000000000', // placeholder until the owner has an AdSense publisher id
   h5Test: env.VITE_H5_TEST !== '0', // data-adbreak-test: test ads until the owner builds with VITE_H5_TEST=0
 };
@@ -108,26 +112,48 @@ function fakeAd(label) {
   });
 }
 
+const cgOk = () => ADS_CONFIG.provider === 'crazygames' && portal.adsUsable();
+let inFlight = false; // serialize: a second request while one ad runs gets nothing
+const once = async (fn) => {
+  if (inFlight) return false;
+  inFlight = true;
+  try { return await fn(); } finally { inFlight = false; }
+};
+
 export const ads = {
-  // false when no ad can ever be shown (production build without a provider, or a no-ads portal): hide ad buttons
-  available: () => !urlNoAds && (ADS_CONFIG.provider === 'h5' || AD_TEST),
-  // -> Promise<boolean> true when the reward should be granted
+  // false when no ad can ever be shown (production build without a provider, a no-ads portal, CrazyGames Basic Launch
+  // or an ad blocker): hide ad buttons
+  available: () => !urlNoAds && (ADS_CONFIG.provider === 'h5' || cgOk() || (AD_TEST && ADS_CONFIG.provider !== 'crazygames')),
+  // a reward was put in front of the player (main.js calls it when an offer shows)
+  offer: (reason) => adEvent(reason, 'offer'),
+  grant: (reason) => adEvent(reason, 'grant'),
+  // -> Promise<boolean> true when the reward should be granted (only on a fully watched ad)
   rewarded(reason) {
     if (urlNoAds) return Promise.resolve(false); // no ad network is loaded in a no-ads build
-    if (ADS_CONFIG.provider === 'h5') return h5Rewarded(reason);
-    if (!AD_TEST) return Promise.resolve(false);
-    return fakeAd(t('adPlaying') + ' (' + reason + ')');
+    return once(async () => {
+      adEvent(reason, 'accept');
+      let ok = false;
+      if (ADS_CONFIG.provider === 'h5') ok = await h5Rewarded(reason);
+      else if (ADS_CONFIG.provider === 'crazygames') ok = (await portal.requestAd('rewarded')).ok;
+      else if (AD_TEST) ok = await fakeAd(t('adPlaying') + ' (' + reason + ')');
+      adEvent(reason, ok ? 'complete' : 'nofill');
+      if (ok) { save.data.ads.lastReward = now(); save.commit(); }
+      return ok;
+    });
   },
   interstitial() {
     if (urlNoAds) return Promise.resolve();
     const done = (shown) => {
+      adEvent('next', shown ? 'complete' : 'nofill');
       if (!shown) return;
       save.data.ads.lastInterstitial = now();
       save.commit();
     };
-    if (ADS_CONFIG.provider === 'h5') return h5Interstitial().then(done);
-    if (!AD_TEST) return Promise.resolve();
-    return fakeAd(t('adPlaying')).then(() => done(true));
+    return once(async () => {
+      if (ADS_CONFIG.provider === 'h5') return done(await h5Interstitial());
+      if (ADS_CONFIG.provider === 'crazygames') return done(cgOk() && (await portal.requestAd('midgame')).ok);
+      if (AD_TEST) return done(await fakeAd(t('adPlaying')));
+    });
   },
   // Rules (econ.interstitialOk): after a win only, from level 8, 1 per 3 min, none in the first 5 minutes after install, never with No Ads.
   shouldShowInterstitial(level) {

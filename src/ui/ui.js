@@ -650,8 +650,8 @@ export const ui = {
   <div class="setgrid">${tog('sound', t('sound'))}${tog('music', t('music'))}${tog('haptics', t('haptics'))}${tog('big', t('bigText'))}${tog('chatter', t('chatter'))}${info.notifyOk ? tog('notify', t('notifications')) : ''}</div>
   <div class="setrow"><span>${t('language')}</span><div class="segs">${langs}</div></div>${gpuRow()}
   ${info.canInstall ? `<div class="setrow"><span>${t('installApp')}</span><button class="seg wide" data-act="install">${t('install')}</button></div>` : ''}
-  <div class="setrow"><span>${t('removeAds')}</span>${info.removeAds ? `<b class="owned">${t('owned')}</b>` : `<button class="seg wide" data-act="shop">${t('shop')}</button>`}</div>
-  <div class="setrow"><button class="link" data-act="restore">${t('restore')}</button></div>
+  ${info.store === false && !info.removeAds ? '' : `<div class="setrow"><span>${t('removeAds')}</span>${info.removeAds ? `<b class="owned">${t('owned')}</b>` : `<button class="seg wide" data-act="shop">${t('shop')}</button>`}</div>`}
+  ${info.store === false ? '' : `<div class="setrow"><button class="link" data-act="restore">${t('restore')}</button></div>`}
   <p class="credits" style="margin:4px 0 6px;font-size:12px;line-height:1.35;opacity:.7;text-align:center">${t('credits')}: IgnasD, Kerzoven, AntumDeluge, Traceletz, EZduzziteh, rubberduck, PWL, Spring Spring, Fupi, MintoDog (CC0, OpenGameArt.org), Zeno Studio (UI)<b class="madeby" style="display:block;margin-top:2px;font-weight:800;letter-spacing:.04em">Made by Sher</b></p>
   <button class="btn teal" data-act="close">${t('close')}</button>
 </div></div>`);

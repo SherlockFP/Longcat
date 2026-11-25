@@ -22,6 +22,9 @@ export const DEALS = [
   { id: 'd_party', items: { hint: 2, undo: 2, scoop: 1, cushion: 1 }, off: 50 },
 ];
 
+// R17: the helper bundle, coin-priced, once a day, in Offers once the first resident has moved in (next to the deal)
+export const BUNDLE = { id: 'b_helper', items: { hint: 2, undo: 1, scoop: 1 }, off: 35 };
+
 // free gifts for a rewarded ad (only where ads.available()): per day
 export const AD_GIFTS = [
   { id: 'coins', give: { coins: 30 }, per: 3 },

@@ -1094,6 +1094,50 @@ const T0 = at(2026, 0, 7, 12); // a Wednesday in January
   }
 }
 
+// ---------------- R17 money lane: double coins cap, close loss, interstitial after a reward, helper bundle ----------------
+{
+  const d = fresh();
+  const day = E.dayOf(T0);
+  d.coins = 0;
+  let paid = 0;
+  for (let i = 0; i < E.DC_PER_DAY + 3; i++) paid += E.dcClaim(d, day, 30);
+  eq(paid, 30 * E.DC_PER_DAY, `double coins pays ${E.DC_PER_DAY} times a day, then nothing`);
+  eq(E.dcLeft(d, day), 0, 'no double coins left today');
+  eq(E.dcLeft(d, day + 1), E.DC_PER_DAY, 'the cap refills the next day');
+  eq(E.dcClaim(d, day + 1, 0), 0, 'nothing to double: no claim used');
+  eq(E.dcLeft(d, day + 1), E.DC_PER_DAY, 'a zero claim spends nothing');
+  ok(E.DC_PER_DAY >= 1 && E.DC_PER_DAY <= 6, 'double coins stays a small daily extra');
+  ok(E.closeLoss(2, 20) && E.closeLoss(5, 20) && !E.closeLoss(6, 20) && !E.closeLoss(0, 20) && E.closeLoss(3, 6), 'close loss: few cats left (max 3, 25%)');
+  const i = fresh();
+  i.meta.firstOpen = T0;
+  ok(E.interstitialOk(i, 9, T0 + 10 * MIN), 'interstitial allowed after 5 min from L8');
+  i.ads.lastReward = T0 + 9 * MIN;
+  ok(!E.interstitialOk(i, 9, T0 + 10 * MIN), 'no interstitial right after a rewarded ad');
+  ok(E.interstitialOk(i, 9, T0 + 12 * MIN), 'interstitials come back 3 min after the reward');
+  ok(!E.interstitialOk(i, 7, T0 + 60 * MIN), 'no interstitial before L8');
+  // save migration: an old save without the R17 fields
+  stored.v = JSON.stringify({ v: 9, level: 5, ads: { wins: 1, lastInterstitial: 0, removeAds: false, dc: 'x' } });
+  const m = (await import('../src/kit/save.js?m=' + Math.random())).save.data;
+  ok(m.ads.dc && Number.isInteger(m.ads.dc.day) && m.ads.dc.n >= 0 && m.ads.lastReward >= 0, 'old saves get the R17 ad fields');
+
+  const SH = await import('../src/game/shop.js');
+  const b = SH.bundleOf();
+  const packEach = Math.min(...SH.BOOSTERS.filter((k) => b.items[k]).map((k) => SH.packPrice(k, SH.PACKS[0]) / SH.PACKS[0].n));
+  ok(b.price < b.was && b.price > 0, `bundle cheaper than list (${b.price} < ${b.was})`);
+  ok(b.off > SH.PACKS[0].off && b.off <= Math.max(...SH.DEALS.map((x) => x.off)), 'bundle discount between the small pack and the best deal');
+  ok(b.price <= 300, `bundle is affordable after a few wins (${b.price})`);
+  ok(packEach > 0 && Object.keys(b.items).every((k) => SH.BOOSTERS.includes(k)), 'bundle holds shop boosters only');
+  const s = fresh();
+  s.coins = b.price - 5;
+  ok(!SH.bundleBuy(s, day), 'bundle needs the coins');
+  s.coins = b.price * 2;
+  const h0 = s.boosters.hint;
+  ok(!!SH.bundleBuy(s, day) && s.coins === b.price && s.boosters.hint === h0 + b.items.hint, 'bundle pays out its items');
+  ok(!SH.bundleBuy(s, day), 'bundle once a day');
+  ok(!!SH.bundleBuy(s, day + 1), 'bundle again the next day');
+  console.log(`  R17: double coins ${E.DC_PER_DAY}/day, helper bundle ${b.price} (was ${b.was})`);
+}
+
 if (failures) {
   console.error(`\n${failures} econ check(s) failed`);
   process.exit(1);

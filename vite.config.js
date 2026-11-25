@@ -7,11 +7,13 @@ import { join, relative, sep } from 'node:path';
 // (a new build = a new cache; the old one is deleted on activate). Relative URLs, so it works in a subfolder.
 function offlineSw() {
   let outDir = 'dist';
+  let portal = '';
   return {
     name: 'lco-offline-sw',
     apply: 'build',
-    configResolved(c) { outDir = c.build.outDir; },
+    configResolved(c) { outDir = c.build.outDir; portal = c.env && c.env.VITE_PORTAL; },
     closeBundle() {
+      if (portal) return; // R17: a portal build (CrazyGames) ships no service worker
       const files = [];
       const walk = (d) => {
         for (const n of readdirSync(d)) {
@@ -53,6 +55,7 @@ function publicUrlNote() {
     apply: 'build',
     configResolved(c) {
       const u = c.env && c.env.VITE_PUBLIC_URL;
+      if (c.env && c.env.VITE_PORTAL) return; // R17: portal builds share through the portal's own invite link (src/kit/portal.js)
       if (!u) c.logger.warn('[lco] VITE_PUBLIC_URL is not set: share links and QR codes will use the address the page is served from (RELEASE.md section 3).');
       else if (!/^https:\/\//.test(u)) c.logger.warn('[lco] VITE_PUBLIC_URL should be an https address: ' + u);
     },

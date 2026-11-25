@@ -1,9 +1,9 @@
 // R10 shop rules: coin-priced booster packs, the deal of the day, rewarded-ad gifts, the Extra Cushion booster and the
 // cosmetics (owned / in use). Pure functions over the save data `d` and a day number, testable in node
 // (scripts/check-econ.mjs). State lives in d.shop next to the older starterShown / offerDay keys, set up lazily here.
-import { UNIT, BOOSTERS, PACKS, DEALS, AD_GIFTS, COSMETICS, KINDS } from '../../data/shop.js';
+import { UNIT, BOOSTERS, PACKS, DEALS, AD_GIFTS, COSMETICS, KINDS, BUNDLE } from '../../data/shop.js';
 
-export { UNIT, BOOSTERS, PACKS, DEALS, AD_GIFTS, COSMETICS, KINDS };
+export { UNIT, BOOSTERS, PACKS, DEALS, AD_GIFTS, COSMETICS, KINDS, BUNDLE };
 
 const isObj = (v) => !!v && typeof v === 'object' && !Array.isArray(v);
 const int = (v, lo = 0) => (Number.isInteger(v) && v >= lo ? v : lo);
@@ -26,6 +26,7 @@ export function ensure(d) {
   if (!isObj(s.ad)) s.ad = { day: -1 };
   s.ad.day = Number.isInteger(s.ad.day) ? s.ad.day : -1;
   for (const g of AD_GIFTS) s.ad[g.id] = int(s.ad[g.id]);
+  s.bun = Number.isInteger(s.bun) ? s.bun : -1; // R17: the day the helper bundle was last bought
   s.cush = int(s.cush);
   s.cushLv = int(s.cushLv);
   return s;
@@ -87,6 +88,19 @@ export function dealBuy(d, day) { // -> the deal, or null (bought today already 
   d.coins -= x.price;
   give(d, x.items);
   d.shop.deal = { day, got: 1 };
+  return x;
+}
+
+// ---- R17 helper bundle: once a day, coin-priced ----
+export const bundleOf = () => { const was = listPrice(BUNDLE.items); return { ...BUNDLE, was, price: round5(was * (1 - BUNDLE.off / 100)) }; };
+export const bundleBought = (d, day) => ensure(d).bun === day;
+export function bundleBuy(d, day) { // -> the bundle, or null (bought today already / not enough coins)
+  if (bundleBought(d, day)) return null;
+  const x = bundleOf();
+  if (d.coins < x.price) return null;
+  d.coins -= x.price;
+  give(d, x.items);
+  d.shop.bun = day;
   return x;
 }
 

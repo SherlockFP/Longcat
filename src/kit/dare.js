@@ -18,15 +18,20 @@
 //   { nm: sender name, r: the share id this run answered, pg: that dare's target, th: [[name, value], ...] the latest
 //     earlier runs on this board (oldest first, at most 3), rd: round of the back-and-forth (1 = the first dare) }
 // v1 (still decoded): base64url JSON { v: 1, n, b, k, m: 'chain'|'seats'|'time', g, nm?, x?, i?, r?, pg? }.
+import { PORTAL, inviteUrl } from './portal.js';
+
 export const MODES = ['chain', 'seats', 'time'];
 
 // R11 fix 2: ONE address for every share: the full link, the typed code on the clip and the QR all start with it. The
 // public https address when the build names one (VITE_PUBLIC_URL, RELEASE.md), else this page
 const PUBLIC_URL = (import.meta.env && import.meta.env.VITE_PUBLIC_URL) || '';
 export function publicBase() {
+  if (PORTAL) return inviteUrl('') || location.origin + location.pathname; // R17: a portal build links to the portal's own game page
   if (PUBLIC_URL) return /\/$/.test(PUBLIC_URL) || /\.html?$/.test(PUBLIC_URL) ? PUBLIC_URL : PUBLIC_URL + '/';
   return location.origin + location.pathname;
 }
+// R17: the link that opens one dare code (a portal build: the portal's invite link carrying it as the 'c' param)
+export const gameLink = (code) => (PORTAL ? inviteUrl(code) || publicBase() : publicBase() + '?c=' + code);
 const KINDS = ['l', 'd', 's', 'r'];
 const MAX_LEN = 400;
 const MCH = { chain: 'c', seats: 's', time: 't' };

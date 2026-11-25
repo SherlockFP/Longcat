@@ -8,3 +8,5 @@ qa/*.jpg
 !art-src/mockups/_*.jpg
 qa/**/*.png
 qa/**/*.jpg
+dist-crazygames
+dist-crazygames.zip
