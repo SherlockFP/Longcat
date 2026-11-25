@@ -96,10 +96,21 @@ function load() {
 }
 
 // One sample voice. Returns false when the file is not ready, so the caller plays the synth version.
+const reps = {}; // event -> { at, run }: the same sound fired in a quick burst
+const DAMP = new Set(['mrrp', 'thump', 'clack', 'jingle', 'tick', 'bonk', 'mew', 'uiclick', 'uitab']); // per-tap sounds; stars, pops and chain plinks keep their full run
 function sample(ev, { rate = 1, vol = 1, t = 0, cap = 4 } = {}) {
   const list = SFX[ev];
   const ready = list.filter((n) => bufs[n]);
   if (!ready.length) return false;
+  // fast play stacks meows, landings and clacks: a repeat within 70 ms is dropped, and a run of repeats gets quieter
+  // (true: the caller plays no synth fallback either)
+  if (DAMP.has(ev)) {
+    const at = ctx.currentTime + t, r = reps[ev] || (reps[ev] = { at: -9, run: 0 });
+    if (Math.abs(at - r.at) < 0.07) return true;
+    r.run = at - r.at < 0.45 ? r.run + 1 : 0;
+    r.at = at;
+    vol *= Math.max(0.4, 0.8 ** r.run);
+  }
   let i = Math.floor(Math.random() * ready.length);
   if (ready.length > 1 && i === last[ev]) i = (i + 1) % ready.length;
   last[ev] = i;

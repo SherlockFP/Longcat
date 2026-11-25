@@ -653,6 +653,15 @@ try {
     await sleep(500);
     await shot('r16-talk-cafe');
   });
+  await step('r18-daily-chest', async () => {
+    await put(12); await boot();
+    await ev('(async () => { const { save } = await import("/src/kit/save.js"); save.data.quests.list.forEach((x) => { x.c = 1; }); save.data.quests.chest = 0; })()');
+    await ev('document.querySelector("[data-act=quests]").click()'); await sleep(500);
+    await ev('document.querySelector("[data-act=chest]").click()');
+    await waitFor('!!document.getElementById("chestfx")', 3000).catch(() => must(false, 'the daily chest opens with the chest animation'));
+    await sleep(1500); await ev('document.getElementById("chestfx")?.click()'); await sleep(1800);
+    await shot('r18-daily-chest');
+  });
   await step('r16-talk-settings', async () => {
     await put(12); await boot(); await qa('screen("settings")'); await sleep(500);
     must(await ev('!!document.querySelector("#modal [data-k=chatter].on")'), 'Settings: Cat chatter, on by default');

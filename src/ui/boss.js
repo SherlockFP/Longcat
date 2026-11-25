@@ -354,7 +354,7 @@ function chestButton(card) {
 }
 
 // ---------------- chest opening ----------------
-const KIND = { wood: 'chWood', boss: 'chBoss', bask: 'bkName', gift: 'bkGift', welcome: 'bkWelcome' };
+const KIND = { wood: 'chWood', boss: 'chBoss', bask: 'bkName', gift: 'bkGift', welcome: 'bkWelcome', daily: 'chest' };
 const TIER = { common: 'tierCommon', rare: 'tierRare', epic: 'tierEpic' };
 function openQueue() {
   if (chestOn) return;

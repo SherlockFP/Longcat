@@ -1402,14 +1402,16 @@ const actions = {
     if (S.mode === 'cafe') ui.setDots(dots());
   },
   chest() {
-    if (!econ.chestClaim(save.data)) return ui.toast(t('chestSub'));
+    const coins0 = save.data.coins;
+    const r = econ.chestClaim(save.data);
+    if (!r) return ui.toast(t('chestSub'));
     save.commit();
     track('daily_chest');
-    audio.ui('chest');
-    haptics.success();
     ui.quests(questsInfo());
-    syncCoins();
-    if (S.mode === 'cafe') ui.setDots(dots());
+    const { coins = 0, ...items } = r;
+    const after = () => { syncCoins(); if (S.mode === 'cafe') ui.setDots(dots()); };
+    if (bossUi.chestBusy()) { audio.ui('chest'); haptics.success(); return after(); }
+    bossUi.showChest({ e: { t: 'daily' }, loot: { tier: 'common', coins, items, cos: null } }, coins0, after); // the same drop, wobble and burst as every other chest
   },
   loginclaim() {
     const r = econ.loginClaim(save.data, dayNum());
