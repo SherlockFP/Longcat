@@ -108,7 +108,7 @@ function fakeAd(label) {
     setTimeout(() => {
       el.remove();
       resolve(true);
-    }, FAKE_MS);
+    }, globalThis.__qaAdMs || FAKE_MS); // __qaAdMs: qa-fast shortens the dev fake ad
   });
 }
 

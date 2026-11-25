@@ -136,4 +136,5 @@ export function winCard(n, list) {
     ? `<div class="rttm one"><b>${esc(t('rtBackTmrw'))}</b>${tmItem(list[0])}</div>`
     : `<div class="rttm"><b>${esc(t('rtWins', { n }))} ${esc(t('rtTmrw'))}</b>${list.slice(0, 2).map(tmItem).join('<i class="rtsep">·</i>')}</div>`;
   if (row) row.insertAdjacentHTML('beforebegin', html); else card.insertAdjacentHTML('beforeend', html);
+  if (card.scrollHeight > card.clientHeight + 1) card.querySelector('.rttm')?.remove(); // R17: a full card keeps Next on screen
 }

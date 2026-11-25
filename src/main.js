@@ -2069,6 +2069,7 @@ async function boot() {
       lang: (l) => actions.lang({ l }),
       act: (name, d = {}) => actions[name](d),
       save: (patch) => { Object.assign(save.data, patch); save.commit(); },
+      drop: () => { clearTimeout(save.soon); save.soon = 0; }, // QA injects a save: a pending commitSoon must not write over it
       sheet: () => ui.sheet,
       slow: (f) => { game.timeScale = f; },
       solveStep() {

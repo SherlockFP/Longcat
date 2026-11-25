@@ -14,6 +14,11 @@ export function dcOffer(n) {
   if (!next) return false;
   const row = next.closest('.row') || next;
   row.insertAdjacentHTML('afterend', `<button class="dcbtn" data-act="adcoins">${tv}<b>${t('dcBtn', { n })}</b></button>`);
+  // a full card: the tomorrow line gives way first, then the offer itself (Next never leaves the screen)
+  const card = next.closest('.card');
+  const over = () => card.scrollHeight > card.clientHeight + 1;
+  if (over()) card.querySelector('.rttm')?.remove();
+  if (over()) { dcDone(); return false; }
   return true;
 }
 export const dcDone = () => document.querySelector('#modal .dcbtn')?.remove();

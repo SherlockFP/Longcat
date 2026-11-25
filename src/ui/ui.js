@@ -573,6 +573,9 @@ export const ui = {
     <button class="btn teal sm" data-act="sharecard"><span>${t('virCardBtn')}</span></button>
   </div></div>
 </div></div>` : ''}</div></div>`);
+    // R17: a busy big card (the replay now lives in the Dare sheet) drops the payout breakdown, then the badges, so Next stays on screen
+    const wc = document.querySelector('#modal .card.win');
+    for (const sel of ['.paybd', '.ach.inline']) if (wc.scrollHeight > wc.clientHeight + 1) wc.querySelector(sel)?.remove();
     if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);
     if (cn && info.cafeStars) flyStar(cn, info.cafeStars);
   },

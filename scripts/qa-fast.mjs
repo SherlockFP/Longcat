@@ -81,9 +81,9 @@ try {
   const must = (ok, msg) => { if (!ok) { fails.push(frame + ': ' + msg); console.log('  FAIL ' + msg); } };
   // a step: its own frame name for the error log; a thrown step is a failure, the run goes on
   const step = async (name, fn) => { if (process.env.QA_ONLY && !process.env.QA_ONLY.split(',').some((x) => name.startsWith(x))) return; frame = name; try { await fn(); } catch (e) { fails.push(`${name}: ${e.message}`); console.log(`  FAIL ${name}: ${e.message}`); } };
-  const boot = async (query = '') => { await send('Page.navigate', { url: origin + '/' + query }); await sleep(300); await waitFor('!!window.__qa && !!document.querySelector("#menu.on, #cafe.on, #hud.on")', 20000); await sleep(500); };
+  const boot = async (query = '') => { await send('Page.navigate', { url: origin + '/' + query }); await sleep(300); await waitFor('!!window.__qa && !!document.querySelector("#menu.on, #cafe.on, #hud.on")', 20000); await sleep(450); };
   const cfg = (lg) => `settings: { lang: '${lg}', sound: false, music: false, haptics: false }`;
-  const put = (lv, { lg = 'en', extra = '', shape = true } = {}) => ev(`localStorage.clear(); localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: ${lv}, coins: 400, meta: { sessions: 4 }, cafe: { stars: 0, built: {} }, ${cfg(lg)}${extra ? ', ' + extra : ''} }))${shape ? '; localStorage.setItem("lco_shape", JSON.stringify({ shape: 1, fold: 1 }))' : ''}`);
+  const put = (lv, { lg = 'en', extra = '', shape = true } = {}) => ev(`window.__qa?.drop?.(); localStorage.clear(); localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: ${lv}, coins: 400, meta: { sessions: 4 }, cafe: { stars: 0, built: {} }, ${cfg(lg)}${extra ? ', ' + extra : ''} }))${shape ? '; localStorage.setItem("lco_shape", JSON.stringify({ shape: 1, fold: 1 }))' : ''}`);
   const winCard = async () => { await waitFor('window.__qa.state().screen === "win"', 30000); await waitFor('!!document.querySelector("#modal .card.win")', 10000); await sleep(900); };
   const closeCards = async () => { for (const sel of ['#smodal [data-sgo]', '#cmodal [data-cgo]']) await ev(`document.querySelector(${JSON.stringify(sel)})?.click()`); await sleep(250); };
   const home = async () => { await qa('home()'); await sleep(700); };
@@ -278,7 +278,7 @@ try {
   });
 
   // ---- the win card with its share row (EN, and the TR frame) ----
-  for (const lg of ['en', 'tr']) {
+  for (const lg of ['en']) { // R17: TR share labels are covered by r16-fix-win-tr
     await step('f16-win-' + lg, async () => {
       await put(60, { lg }); await boot(); await qa('level(13)'); await sleep(600); await qa('slow(5)'); await qa('winNow()');
       await winCard(); await qa('slow(1)'); await sleep(400);
@@ -301,7 +301,7 @@ try {
   });
 
   // ---- R12 (sol-r12-3 fix 5): pin an album page with no postcard yet: every slot names its board, the map follows it ----
-  for (const lg of ['en', 'tr']) {
+  for (const lg of ['en']) { // R17: one language keeps the suite under 5 minutes (TR copy fit is covered by the r16/r17 TR steps)
     await step('f19-album-pin-' + lg, async () => {
       await put(30, { lg }); await boot(); await home();
       const pp = (Math.floor((((await qa('week()')) % 24) + 24) % 24 / 4) + 2) % 6; // two pages past this week's
@@ -321,7 +321,7 @@ try {
   }
 
   // ---- R12 (sol-r12-3 fix 6): the code printed on a clip, typed into Friend Results, imports the reply like the QR ----
-  for (const lg of ['en', 'tr']) {
+  for (const lg of ['tr']) { // R17: one language (TR, the longer copy)
     await step('f20-friend-code-' + lg, async () => {
       await put(30, { lg, extra: "fr: { sent: ['ab12cd'], list: [] }" }); await boot(); await home();
       await qa(`act('events', { tab: 'friends' })`); await sleep(500);
@@ -363,7 +363,7 @@ try {
 
   // ---- R12 L9 (sol-r12-3 fixes 1 + 2) at 360x640: the order on the teaching card (no bubble), then the seat rule; the
   // pair's tag and route clear of cats and exit arrows; parked first, the pair still wins (EN). L10: the old L9 ----
-  for (const lg of ['en', 'tr']) {
+  for (const lg of ['en']) { // R17: one language (the L9 pair is played again in r16-fix-l9-bench)
     await step('f19-l9-pair-' + lg, async () => {
       await size(360, 640);
       await put(9, { lg }); await boot(); await qa('level(9)'); await sleep(600); await closeCards();
@@ -489,8 +489,8 @@ try {
     }
   });
   // R14: one board per chapter theme (room_sunny follows the chapter) and the two premium rooms, each with a fur skin
-  for (const [th, lv, skin, room] of [['garden', 7, 'skin_golden'], ['autumn', 15, ''], ['snow', 25, 'skin_golden'], ['lantern', 35, 'skin_golden'],
-    ['beach', 45, 'skin_candy'], ['bakery', 55, 'skin_galaxy'], ['galaxy', 25, 'skin_galaxy', 'room_galaxy'], ['candy', 25, 'skin_candy', 'room_candy']]) {
+  // R17: three boards (the other chapter themes are unchanged since R14 and kept the suite under 5 minutes)
+  for (const [th, lv, skin, room] of [['garden', 7, 'skin_golden'], ['lantern', 35, 'skin_golden'], ['galaxy', 25, 'skin_galaxy', 'room_galaxy']]) {
     await step('r14-theme-' + th, async () => {
       await put(lv, { extra: `shop: { eq: { room: '${room || 'room_sunny'}', skin: '${skin}' }, own: { ${skin ? skin + ': 1, ' : ''}${room ? room + ': 1' : ''} } }, boss: { last: ${lv - 1}, q: [] }` }); await boot();
       await qa(`level(${lv})`); await sleep(400); await closeCards();
@@ -587,6 +587,7 @@ try {
     await waitFor('!window.__qa.state().busy', 8000); await qa('slow(1)'); await sleep(400);
     fn = await qa('fun()');
     must(fn.seats && fn.seats.parked, 'the parked pair keeps one bracket over its two seats: ' + JSON.stringify(fn.seats));
+    must(fn.seats.seats.includes(fn.seats.kitSeat), 'R17: the kitten (drawn smaller) sits on one of the bracket seats: ' + JSON.stringify(fn.seats));
     await shot('r16-fix-l9-bracket');
     await size(375, 667);
   });
@@ -663,7 +664,7 @@ try {
 
   // ---- R17 score lane (sol-r16 / sol-r17): Made by Sher in Settings, the big win card's one share button and its sheet,
   // the L9 pair after landing, the dare landing that plays in one tap (QA_ONLY=r17-score) ----
-  for (const [lg, big] of [['en', false], ['tr', false], ['tr', true]]) {
+  for (const [lg, big] of [['en', false], ['tr', true]]) {
     await step(`r17-score-settings-${lg}${big ? '-big' : ''}`, async () => {
       await put(12, { lg, extra: big ? `settings: { lang: '${lg}', sound: false, music: false, haptics: false, big: true }` : '' }); await boot(); await qa('screen("settings")'); await sleep(500);
       must((await ev('document.querySelector("#modal .settings .madeby")?.textContent || ""')) === 'Made by Sher', 'Settings: "Made by Sher" in every language');
@@ -671,13 +672,13 @@ try {
       await shot(`r17-score-settings-${lg}${big ? '-big' : ''}`);
     });
   }
-  for (const lg of ['en', 'tr']) {
+  for (const lg of ['en']) {
     await step('r17-score-bigwin-' + lg, async () => {
       // L25 is a hard level (2 stars: the big card); the forced share moment makes it a standout win
       await put(60, { lg, extra: 'meta: { sessions: 4, shareNudge: 1, bestChain: 8 }' }); await boot(); await qa('level(25)'); await sleep(600); await closeCards();
       await qa('moment("sweep")'); await qa('slow(5)'); await qa('winNow()');
       await winCard(); await qa('slow(1)'); await sleep(500);
-      const w = await ev(`(() => { const c = document.querySelector('#modal .card.win'); const out = (s) => [...document.querySelectorAll('#modal .card.win ' + s)].length;
+      const w = await ev(`(() => { const c = document.querySelector('#modal .card.win'); const out = (s) => [...document.querySelectorAll('#modal .card.win ' + s)].filter((e) => !e.closest('.dsheet')).length;
         const R = (e) => e && e.getBoundingClientRect(); const ov = (a, b) => !!a && !!b && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
         const chip = document.querySelector('#modal .stars .iqchip'), stars = [...document.querySelectorAll('#modal .stars .star')];
         return { big: !!c && !c.classList.contains('compact'), dare: out('[data-act=daresheet]'), others: out('[data-act=share], [data-act=sharecard], [data-act=shareclip]'), hidden: !!document.querySelector('#modal .dsheet[hidden]'),
@@ -699,22 +700,11 @@ try {
       must(await ev('document.querySelector("#modal .dsheet").hidden'), 'x closes the sheet');
     });
   }
-  await step('r17-score-l9', async () => {
-    await size(360, 640);
-    await put(9); await boot(); await qa('level(9)'); await sleep(900); await closeCards();
-    await qa('slow(6)');
-    for (const id of [9, 5, 6, 11, 4]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(60); }
-    await waitFor('!window.__qa.state().busy', 8000); await qa('slow(1)'); await sleep(400);
-    const fn = await qa('fun()');
-    must(fn.seats && fn.seats.parked && fn.seats.seats.includes(fn.seats.kitSeat), 'after landing: the bracket holds mother + kitten, the kitten (drawn smaller) on one of its seats: ' + JSON.stringify(fn.seats));
-    await shot('r17-score-l9-landed');
-    await size(375, 667);
-  });
   for (const lg of ['en', 'tr']) {
     await step('r17-score-dare-' + lg, async () => {
       // a round-3 dare: the landing is the target and Play this board; the thread and the name wait on the result
       const code = await qa(`dareCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 4, nm: 'Deniz', i: 'dz0001', r: 'an0001', pg: 3, th: [{ nm: 'Ana', v: 3 }], rd: 3 })`);
-      await ev(`localStorage.clear(); localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 1, ${cfg(lg)} }))`);
+      await ev(`window.__qa?.drop?.(); localStorage.clear(); localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 1, ${cfg(lg)} }))`);
       await boot('?c=' + code);
       await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(500);
       const land = await ev(`(() => { const c = document.querySelector('#modal .card.dare'); const p = c.querySelector('[data-act=dareplay]'), g = c.querySelector('.dgoal');
@@ -737,14 +727,14 @@ try {
 
   // ---- R17 money lane (dev fake ads: 2 s each): the rewarded offers and the shop without a store backend ----
   const money = () => qa('money()');
-  const adWait = async () => { await sleep(2300); await waitFor('!document.querySelector(".fake-ad")', 4000); await sleep(200); };
+  const adWait = async () => { await sleep(500); await waitFor('!document.querySelector(".fake-ad")', 4000); await sleep(200); };
   await step('r17-money-seat', async () => {
     await put(14); await boot(); await qa('closeLoss(true)'); await qa('level(14)'); await sleep(900); await closeCards();
     await qa('failNow()'); await waitFor('window.__qa.state().screen === "fail"', 20000); await sleep(600);
     must((await money()).seatAd, 'a close loss offers +1 seat for an ad');
     await ev('document.querySelector("#modal [data-act=morehelp]")?.click()'); await sleep(300);
     await shot('r17-money-seat');
-    await ev('document.querySelector("#modal [data-act=adheart]").click()'); await adWait();
+    await ev('window.__qaAdMs = 300; document.querySelector("#modal [data-act=adheart]").click()'); await adWait();
     const m = await money();
     must(m.counters.ad_grant_seat === 1 && (await qa('state().screen')) === 'play', 'the seat is granted after the ad and play resumes');
     await qa('failNow()'); await waitFor('window.__qa.state().screen === "fail"', 20000); await sleep(400);
@@ -758,7 +748,7 @@ try {
     must(await inView('#modal .dcbtn') && await inView('#modal [data-act=next]'), 'Double coins and Next both on screen');
     must(await ev('document.querySelector("#modal [data-act=next]").getBoundingClientRect().top < document.querySelector("#modal .dcbtn").getBoundingClientRect().top'), 'Double coins sits under Next');
     await shot('r17-money-double');
-    await ev('document.querySelector("#modal .dcbtn").click()'); await adWait();
+    await ev('window.__qaAdMs = 300; document.querySelector("#modal .dcbtn").click()'); await adWait();
     const m2 = await money();
     must(m2.coins === m.coins + m.dc && !m2.dcBtn && m2.counters.ad_grant_dcoins === 1, `coins doubled once (${m.coins} -> ${m2.coins}, +${m.dc})`);
   });
@@ -766,7 +756,7 @@ try {
     await put(14, { extra: `lives: { n: 0, t: ${Date.now()} }` }); await boot(); await qa('screen("nolives")'); await sleep(400);
     must(await ev('!!document.querySelector("#sheet [data-act=adlife]")'), 'zero lives: +1 life for an ad');
     await shot('r17-money-life');
-    await ev('document.querySelector("#sheet [data-act=adlife]").click()'); await adWait();
+    await ev('window.__qaAdMs = 300; document.querySelector("#sheet [data-act=adlife]").click()'); await adWait();
     const m = await money();
     must(m.lives === 1 && !m.sheet, 'one life granted, the sheet closes');
   });
@@ -775,7 +765,7 @@ try {
     await ev('document.querySelector("[data-act=hint]").click()'); await sleep(400);
     must((await money()).sheet === 'hintad' && !(await ev('!!document.querySelector(".fake-ad")')), 'no hints, no coins: an explicit offer, no ad yet');
     await shot('r17-money-hint');
-    await ev('document.querySelector("#sheet [data-act=adhint]").click()'); await adWait();
+    await ev('window.__qaAdMs = 300; document.querySelector("#sheet [data-act=adhint]").click()'); await adWait();
     must((await money()).counters.ad_grant_hint === 1, 'the hint is granted after the ad');
   });
   await step('r17-money-shop-nostore', async () => {

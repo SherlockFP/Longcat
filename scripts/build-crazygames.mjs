@@ -14,6 +14,7 @@ const basic = process.argv.includes('--basic');
 
 process.env.VITE_PORTAL = 'crazygames';
 process.env.VITE_ADS_PROVIDER = basic ? 'off' : 'crazygames';
+process.env.VITE_PUBLIC_URL = ''; // links come from the SDK; keeps the standalone pages.dev address (.env.production) out of the bundle
 const { build } = await import('vite');
 await build({ root: ROOT, logLevel: 'warn', build: { outDir: OUT, emptyOutDir: true } });
 
@@ -52,3 +53,4 @@ console.log(`dist-crazygames: ${files.length} files, ${(total / 1048576).toFixed
 // CrazyGames technical limits (docs.crazygames.com/requirements/technical): 1500 files, 250 MB total, 50 MB initial download
 if (files.length > 1500 || total > 250 * 1048576) { console.error('over the CrazyGames file count / size limit'); process.exit(1); }
 if (files.some((f) => f.endsWith('sw.js'))) { console.error('a service worker slipped into the portal build'); process.exit(1); }
+if (files.some((f) => /\.(js|html)$/.test(f) && /pages\.dev|serviceWorker\.register/.test(readFileSync(f, 'utf8')))) { console.error('a pages.dev link or a service worker registration in the portal build'); process.exit(1); }

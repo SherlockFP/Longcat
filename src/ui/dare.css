@@ -57,7 +57,7 @@
 .linkbar.dlink .dltx small { font: 600 12px/1.2 var(--font); opacity: .85; overflow-wrap: anywhere; }
 .linkbar.dlink .btn { padding: 0 10px; font-size: 15px; }
 /* r11 virality: the share moment's headline on the win card */
-.card.win .moment { align-self: center; display: inline-block; margin: 2px auto 0; padding: 3px 12px; border-radius: 999px; background: #ff5d8f; border: 3px solid var(--ink, #1d2b53); color: #fff; font: 700 15px/1.15 var(--font); text-shadow: 0 1px 0 rgba(140,20,60,.45); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; }
+.card.win .moment { align-self: center; display: inline-block; margin: 2px auto 0; padding: 3px 12px; border-radius: 999px; background: #ff5d8f; border: 3px solid var(--ink, #1d2b53); color: #fff; font: 700 15px/1.15 var(--font); text-shadow: 0 1px 0 rgba(140,20,60,.45); white-space: nowrap; max-width: 100%; overflow: hidden; text-overflow: ellipsis; flex-shrink: 0; }
 .card.win.compact .cwt .moment { margin: 2px 0 0; font-size: 14px; padding: 2px 10px; }
 /* the friend result: both scores, the round */
 .dres .dvs { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; margin-top: 5px; font: 700 15px/1.15 var(--font); }
@@ -66,6 +66,7 @@
 .drd { display: inline-block; padding: 1px 8px; border-radius: 999px; background: var(--ink, #1d2b53); color: #ffd43b; font: 700 13px/1.4 var(--font); font-style: normal; white-space: nowrap; }
 .btn.pink.dback .shi { width: 24px; height: 24px; margin-right: 6px; }
 .r7row .btn.dsend { font-size: 17px; }
+.r7row:has(.dsend) .btn.teal.sm[data-act=next] { flex: 0 0 31%; font-size: 17px; padding: 0 6px; min-width: 0; white-space: nowrap; } /* R17: Continue fits beside Send result and the card button */
 /* the landing: the thread so far (Ana x3 -> Deniz x4 -> Your turn) and the optional name for the reply */
 .card.dare .dthread { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; max-width: 100%; font: 700 15px/1.2 var(--font); color: var(--ink, #1d2b53); background: rgba(255,255,255,.6); border-radius: 12px; padding: 6px 10px; }
 .card.dare .dthread em { font-style: normal; opacity: .6; }

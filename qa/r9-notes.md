@@ -542,3 +542,58 @@ Weak spots:
 - The L9 bracket frame still shows three identical green cushions.
 - The TR big-text settings: "Hatırlatma" is a single-line label next to two-line ones, so its toggle sits higher.
 - Not checked on a real phone.
+
+## R17 (CrazyGames + revenue hooks + score fixes)
+
+Merged `r17/score` (358b783) then `r17/money` (da4ccde), both with `--no-ff`. There were three conflicts, and both sides were kept in each:
+- `scripts/qa-fast.mjs`: both lanes appended steps in the same place.
+- `scripts/check-web.mjs`: the money lane's ads-provider regex (`h5` or `crazygames`) and portal service-worker check, plus the score lane's Made by Sher and `commitSoon` checks.
+- `src/ui/ui.js` (Settings): the money lane hides Remove ads and Restore when there is no store, and the score lane's credit line ends with "Made by Sher".
+
+Integration fixes:
+- A pending `save.commitSoon()` (or its pagehide flush) wrote the old page's save over the save that QA had just injected. This broke r16-fix-win-en (a replay at L6) and r16-talk-cafe (it booted to L2). The fix is a new hook, `__qa.drop()`, which `put()` and the dare step call before they write. There is no in-game path that rewrites localStorage behind the save, because `reset()` goes through `commit()`.
+- The big win card overflowed at 375x667 (514 px of room). The L7 resident card was 558-636 px, and the L25 standout card was 525 px. The cause: the replay thumbnail now lives in the Dare sheet, so the plain big layout is taller, and the new come-back line and the Double coins button add height on top of that. The fixes:
+  - `ui.win` drops the payout breakdown and then the badges if the card still overflows.
+  - The tomorrow line removes itself when there is no room.
+  - `dcOffer` first drops the tomorrow line, then drops itself (returning false, so no offer is counted). Next never leaves the screen.
+- The moment pill ("Clean sweep: no cat waited!") was shrunk to an empty pink bar in a full card. It is now `flex-shrink: 0`.
+- The Double coins button had white text on the cream card. It now has navy text on a light tan background.
+- On the friend-miss row, "Continue" / "Devam et" overflowed its button next to Send result and the card button. It now gets 31% of the row at 17 px.
+- `build:crazygames` inlined the standalone `VITE_PUBLIC_URL` (pages.dev, from `.env.production`) through `import.meta.env`. The CG build now sets it to empty, because links come from the SDK. The script also fails if a pages.dev link or a `serviceWorker.register` appears in its js or html.
+- The QA share-button count included the hidden Dare sheet's buttons. It now ignores `.dsheet`.
+
+The qa:fast budget had grown to over 300 s and hit the hard timeout. Trims:
+- Each dev fake ad lasts 300 ms when the QA sets `__qaAdMs`.
+- r17-score-l9 is folded into r16-fix-l9-bench (the kitSeat assert), because both played the same L9 taps.
+- r14 themes are cut to 3 (garden, lantern, galaxy room).
+- One language is kept for f16-win, f19-l9-pair, f19-album-pin (EN) and f20-friend-code/f24-events (TR), plus r17 bigwin (EN) and r17 settings (EN, TR big).
+- The settle time after boot went from 500 to 450 ms.
+
+Checks (GPU Chrome):
+- npm run build: ok. npm run check: all passed.
+- npm run qa:fast (full): 285.1 s (286 s wall), 0 failures, 0 console errors. The affected steps were rerun after the CSS fixes and also passed.
+- PERF_RATES=4 PERF_ONLY=rapid6,L1,L60 node scripts/perf.mjs r17, CPU x4:
+
+  | Scene | Frames | p95 (ms) | max | Game ms p95 |
+  |---|---|---|---|---|
+  | L1 | 180 | 16.7 | 16.8 | 3.8 |
+  | L60 | 180 | 16.8 | 16.8 | 1.2 |
+  | L60run | 145 | 16.7 | 16.8 | 6 |
+  | rapid6 | 118 | 16.8 | 50 | 7 |
+  | chain | 108 | 16.7 | 16.8 | 3.2 |
+
+  rapid6 p95 dropped from 50 ms (R14) to 16.8 ms, and game ms p95 from 11.1 to 7. One 50 ms frame is left.
+- npm run build:crazygames: `dist-crazygames/` has 479 files (16.6 MB), and `dist-crazygames.zip` is 15.7 MB. Python's zipfile reads the zip cleanly, with index.html at the root.
+  - There is no service worker registration. The only `navigator.serviceWorker` use is the notify path, which needs an existing controller.
+  - There are no pages.dev links.
+  - The SDK v3 loader is in the bundle.
+  - The external hosts are sdk.crazygames.com, fonts.googleapis.com and the dead AdSense URL string.
+  - dist folders and the zip are gitignored.
+
+Weak spots:
+- The busy big card now loses its payout breakdown or badges at 667 px tall. The tomorrow line and Double coins then often don't fit, so the offer appears less often on resident and standout wins.
+- In the Dare sheet, "Make video" has a white share icon on a cream button.
+- The TR toggles' "KAPALI" label still runs under the knob, and the zero-lives HUD heart reads "0 24:59" squeezed.
+- The friend-miss row is still three crowded buttons.
+- The CrazyGames SDK was not run against the real portal, and nothing was checked on a real phone.
+- The qa:fast run sits at 285 s, close to the 300 s limit on a loaded machine.
