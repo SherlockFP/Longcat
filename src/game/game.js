@@ -1855,7 +1855,8 @@ export class Game {
         const fc = this.vis.carriers[0];
         const woke = !this.demo && fc && !fc.closed && fc.fill < fc.cap && fc.color === this.board.cats[id].color;
         const lift = woke && !this.calm ? bw * (0.1 + 0.05 * Math.abs(Math.sin(this.clock * 12))) : 0;
-        this.drawCurled(ctx, x, y - bw * 0.04 - lift, bw * pop, this.board.cats[id].color, id);
+        const kit = this.board.cats[id].kittenOf != null ? 0.68 : 1; // R17: a parked kitten stays visibly smaller than its mother
+        this.drawCurled(ctx, x, y - bw * 0.04 * kit - lift, bw * pop * kit, this.board.cats[id].color, id);
         if (woke) drawBadge(ctx, x + bw * 0.3, y - bw * 0.5 - lift, bw * 0.15, '!', COLOR_PAL[fc.color].base);
       }
     }
@@ -2175,7 +2176,7 @@ export class Game {
     const pal = this.mv.hidden[cat.id] ? MYSTERY_PAL : COLOR_PAL[cat.color];
     if (cat.kittenOf != null) {
       // a kitten is a smaller copy of its parent, same collar
-      return { pal, w: c * 0.5, head: c * 0.76, collar: null }; // the pair reads by the heart leash (drawTether)
+      return { pal, w: c * 0.46, head: c * 0.68, collar: null }; // the pair reads by the heart leash (drawTether); R17: smaller
     }
     return { pal, w: c * (IMG['r7/tex_felt'] ? 0.7 : 0.66), head: c * 0.92, collar: null };
   }

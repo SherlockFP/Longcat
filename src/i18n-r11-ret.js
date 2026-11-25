@@ -13,7 +13,7 @@ addStrings({
     rtGoBoard: 'Board {k}', rtGoDaily: 'Daily', rtGoHang: 'Hang',
     rtHangSmall: '{page} page complete!', rtHangTitle: 'Hang the print', rtHangWhere: 'Goes up in: {room}',
     rtHangHere: 'This room: {room}', rtHangPick: 'Arrows pick another room', rtHangBtn: 'Hang the print', rtLater: 'Later',
-    rtWins: '{n} wins today!', rtTmrw: 'Tomorrow:',
+    rtWins: '{n} wins today!', rtTmrw: 'Tomorrow:', rtBackTmrw: 'Come back tomorrow:',
     // R11 fix round 2: an empty album slot's exact step (the same as the map's strip)
     albLeft_stamp1: '1 stamp left', albLeft_stamp: '{n} stamps left', albLeft_board1: '1 clear left', albLeft_board: '{n} clears left',
     albAllStamps: 'All 3 stamps in', albBothDone: 'Both boards cleared', albWait: 'Catch-up opens in {t}',
@@ -29,7 +29,7 @@ addStrings({
     rtGoBoard: '{k} tahtası', rtGoDaily: 'Günlük', rtGoHang: 'As',
     rtHangSmall: '{page} sayfası tamam!', rtHangTitle: 'Tabloyu as', rtHangWhere: 'Asılacak oda: {room}',
     rtHangHere: 'Bu oda: {room}', rtHangPick: 'Başka oda için okları kullan', rtHangBtn: 'Tabloyu as', rtLater: 'Sonra',
-    rtWins: 'Bugün {n} galibiyet!', rtTmrw: 'Yarın:',
+    rtWins: 'Bugün {n} galibiyet!', rtTmrw: 'Yarın:', rtBackTmrw: 'Yarın yine gel:',
     albLeft_stamp1: '1 damga kaldı', albLeft_stamp: '{n} damga kaldı', albLeft_board1: '1 tahta kaldı', albLeft_board: '{n} tahta kaldı',
     albAllStamps: '3 damga da tamam', albBothDone: 'İki tahta da bitti', albWait: 'Telafi {t} sonra açılır',
     rtTm_chest: '{n}. gün sandığı', rtTm_daily: 'yeni Günlük bulmaca', rtTm_week: 'yeni kartpostal: {card}', rtTm_job: '{name} için işler', rtTm_req: 'bir sakin isteği',

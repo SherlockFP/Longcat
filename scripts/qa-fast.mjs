@@ -559,7 +559,7 @@ try {
       await winCard(); await qa('slow(1)'); await sleep(400);
       must(await ev('!!document.querySelector("#modal .mainrew .cafebar.go")'), 'the first affordable build leads the card');
       must(await ev('JSON.parse(localStorage.getItem("lco_save")).meta.buildNudge === 1'), 'the build nudge is spent once shown');
-      must(await ev('!document.querySelector("#modal .purr, #modal .rttm")'), 'early: one café line, no streak or tomorrow line');
+      must(await ev('!document.querySelector("#modal .purr") && document.querySelectorAll("#modal .rttm").length === 1 && !!document.querySelector("#modal .rttm.one")'), 'early: one café line, no streak, one plain come-back-tomorrow line (R17)');
       const nx = await nextInfo();
       must(nx && nx.h >= 54 && nx.h > nx.side && (!nx.compact || nx.w >= nx.cw * 0.8), 'Next is the one big action: ' + JSON.stringify(nx));
       must(await ev('[...document.querySelectorAll("#modal .sharebtn")].every((e) => e.scrollWidth <= e.clientWidth + 1)'), 'the share label fits its button');
@@ -660,6 +660,80 @@ try {
     await qa('level(12)'); await sleep(900); await closeCards();
     must(!(await ev(`window.__qaTalk.say('free')`)), 'chatter off: no bubble');
   });
+
+  // ---- R17 score lane (sol-r16 / sol-r17): Made by Sher in Settings, the big win card's one share button and its sheet,
+  // the L9 pair after landing, the dare landing that plays in one tap (QA_ONLY=r17-score) ----
+  for (const [lg, big] of [['en', false], ['tr', false], ['tr', true]]) {
+    await step(`r17-score-settings-${lg}${big ? '-big' : ''}`, async () => {
+      await put(12, { lg, extra: big ? `settings: { lang: '${lg}', sound: false, music: false, haptics: false, big: true }` : '' }); await boot(); await qa('screen("settings")'); await sleep(500);
+      must((await ev('document.querySelector("#modal .settings .madeby")?.textContent || ""')) === 'Made by Sher', 'Settings: "Made by Sher" in every language');
+      must(await inView('#modal .settings .madeby') && await inView('#modal .settings [data-act=close]'), 'the credit and Close fit on screen');
+      await shot(`r17-score-settings-${lg}${big ? '-big' : ''}`);
+    });
+  }
+  for (const lg of ['en', 'tr']) {
+    await step('r17-score-bigwin-' + lg, async () => {
+      // L25 is a hard level (2 stars: the big card); the forced share moment makes it a standout win
+      await put(60, { lg, extra: 'meta: { sessions: 4, shareNudge: 1, bestChain: 8 }' }); await boot(); await qa('level(25)'); await sleep(600); await closeCards();
+      await qa('moment("sweep")'); await qa('slow(5)'); await qa('winNow()');
+      await winCard(); await qa('slow(1)'); await sleep(500);
+      const w = await ev(`(() => { const c = document.querySelector('#modal .card.win'); const out = (s) => [...document.querySelectorAll('#modal .card.win ' + s)].length;
+        const R = (e) => e && e.getBoundingClientRect(); const ov = (a, b) => !!a && !!b && a.left < b.right - 1 && b.left < a.right - 1 && a.top < b.bottom - 1 && b.top < a.bottom - 1;
+        const chip = document.querySelector('#modal .stars .iqchip'), stars = [...document.querySelectorAll('#modal .stars .star')];
+        return { big: !!c && !c.classList.contains('compact'), dare: out('[data-act=daresheet]'), others: out('[data-act=share], [data-act=sharecard], [data-act=shareclip]'), hidden: !!document.querySelector('#modal .dsheet[hidden]'),
+          chip: !!chip, clash: stars.some((s) => ov(R(s), R(chip))) }; })()`);
+      must(w.big, 'a hard standout win uses the big card');
+      must(w.dare === 1 && w.others === 0 && w.hidden, 'one Dare a friend button; link, replay and QR card wait in its sheet: ' + JSON.stringify(w));
+      must(!w.clash, 'no star over the gold-time pill' + (w.chip ? '' : ' (no pill this run)'));
+      const nx = await nextInfo();
+      must(nx && nx.h >= 54 && nx.h > nx.side, 'Next stays the one big action: ' + JSON.stringify(nx));
+      must(await inView('#modal [data-act=next]') && await inView('#modal .card.win [data-act=daresheet]'), 'Next and Dare a friend fit');
+      await shot('r17-score-bigwin-' + lg);
+      await ev('document.querySelector("#modal .card.win [data-act=daresheet]").click()'); await sleep(300);
+      must(await ev('!document.querySelector("#modal .dsheet").hidden'), 'Dare a friend opens its sheet');
+      must(await inView('#modal .dsheet [data-act=share]') && await inView('#modal .dsheet [data-act=sharecard]'), 'the sheet holds the link and the QR card');
+      await shot('r17-score-bigwin-sheet-' + lg);
+      await ev('document.querySelector("#modal .dsheet .sscard").click()'); await sleep(150);
+      must(await ev('!document.querySelector("#modal .dsheet").hidden'), 'a tap inside the sheet keeps it open');
+      await ev('document.querySelector("#modal .dsheet .lbx").click()'); await sleep(150);
+      must(await ev('document.querySelector("#modal .dsheet").hidden'), 'x closes the sheet');
+    });
+  }
+  await step('r17-score-l9', async () => {
+    await size(360, 640);
+    await put(9); await boot(); await qa('level(9)'); await sleep(900); await closeCards();
+    await qa('slow(6)');
+    for (const id of [9, 5, 6, 11, 4]) { await waitFor('!window.__qa.state().busy', 8000); await qa(`tap(${id})`); await sleep(60); }
+    await waitFor('!window.__qa.state().busy', 8000); await qa('slow(1)'); await sleep(400);
+    const fn = await qa('fun()');
+    must(fn.seats && fn.seats.parked && fn.seats.seats.includes(fn.seats.kitSeat), 'after landing: the bracket holds mother + kitten, the kitten (drawn smaller) on one of its seats: ' + JSON.stringify(fn.seats));
+    await shot('r17-score-l9-landed');
+    await size(375, 667);
+  });
+  for (const lg of ['en', 'tr']) {
+    await step('r17-score-dare-' + lg, async () => {
+      // a round-3 dare: the landing is the target and Play this board; the thread and the name wait on the result
+      const code = await qa(`dareCode({ n: 13, b: 5, k: 'l', m: 'chain', g: 4, nm: 'Deniz', i: 'dz0001', r: 'an0001', pg: 3, th: [{ nm: 'Ana', v: 3 }], rd: 3 })`);
+      await ev(`localStorage.clear(); localStorage.setItem("lco_save", JSON.stringify({ v: 9, level: 1, ${cfg(lg)} }))`);
+      await boot('?c=' + code);
+      await waitFor('!!document.querySelector("#modal .card.dare")', 8000); await sleep(500);
+      const land = await ev(`(() => { const c = document.querySelector('#modal .card.dare'); const p = c.querySelector('[data-act=dareplay]'), g = c.querySelector('.dgoal');
+        return { name: !!c.querySelector('#darename'), thread: !!c.querySelector('.dthread'), label: p.textContent, after: !!(g.compareDocumentPosition(p) & 4), bottom: Math.round(p.getBoundingClientRect().bottom) }; })()`);
+      must(!land.name && !land.thread, 'the landing has no name field and no round history: ' + JSON.stringify(land));
+      must(land.label === (lg === 'en' ? 'Play this board' : 'Bu tahtayı oyna') && land.after, 'Play this board sits right under the target: ' + JSON.stringify(land));
+      must(land.bottom <= 667 && await inView('#modal [data-act=dareplay]'), 'Play is above the fold');
+      await shot('r17-score-dare-landing-' + lg);
+      await ev('document.querySelector("#modal [data-act=dareplay]").click()'); await sleep(900);
+      must((await qa('state()')).mode === 'play', 'one tap: the dared board');
+      await qa('slow(5)'); await qa('winNow()');
+      await winCard(); await qa('slow(1)'); await sleep(500);
+      must(/Ana x3/.test(await ev('document.querySelector("#modal .dres .dvs")?.textContent || ""')), 'the round history sits on the result');
+      must(await inView('#darename') && await inView('#modal .card.win [data-act=share], #modal .card.win [data-act=retry]'), 'the name field sits beside Dare back');
+      await ev('(() => { const i = document.getElementById("darename"); i.value = "Ece"; i.dispatchEvent(new Event("change")); })()');
+      must(JSON.parse(await ev('localStorage.getItem("lco_save")')).meta.nick === 'Ece', 'the name is kept for the reply');
+      await shot('r17-score-dare-result-' + lg);
+    });
+  }
 
   const secs = ((Date.now() - T0) / 1000).toFixed(1);
   console.log(`\nqa-fast: ${secs}s, ${fails.length} failure(s), ${errs.length} console error(s)`);

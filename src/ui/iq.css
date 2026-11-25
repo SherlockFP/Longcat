@@ -109,3 +109,10 @@
   .iqwin.best, .iqwin.best .iqwm, .iqchip.best, .iqmid { animation: none !important; }
 }
 .iqwin.calm, .iqwin.calm .iqwm, .iqchip.calm, .iqmid.calm { animation: none !important; }
+/* R17 (sol-r16 fix 2): on the big win card the time pill sits in the stars' row: the stars shrink and stay level so the
+   second star never runs into the pill */
+.card.win .stars:has(.iqchip) { align-items: center; }
+.card.win .stars:has(.iqchip) .star { flex: none; max-width: 56px; max-height: 56px; }
+.card.win .stars.n1:has(.iqchip) .star { max-width: 72px; max-height: 72px; }
+.card.win .stars:has(.iqchip) .star.on:nth-child(2) { transform: none; }
+.card.win .stars .iqchip { flex: none; }

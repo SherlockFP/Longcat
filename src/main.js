@@ -218,7 +218,8 @@ function quest(ev, n = 1) {
   if (S.noQuest && S.mode === 'play') return; // a replayed daily puzzle farms no task progress
   if (ev === 'carrier') { live.reqEvent(save.data, ev, n); jobEv(ev, n); } // resident requests count the same moments ('win' only counts new levels, the daily and new Show medals)
   if (econ.questEvent(save.data, ev, dayNum(), n)) {
-    save.commit();
+    if (ev === 'cat' || ev === 'carrier') save.commitSoon(); // R17 perf: no whole-save write inside a send
+    else save.commit();
     if (S.mode === 'cafe') ui.setDots(dots());
   }
 }
@@ -844,7 +845,7 @@ function onWin(stars) {
   // R11 fix 2: the replay card keeps only the order bonus in words (the rest of the breakdown is the coin chip's title)
   const payHi = parts.filter((p) => p.k === 'payUrgent' || p.k === 'payVip').map((p) => `${t(p.k, { n: p.v })} +${p.n}`).join(' · ');
   ui.win({ stars, title, cheer: { winTitle: 'cheer3', winTitle2: 'cheer2', winTitle1: 'cheer1' }[title], res: res && res.id, coins: reward, coinsBefore: d.coins - reward, pay, payHi, peek: peekColor(), cafeStars, canBuild, buildMain, cafeNext, purr: early ? '' : chest ? [t('streakChest', { n: d.daily.streak }), purr].filter(Boolean).join(' · ') : purr, drec: drecNew ? drecInfo(drecNew) : null, ach, adopt: S.quickAdopt || '', ...shareOn() });
-  if (!early) rret.winCard(rtg.winDay(d, dayNum()), rtg.tomorrow(d, { day: dayNum(), res: resOwned(), dailyDone: d.daily.doneDay === todayKey(), streak: streak() })); // R11 ret
+  rret.winCard(rtg.winDay(d, dayNum()), rtg.tomorrow(d, { day: dayNum(), res: resOwned(), dailyDone: d.daily.doneDay === todayKey(), streak: streak() })); // R11 ret; R17: from day 1 (one line early)
   save.commit();
   for (let i = 0; i < stars; i++) setTimeout(() => audio.star(i), 300 + i * 300);
   cui.onWin(S.n, first); // a pack's last level: its reward and host
@@ -896,7 +897,7 @@ function shareOn(extra) {
   else if (c >= 3 && !d.meta.shareNudge) k = 'first3';
   else if (c >= 3 && c > (d.meta.bestChain || 0)) k = 'best';
   else if (S.dailyFirst) k = 'daily';
-  else if (extra) k = extra;
+  else if (extra || S.qaMoment) k = extra || S.qaMoment; // qaMoment: QA forces a share moment (__qa.moment)
   else if (noBenchWin()) k = 'sweep';
   else if (c >= 3) k = 'chain';
   if (!friend && c > (d.meta.bestChain || 0)) d.meta.bestChain = Math.min(8, c);
@@ -991,6 +992,11 @@ const valText = (m, v) => (m === 'chain' ? 'x' + v : m === 'time' ? t('valTime',
 // into the clip, so the clip and the link name the same dare), the player's optional name, and on a friend's board the
 // reply (their share id + target), the thread so far (the latest 3 runs) and the next round number
 const winDareC = { token: -1, d: null };
+function setNick(v) {
+  const nm = dare.cleanName(v || '');
+  if (nm !== save.data.meta.nick) { save.data.meta.nick = nm; save.commit(); if (nm) track('dare_nick'); }
+  if (winDareC.d) { if (nm) winDareC.d.nm = nm; else delete winDareC.d.nm; } // this win's dare was already drawn
+}
 function winDare() {
   if (winDareC.token === S.winToken && winDareC.d) return { ...winDareC.d, th: winDareC.d.th && [...winDareC.d.th] };
   const d = myDare();
@@ -1102,9 +1108,8 @@ function importReply(d) {
 }
 function dareLanding(d) {
   S.dare = d;
-  // the thread so far: "Ana x3 -> Deniz x4 -> Your turn" (the earlier runs, then the sender's own)
-  const thread = d.th && d.th.length ? [...d.th, { nm: d.nm, v: d.g }].map((e) => `${e.nm || t('dareFriend')} ${valText(d.m, e.v)}`) : [];
-  ui.dare({ who: d.nm || t('dareFriend'), goal: dareGoal(d.m, d.g, d.x), board: srcName(d.k, d.n), seats: d.b, fresh: save.data.level <= 1, peek: COLORS[boardOf(d.n, d.rev).cats[0].color], reply: d.r && S.frNew === d.i ? t('frAdded', { name: d.nm || t('dareFriend') }) : '', thread, round: d.rd || 1, nick: save.data.meta.nick });
+  // R17 (sol-r16 fix 5): the landing is the target and Play this board; the thread and the name wait on the result
+  ui.dare({ who: d.nm || t('dareFriend'), goal: dareGoal(d.m, d.g, d.x), board: srcName(d.k, d.n), seats: d.b, fresh: save.data.level <= 1, peek: COLORS[boardOf(d.n, d.rev).cats[0].color], reply: d.r && S.frNew === d.i ? t('frAdded', { name: d.nm || t('dareFriend') }) : '' });
 }
 function startDare(d) {
   const goal = d.m === 'chain' ? { kind: 'chain', n: d.g } : d.m === 'seats' ? { kind: 'seats', n: d.g } : null;
@@ -1136,7 +1141,10 @@ function onFriendWin() {
   // both scores side by side ("Ana x3 · You x4") and the round this reply will start
   const vs = [`${sh.nm || t('dareFriend')} ${valText(sh.m, sh.g)}`, `${t('dareYou')} ${valText(sh.m, sh.m === 'time' ? Math.round(ms / 100) : v)}`];
   track('dare_result_' + res);
-  ui.win({ stars: 1, title: res === 'miss' ? 'winTitle1' : 'winTitle', coins: 0, peek: peekColor(), purr: '', ach: [], show: true, showTag: t('dareTitle'), friend: { res, line, vs, round: (sh.rd || 1) + 1 }, chain: sp.chain, dare: true });
+  const th = (sh.th || []).map((e) => `${e.nm || t('dareFriend')} ${valText(sh.m, e.v)}`); // the earlier runs of the thread
+  ui.win({ stars: 1, title: res === 'miss' ? 'winTitle1' : 'winTitle', coins: 0, peek: peekColor(), purr: '', ach: [], show: true, showTag: t('dareTitle'), friend: { res, line, vs, th, round: (sh.rd || 1) + 1, nick: d.meta.nick }, chain: sp.chain, dare: true });
+  // the optional name rides on the reply: kept on change (a tap on Dare back blurs the field first)
+  document.getElementById('darename')?.addEventListener('change', (e) => setNick(e.target.value));
   clipPreview();
 }
 
@@ -1630,8 +1638,6 @@ const actions = {
   home: () => startHome(),
   dareplay() {
     if (!S.dare) return;
-    const nm = dare.cleanName(document.getElementById('darename')?.value || ''); // optional: shown on this player's reply
-    if (nm !== save.data.meta.nick) { save.data.meta.nick = nm; save.commit(); if (nm) track('dare_nick'); }
     ui.hideModal();
     startDare(S.dare);
   },
@@ -1731,6 +1737,7 @@ const actions = {
       track('hint_ad');
     } else ui.toast(t('adNone'));
   }),
+  daresheet: () => track('share_sheet'), // R17: the standout win's Dare a friend sheet opened (ui.js toggles it)
   // Share / Dare a friend: the challenge (text + link to this exact board), at once
   async share() {
     if (S.sharing) return;
@@ -2182,6 +2189,7 @@ async function boot() {
         return free.find((i) => game.board.cats.some((k) => k.kittenOf === i && st.alive[k.id])) ?? null;
       },
       tut: () => document.getElementById('tut')?.textContent || '',
+      moment: (k) => { S.qaMoment = k; }, // R17 QA: the next wins are share moments (the big card's Dare a friend sheet)
       winNow() {
         const go = () => {
           if (!game.state || game.state.aliveCount === 0) return;

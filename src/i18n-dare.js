@@ -18,7 +18,7 @@ addStrings({
     dareTeach: 'Only the front carrier boards. The others wait on cushions.', teachBoards: 'Boards here', teachWaits: 'Waits here',
     dareLinkTitle: 'Send the dare link too', dareLinkBtn: 'Send link',
     clipSaved: 'Clip saved!', copyLinkBtn: 'Copy challenge link', linkCopied: 'Link copied!', copyHold: 'Press and hold the link to copy it',
-    darePlay: 'Play', dareSkip: 'Not now', dareBack: 'Dare them back', dareContinue: 'Continue',
+    darePlay: 'Play this board', dareSkip: 'Not now', dareBack: 'Dare them back', dareContinue: 'Continue',
     // the back-and-forth (r11): both scores, the round, the thread of earlier runs, the reply share texts
     dareTieBtn: 'I matched it! Send', dareSendResult: 'Send result', dareRound: 'Round {n}', dareYourTurn: 'Your turn', dareYou: 'You',
     dareName: 'Your name', dareNameHint: 'optional, shown in your reply',
@@ -48,7 +48,7 @@ addStrings({
     dareTeach: 'Sadece en öndeki taşıyıcıya binilir. Diğerleri minderde bekler.', teachBoards: 'Buraya biner', teachWaits: 'Burada bekler',
     dareLinkTitle: 'Davet linkini de gönder', dareLinkBtn: 'Linki gönder',
     clipSaved: 'Klip kaydedildi!', copyLinkBtn: 'Davet linkini kopyala', linkCopied: 'Link kopyalandı!', copyHold: 'Kopyalamak için linke basılı tut',
-    darePlay: 'Oyna', dareSkip: 'Şimdi değil', dareBack: 'Sen de meydan oku', dareContinue: 'Devam et',
+    darePlay: 'Bu tahtayı oyna', dareSkip: 'Şimdi değil', dareBack: 'Sen de meydan oku', dareContinue: 'Devam et',
     dareTieBtn: 'Yakaladım! Gönder', dareSendResult: 'Sonucu gönder', dareRound: '{n}. tur', dareYourTurn: 'Sıra sende', dareYou: 'Sen',
     dareName: 'Adın', dareNameHint: 'isteğe bağlı, cevabında görünür',
     valSeats: '{n} minder', valTime: '{t} sn',

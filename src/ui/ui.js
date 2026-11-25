@@ -58,6 +58,8 @@ const paw = () => '<svg class="pawi" viewBox="0 0 24 24"><ellipse cx="12" cy="16
 const boost = (k, icon, tone) => `<button class="bst ${tone}" id="b-${k}" data-act="${k}"><img class="bi" src="${assetUrl('v2/' + icon)}" alt="" draggable="false"><b>${t(k)}</b><i class="badge"></i></button>`;
 
 // the Daily record row on a Daily win: the total against the next milestone (its art as a silhouette), or what it unlocked
+// R17: the optional name for the reply sits on the friend result, beside Dare back (main.js saves it on change)
+const nameRow = (nick) => `<label class="dname"><span>${t('dareName')}</span><input id="darename" maxlength="12" autocomplete="nickname" enterkeyhint="done" placeholder="${t('dareNameHint')}" value="${escHtml(nick || '')}"></label>`;
 const drecRow = (r) => (!r ? '' : r.got
   ? `<div class="drecrow got">${r7c(r.got.art, 'drart')}<span><b>${t('drecGot', { name: r.got.name })}</b><small>${t('drecTotal', { n: r.n })}</small></span></div>`
   : r.next ? `<div class="drecrow">${r7c(r.next.art, 'drart sil')}<span><b>${t('drecProg', { n: r.n, at: r.next.at })}</b><small>${t('drecNext', { name: r.next.name })}</small></span></div>` : `<div class="drecrow"><span><b>${t('drecTotal', { n: r.n })}</b></span></div>`);
@@ -371,6 +373,7 @@ export const ui = {
       if (el.dataset.view) cafeView = el.dataset.view;
       if (a === 'cafeview') { if (cur.screen === 'cafe') ui.cafe(cur.info); return; }
       if (a === 'cafearea' && +el.dataset.d === 0) { if (cur.screen === 'cafe') ui.cafe(cur.info); return; }
+      if (a === 'daresheet') { const sh = document.querySelector('#modal .dsheet'); if (sh && (el !== sh || e.target === sh)) { sh.hidden = !sh.hidden; if (!sh.hidden && actions.daresheet) actions.daresheet(); } return; }
       if (a === 'morehelp') { const c = el.closest('.card'); if (c) c.classList.toggle('more'); return; }
       if (a === 'shoptab') { shopTab = el.dataset.tab; const sh = document.querySelector('#sheet .shop'); if (sh) { sh.dataset.tab = shopTab; sh.querySelectorAll('.stab').forEach((b) => b.classList.toggle('on', b.dataset.tab === shopTab)); } return; }
       if (a === 'rpage') { resPage = +el.dataset.p; ui.residents(); return; }
@@ -505,14 +508,19 @@ export const ui = {
     // where the coins came from (base, tidy bench, hard level, café perks): a low payout explains itself
     const pay = info.pay ? `<div class="paybd">${info.pay}</div>` : '';
     // a friend challenge: how it went, both scores side by side and the round of the back-and-forth
-    const dres = info.friend ? `<div class="dres ${info.friend.res}">${info.friend.line}${info.friend.vs ? `<small class="dvs">${info.friend.round > 1 ? `<i class="drd">${t('dareRound', { n: info.friend.round })}</i>` : ''}<span class="${info.friend.res === 'miss' ? 'win' : ''}">${escHtml(info.friend.vs[0])}</span><span class="me ${info.friend.res !== 'miss' ? 'win' : ''}">${escHtml(info.friend.vs[1])}</span></small>` : ''}</div>` : '';
+    const dres = info.friend ? `<div class="dres ${info.friend.res}">${info.friend.line}${info.friend.vs ? `<small class="dvs">${info.friend.round > 1 ? `<i class="drd">${t('dareRound', { n: info.friend.round })}</i>` : ''}${(info.friend.th || []).map((e) => `<span class="old">${escHtml(e)}</span>`).join('')}<span class="${info.friend.res === 'miss' ? 'win' : ''}">${escHtml(info.friend.vs[0])}</span><span class="me ${info.friend.res !== 'miss' ? 'win' : ''}">${escHtml(info.friend.vs[1])}</span></small>` : ''}</div>` : '';
     // a share moment (first chain x3, a new best, a clean sweep, today's Daily, Show gold, Rush top 3): its own headline
     const moment = info.moment ? `<div class="moment">${escHtml(info.moment)}</div>` : '';
     // the replay card keeps its story ON the thumbnail (the moment's headline, else what the player pulled off) and the
     // café bar in the column beside it, so the card is header, main reward row, replay row, buttons
     const clipDet = info.moment ? `<div class="clipdet"><i class="mom">${escHtml(info.moment)}</i></div>` : ach ? `<div class="clipdet">${(info.ach || []).map((a) => `<i class="a-${a.k}">${a.text}</i>`).join('')}</div>` : '';
-    const hilite = info.chain
-      ? `<div class="hilite"><div class="cliphd"><div class="chainclip"><canvas width="180" height="320" aria-hidden="true"></canvas>${clipDet}${CLIP_BTN(info.rec)}</div><i class="clipcap" aria-hidden="true"></i></div><div class="hcol">${dres}${rrow}${info.payHi ? `<div class="ordpay">${info.payHi}</div>` : ''}${barMain ? '' : cafeBar(true)}</div></div>`
+    // R17 (sol-r16 fix 2): a standout win on the big card has ONE share button, Dare a friend; the link, the replay and
+    // the QR card sit in its sheet (inside #modal, so the clip hooks in main.js still find the canvas and the button)
+    const sheet = !!info.dare && !info.friend;
+    const onCard = info.chain && !sheet; // the replay thumbnail stays on the card only without the sheet
+    const clipHd = (btn) => `<div class="cliphd"><div class="chainclip"><canvas width="180" height="320" aria-hidden="true"></canvas>${clipDet}${btn}</div><i class="clipcap" aria-hidden="true"></i></div>`;
+    const hilite = onCard
+      ? `<div class="hilite">${clipHd(CLIP_BTN(info.rec))}<div class="hcol">${dres}${rrow}${info.payHi ? `<div class="ordpay">${info.payHi}</div>` : ''}${barMain ? '' : cafeBar(true)}</div></div>`
       : `${pay}${ach ? `<ul class="ach inline">${ach}</ul>` : ''}`;
     const homeRound = `<button class="round" data-act="home" aria-label="${t('home')}"><svg viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg></button>`;
     // an ordinary clear gets a compact result low on the screen: one thumb action (Next); the big card is kept for hard
@@ -541,21 +549,30 @@ export const ui = {
     const main = info.adopt || (barMain ? cafeBar(false) : '');
     const primary = info.friend ? (info.friend.res === 'miss' ? `<button class="btn" data-act="retry">${t('retry')}</button>` : `<button class="btn pink dback" data-act="share">${SHARE_SVG}<span>${t(info.friend.res === 'tie' ? 'dareTieBtn' : 'dareBack')}</span></button>`) : info.again ? `<button class="btn" data-act="retry">${t('runAgain')}</button>` : `<button class="btn" data-act="next">${info.show ? t('show') : t('next')}</button>`;
     root.insertAdjacentHTML('beforeend', `
-<div class="backdrop winb wbig" id="modal"><div class="card teal win ${info.chain ? 'withclip' : (info.ach || []).length || info.pay ? 'tight' : ''}">
+<div class="backdrop winb wbig" id="modal"><div class="card teal win ${onCard ? 'withclip' : (info.ach || []).length || info.pay ? 'tight' : ''}">
   ${peek}
   <h2 class="title yellow">${t(info.title)}</h2>
-  ${info.chain ? '' : moment}
+  ${onCard ? '' : moment}
   ${info.show ? `<div class="purr showtag">${ribbonSvg}${info.showTag || t('showBoard')}</div>` : `<div class="stars n${info.stars}">${stars}</div>`}
   ${main ? `<div class="mainrew">${main}</div>` : ''}
-  ${info.chain ? '' : rrow}
+  ${onCard ? '' : rrow}
   ${hilite}
-  ${barMain || info.chain ? '' : cafeBar(false)}
+  ${barMain || onCard ? '' : cafeBar(false)}
   ${drecRow(info.drec)}
-  ${info.purr && !(info.chain && main) ? `<div class="purr">${info.purr}</div>` : ''}
-  ${info.chain ? '' : dres}
-  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? `<button class="btn pink sm sharebtn dsend" data-act="share">${SHARE_SVG}<span>${t('dareSendResult')}</span></button>` : ''}${cardBtn()}` : `${homeRound}${shareBtn}`}</div>
+  ${info.purr && !(onCard && main) ? `<div class="purr">${info.purr}</div>` : ''}
+  ${onCard ? '' : dres}
+  ${info.friend ? nameRow(info.friend.nick) : ''}
+  <div class="row r7row">${info.friend ? `<button class="btn teal sm" data-act="next">${t('dareContinue')}</button>${info.friend.res === 'miss' ? `<button class="btn pink sm sharebtn dsend" data-act="share">${SHARE_SVG}<span>${t('dareSendResult')}</span></button>` : ''}${cardBtn()}` : `${homeRound}${sheet ? shareBtn.replace('data-act="share"', 'data-act="daresheet"').replace(cardBtn(), '') : shareBtn}`}</div>
   ${primary}
-</div></div>`);
+</div>${sheet ? `<div class="sharesheet dsheet" data-act="daresheet" hidden><div class="sscard">
+  <button class="lbx" type="button" data-act="daresheet" aria-label="${t('close')}">&times;</button>
+  <b class="sst">${t('shareDareBtn')}</b>
+  <div class="ssrow">${info.chain ? clipHd('') : ''}<div class="sscol">
+    <button class="btn pink sm" data-act="share">${SHARE_SVG}<span>${t('dareLinkBtn')}</span></button>
+    ${info.chain ? `<button class="btn teal sm" data-act="shareclip" hidden>${SHARE_SVG}<span>${t(info.rec ? 'clipMake' : 'shareClipBtn')}</span></button>` : ''}
+    <button class="btn teal sm" data-act="sharecard"><span>${t('virCardBtn')}</span></button>
+  </div></div>
+</div></div>` : ''}</div></div>`);
     if (info.coins) flyCoins(info.coinsBefore, info.coinsBefore + info.coins);
     if (cn && info.cafeStars) flyStar(cn, info.cafeStars);
   },
@@ -572,11 +589,9 @@ export const ui = {
   <h2 class="title yellow">${escHtml(t('dareFrom', { name: info.who }))}</h2>
   <div class="dgoal">${r7('hud_medal')}<b>${info.goal}</b></div>
   <div class="dboard">${escHtml(t('dareBoard', { board: info.board, n: info.seats }))}</div>
-  ${info.thread && info.thread.length ? `<div class="dthread">${info.round > 1 ? `<i class="drd">${t('dareRound', { n: info.round })}</i>` : ''}${info.thread.map((e) => `<span>${escHtml(e)}</span>`).join('<em>&rarr;</em>')}<em>&rarr;</em><b>${t('dareYourTurn')}</b></div>` : ''}
+  <button class="btn" data-act="dareplay">${t('darePlay')}</button>
   ${info.reply ? `<p class="dreply" data-act="events" data-tab="friends">${escHtml(info.reply)}</p>` : ''}
   ${info.fresh ? `<p class="dhow">${t('dareHow')}</p>` : ''}
-  <label class="dname"><span>${t('dareName')}</span><input id="darename" maxlength="12" autocomplete="nickname" enterkeyhint="done" placeholder="${t('dareNameHint')}" value="${escHtml(info.nick || '')}"></label>
-  <button class="btn" data-act="dareplay">${t('darePlay')}</button>
   <button class="link" data-act="dareskip">${t('dareSkip')}</button>
 </div></div>`);
   },
@@ -637,7 +652,7 @@ export const ui = {
   ${info.canInstall ? `<div class="setrow"><span>${t('installApp')}</span><button class="seg wide" data-act="install">${t('install')}</button></div>` : ''}
   <div class="setrow"><span>${t('removeAds')}</span>${info.removeAds ? `<b class="owned">${t('owned')}</b>` : `<button class="seg wide" data-act="shop">${t('shop')}</button>`}</div>
   <div class="setrow"><button class="link" data-act="restore">${t('restore')}</button></div>
-  <p class="credits" style="margin:6px 0 10px;font-size:12px;line-height:1.35;opacity:.7;text-align:center">${t('credits')}: IgnasD, Kerzoven, AntumDeluge, Traceletz, EZduzziteh, rubberduck, PWL, Spring Spring, Fupi, MintoDog (CC0, OpenGameArt.org), Zeno Studio (UI)</p>
+  <p class="credits" style="margin:4px 0 6px;font-size:12px;line-height:1.35;opacity:.7;text-align:center">${t('credits')}: IgnasD, Kerzoven, AntumDeluge, Traceletz, EZduzziteh, rubberduck, PWL, Spring Spring, Fupi, MintoDog (CC0, OpenGameArt.org), Zeno Studio (UI)<b class="madeby" style="display:block;margin-top:2px;font-weight:800;letter-spacing:.04em">Made by Sher</b></p>
   <button class="btn teal" data-act="close">${t('close')}</button>
 </div></div>`);
   },

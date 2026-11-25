@@ -130,7 +130,7 @@ function drawPairSeats(game, ctx) {
   const mom = game.board.cats[kit.kittenOf];
   const base = (COLOR_PAL[mom.color] || COLOR_PAL[0]).base;
   const onBoard = st.alive[kit.id] && st.alive[mom.id];
-  let seats;
+  let seats, kitSeat = -1;
   if (onBoard) {
     if (game.press) return; // a finger is down: the press preview shows the real seats
     seats = [];
@@ -140,8 +140,9 @@ function drawPairSeats(game, ctx) {
     const a = game.vis.bench.indexOf(mom.id), b = game.vis.bench.indexOf(kit.id);
     if (a < 0 || b < 0) return; // still hopping in, or one already left for its carrier
     seats = [Math.min(a, b), Math.max(a, b)];
+    kitSeat = b;
   }
-  game.pairSeats = { seats, parked: !onBoard };
+  game.pairSeats = { seats, parked: !onBoard, kitSeat }; // kitSeat: the parked kitten's seat (drawn at 0.68, game.js drawBench)
   const p0 = game.benchPos(seats[0]), p1 = game.benchPos(seats[1]);
   const bw = p0.bw;
   ctx.save();
@@ -167,6 +168,20 @@ function drawPairSeats(game, ctx) {
     ctx.lineTo(x0, y);
     ctx.lineTo(x1, y);
     ctx.lineTo(x1, y - up);
+    ctx.stroke();
+  }
+  if (!onBoard) { // R17 (sol-r16 fix 3): their heart link stays with them, on the bracket between the two seats
+    const r = bw * 0.12;
+    ctx.translate((p0.x + p1.x) / 2, y - r * 0.2);
+    ctx.beginPath();
+    ctx.moveTo(0, r * 0.95);
+    ctx.bezierCurveTo(-r * 1.5, -r * 0.1, -r * 0.7, -r * 1.25, 0, -r * 0.45);
+    ctx.bezierCurveTo(r * 0.7, -r * 1.25, r * 1.5, -r * 0.1, 0, r * 0.95);
+    ctx.closePath();
+    ctx.fillStyle = '#ff5d8f';
+    ctx.fill();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = '#fffaf0';
     ctx.stroke();
   }
   ctx.restore();
