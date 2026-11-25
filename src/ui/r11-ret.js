@@ -3,7 +3,7 @@
 //  - the map's goal strip: once the early resident thread is over, the nearest album reward as one actionable card:
 //    the postcard itself, the exact stamp or board left and a button that opens that board / the Daily / the claim
 //  - the room: a completed page's print waits with "Hang" pre-selected (main.js sends the player here)
-//  - the win card: from the 3rd win of a day, one line naming what opens tomorrow
+//  - the win card: one line naming what opens tomorrow (R17: from the first win; the 3rd win of a day names two)
 // Every tap is a data-act button handled by ui.js / main.js.
 import './r11-ret.css';
 import { t, lang } from '../i18n.js';
@@ -126,11 +126,14 @@ function tmItem(x) {
   if (x.k === 'job') return `<span class="rtti">${r7('res7_' + x.who + '_idle')}${esc(t('rtTm_job', { name: resName(x.who) }))}</span>`;
   return `<span class="rtti">${esc(t('rtTm_' + x.k))}</span>`;
 }
+// R17 (retention): from the first win of day 1, one line with tomorrow's best thing; the 3rd win of a day names two
 export function winCard(n, list) {
-  if (n < 3 || !list || !list.length) return;
+  if (!list || !list.length) return;
   const card = document.querySelector('#modal .card.win');
   if (!card || card.querySelector('.rttm')) return;
   const row = card.querySelector('.nextrow') || card.lastElementChild;
-  const html = `<div class="rttm"><b>${esc(t('rtWins', { n }))} ${esc(t('rtTmrw'))}</b>${list.slice(0, 2).map(tmItem).join('<i class="rtsep">·</i>')}</div>`;
+  const html = n < 3
+    ? `<div class="rttm one"><b>${esc(t('rtBackTmrw'))}</b>${tmItem(list[0])}</div>`
+    : `<div class="rttm"><b>${esc(t('rtWins', { n }))} ${esc(t('rtTmrw'))}</b>${list.slice(0, 2).map(tmItem).join('<i class="rtsep">·</i>')}</div>`;
   if (row) row.insertAdjacentHTML('beforebegin', html); else card.insertAdjacentHTML('beforeend', html);
 }

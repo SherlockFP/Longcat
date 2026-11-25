@@ -70,10 +70,10 @@
 .card.dare .dthread { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 6px; max-width: 100%; font: 700 15px/1.2 var(--font); color: var(--ink, #1d2b53); background: rgba(255,255,255,.6); border-radius: 12px; padding: 6px 10px; }
 .card.dare .dthread em { font-style: normal; opacity: .6; }
 .card.dare .dthread b { color: #c23a68; }
-.card.dare .dname { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 300px; font: 700 15px/1.1 var(--font); color: var(--ink, #1d2b53); }
-.card.dare .dname span { flex: none; }
-.card.dare .dname input { flex: 1 1 0; min-width: 0; height: 36px; padding: 0 10px; border-radius: 12px; border: 2px solid #e7d7bf; background: #fff; color: var(--ink, #1d2b53); font: 600 15px/1 var(--font); pointer-events: auto; user-select: text; -webkit-user-select: text; }
-.card.dare .dname input::placeholder { color: #9a8f80; font-size: 13px; }
+.dname { display: flex; align-items: center; gap: 8px; width: 100%; max-width: 300px; font: 700 15px/1.1 var(--font); color: var(--ink, #1d2b53); }
+.dname span { flex: none; }
+.dname input { flex: 1 1 0; min-width: 0; height: 36px; padding: 0 10px; border-radius: 12px; border: 2px solid #e7d7bf; background: #fff; color: var(--ink, #1d2b53); font: 600 15px/1 var(--font); pointer-events: auto; user-select: text; -webkit-user-select: text; }
+.dname input::placeholder { color: #9a8f80; font-size: 13px; }
 @media (max-height: 700px) { .card.dare { gap: 7px; padding-top: 56px; } .card.dare .peek { width: 96px; height: 96px; top: -50px; } .card.dare .title { font-size: 26px; } .card.dare .dhow { font-size: 14px; padding: 6px 10px; } }
 /* the share sheet where the browser has none: what was copied, the link, Save */
 .sharesheet { pointer-events: auto; position: fixed; inset: 0; z-index: 90; display: flex; align-items: flex-end; justify-content: center; padding: 12px 12px calc(12px + env(safe-area-inset-bottom, 0px)); background: rgba(14,22,48,.45); }
@@ -97,3 +97,13 @@
 .arcard .arbtns { display: flex; gap: 8px; justify-content: center; }
 .arcard .arbtns .btn { flex: 0 1 auto; }
 .card.win .r7row:has(.nudge) { margin-top: 34px; } /* the once-only "Show a friend!" bubble never covers the line above */
+/* R17: the reply name on the friend result (beside Dare back), slim */
+.card.win .dname { align-self: center; font-size: 14px; }
+.card.win .dname input { height: 32px; }
+.dres .dvs span.old { opacity: .7; }
+/* R17: the standout win's Dare a friend sheet (inside #modal): the link, the replay and the QR card */
+.dsheet[hidden], .dsheet [hidden] { display: none; }
+.dsheet .sscol .btn { width: 100%; min-height: 46px; font-size: 18px; gap: 6px; }
+.dsheet .sscol .btn .shi { width: 20px; height: 20px; fill: none; stroke: #fff; flex: none; }
+.dsheet .cliphd { flex: none; }
+.dsheet .chainclip :is(canvas, video) { display: block; width: 90px; height: 160px; border-radius: 10px; border: 3px solid var(--ink, #1d2b53); background: #1d2b53; }

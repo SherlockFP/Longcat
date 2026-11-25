@@ -1,5 +1,7 @@
 # Credits
 
+Made by Sher (shown at the bottom of Settings in every language).
+
 ## Sound effects and music
 
 Every sound in `public/sfx/` comes from OpenGameArt.org and is released under

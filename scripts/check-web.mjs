@@ -24,6 +24,23 @@ const html = read('index.html');
 must(html.includes('rel="manifest"') && !/(href|src)="\/(?!src\/)/.test(html), 'index.html: manifest link, no root-absolute paths');
 const ads = read('src/kit/ads.js');
 must(/provider:\s*env\.VITE_ADS_PROVIDER === 'h5' \? 'h5' : 'off'/.test(ads), 'ads provider must default to off');
+// R17: the owner's credit, in every language (one literal, never translated) and in the page meta
+must(html.includes('<meta name="author" content="Sher"'), 'index.html: meta author Sher');
+must(/class="madeby"[^>]*>Made by Sher</.test(read('src/ui/ui.js')), 'Settings: "Made by Sher" under the credits');
+// R17 perf: a send's progress saves once after the burst; any commit() flushes it
+{
+  const st = {};
+  globalThis.localStorage = { getItem: () => null, setItem: (k, v) => { st.v = v; st.n = (st.n || 0) + 1; } };
+  const { save } = await import('../src/kit/save.js');
+  st.n = 0;
+  save.commitSoon(); save.commitSoon(); save.commitSoon();
+  must(st.n === 0 && !!save.soon, 'commitSoon waits');
+  save.commit();
+  must(st.n === 1 && !save.soon, 'commit flushes a pending commitSoon once');
+  save.commitSoon();
+  await new Promise((r) => setTimeout(r, 1600));
+  must(st.n === 2 && !save.soon, 'commitSoon writes once after the burst');
+}
 
 if (bad.length) {
   console.error('check-web FAILED:\n  ' + bad.join('\n  '));

@@ -35,3 +35,4 @@
 .rttm .rtti img { width: 18px; height: 18px; object-fit: contain; flex: none; }
 .rttm .rtsep { font-style: normal; color: #b48a5e; }
 @media (prefers-reduced-motion: reduce) { .nbcard .trow.rthang.spot { animation: none !important; } }
+.rttm.one { flex-wrap: nowrap; margin: 2px 6px 0; padding: 0 4px; background: none; border: 0; } /* R17: the early tomorrow hook is one plain line */

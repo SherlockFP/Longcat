@@ -254,14 +254,22 @@ function load() {
 export const save = {
   data: load(),
   commit() {
+    clearTimeout(this.soon);
+    this.soon = 0;
     try {
       localStorage.setItem(KEY, JSON.stringify(this.data));
     } catch {
       /* ignore */
     }
   },
+  // R17 perf: progress ticked on every send (a task, a job) saves once after the burst, not once per cat: a commit
+  // stringifies and writes the whole save on the main thread. Any commit() in between, or leaving the page, flushes it
+  commitSoon() {
+    if (!this.soon) this.soon = setTimeout(() => this.commit(), 1500);
+  },
   reset() {
     this.data = defaults();
     this.commit();
   },
 };
+if (typeof addEventListener === 'function') addEventListener('pagehide', () => { if (save.soon) save.commit(); });
